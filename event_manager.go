@@ -7,13 +7,20 @@ import (
 	"github.com/supercom32/consolizer/internal/memory"
 	"strings"
 )
-// TODO: Make memory for events? Or at least a structure for it?
 
 type eventStateType struct {
 	stateId int
+	// These variables are for controls which have "focus" and will accept
+	// keyboard input or other controls.
 	focusedLayerAlias string
 	focusedControlAlias string
-	focusedControlType int
+	focusedControlType              int
+	// These variables record previously highlighted control items so that if an
+	// item is no longer being hovered, its state can be reset without searching
+	// over all controls.
+	previousHighlightedLayerAlias   string
+	previousHighlightedControlAlias string
+	previousHighlightedControlType  int
 }
 
 var eventStateMemory eventStateType
@@ -38,10 +45,15 @@ func updateEventQueues() {
 		if updateKeyboardEventTextField(keystroke) {
 			isScreenUpdateRequired = true
 		}
+		if updateKeyboardEventSelector(keystroke) {
+			isScreenUpdateRequired = true
+		}
 		if isScreenUpdateRequired == true {
 			UpdateDisplay()
+		} else {
+			// Only add keystrokes to the buffer if not already consumed by other controls.
+			memory.KeyboardMemory.AddKeystrokeToKeyboardBuffer(keystroke)
 		}
-		memory.KeyboardMemory.AddKeystrokeToKeyboardBuffer(keystroke)
 	case *tcell.EventMouse:
 		mouseXLocation, mouseYLocation := event.Position()
 		var mouseButtonNumber uint
@@ -61,12 +73,25 @@ func updateEventQueues() {
 		} else if mouseButton&tcell.WheelRight != 0 {
 			wheelState = "Right"
 		}
+		isScreenUpdateRequired := false
 		memory.SetMouseStatus(mouseXLocation, mouseYLocation, mouseButtonNumber, wheelState)
 		setFocusedControl()
 		bringLayerToFrontIfRequired()
-		moveLayerIfRequired()
-		updateMouseEventTextField()
-		updateButtonStates(true)
+		if moveLayerIfRequired() {
+			isScreenUpdateRequired = true
+		}
+		if updateMouseEventTextField() {
+			isScreenUpdateRequired = true
+		}
+		if updateButtonStates(true) {
+			isScreenUpdateRequired = true
+		}
+		if updateMouseEventSelector() {
+			isScreenUpdateRequired =  true
+		}
+		if isScreenUpdateRequired {
+			UpdateDisplay()
+		}
 	}
 }
 
@@ -78,146 +103,6 @@ func setFocusedControl() {
 			eventStateMemory.focusedControlType = constants.CellTypeTextField
 			eventStateMemory.focusedControlAlias = characterEntry.AttributeEntry.CellAlias
 			eventStateMemory.focusedLayerAlias = characterEntry.LayerAlias
-		}
-	}
-}
-
-func updateKeyboardEventTextField(keystroke string) bool {
-	isScreenUpdateRequired := true
-	if eventStateMemory.focusedControlType != constants.CellTypeTextField {
-		return false
-	}
-	textFieldEntry := memory.GetTextField(eventStateMemory.focusedLayerAlias, eventStateMemory.focusedControlAlias)
-	viewportPosition := textFieldEntry.ViewportPosition
-	cursorPosition := textFieldEntry.CursorPosition
-	currentValue := textFieldEntry.CurrentValue
-	viewportWidth := textFieldEntry.Width
-	maxLengthAllowed := textFieldEntry.MaxLengthAllowed
-	if len(keystroke) == 1 { // If a regular char is entered.
-		if len(currentValue) < maxLengthAllowed {
-			currentValue = currentValue[:viewportPosition+cursorPosition] + keystroke + currentValue[viewportPosition+cursorPosition:]
-			if cursorPosition < viewportWidth {
-				cursorPosition++
-			} else {
-				viewportPosition++
-			}
-			isScreenUpdateRequired = true
-		}
-	}
-	if keystroke == "delete" {
-		if currentValue != "" {
-			// Protect if nothing else to delete left of string
-			if viewportPosition+cursorPosition+1 <= len(currentValue) {
-				currentValue = currentValue[:viewportPosition+cursorPosition] + currentValue[viewportPosition+cursorPosition+1:]
-				if viewportPosition+cursorPosition == len(currentValue) {
-					cursorPosition--
-					if cursorPosition < 0 {
-						cursorPosition = 0
-					}
-				}
-				isScreenUpdateRequired = true
-			}
-		}
-	}
-	if keystroke == "home" {
-		cursorPosition = 0
-		viewportPosition = 0
-		isScreenUpdateRequired = true
-	}
-	if keystroke == "end" {
-		// If your current viewport shows the end of the input string, just move the cursor to the end of the string.
-		if viewportPosition > len(currentValue)- viewportWidth {
-			cursorPosition = len(currentValue) - viewportPosition
-		} else {
-			// Otherwise advance viewport to end of input string.
-			viewportPosition = len(currentValue) - viewportWidth
-			if viewportPosition < 0 {
-				// If input string is smaller than even one viewport block, just set cursor to end.
-				viewportPosition = 0
-				cursorPosition = len(currentValue)
-			} else {
-				// Otherwise place cursor at end of viewport / string
-				cursorPosition = viewportWidth
-			}
-		}
-		isScreenUpdateRequired = true
-	}
-	if keystroke == "backspace" || keystroke == "backspace2" {
-		if currentValue == "" {
-			return false
-		}
-		// Protect if nothing else to delete left of string
-		if viewportPosition + cursorPosition - 1 >= 0 {
-			currentValue = currentValue[:viewportPosition+cursorPosition-1] + currentValue[viewportPosition+cursorPosition:]
-			cursorPosition--
-			if cursorPosition < 1 {
-				if len(currentValue) < viewportWidth {
-					cursorPosition = viewportPosition + cursorPosition
-					viewportPosition = 0
-				} else {
-					if viewportPosition != 0 { // If your not at the start of an input string
-						if cursorPosition == 0 {
-							viewportPosition = viewportPosition - viewportWidth + 1
-						} else {
-							viewportPosition = viewportPosition - viewportWidth
-						}
-						if viewportPosition < 0 {
-							viewportPosition = 0
-						}
-						cursorPosition = viewportWidth - 1
-					}
-				}
-			}
-			isScreenUpdateRequired = true
-		}
-	}
-	if keystroke == "left" {
-		cursorPosition--
-		if cursorPosition < 0 {
-			if viewportPosition == 0 {
-				cursorPosition = 0
-			} else {
-				viewportPosition =- viewportWidth
-				if viewportPosition < 0 {
-					viewportPosition = 0
-				}
-				cursorPosition = viewportWidth
-			}
-		}
-		isScreenUpdateRequired = true
-	}
-	if keystroke == "right" {
-		cursorPosition++
-		if viewportPosition + cursorPosition > len(currentValue){
-			cursorPosition--
-		} else {
-			if cursorPosition >= viewportWidth {
-				viewportPosition++
-				cursorPosition = viewportWidth - 1
-			}
-		}
-		isScreenUpdateRequired = true
-	}
-	if isScreenUpdateRequired {
-		textFieldEntry.ViewportPosition = viewportPosition
-		textFieldEntry.CursorPosition = cursorPosition
-		textFieldEntry.CurrentValue = currentValue
-		textFieldEntry.Width = viewportWidth
-		textFieldEntry.MaxLengthAllowed = maxLengthAllowed
-	}
-	return isScreenUpdateRequired
-}
-
-func updateMouseEventTextField() {
-	var characterEntry memory.CharacterEntryType
-	mouseXLocation, mouseYLocation, buttonPressed, _ := memory.GetMouseStatus()
-	//previousMouseXLocation, previousMouseYLocation, previousButtonPressed, _ := memory.GetPreviousMouseStatus()
-	if buttonPressed != 0 {
-		characterEntry = getCellInformationUnderMouseCursor(mouseXLocation, mouseYLocation)
-		if characterEntry.AttributeEntry.CellType == constants.CellTypeTextField {
-			textFieldEntry := memory.GetTextField(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellAlias)
-			textFieldEntry.CursorPosition = characterEntry.AttributeEntry.CellTypeId
-			UpdateDisplay()
 		}
 	}
 }
@@ -234,7 +119,8 @@ title bar of a layer) to fall outside the parent layers visible area, then
 no movement is performed. This is done so that it is impossible to move
 a window off-screen where it can never be grabbed again.
 */
-func moveLayerIfRequired() {
+func moveLayerIfRequired() bool {
+	isScreenUpdateRequired := false
 	mouseXLocation, mouseYLocation, buttonPressed, _ := memory.GetMouseStatus()
 	previousMouseXLocation, previousMouseYLocation, previousButtonPressed, _ := memory.GetPreviousMouseStatus()
 	if buttonPressed != 0 {
@@ -246,7 +132,7 @@ func moveLayerIfRequired() {
 			if isInteractiveLayerOffscreen(eventStateMemory.focusedLayerAlias) {
 				MoveLayerByRelativeValue(eventStateMemory.focusedLayerAlias, -xMove, -yMove)
 			}
-			UpdateDisplay()
+			isScreenUpdateRequired = true
 		}
 		if characterEntry.AttributeEntry.CellType == constants.CellTypeFrameTop {
 			eventStateMemory.stateId = constants.EventStateDragAndDrop
@@ -255,8 +141,13 @@ func moveLayerIfRequired() {
 	} else {
 		eventStateMemory.stateId = 0
 	}
+	return isScreenUpdateRequired
 }
 
+/*
+bringLayerToFrontIfRequired allows you to bring a layer to the front of the
+visible display area if the layer being clicked is focusable.
+*/
 func bringLayerToFrontIfRequired() {
 	mouseXLocation, mouseYLocation, buttonPressed, _ := memory.GetMouseStatus()
 	if buttonPressed != 0 {
@@ -272,11 +163,6 @@ func bringLayerToFrontIfRequired() {
 		memory.SetHighestZOrderNumber(previousLayerAlias, layerAlias)
 	}
 }
-
-func getHighestZOrderNumberFromBaseLayers() {
-
-}
-
 
 /*
 isInteractiveLayerOffscreen allows you to detect if a layer has been moved

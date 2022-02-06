@@ -43,15 +43,14 @@ information should be noted:
 will be generated to fail as fast as possible.
 */
 func InitializeTerminal(width int, height int) {
-	if width <=0 || height <= 0 {
-		panic(fmt.Sprintf("The specified terminal width and height of '%d, %d' is invalid!", width, height))
-	}
+	validateTerminalWidthAndHeight(width, height)
 	memory.InitializeScreenMemory()
 	memory.InitializeTextFieldMemory()
 	memory.InitializeButtonMemory()
 	memory.InitializeImageMemory()
 	memory.InitializeTextStyleMemory()
 	memory.InitializeTimerMemory()
+	memory.InitializeMenuBarMemory()
 	commonResource.terminalWidth = width
 	commonResource.terminalHeight = height
 	commonResource.debugDirectory = "/tmp/"
@@ -70,10 +69,6 @@ func InitializeTerminal(width int, height int) {
 		setupCloseHandler()
 		go setupEventUpdater()
 	}
-}
-
-func main(){
-
 }
 
 /*
@@ -136,7 +131,7 @@ have both a layer and non-layer version. This makes interacting with methods
 faster, as the user does not need to provide the layer alias context in which
 he is working on. For example:
 
-	// On the layer with a layer alias of "MyForegreoundLayer" print a string.
+	// On the layer with a layer alias of "MyForegroundLayer" print a string.
 	consolizer.PrintLayer("MyForegroundLayer", "Hello World")
 
 	// Set the default layer alias to be "MyForegroundLayer".
@@ -147,6 +142,7 @@ he is working on. For example:
 	consolizer.Print("Hello World")
 */
 func Layer(layerAlias string) {
+	validateLayer(layerAlias)
 	commonResource.layerAlias = layerAlias
 }
 
@@ -186,9 +182,7 @@ working text layer automatically. If you wish to set another text layer
 as your default, use 'Layer' to explicitly set it.
 */
 func AddLayer(layerAlias string, xLocation int, yLocation int, width int, height int, zOrderPriority int, parentAlias string) {
-	if width <= 0 || height <= 0 {
-		panic(fmt.Sprintf("Could not create the text layer '%s' since the width and height of (%d, %d) is invalid.", layerAlias, width, height))
-	}
+	validateTerminalWidthAndHeight(width, height)
 	memory.AddLayer(layerAlias, xLocation, yLocation, width, height, zOrderPriority, parentAlias)
 	commonResource.layerAlias = layerAlias
 }
@@ -216,9 +210,8 @@ possible.
 will be ignored.
 */
 func DeleteLayer(layerAlias string) {
-	if layerAlias == commonResource.layerAlias {
-		panic(fmt.Sprintf("The text layer '%s' could not be deleted since it is the default text layer!", layerAlias))
-	}
+	validateLayer(layerAlias)
+	validateLayerNotDefault(layerAlias)
 	memory.DeleteLayer(layerAlias)
 }
 
@@ -253,6 +246,7 @@ In addition, the following information should be noted:
 will be performed.
 */
 func DeleteTextStyle(textStyleAlias string) {
+	validateTextStyleExists(textStyleAlias)
 	memory.DeleteTextStyle(textStyleAlias)
 }
 
@@ -353,6 +347,7 @@ This is to ensure that programmers do not attempt to rely on any specific
 behavior that might be a coincidental side effect.
 */
 func SetLayerZOrder(layerAlias string, zOrder int) {
+	validateLayer(layerAlias)
 	layerEntry := memory.GetLayer(layerAlias)
 	layerEntry.ZOrder = zOrder
 }
@@ -388,6 +383,7 @@ out at RGB(0, 0, 0) or RGB(255, 255, 255) respectively.
 */
 // TODO: Make this SetLayerAlpha and create SetAlpha for default layer
 func SetAlpha(layerAlias string, alphaValue float32) {
+	validateLayer(layerAlias)
 	layerEntry := memory.GetLayer(layerAlias)
 	layerEntry.DefaultAttribute.ForegroundTransformValue = alphaValue
 	layerEntry.DefaultAttribute.BackgroundTransformValue = alphaValue
@@ -403,9 +399,7 @@ should be noted:
 will be generated to fail as fast as possible.
 */
 func GetColor(colorIndex int) int32 {
-	if colorIndex < 0 || colorIndex > len(constants.AnsiColorByIndex) {
-		panic(fmt.Sprintf("The specified color index '%d' is invalid!", colorIndex))
-	}
+	validateColorIndex(colorIndex)
 	return constants.AnsiColorByIndex[colorIndex]
 }
 
@@ -417,10 +411,7 @@ blue index values provided. In addition, the following information should be not
 will be generated to fail as fast as possible.
 */
 func GetRGBColor(redColorIndex int32, greenColorIndex int32, blueColorIndex int32) int32 {
-	if redColorIndex < 0 || redColorIndex > 255 || greenColorIndex < 0 || greenColorIndex > 255 ||
-		blueColorIndex < 0 || blueColorIndex > 255 {
-		panic(fmt.Sprintf("The specified RGB color index '%d, %d, %d' is invalid!", redColorIndex, greenColorIndex, blueColorIndex))
-	}
+	validateRGBColorIndex(redColorIndex, greenColorIndex, blueColorIndex)
 	return int32(tcell.NewRGBColor(redColorIndex, greenColorIndex, blueColorIndex))
 }
 
@@ -443,12 +434,9 @@ to specify a text layer, you can use the method 'Color' which will simply
 change the color for the default text layer previously set.
  */
 func ColorLayer(layerAlias string, foregroundColorIndex int, backgroundColorIndex int) {
-	if foregroundColorIndex < 0 || foregroundColorIndex > len(constants.AnsiColorByIndex) {
-		panic(fmt.Sprintf("The specified foreground color index '%d' for layer '%s' is invalid!", foregroundColorIndex, layerAlias))
-	}
-	if backgroundColorIndex < 0 || backgroundColorIndex > len(constants.AnsiColorByIndex) {
-		panic(fmt.Sprintf("The specified background color index '%d' for layer '%s' is invalid!", backgroundColorIndex, layerAlias))
-	}
+	validateLayer(layerAlias)
+	validateColorIndex(foregroundColorIndex)
+	validateColorIndex(backgroundColorIndex)
 	layerEntry := memory.GetLayer(layerAlias)
 	layerEntry.DefaultAttribute.ForegroundColor = constants.AnsiColorByIndex[foregroundColorIndex]
 	layerEntry.DefaultAttribute.BackgroundColor = constants.AnsiColorByIndex[backgroundColorIndex]
@@ -483,6 +471,7 @@ an int32. This is useful for internal methods that already have a 24-bit color
 and do not require to compute it again.
 */
 func colorLayer24Bit(layerAlias string, foregroundColor int32, backgroundColor int32) {
+	validateLayer(layerAlias)
 	layerEntry := memory.GetLayer(layerAlias)
 	layerEntry.DefaultAttribute.ForegroundColor = foregroundColor
 	layerEntry.DefaultAttribute.BackgroundColor = backgroundColor
@@ -499,6 +488,7 @@ a parent layer, then only the visible display area will be rendered on the
 parent.
 */
 func MoveLayerByAbsoluteValue(layerAlias string, xLocation int, yLocation int) {
+	validateLayer(layerAlias)
 	layerEntry := memory.GetLayer(layerAlias)
 	layerEntry.ScreenXLocation = xLocation
 	layerEntry.ScreenYLocation = yLocation
@@ -521,6 +511,7 @@ a parent layer, then only the visible display area will be rendered on the
 parent.
 */
 func MoveLayerByRelativeValue(layerAlias string, xLocation int, yLocation int) {
+	validateLayer(layerAlias)
 	layerEntry := memory.GetLayer(layerAlias)
 	layerEntry.ScreenXLocation += xLocation
 	layerEntry.ScreenYLocation += yLocation
@@ -556,7 +547,7 @@ func Locate(xLocation int, yLocation int) {
 }
 
 /*
-Locate allows you to set the default cursor location on your specified text
+LocateLayer allows you to set the default cursor location on your specified text
 layer for printing with. This is useful for when you wish to print text
 at different locations of your text layer at any given time. If you do not
 wish to specify a text layer, you can use the method 'Locate' which will
@@ -579,11 +570,9 @@ example:
 	consolizer.LocateLayer(14, 14)
 */
 func LocateLayer(layerAlias string, xLocation int, yLocation int) {
+	validateLayer(layerAlias)
 	layerEntry := memory.GetLayer(layerAlias)
-	if xLocation < 0 || yLocation < 0 ||
-		xLocation >= layerEntry.Width || yLocation >= layerEntry.Height {
-		panic(fmt.Sprintf("The specified location (%d, %d) is out of bounds for layer '%s' with a size of (%d, %d).", xLocation, yLocation, layerAlias, layerEntry.Width, layerEntry.Height))
-	}
+	validateLayerLocationByLayerEntry(layerEntry, xLocation, yLocation)
 	layerEntry.CursorXLocation = xLocation
 	layerEntry.CursorYLocation = yLocation
 }
@@ -676,11 +665,12 @@ func Clear() {
 }
 
 /*
-Clear allows you to empty the specified text layer of all its contents. If you
+ClearLayer allows you to empty the specified text layer of all its contents. If you
 do not wish to specify a text layer, you can use the method 'Clear' which will
 simply clear the default text layer previously set.
 */
 func ClearLayer(layerAlias string) {
+	validateLayer(layerAlias)
 	layerEntry := memory.GetLayer(layerAlias)
 	clearLayer(layerEntry)
 }
@@ -697,12 +687,7 @@ func clearLayer(layerEntry *memory.LayerEntryType) {
 
 func GetCharacterOnScreen(xLocation int, yLocation int) rune {
 	layerEntry := commonResource.screenLayer
-	if xLocation >= layerEntry.Width || xLocation < 0 {
-		panic(fmt.Sprintf("Could not get character entry, since the xLocation '%d' is out of bounds. ", xLocation))
-	}
-	if yLocation >= layerEntry.Height || yLocation < 0 {
-		panic(fmt.Sprintf("Could not get character entry, since the yLocation '%d' is out of bounds. ", yLocation))
-	}
+	validateLayerLocationByLayerEntry(&layerEntry, xLocation, yLocation)
 	return layerEntry.CharacterMemory[xLocation][yLocation].Character
 }
 
@@ -737,10 +722,7 @@ noted:
 a panic will be thrown to fail as fast as possible.
 */
 func getRuneOnLayer(layerEntry *memory.LayerEntryType, xLocation int, yLocation int) rune {
-	if xLocation < 0 || xLocation >= layerEntry.Width || yLocation < 0 || yLocation >= layerEntry.Height {
-		RestoreTerminalSettings()
-		panic(fmt.Sprintf("The specified location (%d, %d) is out of bounds for the layer entry with a size of (%d, %d).", xLocation, yLocation, layerEntry.Width, layerEntry.Height))
-	}
+	validateLayerLocationByLayerEntry(layerEntry, xLocation, yLocation)
 	characterMemory := layerEntry.CharacterMemory
 	return characterMemory[yLocation][xLocation].Character
 }
@@ -759,7 +741,7 @@ from the top-most visible text cell.
 on the terminal display. If you wish for any new changes to take effect,
 call 'UpdateDisplay' to refresh the visible display area first.
  */
-func GetCellIdUnderMouseLocation(layerAlias string) int {
+func GetCellIdUnderMouseLocation() int {
 	mouseXLocation, mouseYLocation, _, _ := memory.GetMouseStatus()
 	return getCellIdByLayerEntry(&commonResource.screenLayer, mouseXLocation, mouseYLocation)
 }
@@ -770,6 +752,7 @@ by layer alias. This is simply a wrapper method that converts the text
 layer alias into a layer entry and calls 'getCellIdByLayerEntry'.
 */
 func getCellIdByLayerAlias(layerAlias string, mouseXLocation int, mouseYLocation int) int {
+	validateLayer(layerAlias)
 	layerEntry := memory.GetLayer(layerAlias)
 	return getCellIdByLayerEntry(layerEntry, mouseXLocation, mouseYLocation)
 }
@@ -855,6 +838,7 @@ func renderLayers(rootLayerEntry *memory.LayerEntryType, sortedLayerAliasSlice m
 func renderControls(currentLayerEntry memory.LayerEntryType) {
 	drawButtonsOnLayer(currentLayerEntry)
 	drawTextFieldOnLayer(currentLayerEntry)
+	drawSelectorsOnLayer(currentLayerEntry)
 }
 
 /*
@@ -863,6 +847,7 @@ alias. This is useful when you do not have actual layer data and only
 know the alias of the layer you wish to overlay.
 */
 func overlayLayersByLayerAlias(sourceLayerAlias string, targetLayerEntry *memory.LayerEntryType) {
+	validateLayer(sourceLayerAlias)
 	layerEntry := memory.GetLayer(sourceLayerAlias)
 	overlayLayers(layerEntry, targetLayerEntry)
 }

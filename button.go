@@ -12,6 +12,43 @@ type buttonHistoryType struct {
 
 var buttonHistory buttonHistoryType
 
+type ButtonInstanceType struct {
+	layerAlias  string
+	buttonAlias string
+}
+
+/*
+IsButtonPressed allows you to detect if any text button was pressed or not. In
+order to obtain the button pressed and clear this state, you must call the
+GetButtonPressed method.
+*/
+func (shared *ButtonInstanceType) IsButtonPressed() bool {
+	if buttonHistory.layerAlias != "" && buttonHistory.buttonAlias != "" {
+		return true
+	}
+	return false
+}
+
+/*
+GetButtonPressed allows you to detect which text button was pressed or not. In
+the event no button was pressed, empty values for the layer and button
+alias are returned instead. In addition, the following information should be
+noted:
+
+- If any button is successfully returned, the pressed state is automatically
+cleared.
+*/
+func (shared *ButtonInstanceType) GetButtonPressed() (string, string) {
+	if buttonHistory.layerAlias != "" && buttonHistory.buttonAlias != "" {
+		layerAlias := buttonHistory.layerAlias
+		buttonAlias := buttonHistory.buttonAlias
+		buttonHistory.layerAlias = ""
+		buttonHistory.buttonAlias = ""
+		return layerAlias, buttonAlias
+	}
+	return "", ""
+}
+
 /*
 AddButton allows you to add a button to a text layer. The Style of the button
 will be determined by the style entry passed in. If you wish to remove a
@@ -32,8 +69,12 @@ then the width will automatically default to the width of your button label.
 - If the height of your button is less than 3 characters high, then the height
 will automatically default to the minimum of 3 characters.
 */
-func AddButton(layerAlias string, buttonAlias string, buttonLabel string, styleEntry memory.TuiStyleEntryType, xLocation int, yLocation int, width int, height int) {
+ func AddButton(layerAlias string, buttonAlias string, buttonLabel string, styleEntry memory.TuiStyleEntryType, xLocation int, yLocation int, width int, height int) ButtonInstanceType {
 	memory.AddButton(layerAlias, buttonAlias, buttonLabel, styleEntry, xLocation, yLocation, width, height)
+	var buttonInstance ButtonInstanceType
+	buttonInstance.layerAlias = layerAlias
+	buttonInstance.buttonAlias = buttonAlias
+	return buttonInstance
 }
 
 /*
@@ -45,38 +86,6 @@ will simply be ignored.
 */
 func DeleteButton(layerAlias string, buttonAlias string) {
 	memory.DeleteButton(layerAlias, buttonAlias)
-}
-
-/*
-IsButtonPressed allows you to detect if a text button was pressed or not. In
-order to obtain the button pressed and clear this state, you must call the
-GetButtonPressed method.
-*/
-func IsButtonPressed() bool {
-	if buttonHistory.layerAlias != "" && buttonHistory.buttonAlias != "" {
-		return true
-	}
-	return false
-}
-
-/*
-GetButtonPressed allows you to detect which text button was pressed or not. In
-the event no button was pressed, empty values for the layer and button
-alias are returned instead. In addition, the following information should be
-noted:
-
-- If any button is successfully returned, the pressed state is automatically
-cleared.
-*/
-func GetButtonPressed() (string, string) {
-	if buttonHistory.layerAlias != "" && buttonHistory.buttonAlias != "" {
-		layerAlias := buttonHistory.layerAlias
-		buttonAlias := buttonHistory.buttonAlias
-		buttonHistory.layerAlias = ""
-		buttonHistory.buttonAlias = ""
-		return layerAlias, buttonAlias
-	}
-	return "", ""
 }
 
 /*
@@ -93,29 +102,48 @@ func drawButtonsOnLayer(layerEntry memory.LayerEntryType) {
 
 /*
 updateButtonStates allows you to update the state of all buttons. This needs
-to be called frequently so that changes in button state are reflected to
-the user as quickly as possible.
-
-TODO: Consider keyboard support
-
-scan for top most layer
-	send keystroke to only control in focus?
-
+to be called when input occurs so that changes in button state are reflected
+to the user as quickly as possible. In the event that a screen update is
+required this method returns true.
 */
-
-func updateButtonStates(isMouseTriggered bool) {
+func updateButtonStates(isMouseTriggered bool) bool {
 	if isMouseTriggered {
 		// Update the button state if a mouse caused a change.
-		updateButtonStateMouse()
+		return updateButtonStateMouse()
 	} else {
 		// Add code to update when keyboard caused a change.
 	}
+	return false
 }
 
-func updateButtonStateMouse() {
-	mouseXLocation, mouseYLocation, buttonPressed, _ := memory.GetMouseStatus()
-	layerAlias, buttonAlias := getButtonClickIdentifier(mouseXLocation, mouseYLocation)
+/*
+updateButtonStateMouse allows you to update button states that are triggered
+by mouse events. If a screen update is required, then this method returns
+true.
+*/
+func updateButtonStateMouse() bool {
 	isUpdateRequired := false
+	mouseXLocation, mouseYLocation, buttonPressed, _ := memory.GetMouseStatus()
+	characterEntry := getCellInformationUnderMouseCursor(mouseXLocation, mouseYLocation)
+	layerAlias := characterEntry.LayerAlias
+	buttonAlias := characterEntry.AttributeEntry.CellAlias
+	// If not a button, reset all buttons if needed.
+	if characterEntry.AttributeEntry.CellType != constants.CellTypeButton {
+		for currentLayer, _ := range memory.ButtonMemory {
+			for currentButton, _ := range memory.ButtonMemory[currentLayer] {
+				// If button not found, reset all buttons if necessary...
+				if memory.ButtonMemory[currentLayer][currentButton].IsPressed == true {
+					buttonHistory.layerAlias = layerAlias
+					buttonHistory.buttonAlias = buttonAlias
+					memory.ButtonMemory[currentLayer][currentButton].Mutex.Lock()
+					memory.ButtonMemory[currentLayer][currentButton].IsPressed = false
+					memory.ButtonMemory[currentLayer][currentButton].Mutex.Unlock()
+					isUpdateRequired = true
+				}
+			}
+		}
+		return isUpdateRequired
+	}
 	if buttonAlias != "" && buttonPressed == 0 {
 		// If button was found, but mouse is not being pressed, update button
 		// only if required.
@@ -136,44 +164,6 @@ func updateButtonStateMouse() {
 			memory.ButtonMemory[layerAlias][buttonAlias].Mutex.Unlock()
 			isUpdateRequired = true
 		}
-	} else if buttonAlias == "" {
-		for currentLayer, _ := range memory.ButtonMemory {
-			for currentButton, _ := range memory.ButtonMemory[currentLayer] {
-				// If button not found, reset all buttons if necessary...
-				if memory.ButtonMemory[currentLayer][currentButton].IsPressed == true {
-					buttonHistory.layerAlias = layerAlias
-					buttonHistory.buttonAlias = buttonAlias
-					memory.ButtonMemory[currentLayer][currentButton].Mutex.Lock()
-					memory.ButtonMemory[currentLayer][currentButton].IsPressed = false
-					memory.ButtonMemory[currentLayer][currentButton].Mutex.Unlock()
-					isUpdateRequired = true
-				}
-			}
-		}
 	}
-	if isUpdateRequired {
-		UpdateDisplay()
-	}
-}
-
-/*
-getButtonClickIdentifier allows you to obtain the layer alias and the button
-alias for the text cell currently under the mouse cursor. This is useful
-for determining which button the user has clicked (if any).
-*/
-func getButtonClickIdentifier(mouseXLocation int, mouseYLocation int) (string, string) {
-	buttonAlias := ""
-	layerAlias := ""
-	layerEntry := commonResource.screenLayer
-	mouseYLocationOnLayer := mouseYLocation - layerEntry.ScreenYLocation
-	mouseXLocationOnLayer := mouseXLocation - layerEntry.ScreenXLocation
-	if mouseYLocationOnLayer >= 0 && mouseXLocationOnLayer >= 0 &&
-		mouseYLocationOnLayer < len(layerEntry.CharacterMemory) && mouseXLocationOnLayer < len(layerEntry.CharacterMemory[0]) {
-		characterEntry := layerEntry.CharacterMemory[mouseYLocation-layerEntry.ScreenYLocation][mouseXLocation-layerEntry.ScreenXLocation]
-		if characterEntry.AttributeEntry.CellType == constants.CellTypeButton {
-			buttonAlias = characterEntry.AttributeEntry.CellAlias
-			layerAlias = characterEntry.LayerAlias
-		}
-	}
-	return layerAlias, buttonAlias
+	return isUpdateRequired
 }

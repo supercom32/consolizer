@@ -8,7 +8,6 @@ func InitializeTextStyleMemory() {
 	TextStyleMemory = make(map[string]*TextStyleEntryType)
 }
 
-// AddTextStyle asdadsdas
 func AddTextStyle(textStyleAlias string, attributeEntry TextStyleEntryType) {
 	TextStyleMemory[textStyleAlias] = &attributeEntry
 }
@@ -36,4 +35,11 @@ func GetTextStyleAsAttributeEntry(textStyleAlias string) AttributeEntryType {
 // DeleteTextStyle asdasds
 func DeleteTextStyle(textStyleAlias string) {
 	delete(TextStyleMemory, textStyleAlias)
+}
+
+func IsTextStyleExists(textStyleAlias string) bool {
+	if _, isExist := TextFieldMemory[textStyleAlias]; isExist {
+		return true
+	}
+	return false
 }
