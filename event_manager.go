@@ -2,7 +2,7 @@ package consolizer
 
 import (
 	"fmt"
-	"github.com/gdamore/tcell"
+	"github.com/gdamore/tcell/v2"
 	"github.com/supercom32/consolizer/constants"
 	"github.com/supercom32/consolizer/internal/memory"
 	"strings"
@@ -48,12 +48,17 @@ func updateEventQueues() {
 		if updateKeyboardEventSelector(keystroke) {
 			isScreenUpdateRequired = true
 		}
+		if updateKeyboardEventScrollBar(keystroke) {
+			isScreenUpdateRequired = true
+		}
 		if isScreenUpdateRequired == true {
 			UpdateDisplay()
 		} else {
 			// Only add keystrokes to the buffer if not already consumed by other controls.
+			//fmt.Print(keystroke)
 			memory.KeyboardMemory.AddKeystrokeToKeyboardBuffer(keystroke)
 		}
+
 	case *tcell.EventMouse:
 		mouseXLocation, mouseYLocation := event.Position()
 		var mouseButtonNumber uint
@@ -87,6 +92,9 @@ func updateEventQueues() {
 			isScreenUpdateRequired = true
 		}
 		if updateMouseEventSelector() {
+			isScreenUpdateRequired =  true
+		}
+		if updateMouseEventScrollBar() {
 			isScreenUpdateRequired =  true
 		}
 		if isScreenUpdateRequired {

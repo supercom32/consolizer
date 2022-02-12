@@ -18,7 +18,16 @@ type TuiStyleEntryType struct {
 	LowerRightCorner             rune
 	LowerLeftCorner              rune
 	CrossConnector               rune
-	DesktopPattern               rune
+	DesktopPattern        rune
+	ScrollBarTrackPattern rune
+	ScrollBarHandle rune
+	ScrollBarUpArrow      rune
+	ScrollBarDownArrow			 rune
+	ScrollBarLeftArrow      rune
+	ScrollBarRightArrow			 rune
+	ScrollBarForegroundColor	int32
+	ScrollBarBackgroundColor	int32
+	ScrollBarHandleColor	 	int32
 	ProgressBarBackgroundPattern rune
 	ProgressBarForegroundPattern rune
 	IsSquareFont                 bool
@@ -37,8 +46,8 @@ type TuiStyleEntryType struct {
 	HighlightBackgroundColor int32
 	ButtonRaisedColor        int32
 	ButtonForegroundColor    int32
-	ButtonBackgroundColor    int32
-	MenuTextAlignment        int
+	ButtonBackgroundColor int32
+	SelectorTextAlignment int
 }
 
 func (shared TuiStyleEntryType) GetEntryAsJsonDump() string {
@@ -65,6 +74,15 @@ func NewTuiStyleEntry(existingStyleEntry ...*TuiStyleEntryType) TuiStyleEntryTyp
 		styleEntry.LowerLeftCorner = existingStyleEntry[0].LowerLeftCorner
 		styleEntry.CrossConnector = existingStyleEntry[0].CrossConnector
 		styleEntry.DesktopPattern = existingStyleEntry[0].DesktopPattern
+		styleEntry.ScrollBarTrackPattern = existingStyleEntry[0].ScrollBarTrackPattern
+		styleEntry.ScrollBarHandle = existingStyleEntry[0].ScrollBarHandle
+		styleEntry.ScrollBarUpArrow = existingStyleEntry[0].ScrollBarUpArrow
+		styleEntry.ScrollBarDownArrow = existingStyleEntry[0].ScrollBarDownArrow
+		styleEntry.ScrollBarLeftArrow = existingStyleEntry[0].ScrollBarLeftArrow
+		styleEntry.ScrollBarRightArrow = existingStyleEntry[0].ScrollBarRightArrow
+		styleEntry.ScrollBarForegroundColor = existingStyleEntry[0].ScrollBarForegroundColor
+		styleEntry.ScrollBarBackgroundColor = existingStyleEntry[0].ScrollBarBackgroundColor
+		styleEntry.ScrollBarHandleColor = existingStyleEntry[0].ScrollBarHandleColor
 		styleEntry.ProgressBarBackgroundPattern = existingStyleEntry[0].ProgressBarBackgroundPattern
 		styleEntry.ProgressBarForegroundPattern = existingStyleEntry[0].ProgressBarForegroundPattern
 		styleEntry.TextForegroundColor = existingStyleEntry[0].TextForegroundColor
@@ -84,7 +102,7 @@ func NewTuiStyleEntry(existingStyleEntry ...*TuiStyleEntryType) TuiStyleEntryTyp
 		styleEntry.IsSquareFont = existingStyleEntry[0].IsSquareFont
 		styleEntry.IsWindowFooterDrawn = existingStyleEntry[0].IsWindowFooterDrawn
 		styleEntry.IsWindowHeaderDrawn = existingStyleEntry[0].IsWindowHeaderDrawn
-		styleEntry.MenuTextAlignment = existingStyleEntry[0].MenuTextAlignment
+		styleEntry.SelectorTextAlignment = existingStyleEntry[0].SelectorTextAlignment
 	} else {
 		styleEntry.UpperLeftCorner = constants.CharULCorner
 		styleEntry.UpperRightCorner = constants.CharURCorner
@@ -98,6 +116,12 @@ func NewTuiStyleEntry(existingStyleEntry ...*TuiStyleEntryType) TuiStyleEntryTyp
 		styleEntry.LowerLeftCorner = constants.CharSingleLineLowerLeftCorner
 		styleEntry.CrossConnector = constants.CharSingleLineCross
 		styleEntry.DesktopPattern = constants.CharBlockSparce
+		styleEntry.ScrollBarTrackPattern = constants.CharBlockSparce
+		styleEntry.ScrollBarHandle = constants.CharBlockSolid
+		styleEntry.ScrollBarUpArrow = constants.CharTriangleUp
+		styleEntry.ScrollBarDownArrow = constants.CharTriangleDown
+		styleEntry.ScrollBarLeftArrow = constants.CharTriangleLeft
+		styleEntry.ScrollBarRightArrow = constants.CharTriangleRight
 		styleEntry.ProgressBarBackgroundPattern = constants.CharBlockSparce
 		styleEntry.ProgressBarForegroundPattern = constants.CharBlockSolid
 		styleEntry.TextForegroundColor = constants.AnsiColorByIndex[15]
@@ -105,6 +129,9 @@ func NewTuiStyleEntry(existingStyleEntry ...*TuiStyleEntryType) TuiStyleEntryTyp
 		styleEntry.TextLabelColor = constants.AnsiColorByIndex[15]
 		styleEntry.TextInputForegroundColor = constants.AnsiColorByIndex[15]
 		styleEntry.TextInputBackgroundColor = constants.AnsiColorByIndex[0]
+		styleEntry.ScrollBarForegroundColor = constants.AnsiColorByIndex[15]
+		styleEntry.ScrollBarBackgroundColor = constants.AnsiColorByIndex[0]
+		styleEntry.ScrollBarHandleColor = constants.AnsiColorByIndex[15]
 		styleEntry.CursorForegroundColor = constants.AnsiColorByIndex[0]
 		styleEntry.CursorBackgroundColor = constants.AnsiColorByIndex[15]
 		styleEntry.MenuForegroundColor = constants.AnsiColorByIndex[15]
@@ -117,7 +144,7 @@ func NewTuiStyleEntry(existingStyleEntry ...*TuiStyleEntryType) TuiStyleEntryTyp
 		styleEntry.IsSquareFont = false
 		styleEntry.IsWindowFooterDrawn = false
 		styleEntry.IsWindowHeaderDrawn = false
-		styleEntry.MenuTextAlignment = constants.LeftAligned
+		styleEntry.SelectorTextAlignment = constants.AlignmentLeft
 	}
 	return styleEntry
 }

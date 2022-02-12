@@ -19,6 +19,10 @@ const (
 	CharDiamond                    = '\u2666'
 	CharSpades                     = '\u2660'
 	CharDot                        = '\u2022'
+	CharTriangleUp				   = '\u25B4'
+	CharTriangleDown			   = '\u25BE'
+	CharTriangleLeft			   = '\u25C2'
+	CharTriangleRight			   = '\u25B8'
 	CharArrowUp                    = '\u2191'
 	CharArrowDown                  = '\u2193'
 	CharArrowLeft                  = '\u2190'
@@ -112,17 +116,26 @@ const NullCellType = -1
 const TransformContrast = 0
 const TransformTransparency = 0
 
-const LeftAligned = 0
-const RightAligned = 1
-const CenterAligned = 2
+const AlignmentLeft = 0
+const AlignmentRight = 1
+const AlignmentCenter = 2
+const AlignmentNoPadding = 3
 const FrameStyleNormal = 0
 const FrameStyleRaised = 1
 const FrameStyleSunken = 2
+
 const CellTypeButton = 1
 const CellTypeTextField = 2
 const CellTypeFrameTop = 3
-const CellTypeMenuItem = 4
+const CellTypeSelectiorItem = 4
+const CellTypeScrollBar = 5
+
+const CellControlIdUpScrollArrow = -1
+const CellControlIdDownScrollArrow = -2
+const CellControlIdScrollBarHandle = -3
+
 const VirtualFileSystemZip = 1
 const VirtualFileSystemRar = 2
 const EventStateDragAndDrop = 1
+const EventStateDragAndDropScrollBar = 2
 const NullControlType = 0

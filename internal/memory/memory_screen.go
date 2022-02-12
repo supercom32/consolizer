@@ -18,7 +18,7 @@ func AddLayer(layerAlias string, xLocation int, yLocation int, width int, height
 		panic(fmt.Sprintf("The layer '%s' could not be created since a Width of '%d' was specified!", layerAlias, width))
 	}
 	if height <= 0 {
-		panic(fmt.Sprintf("The layer '%s' could not be created since a Height of '%d' was specified!", layerAlias, height))
+		panic(fmt.Sprintf("The layer '%s' could not be created since a Length of '%d' was specified!", layerAlias, height))
 	}
 	layerEntry := NewLayerEntry(layerAlias, parentAlias, width, height)
 	layerEntry.LayerAlias = layerAlias

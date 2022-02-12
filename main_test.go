@@ -8,12 +8,59 @@ import (
 )
 
 func TestMainStub(test *testing.T) {
+	//testScrollBars()
 	testSelector()
 	//testTextField()
 	//testWindowMovement()
 	//testButtonPressAction()
 	RestoreTerminalSettings()
 }
+func testScrollBars() {
+	commonResource.isDebugEnabled = false
+	layerAlias1 := "Layer1"
+	layerAlias2 := "Layer2"
+	InitializeTerminal(80, 40)
+	AddLayer(layerAlias1, 0, 0, 80, 40, 1, "")
+	AddLayer(layerAlias2, 20, 15, 40, 20, 1, layerAlias1)
+	Layer(layerAlias1)
+	FillLayer(layerAlias1, "#")
+	FillLayer(layerAlias2, "@")
+	styleEntry := memory.NewTuiStyleEntry()
+	styleEntry.SelectorTextAlignment = 0
+	selectionEntry := memory.NewSelectionEntry()
+	selectionEntry.Add("1", "OK")
+	selectionEntry.Add("2", "CANCEL")
+	selectionEntry.Add("3", "EXIT")
+	selectionEntry.Add("4", "GOTO")
+	selectionEntry.Add("5", "RUN")
+	selectionEntry.Add("6", "DELETE")
+	s1 := AddScrollBar(layerAlias1, "scrollBar1", styleEntry, 2, 2, 8,80,0, false)
+	s2 := AddScrollBar(layerAlias1, "scrollBar2", styleEntry, 10, 5, 8,8,4, true)
+	s1.setScrollValue(4)
+	s2.setHandlePosition(4)
+	for {
+		UpdateDisplay()
+		//x, y, _, _ := memory.GetMouseStatus()
+		//a := getCellInformationUnderMouseCursor(x, y)
+		LocateLayer(layerAlias1, 10, 0)
+		PrintLayer(layerAlias1, "  ")
+		LocateLayer(layerAlias1, 10, 0)
+		PrintLayer(layerAlias1, strconv.Itoa(s1.getScrollValue()))
+		LocateLayer(layerAlias1, 10, 1)
+		PrintLayer(layerAlias1, "  ")
+		LocateLayer(layerAlias1, 10, 1)
+		PrintLayer(layerAlias1, strconv.Itoa(s2.getScrollValue()))
+		key := Inkey()
+		//fmt.Print(key)
+		if key == "q" {
+			break
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+	DeleteAllLayers()
+	RestoreTerminalSettings()
+}
+
 func testSelector() {
 	commonResource.isDebugEnabled = false
 	layerAlias1 := "Layer1"
@@ -25,6 +72,7 @@ func testSelector() {
 	FillLayer(layerAlias1, "#")
 	FillLayer(layerAlias2, "@")
 	styleEntry := memory.NewTuiStyleEntry()
+	styleEntry.SelectorTextAlignment = 0
 	selectionEntry := memory.NewSelectionEntry()
 	selectionEntry.Add("1", "OK")
 	selectionEntry.Add("2", "CANCEL")
@@ -32,7 +80,7 @@ func testSelector() {
 	selectionEntry.Add("4", "GOTO")
 	selectionEntry.Add("5", "RUN")
 	selectionEntry.Add("6", "DELETE")
-	menuBarInstance := AddSelector(layerAlias1, "menuBar", styleEntry, selectionEntry, 0, 10, 7, 4, 0)
+	menuBarInstance := AddSelector(layerAlias1, "menuBar", styleEntry, selectionEntry, 0, 10, 3, 7, 2, 0, -1)
 	LocateLayer(layerAlias1, 3, 3)
 	PrintLayer(layerAlias1, menuBarInstance.layerAlias)
 	for i := 0; i < 200; i++ {

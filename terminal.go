@@ -2,7 +2,7 @@ package consolizer
 
 import (
 	"fmt"
-	"github.com/gdamore/tcell"
+	"github.com/gdamore/tcell/v2"
 	"github.com/supercom32/consolizer/constants"
 	"github.com/supercom32/consolizer/internal/math"
 	"github.com/supercom32/consolizer/internal/memory"
@@ -50,7 +50,8 @@ func InitializeTerminal(width int, height int) {
 	memory.InitializeImageMemory()
 	memory.InitializeTextStyleMemory()
 	memory.InitializeTimerMemory()
-	memory.InitializeMenuBarMemory()
+	memory.InitializeSelectorMemory()
+	memory.InitializeScrollBarMemory()
 	commonResource.terminalWidth = width
 	commonResource.terminalHeight = height
 	commonResource.debugDirectory = "/tmp/"
@@ -106,6 +107,9 @@ is finished using consolizer so that the users terminal environment is not
 left in a bad state.
 */
 func RestoreTerminalSettings() {
+	if commonResource.screen == nil {
+		return
+	}
 	commonResource.screen.Fini()
 }
 
@@ -839,6 +843,7 @@ func renderControls(currentLayerEntry memory.LayerEntryType) {
 	drawButtonsOnLayer(currentLayerEntry)
 	drawTextFieldOnLayer(currentLayerEntry)
 	drawSelectorsOnLayer(currentLayerEntry)
+	drawScrollBarsOnLayer(currentLayerEntry)
 }
 
 /*
@@ -885,7 +890,7 @@ func overlayLayers(sourceLayerEntry *memory.LayerEntryType, targetLayerEntry *me
 			sourceWidthToCopy = sourceLayerEntry.Width
 		}
 	}
-	// Calculate how much of the source Height to copy.
+	// Calculate how much of the source Length to copy.
 	sourceHeightToCopy = sourceLayerEntry.Height - int(math.GetAbsoluteValueAsFloat64(sourceLayerEntry.ScreenYLocation))
 	if sourceLayerEntry.ScreenYLocation < 0 {
 		if sourceHeightToCopy > targetLayerEntry.Height {

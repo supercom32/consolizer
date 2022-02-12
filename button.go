@@ -149,7 +149,7 @@ func updateButtonStateMouse() bool {
 		// only if required.
 		if  memory.ButtonMemory[layerAlias][buttonAlias].IsPressed == true {
 			memory.ButtonMemory[layerAlias][buttonAlias].Mutex.Lock()
-			//memory.ButtonMemory[layerAlias][buttonAlias].IsSelected = true
+			//memory.scrollBarMemory[layerAlias][buttonAlias].IsSelected = true
 			memory.ButtonMemory[layerAlias][buttonAlias].IsPressed = false
 			memory.ButtonMemory[layerAlias][buttonAlias].Mutex.Unlock()
 			isUpdateRequired = true
@@ -159,7 +159,7 @@ func updateButtonStateMouse() bool {
 		// if required.
 		if  memory.ButtonMemory[layerAlias][buttonAlias].IsPressed == false {
 			memory.ButtonMemory[layerAlias][buttonAlias].Mutex.Lock()
-			//memory.ButtonMemory[layerAlias][buttonAlias].IsSelected = true
+			//memory.scrollBarMemory[layerAlias][buttonAlias].IsSelected = true
 			memory.ButtonMemory[layerAlias][buttonAlias].IsPressed = true
 			memory.ButtonMemory[layerAlias][buttonAlias].Mutex.Unlock()
 			isUpdateRequired = true

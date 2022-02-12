@@ -21,11 +21,18 @@ func (shared *selectorInstanceType) GetSelected() string {
 	return menuEntry.SelectionEntry.SelectionAlias[value]
 }
 
+func (shared *selectorInstanceType) setViewport(viewportPosition int) {
+	validatorMenu(shared.layerAlias, shared.selectorAlias)
+	menuEntry := memory.SelectorMemory[shared.layerAlias][shared.selectorAlias]
+	menuEntry.ViewportPosition = viewportPosition
+}
 
-func AddSelector(layerAlias string, selectorAlias string, styleEntry memory.TuiStyleEntryType, selectionEntry memory.SelectionEntryType, xLocation int, yLocation int, itemWidth int, numberOfColumns int, selectedItem int) selectorInstanceType {
+
+// TODO: Protect against viewport out of range errors.
+func AddSelector(layerAlias string, selectorAlias string, styleEntry memory.TuiStyleEntryType, selectionEntry memory.SelectionEntryType, xLocation int, yLocation int, selectorHeight int, itemWidth int, numberOfColumns int, viewportPosition int, selectedItem int) selectorInstanceType {
 	validateLayerLocationByLayerAlias(layerAlias, xLocation, yLocation)
 	// TODO: Add verification to ensure no item can be 0 length/number.
-	memory.AddSelector(layerAlias, selectorAlias, styleEntry, selectionEntry, xLocation, yLocation, itemWidth, numberOfColumns, selectedItem)
+	memory.AddSelector(layerAlias, selectorAlias, styleEntry, selectionEntry, xLocation, yLocation, selectorHeight, itemWidth, numberOfColumns, viewportPosition, selectedItem)
 	var selectorInstance selectorInstanceType
 	selectorInstance.layerAlias = layerAlias
 	selectorInstance.selectorAlias = selectorAlias
@@ -39,7 +46,7 @@ In addition, the following information should be noted:
 - If the location to draw a menu item falls outside the range of the text
 layer, then only the visible portion of your menu item will be drawn.
 */
-func DrawSelector(selectorAlias string, layerEntry *memory.LayerEntryType, styleEntry memory.TuiStyleEntryType, selectionEntry memory.SelectionEntryType, xLocation int, yLocation int, itemWidth int, numberOfColumns int, itemHighlighted int) {
+func DrawSelector(selectorAlias string, layerEntry *memory.LayerEntryType, styleEntry memory.TuiStyleEntryType, selectionEntry memory.SelectionEntryType, xLocation int, yLocation int, selectorHeight int, itemWidth int, numberOfColumns int, viewportPosition int, itemHighlighted int) {
 	menuAttributeEntry := memory.NewAttributeEntry()
 	menuAttributeEntry.ForegroundColor = styleEntry.MenuForegroundColor
 	menuAttributeEntry.BackgroundColor = styleEntry.MenuBackgroundColor
@@ -47,24 +54,29 @@ func DrawSelector(selectorAlias string, layerEntry *memory.LayerEntryType, style
 	highlightAttributeEntry.ForegroundColor = styleEntry.HighlightForegroundColor
 	highlightAttributeEntry.BackgroundColor = styleEntry.HighlightBackgroundColor
 	currentYLocation := yLocation
-	currentMenuItemIndex := 0
+	currentMenuItemIndex := viewportPosition
+	currentXOffset := 0
 	currentColumn := 0
-	for currentMenuItemIndex < len(selectionEntry.SelectionValue) {
+	currentRow :=0
+	for currentMenuItemIndex < len(selectionEntry.SelectionValue) && currentRow < selectorHeight {
 		attributeEntry := menuAttributeEntry
 		if currentMenuItemIndex == itemHighlighted {
 			attributeEntry = highlightAttributeEntry
 		}
-		menuItemName := stringformat.GetFormattedString(selectionEntry.SelectionValue[currentMenuItemIndex], itemWidth, styleEntry.MenuTextAlignment)
+		menuItemName := stringformat.GetFormattedString(selectionEntry.SelectionValue[currentMenuItemIndex], itemWidth, styleEntry.SelectorTextAlignment)
 		arrayOfRunes := stringformat.GetRunesFromString(menuItemName)
 		attributeEntry.CellControlId = currentMenuItemIndex
 		attributeEntry.CellControlAlias = selectorAlias
-		attributeEntry.CellType = constants.CellTypeMenuItem
-		printLayer(layerEntry, attributeEntry, xLocation + (currentColumn * itemWidth), currentYLocation, arrayOfRunes)
+		attributeEntry.CellType = constants.CellTypeSelectiorItem
+		printLayer(layerEntry, attributeEntry, xLocation + (currentXOffset), currentYLocation, arrayOfRunes)
 		currentMenuItemIndex++
+		currentXOffset = currentXOffset + len(arrayOfRunes)
 		currentColumn++
 		if currentColumn >= numberOfColumns {
+			currentXOffset = 0
 			currentColumn = 0
 			currentYLocation++
+			currentRow++
 		}
 	}
 }
@@ -73,13 +85,13 @@ func drawSelectorsOnLayer(layerEntry memory.LayerEntryType) {
 	layerAlias := layerEntry.LayerAlias
 	for currentKey := range memory.SelectorMemory[layerAlias] {
 		selectorEntry := memory.SelectorMemory[layerAlias][currentKey]
-		DrawSelector(currentKey, &layerEntry, selectorEntry.StyleEntry, selectorEntry.SelectionEntry, selectorEntry.XLocation, selectorEntry.YLocation, selectorEntry.ItemWidth, selectorEntry.NumberOfColumns, selectorEntry.ItemHighlighted)
+		DrawSelector(currentKey, &layerEntry, selectorEntry.StyleEntry, selectorEntry.SelectionEntry, selectorEntry.XLocation, selectorEntry.YLocation, selectorEntry.SelectorHeight, selectorEntry.ItemWidth, selectorEntry.NumberOfColumns, selectorEntry.ViewportPosition, selectorEntry.ItemHighlighted)
 	}
 }
 
 func updateKeyboardEventSelector(keystroke string) bool {
-	isScreenUpdateRequired := true
-	if eventStateMemory.focusedControlType != constants.CellTypeMenuItem {
+	isScreenUpdateRequired := false
+	if eventStateMemory.focusedControlType != constants.CellTypeSelectiorItem {
 		return isScreenUpdateRequired
 	}
 	selectorEntry := memory.GetSelector(eventStateMemory.focusedLayerAlias, eventStateMemory.focusedControlAlias)
@@ -128,32 +140,32 @@ func updateMouseEventSelector() bool {
 	var characterEntry memory.CharacterEntryType
 	mouseXLocation, mouseYLocation, buttonPressed, _ := memory.GetMouseStatus()
 	characterEntry = getCellInformationUnderMouseCursor(mouseXLocation, mouseYLocation)
-	if characterEntry.AttributeEntry.CellType == constants.CellTypeMenuItem {
+	if characterEntry.AttributeEntry.CellType == constants.CellTypeSelectiorItem {
 		if buttonPressed != 0 {
 			selectorEntry := memory.GetSelector(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias)
 			selectorEntry.ItemHighlighted = characterEntry.AttributeEntry.CellControlId
 			selectorEntry.ItemSelected = characterEntry.AttributeEntry.CellControlId
 			eventStateMemory.focusedControlAlias = characterEntry.AttributeEntry.CellControlAlias
 			eventStateMemory.focusedLayerAlias = characterEntry.LayerAlias
-			eventStateMemory.focusedControlType = constants.CellTypeMenuItem
+			eventStateMemory.focusedControlType = constants.CellTypeSelectiorItem
 			eventStateMemory.previousHighlightedLayerAlias = characterEntry.LayerAlias
 			eventStateMemory.previousHighlightedControlAlias = characterEntry.AttributeEntry.CellControlAlias
-			eventStateMemory.previousHighlightedControlType = constants.CellTypeMenuItem
+			eventStateMemory.previousHighlightedControlType = constants.CellTypeSelectiorItem
 			isScreenUpdateRequired = true
 		} else {
 			selectorEntry := memory.GetSelector(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias)
 			selectorEntry.ItemHighlighted = characterEntry.AttributeEntry.CellControlId
 			eventStateMemory.focusedControlAlias = characterEntry.AttributeEntry.CellControlAlias
 			eventStateMemory.focusedLayerAlias = characterEntry.LayerAlias
-			eventStateMemory.focusedControlType = constants.CellTypeMenuItem
+			eventStateMemory.focusedControlType = constants.CellTypeSelectiorItem
 			eventStateMemory.previousHighlightedLayerAlias = characterEntry.LayerAlias
 			eventStateMemory.previousHighlightedControlAlias = characterEntry.AttributeEntry.CellControlAlias
-			eventStateMemory.previousHighlightedControlType = constants.CellTypeMenuItem
+			eventStateMemory.previousHighlightedControlType = constants.CellTypeSelectiorItem
 			isScreenUpdateRequired = true
 		}
 	} else {
-		if eventStateMemory.previousHighlightedControlType == constants.CellTypeMenuItem && memory.IsSelectorExists(eventStateMemory.previousHighlightedLayerAlias, eventStateMemory.previousHighlightedControlAlias) {
-			selectorEntry := memory.GetSelector(characterEntry.LayerAlias, eventStateMemory.previousHighlightedControlAlias)
+		if eventStateMemory.previousHighlightedControlType == constants.CellTypeSelectiorItem && memory.IsSelectorExists(eventStateMemory.previousHighlightedLayerAlias, eventStateMemory.previousHighlightedControlAlias) {
+			selectorEntry := memory.GetSelector(eventStateMemory.previousHighlightedLayerAlias, eventStateMemory.previousHighlightedControlAlias)
 			selectorEntry.ItemHighlighted = constants.NullItemSelection
 			eventStateMemory.focusedControlAlias = ""
 			eventStateMemory.focusedLayerAlias = ""

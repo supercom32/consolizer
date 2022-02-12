@@ -4,20 +4,20 @@ import (
 	"encoding/json"
 )
 
-type SelectorEntryType struct {
+type DropdownEntryType struct {
 	StyleEntry TuiStyleEntryType
 	SelectionEntry SelectionEntryType
 	XLocation int
 	YLocation  int
 	SelectorHeight int
 	ItemWidth        int
-	NumberOfColumns  int
 	ViewportPosition int
 	ItemHighlighted  int
 	ItemSelected int
+	IsTrayOpen bool
 }
 
-func (shared SelectorEntryType) MarshalJSON() ([]byte, error) {
+func (shared DropdownEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
 		StyleEntry TuiStyleEntryType
 		SelectionEntry SelectionEntryType
@@ -28,16 +28,17 @@ func (shared SelectorEntryType) MarshalJSON() ([]byte, error) {
 		ViewportPosition int
 		ItemHighlighted int
 		ItemSelected int
+		IsTrayOpen bool
 	}{
 		StyleEntry: shared.StyleEntry,
 		SelectionEntry: shared.SelectionEntry,
 		XLocation: shared.XLocation,
 		YLocation: shared.YLocation,
 		ItemWidth: shared.ItemWidth,
-		NumberOfColumns: shared.NumberOfColumns,
 		ViewportPosition: shared.ViewportPosition,
 		ItemHighlighted: shared.ItemHighlighted,
 		ItemSelected: shared.ItemSelected,
+		IsTrayOpen: shared.IsTrayOpen,
 	})
 	if err != nil {
 		return nil, err
@@ -45,7 +46,7 @@ func (shared SelectorEntryType) MarshalJSON() ([]byte, error) {
 	return j, nil
 }
 
-func (shared SelectorEntryType) GetEntryAsJsonDump() string {
+func (shared DropdownEntryType) GetEntryAsJsonDump() string {
 	j, err := json.Marshal(shared)
 	if err != nil {
 		panic(err)
@@ -53,18 +54,18 @@ func (shared SelectorEntryType) GetEntryAsJsonDump() string {
 	return string(j)
 }
 
-func NewSelectorEntry(existingSelectorEntry ...*SelectorEntryType) SelectorEntryType {
-	var menuBarEntry SelectorEntryType
+func NewDropdownEntry(existingSelectorEntry ...*DropdownEntryType) DropdownEntryType {
+	var menuBarEntry DropdownEntryType
 	if existingSelectorEntry != nil {
 		menuBarEntry.StyleEntry = existingSelectorEntry[0].StyleEntry
 		menuBarEntry.SelectionEntry = existingSelectorEntry[0].SelectionEntry
 		menuBarEntry.XLocation = existingSelectorEntry[0].XLocation
 		menuBarEntry.YLocation = existingSelectorEntry[0].YLocation
 		menuBarEntry.ItemWidth = existingSelectorEntry[0].ItemWidth
-		menuBarEntry.NumberOfColumns = existingSelectorEntry[0].NumberOfColumns
 		menuBarEntry.ViewportPosition = existingSelectorEntry[0].ViewportPosition
 		menuBarEntry.ItemHighlighted = existingSelectorEntry[0].ItemHighlighted
 		menuBarEntry.ItemSelected = existingSelectorEntry[0].ItemSelected
+		menuBarEntry.IsTrayOpen = existingSelectorEntry[0].IsTrayOpen
 	}
 	return menuBarEntry
 }

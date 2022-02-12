@@ -691,6 +691,47 @@ func drawShadow(layerEntry *memory.LayerEntryType, attributeEntry memory.Attribu
 	fillArea(layerEntry, localAttributeEntry, "", xLocation, yLocation, width, height)
 }
 
+func DrawScrollBar(layerAlias string, scrollBarAlias string, styleEntry memory.TuiStyleEntryType, xLocation int, yLocation int, height int, handlePosition int, isHorizontal bool) {
+	layerEntry := memory.GetLayer(layerAlias)
+	drawScrollBar(layerEntry, scrollBarAlias, styleEntry, xLocation, yLocation, height, handlePosition, isHorizontal)
+}
+
+func drawScrollBar(layerEntry *memory.LayerEntryType, scrollBarAlias string, styleEntry memory.TuiStyleEntryType, xLocation int, yLocation int, length int, handlePosition int, isHorizontal bool) {
+	attributeEntry := memory.NewAttributeEntry()
+	attributeEntry.CellType = constants.CellTypeScrollBar
+	attributeEntry.CellControlAlias = scrollBarAlias
+	attributeEntry.ForegroundColor = styleEntry.ScrollBarForegroundColor
+	attributeEntry.BackgroundColor = styleEntry.ScrollBarBackgroundColor
+	//numberOfScrollSegments := length - 2
+	//segmentPosition := math.RoundToEven(float64(currentValue) / float64(numberOfTicks) * float64(numberOfScrollSegments))
+	if isHorizontal {
+		for currentXLocation := 1; currentXLocation <= length; currentXLocation++ {
+			attributeEntry.CellControlId = currentXLocation - 1
+			printLayer(layerEntry, attributeEntry, xLocation + currentXLocation, yLocation, []rune{styleEntry.ScrollBarTrackPattern})
+		}
+		attributeEntry.CellControlId = constants.CellControlIdUpScrollArrow
+		printLayer(layerEntry, attributeEntry, xLocation, yLocation, []rune{styleEntry.ScrollBarLeftArrow})
+		attributeEntry.CellControlId = constants.CellControlIdDownScrollArrow
+		printLayer(layerEntry, attributeEntry, xLocation + length + 1, yLocation, []rune{styleEntry.ScrollBarRightArrow})
+		attributeEntry.ForegroundColor = styleEntry.ScrollBarHandleColor
+		attributeEntry.CellControlId = constants.CellControlIdScrollBarHandle
+		// Here we add 1 to the xLocation since handle bars cannot be drawn on scroll arrows.
+		printLayer(layerEntry, attributeEntry, xLocation + 1 + handlePosition, yLocation, []rune{styleEntry.ScrollBarHandle})
+	} else {
+		for currentYLocation := 1; currentYLocation <= length; currentYLocation++ {
+			attributeEntry.CellControlId = currentYLocation - 1 // make all Ids 0 based.
+			printLayer(layerEntry, attributeEntry, xLocation, yLocation + currentYLocation, []rune{styleEntry.ScrollBarTrackPattern})
+		}
+		attributeEntry.CellControlId = constants.CellControlIdUpScrollArrow
+		printLayer(layerEntry, attributeEntry, xLocation, yLocation, []rune{styleEntry.ScrollBarUpArrow})
+		attributeEntry.CellControlId = constants.CellControlIdDownScrollArrow
+		printLayer(layerEntry, attributeEntry, xLocation, yLocation + length + 1, []rune{styleEntry.ScrollBarDownArrow})
+		attributeEntry.ForegroundColor = styleEntry.ScrollBarHandleColor
+		attributeEntry.CellControlId = constants.CellControlIdScrollBarHandle
+		printLayer(layerEntry, attributeEntry, xLocation, yLocation + 1 + handlePosition, []rune{styleEntry.ScrollBarHandle})
+	}
+}
+
 /*
 FillArea allows you to fill an area of a given text layer with characters of
 your choice. If you wish to fill the area with repeating text, simply provide

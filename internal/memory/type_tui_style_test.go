@@ -39,7 +39,7 @@ func TestStyleTypeCreation(test *testing.T) {
 	firstStyleEntry.IsSquareFont = true
 	firstStyleEntry.IsWindowFooterDrawn = true
 	firstStyleEntry.IsWindowHeaderDrawn = true
-	firstStyleEntry.MenuTextAlignment = constants.LeftAligned
+	firstStyleEntry.SelectorTextAlignment = constants.AlignmentLeft
 	secondStyleEntry := NewTuiStyleEntry()
 	firstResult := recast.GetArrayOfInterfaces(firstStyleEntry)
 	secondResult := recast.GetArrayOfInterfaces(secondStyleEntry)

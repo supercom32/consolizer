@@ -1,17 +1,17 @@
 package stringformat
 
 import (
-	"github.com/supercom32/consolizer/internal/recast"
 	"encoding/base64"
 	"fmt"
+	"github.com/supercom32/consolizer/constants"
+	"github.com/supercom32/consolizer/internal/recast"
 	"golang.org/x/text/width"
 )
 
 const maxLen = 4096
 const nullRune = '\x00'
 const leftAligned = 0
-const rightAligned = 1
-const centerAligned = 2
+
 
 func IsRuneCharacterWide(character rune) bool {
 	isCharacterWide := false
@@ -91,14 +91,18 @@ func GetFormattedString(stringToFormat string, lengthOfString int, position int)
 	}
 	fullStringPadding := GetFilledString(paddingSize, " ")
 	halfStringPadding := GetFilledString(paddingSize/2, " ")
-	if position == rightAligned {
+	if position == constants.AlignmentRight {
 		formattedArrayOfRunes = append(GetRunesFromString(fullStringPadding), arrayOfRunes...)
-	} else if position == centerAligned {
+	} else if position == constants.AlignmentCenter {
 		formattedArrayOfRunes = append(GetRunesFromString(halfStringPadding), arrayOfRunes...)
 		formattedArrayOfRunes = append(formattedArrayOfRunes, GetRunesFromString(halfStringPadding)...)
 		if len(formattedArrayOfRunes) < lengthOfString {
 			formattedArrayOfRunes = append(formattedArrayOfRunes, ' ')
 		}
+	} else if position == constants.AlignmentNoPadding {
+		formattedArrayOfRunes = append(formattedArrayOfRunes, ' ')
+		formattedArrayOfRunes = append(formattedArrayOfRunes, arrayOfRunes...)
+		formattedArrayOfRunes = append(formattedArrayOfRunes, ' ')
 	} else {
 		formattedArrayOfRunes = append(arrayOfRunes, GetRunesFromString(fullStringPadding)...)
 	}

@@ -88,7 +88,7 @@ func TestScreenLayerInvalidHeight(test *testing.T) {
 	layerParentAlias := ""
 	defer func() {
 		if r := recover(); r == nil {
-			test.Errorf("Creating a layer with an invalid Height should have thrown a panic!")
+			test.Errorf("Creating a layer with an invalid Length should have thrown a panic!")
 		}
 	}()
 	InitializeScreenMemory()
