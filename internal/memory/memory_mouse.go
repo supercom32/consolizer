@@ -1,6 +1,8 @@
 package memory
 
-import "sync"
+import (
+	"sync"
+)
 
 type mouseMemoryType struct {
 	mutex         sync.Mutex

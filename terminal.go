@@ -402,7 +402,7 @@ should be noted:
 - If you specify a color index less than 0 or greater than 15 a panic
 will be generated to fail as fast as possible.
 */
-func GetColor(colorIndex int) int32 {
+func GetColor(colorIndex int) constants.ColorType {
 	validateColorIndex(colorIndex)
 	return constants.AnsiColorByIndex[colorIndex]
 }
@@ -414,9 +414,9 @@ blue index values provided. In addition, the following information should be not
 - If you specify a color channel index less than 0 or greater than 255 a panic
 will be generated to fail as fast as possible.
 */
-func GetRGBColor(redColorIndex int32, greenColorIndex int32, blueColorIndex int32) int32 {
+func GetRGBColor(redColorIndex int32, greenColorIndex int32, blueColorIndex int32) constants.ColorType {
 	validateRGBColorIndex(redColorIndex, greenColorIndex, blueColorIndex)
-	return int32(tcell.NewRGBColor(redColorIndex, greenColorIndex, blueColorIndex))
+	return constants.ColorType(tcell.NewRGBColor(redColorIndex, greenColorIndex, blueColorIndex))
 }
 
 /*
@@ -474,7 +474,7 @@ colorLayer24Bit allows you to color a layer using a 24-bit color expressed as
 an int32. This is useful for internal methods that already have a 24-bit color
 and do not require to compute it again.
 */
-func colorLayer24Bit(layerAlias string, foregroundColor int32, backgroundColor int32) {
+func colorLayer24Bit(layerAlias string, foregroundColor constants.ColorType, backgroundColor constants.ColorType) {
 	validateLayer(layerAlias)
 	layerEntry := memory.GetLayer(layerAlias)
 	layerEntry.DefaultAttribute.ForegroundColor = foregroundColor

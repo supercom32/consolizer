@@ -25,28 +25,28 @@ type TuiStyleEntryType struct {
 	ScrollBarDownArrow			 rune
 	ScrollBarLeftArrow      rune
 	ScrollBarRightArrow			 rune
-	ScrollBarForegroundColor	int32
-	ScrollBarBackgroundColor	int32
-	ScrollBarHandleColor	 	int32
+	ScrollBarForegroundColor	constants.ColorType
+	ScrollBarBackgroundColor	constants.ColorType
+	ScrollBarHandleColor	 	constants.ColorType
 	ProgressBarBackgroundPattern rune
 	ProgressBarForegroundPattern rune
 	IsSquareFont                 bool
 	IsWindowHeaderDrawn          bool
 	IsWindowFooterDrawn          bool
-	TextForegroundColor          int32
-	TextBackgroundColor          int32
-	TextLabelColor				 int32
-	TextInputForegroundColor     int32
-	TextInputBackgroundColor int32
-	CursorForegroundColor    int32
-	CursorBackgroundColor    int32
-	MenuForegroundColor      int32
-	MenuBackgroundColor      int32
-	HighlightForegroundColor int32
-	HighlightBackgroundColor int32
-	ButtonRaisedColor        int32
-	ButtonForegroundColor    int32
-	ButtonBackgroundColor int32
+	TextForegroundColor          constants.ColorType
+	TextBackgroundColor          constants.ColorType
+	TextLabelColor				 constants.ColorType
+	TextInputForegroundColor     constants.ColorType
+	TextInputBackgroundColor constants.ColorType
+	CursorForegroundColor    constants.ColorType
+	CursorBackgroundColor    constants.ColorType
+	MenuForegroundColor      constants.ColorType
+	MenuBackgroundColor      constants.ColorType
+	HighlightForegroundColor constants.ColorType
+	HighlightBackgroundColor constants.ColorType
+	ButtonRaisedColor        constants.ColorType
+	ButtonForegroundColor    constants.ColorType
+	ButtonBackgroundColor constants.ColorType
 	SelectorTextAlignment int
 }
 

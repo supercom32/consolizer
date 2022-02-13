@@ -2,7 +2,7 @@ package memory
 
 import (
 	"encoding/json"
-	"github.com/gdamore/tcell"
+	"github.com/gdamore/tcell/v2"
 	"github.com/supercom32/consolizer/constants"
 	"github.com/supercom32/consolizer/internal/stringformat"
 )
@@ -67,8 +67,8 @@ func (shared LayerEntryType) MarshalJSON() ([]byte, error) {
 
 func (shared LayerEntryType) GetBasicAnsiString() string {
 	var ansiString string
-	var currentForegroundColor int32
-	var currentBackgroundColor int32
+	var currentForegroundColor constants.ColorType
+	var currentBackgroundColor constants.ColorType
 	for currentRow := 0; currentRow < shared.Height; currentRow++ {
 		for currentCharacter := 0; currentCharacter < shared.Width; currentCharacter++ {
 			if shared.CharacterMemory[currentRow][currentCharacter].AttributeEntry.ForegroundColor != currentForegroundColor {
@@ -85,10 +85,10 @@ func (shared LayerEntryType) GetBasicAnsiString() string {
 				ansiString += string(shared.CharacterMemory[currentRow][currentCharacter].Character)
 			}
 		}
-		ansiString += shared.GetAnsiForegroundColorString(0)
-		ansiString += shared.GetAnsiBackgroundColorString(0)
-		currentForegroundColor = 0
-		currentBackgroundColor = 0
+		ansiString += shared.GetAnsiForegroundColorString(constants.AnsiColorByIndex[constants.ColorBlack])
+		ansiString += shared.GetAnsiBackgroundColorString(constants.AnsiColorByIndex[constants.ColorBlack])
+		currentForegroundColor = constants.AnsiColorByIndex[constants.ColorBlack]
+		currentBackgroundColor = constants.AnsiColorByIndex[constants.ColorBlack]
 		ansiString += "\n"
 	}
 	return ansiString
@@ -99,16 +99,16 @@ func (shared LayerEntryType) GetBasicAnsiStringAsBase64() string {
 	return stringformat.GetStringAsBase64((ansiString))
 }
 
-func (shared LayerEntryType) GetAnsiForegroundColorString(color int32) string {
+func (shared LayerEntryType) GetAnsiForegroundColorString(color constants.ColorType) string {
 	var ansiString string
-	redIndex, greenIndex, blueIndex := shared.GetRGBColorComponents((color))
+	redIndex, greenIndex, blueIndex := shared.GetRGBColorComponents(color)
 	ansiString = "\u001b[38;2;" + stringformat.GetIntAsString(redIndex) + ";" + stringformat.GetIntAsString(greenIndex) + ";" + stringformat.GetIntAsString(blueIndex)+"m"
 	return ansiString
 }
 
-func (shared LayerEntryType) GetAnsiBackgroundColorString(color int32) string {
+func (shared LayerEntryType) GetAnsiBackgroundColorString(color constants.ColorType) string {
 	var ansiString string
-	redIndex, greenIndex, blueIndex := shared.GetRGBColorComponents((color))
+	redIndex, greenIndex, blueIndex := shared.GetRGBColorComponents(color)
 	ansiString = "\u001b[48;2;" + stringformat.GetIntAsString(redIndex) + ";" + stringformat.GetIntAsString(greenIndex) + ";" + stringformat.GetIntAsString(blueIndex)+"m"
 	return ansiString
 }
@@ -134,7 +134,7 @@ func (shared LayerEntryType) GetEntryAsJsonDump() string {
 	return string(j)
 }
 
-func (shared LayerEntryType) GetRGBColorComponents(color int32) (int32, int32, int32) {
+func (shared LayerEntryType) GetRGBColorComponents(color constants.ColorType) (int32, int32, int32) {
 	var redColorIndex int32
 	var greenColorIndex int32
 	var blueColorIndex int32

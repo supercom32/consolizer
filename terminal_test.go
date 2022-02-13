@@ -74,7 +74,7 @@ func TestTerminalGetRGBColor(test *testing.T) {
 	inputGreenIndex := int32(0)
 	inputBlueIndex := int32(0)
 	color := GetRGBColor(inputRedIndex, inputGreenIndex, inputBlueIndex)
-	assert.Equalf(test, int32(16777216), color,"The color returned for '%d, %d, %d' was not correct. ", inputRedIndex, inputGreenIndex, inputBlueIndex)
+	assert.Equalf(test, constants.ColorType(0x300000000), color,"The color returned for '%d, %d, %d' was not correct. ", inputRedIndex, inputGreenIndex, inputBlueIndex)
 
 	redIndex, greenIndex, blueIndex := GetRGBColorComponents(color)
 	expectedValues := recast.GetArrayOfInterfaces(inputRedIndex, inputGreenIndex, inputBlueIndex)
@@ -85,7 +85,7 @@ func TestTerminalGetRGBColor(test *testing.T) {
 	inputGreenIndex = int32(50)
 	inputBlueIndex = int32(75)
 	color = GetRGBColor(inputRedIndex, inputGreenIndex, inputBlueIndex)
-	assert.Equalf(test, int32(18100811), color,"The color returned for '%d, %d, %d' was not correct. ", inputRedIndex, inputGreenIndex, inputBlueIndex)
+	assert.Equalf(test, constants.ColorType(0x30014324b), color,"The color returned for '%d, %d, %d' was not correct. ", inputRedIndex, inputGreenIndex, inputBlueIndex)
 
 	redIndex, greenIndex, blueIndex = GetRGBColorComponents(color)
 	expectedValues = recast.GetArrayOfInterfaces(inputRedIndex, inputGreenIndex, inputBlueIndex)
@@ -100,7 +100,7 @@ func TestTerminalColor(test *testing.T) {
 	AddLayer(layerAlias1, 0, 0, 20, 20, 1, "")
 	Color(3,12)
 	layerEntry := memory.GetLayer(layerAlias1)
-	expectedValues := recast.GetArrayOfInterfaces(int32(3), int32(12))
+	expectedValues := recast.GetArrayOfInterfaces(constants.AnsiColorByIndex[3], constants.AnsiColorByIndex[12])
 	obtainedValues := recast.GetArrayOfInterfaces(layerEntry.DefaultAttribute.ForegroundColor, layerEntry.DefaultAttribute.BackgroundColor)
 	assert.Equalf(test, expectedValues, obtainedValues ,"The default specified layer color does not match what was set.")
 }
@@ -119,7 +119,7 @@ func TestTerminalColorRGB(test *testing.T) {
 	AddLayer(layerAlias1, 0, 0, 20, 20, 1, "")
 	ColorRGB(foregroundRedIndex, foregroundGreenIndex, foregroundBlueIndex, backgroundRedIndex, backgroundGreenIndex, backgroundBlueIndex)
 	layerEntry := memory.GetLayer(layerAlias1)
-	expectedValues := recast.GetArrayOfInterfaces(int32(21718521), int32(24875456))
+	expectedValues := recast.GetArrayOfInterfaces(constants.ColorType(0x3004b65f9), constants.ColorType(0x3007b91c0))
 	obtainedValues := recast.GetArrayOfInterfaces(layerEntry.DefaultAttribute.ForegroundColor, layerEntry.DefaultAttribute.BackgroundColor)
 	assert.Equalf(test, expectedValues, obtainedValues ,"The default specified layer color does not match what was set.")
 }
@@ -203,7 +203,10 @@ func TestTerminalPrint(test *testing.T) {
 	layerEntry := memory.GetLayer(layerAlias1)
 	obtainedValue := layerEntry.GetBasicAnsiStringAsBase64()
 	expectedValue := "G1szODsyOzEyODsxMjg7MG0bWzQ4OzI7MTI4OzA7MTI4bVRoaXMgaXMgYSB0ZXN0IHByaW50G1szODsyOzA7MDswbRtbNDg7MjswOzA7MG0KG1szODsyOzI1NTsyNTU7MjU1bSAgICAgICAgICAgICAgICAgICAgG1szODsyOzA7MDswbRtbNDg7MjswOzA7MG0KG1szODsyOzI1NTsyNTU7MjU1bSAgICAgICAgICAgICAgICAgICAgG1szODsyOzA7MDswbRtbNDg7MjswOzA7MG0KG1szODsyOzI1NTsyNTU7MjU1bSAgICAgICAgICAgICAgICAgICAgG1szODsyOzA7MDswbRtbNDg7MjswOzA7MG0KG1szODsyOzI1NTsyNTU7MjU1bSAgICAgICAgICAgICAgICAgICAgG1szODsyOzA7MDswbRtbNDg7MjswOzA7MG0KG1szODsyOzI1NTsyNTU7MjU1bSAgICAgICAgICAgICAgICAgICAgG1szODsyOzA7MDswbRtbNDg7MjswOzA7MG0KG1szODsyOzI1NTsyNTU7MjU1bSAgICAgICAbWzM4OzI7MjU1OzA7MjU1bRtbNDg7MjswOzI1NTsyNTVtVGhpcyBpcyBhIHRlcxtbMzg7MjswOzA7MG0bWzQ4OzI7MDswOzBtChtbMzg7MjsxMjg7MTI4OzBtG1s0ODsyOzI1NTsyNTU7MjU1bVRoaXMgaXMgYSB0ZXN0IHByaW50G1szODsyOzA7MDswbRtbNDg7MjswOzA7MG0K"
-	assert.Equalf(test, expectedValue, obtainedValue ,"The printed screen does not match the master original!")
+	result := assert.Equalf(test, expectedValue, obtainedValue ,"The printed screen does not match the master original!")
+	if !result {
+		dumpScreenComparisons(expectedValue, obtainedValue)
+	}
 }
 
 func TestTerminalClear(test *testing.T) {
@@ -221,8 +224,11 @@ func TestTerminalClear(test *testing.T) {
 	assert.Equalf(test, expectedValue, obtainedValue ,"The filled layer does not match the expected result")
 	Clear()
 	obtainedValue = layerEntry.GetBasicAnsiStringAsBase64()
-	expectedValue = "G1szODsyOzI1NTsyNTU7MjU1bSAgICAgICAgICAgICAgG1szODsyOzA7MDswbRtbNDg7MjswOzA7MG0KG1szODsyOzI1NTsyNTU7MjU1bSAgICAgICAgICAgICAgG1szODsyOzA7MDswbRtbNDg7MjswOzA7MG0KG1szODsyOzI1NTsyNTU7MjU1bSAgICAgICAgICAgICAgG1szODsyOzA7MDswbRtbNDg7MjswOzA7MG0KG1szODsyOzI1NTsyNTU7MjU1bSAgICAgICAgICAgICAgG1szODsyOzA7MDswbRtbNDg7MjswOzA7MG0KG1szODsyOzI1NTsyNTU7MjU1bSAgICAgICAgICAgICAgG1szODsyOzA7MDswbRtbNDg7MjswOzA7MG0KG1szODsyOzI1NTsyNTU7MjU1bSAgICAgICAgICAgICAgG1szODsyOzA7MDswbRtbNDg7MjswOzA7MG0KG1szODsyOzI1NTsyNTU7MjU1bSAgICAgICAgICAgICAgG1szODsyOzA7MDswbRtbNDg7MjswOzA7MG0KG1szODsyOzI1NTsyNTU7MjU1bSAgICAgICAgICAgICAgG1szODsyOzA7MDswbRtbNDg7MjswOzA7MG0K"
-	assert.Equalf(test, expectedValue, obtainedValue ,"The filled layer does not match the expected result")
+	expectedValue = "G1szODsyOzI1NTsyNTU7MjU1bRtbNDg7MjswOzA7MG0gICAgICAgICAgICAgIBtbMzg7MjswOzA7MG0bWzQ4OzI7MDswOzBtChtbMzg7MjsyNTU7MjU1OzI1NW0gICAgICAgICAgICAgIBtbMzg7MjswOzA7MG0bWzQ4OzI7MDswOzBtChtbMzg7MjsyNTU7MjU1OzI1NW0gICAgICAgICAgICAgIBtbMzg7MjswOzA7MG0bWzQ4OzI7MDswOzBtChtbMzg7MjsyNTU7MjU1OzI1NW0gICAgICAgICAgICAgIBtbMzg7MjswOzA7MG0bWzQ4OzI7MDswOzBtChtbMzg7MjsyNTU7MjU1OzI1NW0gICAgICAgICAgICAgIBtbMzg7MjswOzA7MG0bWzQ4OzI7MDswOzBtChtbMzg7MjsyNTU7MjU1OzI1NW0gICAgICAgICAgICAgIBtbMzg7MjswOzA7MG0bWzQ4OzI7MDswOzBtChtbMzg7MjsyNTU7MjU1OzI1NW0gICAgICAgICAgICAgIBtbMzg7MjswOzA7MG0bWzQ4OzI7MDswOzBtChtbMzg7MjsyNTU7MjU1OzI1NW0gICAgICAgICAgICAgIBtbMzg7MjswOzA7MG0bWzQ4OzI7MDswOzBtCg=="
+	result := assert.Equalf(test, expectedValue, obtainedValue ,"The filled layer does not match the expected result")
+	if !result {
+		dumpScreenComparisons(expectedValue, obtainedValue)
+	}
 }
 
 func TestTerminalScrollCharacterMemory(test *testing.T) {

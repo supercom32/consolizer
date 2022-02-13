@@ -1,8 +1,9 @@
 package consolizer
 
 import (
-	"github.com/gdamore/tcell"
+	"github.com/gdamore/tcell/v2"
 	"github.com/stretchr/testify/assert"
+	"github.com/supercom32/consolizer/constants"
 	"github.com/supercom32/consolizer/internal/memory"
 	"github.com/supercom32/consolizer/internal/recast"
 	"testing"
@@ -10,14 +11,14 @@ import (
 
 func TestGetDarkenedCharacterEntry(test *testing.T) {
 	characterEntry := memory.NewCharacterEntry()
-	characterEntry.AttributeEntry.ForegroundColor = int32(tcell.NewRGBColor(int32(255), int32(255), int32(255)))
+	characterEntry.AttributeEntry.ForegroundColor = constants.ColorType(tcell.NewRGBColor(int32(255), int32(255), int32(255)))
 	darkenedCharacterEntry := GetDarkenedCharacterEntry(&characterEntry, 0.5)
 	redIndex, greenIndex, blueIndex := GetRGBColorComponents(darkenedCharacterEntry.AttributeEntry.ForegroundColor)
 	obtainedResult := recast.GetArrayOfInterfaces(redIndex, greenIndex, blueIndex)
 	expectedResult := recast.GetArrayOfInterfaces(int32(127), int32(127), int32(127))
 	assert.Equalf(test, obtainedResult, expectedResult, "Darkening Character entry foreground color to 50 percent failed!")
 
-	characterEntry.AttributeEntry.BackgroundColor = int32(tcell.NewRGBColor(int32(127), int32(127), int32(127)))
+	characterEntry.AttributeEntry.BackgroundColor = constants.ColorType(tcell.NewRGBColor(int32(127), int32(127), int32(127)))
 	darkenedCharacterEntry = GetDarkenedCharacterEntry(&characterEntry, 0.5)
 	redIndex, greenIndex, blueIndex = GetRGBColorComponents(darkenedCharacterEntry.AttributeEntry.BackgroundColor)
 	obtainedResult = recast.GetArrayOfInterfaces(redIndex, greenIndex, blueIndex)
@@ -26,25 +27,25 @@ func TestGetDarkenedCharacterEntry(test *testing.T) {
 }
 
 func TestColorDarkening(test *testing.T) {
-	testColor := GetDarkenedColor(int32(tcell.NewRGBColor(255,255, 255)), 0.5)
+	testColor := GetDarkenedColor(constants.ColorType(tcell.NewRGBColor(255,255, 255)), 0.5)
 	redIndex, greenIndex, blueIndex := GetRGBColorComponents(testColor)
 	obtainedResult := recast.GetArrayOfInterfaces(redIndex, greenIndex, blueIndex)
 	expectedResult := recast.GetArrayOfInterfaces(int32(127), int32(127), int32(127))
 	assert.Equalf(test, obtainedResult, expectedResult, "Darkening color to 50 percent failed!")
 
-	testColor = GetDarkenedColor(int32(tcell.NewRGBColor(127,127, 127)), 0.5)
+	testColor = GetDarkenedColor(constants.ColorType(tcell.NewRGBColor(127,127, 127)), 0.5)
 	redIndex, greenIndex, blueIndex = GetRGBColorComponents(testColor)
 	obtainedResult = recast.GetArrayOfInterfaces(redIndex, greenIndex, blueIndex)
 	expectedResult = recast.GetArrayOfInterfaces(int32(63), int32(63), int32(63))
 	assert.Equalf(test, obtainedResult, expectedResult, "Darkening color to 50 percent failed!")
 
-	testColor = GetDarkenedColor(int32(tcell.NewRGBColor(127,127, 127)), 0.0)
+	testColor = GetDarkenedColor(constants.ColorType(tcell.NewRGBColor(127,127, 127)), 0.0)
 	redIndex, greenIndex, blueIndex = GetRGBColorComponents(testColor)
 	obtainedResult = recast.GetArrayOfInterfaces(redIndex, greenIndex, blueIndex)
 	expectedResult = recast.GetArrayOfInterfaces(int32(0), int32(0), int32(0))
 	assert.Equalf(test, obtainedResult, expectedResult, "Darkening color to 0 percent failed!")
 
-	testColor = GetDarkenedColor(int32(tcell.NewRGBColor(127,127, 127)), 1.0)
+	testColor = GetDarkenedColor(constants.ColorType(tcell.NewRGBColor(127,127, 127)), 1.0)
 	redIndex, greenIndex, blueIndex = GetRGBColorComponents(testColor)
 	obtainedResult = recast.GetArrayOfInterfaces(redIndex, greenIndex, blueIndex)
 	expectedResult = recast.GetArrayOfInterfaces(int32(127), int32(127), int32(127))
@@ -52,48 +53,48 @@ func TestColorDarkening(test *testing.T) {
 }
 
 func TestColorTransitions(test *testing.T) {
-	sourceColor := int32(tcell.NewRGBColor(255, 0, 0))
-	targetColor := int32(tcell.NewRGBColor(0, 255, 255))
+	sourceColor := constants.ColorType(tcell.NewRGBColor(255, 0, 0))
+	targetColor := constants.ColorType(tcell.NewRGBColor(0, 255, 255))
 	newColor := GetTransitionedColor(sourceColor, targetColor, 0.3)
 	redIndex, greenIndex, blueIndex := GetRGBColorComponents(newColor)
 	obtainedResult := recast.GetArrayOfInterfaces(redIndex, greenIndex, blueIndex)
 	expectedResult := recast.GetArrayOfInterfaces(int32(178), int32(77), int32(77))
 	assert.Equalf(test, expectedResult, obtainedResult, "Transitioning color by 30% failed!")
 
-	sourceColor = int32(tcell.NewRGBColor(255, 255, 255))
-	targetColor = int32(tcell.NewRGBColor(0, 0, 0))
+	sourceColor = constants.ColorType(tcell.NewRGBColor(255, 255, 255))
+	targetColor = constants.ColorType(tcell.NewRGBColor(0, 0, 0))
 	newColor = GetTransitionedColor(sourceColor, targetColor, 0.5)
 	redIndex, greenIndex, blueIndex = GetRGBColorComponents(newColor)
 	obtainedResult = recast.GetArrayOfInterfaces(redIndex, greenIndex, blueIndex)
 	expectedResult = recast.GetArrayOfInterfaces(int32(127), int32(127), int32(127))
 	assert.Equalf(test, expectedResult, obtainedResult, "Transitioning color by 50% failed!")
 
-	sourceColor = int32(tcell.NewRGBColor(255, 255, 255))
-	targetColor = int32(tcell.NewRGBColor(0, 200, 0))
+	sourceColor = constants.ColorType(tcell.NewRGBColor(255, 255, 255))
+	targetColor = constants.ColorType(tcell.NewRGBColor(0, 200, 0))
 	newColor = GetTransitionedColor(sourceColor, targetColor, 0.5)
 	redIndex, greenIndex, blueIndex = GetRGBColorComponents(newColor)
 	obtainedResult = recast.GetArrayOfInterfaces(redIndex, greenIndex, blueIndex)
 	expectedResult = recast.GetArrayOfInterfaces(int32(127), int32(227), int32(127))
 	assert.Equalf(test, expectedResult, obtainedResult, "Transitioning color by 50% failed!")
 
-	sourceColor = int32(tcell.NewRGBColor(0, 50, 100))
-	targetColor = int32(tcell.NewRGBColor(150, 200, 255))
+	sourceColor = constants.ColorType(tcell.NewRGBColor(0, 50, 100))
+	targetColor = constants.ColorType(tcell.NewRGBColor(150, 200, 255))
 	newColor = GetTransitionedColor(sourceColor, targetColor, 0.5)
 	redIndex, greenIndex, blueIndex = GetRGBColorComponents(newColor)
 	obtainedResult = recast.GetArrayOfInterfaces(redIndex, greenIndex, blueIndex)
 	expectedResult = recast.GetArrayOfInterfaces(int32(75), int32(125), int32(178))
 	assert.Equalf(test, expectedResult, obtainedResult, "Transitioning color by 50% failed!")
 
-	sourceColor = int32(tcell.NewRGBColor(0, 50, 100))
-	targetColor = int32(tcell.NewRGBColor(150, 200, 255))
+	sourceColor = constants.ColorType(tcell.NewRGBColor(0, 50, 100))
+	targetColor = constants.ColorType(tcell.NewRGBColor(150, 200, 255))
 	newColor = GetTransitionedColor(sourceColor, targetColor, 1.2)
 	redIndex, greenIndex, blueIndex = GetRGBColorComponents(newColor)
 	obtainedResult = recast.GetArrayOfInterfaces(redIndex, greenIndex, blueIndex)
 	expectedResult = recast.GetArrayOfInterfaces(int32(180), int32(230), int32(255))
 	assert.Equalf(test, expectedResult, obtainedResult, "Transitioning color by 120% failed!")
 
-	sourceColor = int32(tcell.NewRGBColor(0, 50, 100))
-	targetColor = int32(tcell.NewRGBColor(150, 200, 255))
+	sourceColor = constants.ColorType(tcell.NewRGBColor(0, 50, 100))
+	targetColor = constants.ColorType(tcell.NewRGBColor(150, 200, 255))
 	newColor = GetTransitionedColor(sourceColor, targetColor, -0.2)
 	redIndex, greenIndex, blueIndex = GetRGBColorComponents(newColor)
 	obtainedResult = recast.GetArrayOfInterfaces(redIndex, greenIndex, blueIndex)

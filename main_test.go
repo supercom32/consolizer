@@ -8,8 +8,8 @@ import (
 )
 
 func TestMainStub(test *testing.T) {
-	//testScrollBars()
-	testSelector()
+	testScrollBars()
+	//testSelector()
 	//testTextField()
 	//testWindowMovement()
 	//testButtonPressAction()

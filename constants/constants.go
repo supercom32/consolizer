@@ -1,8 +1,10 @@
 package constants
 
 import (
-	"github.com/gdamore/tcell"
+	"github.com/gdamore/tcell/v2"
 )
+
+type ColorType uint64
 
 // Constants
 const (
@@ -84,23 +86,23 @@ const (
 	ColorBrightWhite
 )
 
-var AnsiColorByIndex = map[int]int32{
-	ColorBlack:         int32(tcell.GetColor("black")),
-	ColorRed:           int32(tcell.GetColor("maroon")),
-	ColorGreen:         int32(tcell.GetColor("green")),
-	ColorYellow:        int32(tcell.GetColor("olive")),
-	ColorBlue:          int32(tcell.GetColor("navy")),
-	ColorMagenta:       int32(tcell.GetColor("purple")),
-	ColorCyan:          int32(tcell.GetColor("teal")),
-	ColorWhite:         int32(tcell.GetColor("silver")),
-	ColorBrightBlack:   int32(tcell.GetColor("gray")),
-	ColorBrightRed:     int32(tcell.GetColor("red")),
-	ColorBrightGreen:   int32(tcell.GetColor("lime")),
-	ColorBrightYellow:  int32(tcell.GetColor("yellow")),
-	ColorBrightBlue:    int32(tcell.GetColor("blue")),
-	ColorBrightMagenta: int32(tcell.GetColor("fuchsia")),
-	ColorBrightCyan:    int32(tcell.GetColor("aqua")),
-	ColorBrightWhite:   int32(tcell.GetColor("white")),
+var AnsiColorByIndex = map[int]ColorType{
+	ColorBlack:         ColorType(tcell.NewRGBColor(0,0,0)),
+	ColorRed:           ColorType(tcell.GetColor("maroon")),
+	ColorGreen:         ColorType(tcell.GetColor("green")),
+	ColorYellow:        ColorType(tcell.GetColor("olive")),
+	ColorBlue:          ColorType(tcell.GetColor("navy")),
+	ColorMagenta:       ColorType(tcell.GetColor("purple")),
+	ColorCyan:          ColorType(tcell.GetColor("teal")),
+	ColorWhite:         ColorType(tcell.GetColor("silver")),
+	ColorBrightBlack:   ColorType(tcell.GetColor("gray")),
+	ColorBrightRed:     ColorType(tcell.GetColor("red")),
+	ColorBrightGreen:   ColorType(tcell.GetColor("lime")),
+	ColorBrightYellow:  ColorType(tcell.GetColor("yellow")),
+	ColorBrightBlue:    ColorType(tcell.GetColor("blue")),
+	ColorBrightMagenta: ColorType(tcell.GetColor("fuchsia")),
+	ColorBrightCyan:    ColorType(tcell.GetColor("aqua")),
+	ColorBrightWhite:   ColorType(tcell.GetColor("white")),
 }
 const (
 	AnsiEsc = '\u001b'

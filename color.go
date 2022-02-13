@@ -1,7 +1,8 @@
 package consolizer
 
 import (
-	"github.com/gdamore/tcell"
+	"github.com/gdamore/tcell/v2"
+	"github.com/supercom32/consolizer/constants"
 	"github.com/supercom32/consolizer/internal/math"
 )
 
@@ -26,7 +27,7 @@ want to transition to -20% of the target color.
 Black (0, 0, 0) or White (255, 255, 255), it will be defaulted to closest
 valid color.
 */
-func GetTransitionedColor(sourceColor int32, targetColor int32, percentChange float32) int32 {
+func GetTransitionedColor(sourceColor constants.ColorType, targetColor constants.ColorType, percentChange float32) constants.ColorType {
 	var sourceColorIndex [3]int32
 	var targetColorIndex [3]int32
 	var newColorIndex [3]int32
@@ -48,14 +49,14 @@ func GetTransitionedColor(sourceColor int32, targetColor int32, percentChange fl
 			newColorIndex[currentColorIndex] = 0
 		}
 	}
-	return int32(tcell.NewRGBColor(newColorIndex[0], newColorIndex[1], newColorIndex[2]))
+	return constants.ColorType(tcell.NewRGBColor(newColorIndex[0], newColorIndex[1], newColorIndex[2]))
 }
 
 /*
 GetRGBColorComponents allows you to obtain RGB color component indexes for
 red, green, an blue color channels.
 */
-func GetRGBColorComponents(color int32) (int32, int32, int32) {
+func GetRGBColorComponents(color constants.ColorType) (int32, int32, int32) {
 	var redColorIndex int32
 	var greenColorIndex int32
 	var blueColorIndex int32

@@ -1,13 +1,13 @@
 package memory
 
 import (
-	"github.com/supercom32/consolizer/constants"
 	"encoding/json"
+	"github.com/supercom32/consolizer/constants"
 )
 
 type TextStyleEntryType struct {
-	ForegroundColor          int32
-	BackgroundColor          int32
+	ForegroundColor          constants.ColorType
+	BackgroundColor          constants.ColorType
 	IsBold                   bool
 	IsUnderlined             bool
 	IsReversed               bool
@@ -19,8 +19,8 @@ type TextStyleEntryType struct {
 
 func (shared TextStyleEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
-		ForegroundColor int32
-		BackgroundColor int32
+		ForegroundColor constants.ColorType
+		BackgroundColor constants.ColorType
 		IsBold bool
 		IsUnderlined bool
 		IsReversed bool

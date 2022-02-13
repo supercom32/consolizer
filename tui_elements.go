@@ -2,7 +2,7 @@ package consolizer
 
 import (
 	"fmt"
-	"github.com/gdamore/tcell"
+	"github.com/gdamore/tcell/v2"
 	"github.com/supercom32/consolizer/constants"
 	"github.com/supercom32/consolizer/internal/memory"
 	"github.com/supercom32/consolizer/internal/stringformat"
@@ -832,7 +832,7 @@ should be noted:
 - If you pass in a percent change of less than 0.0 or greater
 than 1.0, a panic will be generated to fail as fast as possible.
 */
-func GetDarkenedColor(color int32, percentChange float32) int32 {
+func GetDarkenedColor(color constants.ColorType, percentChange float32) constants.ColorType {
 	var redColorIndex int32
 	var greenColorIndex int32
 	var blueColorIndex int32
@@ -844,5 +844,5 @@ func GetDarkenedColor(color int32, percentChange float32) int32 {
 	greenColorIndex = int32(float32(greenColorIndex) * percentChange)
 	blueColorIndex = int32(float32(blueColorIndex) * percentChange)
 	newColor := tcell.NewRGBColor(redColorIndex, greenColorIndex, blueColorIndex)
-	return int32(newColor)
+	return constants.ColorType(newColor)
 }

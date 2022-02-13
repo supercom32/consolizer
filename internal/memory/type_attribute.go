@@ -6,8 +6,8 @@ import (
 )
 
 type AttributeEntryType struct {
-	ForegroundColor          int32
-	BackgroundColor          int32
+	ForegroundColor          constants.ColorType
+	BackgroundColor          constants.ColorType
 	IsBold                   bool
 	IsUnderlined             bool
 	IsReversed               bool
@@ -24,8 +24,8 @@ type AttributeEntryType struct {
 
 func (shared AttributeEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
-		ForegroundColor int32
-		BackgroundColor int32
+		ForegroundColor constants.ColorType
+		BackgroundColor constants.ColorType
 		IsBold bool
 		IsUnderlined bool
 		IsReversed bool
