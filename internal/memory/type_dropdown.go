@@ -7,36 +7,35 @@ import (
 type DropdownEntryType struct {
 	StyleEntry TuiStyleEntryType
 	SelectionEntry SelectionEntryType
+	ScrollBarAlias string
+	SelectorAlias string
 	XLocation int
 	YLocation  int
-	SelectorHeight int
 	ItemWidth        int
-	ViewportPosition int
-	ItemHighlighted  int
 	ItemSelected int
 	IsTrayOpen bool
 }
 
 func (shared DropdownEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
+
 		StyleEntry TuiStyleEntryType
 		SelectionEntry SelectionEntryType
+		ScrollBarAlias string
+		SelectorAlias string
 		XLocation int
 		YLocation int
 		ItemWidth int
-		NumberOfColumns int
-		ViewportPosition int
-		ItemHighlighted int
 		ItemSelected int
 		IsTrayOpen bool
 	}{
 		StyleEntry: shared.StyleEntry,
 		SelectionEntry: shared.SelectionEntry,
+		ScrollBarAlias: shared.ScrollBarAlias,
+		SelectorAlias: shared.SelectorAlias,
 		XLocation: shared.XLocation,
 		YLocation: shared.YLocation,
 		ItemWidth: shared.ItemWidth,
-		ViewportPosition: shared.ViewportPosition,
-		ItemHighlighted: shared.ItemHighlighted,
 		ItemSelected: shared.ItemSelected,
 		IsTrayOpen: shared.IsTrayOpen,
 	})
@@ -59,11 +58,11 @@ func NewDropdownEntry(existingSelectorEntry ...*DropdownEntryType) DropdownEntry
 	if existingSelectorEntry != nil {
 		menuBarEntry.StyleEntry = existingSelectorEntry[0].StyleEntry
 		menuBarEntry.SelectionEntry = existingSelectorEntry[0].SelectionEntry
+		menuBarEntry.ScrollBarAlias = existingSelectorEntry[0].ScrollBarAlias
+		menuBarEntry.SelectorAlias = existingSelectorEntry[0].SelectorAlias
 		menuBarEntry.XLocation = existingSelectorEntry[0].XLocation
 		menuBarEntry.YLocation = existingSelectorEntry[0].YLocation
 		menuBarEntry.ItemWidth = existingSelectorEntry[0].ItemWidth
-		menuBarEntry.ViewportPosition = existingSelectorEntry[0].ViewportPosition
-		menuBarEntry.ItemHighlighted = existingSelectorEntry[0].ItemHighlighted
 		menuBarEntry.ItemSelected = existingSelectorEntry[0].ItemSelected
 		menuBarEntry.IsTrayOpen = existingSelectorEntry[0].IsTrayOpen
 	}

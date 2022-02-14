@@ -29,10 +29,11 @@ func (shared *selectorInstanceType) setViewport(viewportPosition int) {
 
 
 // TODO: Protect against viewport out of range errors.
-func AddSelector(layerAlias string, selectorAlias string, styleEntry memory.TuiStyleEntryType, selectionEntry memory.SelectionEntryType, xLocation int, yLocation int, selectorHeight int, itemWidth int, numberOfColumns int, viewportPosition int, selectedItem int) selectorInstanceType {
+func AddSelector(layerAlias string, selectorAlias string, styleEntry memory.TuiStyleEntryType, selectionEntry memory.SelectionEntryType, xLocation int, yLocation int, selectorHeight int, itemWidth int, numberOfColumns int, viewportPosition int, selectedItem int, isBorderDrawn bool) selectorInstanceType {
 	validateLayerLocationByLayerAlias(layerAlias, xLocation, yLocation)
+	validateSelectionEntry(selectionEntry)
 	// TODO: Add verification to ensure no item can be 0 length/number.
-	memory.AddSelector(layerAlias, selectorAlias, styleEntry, selectionEntry, xLocation, yLocation, selectorHeight, itemWidth, numberOfColumns, viewportPosition, selectedItem)
+	memory.AddSelector(layerAlias, selectorAlias, styleEntry, selectionEntry, xLocation, yLocation, selectorHeight, itemWidth, numberOfColumns, viewportPosition, selectedItem, isBorderDrawn)
 	var selectorInstance selectorInstanceType
 	selectorInstance.layerAlias = layerAlias
 	selectorInstance.selectorAlias = selectorAlias
@@ -47,9 +48,17 @@ In addition, the following information should be noted:
 layer, then only the visible portion of your menu item will be drawn.
 */
 func DrawSelector(selectorAlias string, layerEntry *memory.LayerEntryType, styleEntry memory.TuiStyleEntryType, selectionEntry memory.SelectionEntryType, xLocation int, yLocation int, selectorHeight int, itemWidth int, numberOfColumns int, viewportPosition int, itemHighlighted int) {
+	selectorEntry := memory.SelectorMemory[layerEntry.LayerAlias][selectorAlias]
+	if selectorEntry.IsVisible == false {
+		return
+	}
 	menuAttributeEntry := memory.NewAttributeEntry()
-	menuAttributeEntry.ForegroundColor = styleEntry.MenuForegroundColor
-	menuAttributeEntry.BackgroundColor = styleEntry.MenuBackgroundColor
+	menuAttributeEntry.ForegroundColor = styleEntry.SelectorForegroundColor
+	menuAttributeEntry.BackgroundColor = styleEntry.SelectorBackgroundColor
+	if selectorEntry.IsBorderDrawn {
+		fillArea(layerEntry, menuAttributeEntry," ", xLocation - 1,yLocation - 1, itemWidth + 2, selectorHeight + 2)
+		drawBorder(layerEntry, styleEntry, menuAttributeEntry, xLocation -1, yLocation - 1, itemWidth + 2, selectorHeight + 2, false)
+	}
 	highlightAttributeEntry := memory.NewAttributeEntry()
 	highlightAttributeEntry.ForegroundColor = styleEntry.HighlightForegroundColor
 	highlightAttributeEntry.BackgroundColor = styleEntry.HighlightBackgroundColor
@@ -140,7 +149,7 @@ func updateMouseEventSelector() bool {
 	var characterEntry memory.CharacterEntryType
 	mouseXLocation, mouseYLocation, buttonPressed, _ := memory.GetMouseStatus()
 	characterEntry = getCellInformationUnderMouseCursor(mouseXLocation, mouseYLocation)
-	if characterEntry.AttributeEntry.CellType == constants.CellTypeSelectiorItem {
+	if characterEntry.AttributeEntry.CellType == constants.CellTypeSelectiorItem && eventStateMemory.stateId == constants.EventStateNone {
 		if buttonPressed != 0 {
 			selectorEntry := memory.GetSelector(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias)
 			selectorEntry.ItemHighlighted = characterEntry.AttributeEntry.CellControlId

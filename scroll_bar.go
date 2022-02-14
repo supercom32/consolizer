@@ -51,6 +51,10 @@ func drawScrollBarsOnLayer(layerEntry memory.LayerEntryType) {
 
 func computeScrollBarValueByHandlePosition(layerAlias string, scrollBarAlias string) {
 	scrollBarEntry := memory.ScrollBarMemory[layerAlias][scrollBarAlias]
+	// If instructed not to draw scroll bars, do not compute values.
+	if scrollBarEntry.IsEnabled == false {
+		return
+	}
 	// Make sure the handle position is valid first.
 	if scrollBarEntry.HandlePosition >= scrollBarEntry.Length {
 		scrollBarEntry.HandlePosition = scrollBarEntry.Length - 1
@@ -70,6 +74,10 @@ func computeScrollBarValueByHandlePosition(layerAlias string, scrollBarAlias str
 
 func computeScrollBarHandlePositionByScrollValue(layerAlias string, scrollBarAlias string) {
 	scrollBarEntry := memory.ScrollBarMemory[layerAlias][scrollBarAlias]
+	// If instructed not to draw scroll bars, do not compute values.
+	if scrollBarEntry.IsEnabled == false {
+		return
+	}
 	// Make sure the scroll value is valid first.
 	if scrollBarEntry.ScrollValue >= scrollBarEntry.MaxScrollValue {
 		scrollBarEntry.ScrollValue = scrollBarEntry.MaxScrollValue
@@ -90,22 +98,25 @@ func updateKeyboardEventScrollBar(keystroke string) bool {
 	if eventStateMemory.focusedControlType != constants.CellTypeScrollBar {
 		return isScreenUpdateRequired
 	}
+	// Check for scrollbar input only if the scroll bar is not disabled (not null).
 	scrollBarEntry := memory.ScrollBarMemory[eventStateMemory.focusedLayerAlias][eventStateMemory.focusedControlAlias]
-	if keystroke == "up" || keystroke == "left"{
-		scrollBarEntry.ScrollValue = scrollBarEntry.ScrollValue - 1
-		computeScrollBarHandlePositionByScrollValue(eventStateMemory.focusedLayerAlias, eventStateMemory.focusedControlAlias)
-	}
-	if keystroke == "down" || keystroke == "right" {
-		scrollBarEntry.ScrollValue = scrollBarEntry.ScrollValue + 1
-		computeScrollBarHandlePositionByScrollValue(eventStateMemory.focusedLayerAlias, eventStateMemory.focusedControlAlias)
-	}
-	if keystroke == "pgup" {
-		scrollBarEntry.ScrollValue = scrollBarEntry.ScrollValue - 10
-		computeScrollBarHandlePositionByScrollValue(eventStateMemory.focusedLayerAlias, eventStateMemory.focusedControlAlias)
-	}
-	if keystroke == "pgdn" {
-		scrollBarEntry.ScrollValue = scrollBarEntry.ScrollValue + 10
-		computeScrollBarHandlePositionByScrollValue(eventStateMemory.focusedLayerAlias, eventStateMemory.focusedControlAlias)
+	if scrollBarEntry.IsEnabled {
+		if keystroke == "up" || keystroke == "left"{
+			scrollBarEntry.ScrollValue = scrollBarEntry.ScrollValue - 1
+			computeScrollBarHandlePositionByScrollValue(eventStateMemory.focusedLayerAlias, eventStateMemory.focusedControlAlias)
+		}
+		if keystroke == "down" || keystroke == "right" {
+			scrollBarEntry.ScrollValue = scrollBarEntry.ScrollValue + 1
+			computeScrollBarHandlePositionByScrollValue(eventStateMemory.focusedLayerAlias, eventStateMemory.focusedControlAlias)
+		}
+		if keystroke == "pgup" {
+			scrollBarEntry.ScrollValue = scrollBarEntry.ScrollValue - 10
+			computeScrollBarHandlePositionByScrollValue(eventStateMemory.focusedLayerAlias, eventStateMemory.focusedControlAlias)
+		}
+		if keystroke == "pgdn" {
+			scrollBarEntry.ScrollValue = scrollBarEntry.ScrollValue + 10
+			computeScrollBarHandlePositionByScrollValue(eventStateMemory.focusedLayerAlias, eventStateMemory.focusedControlAlias)
+		}
 	}
 	return isScreenUpdateRequired
 }
@@ -117,30 +128,29 @@ func updateMouseEventScrollBar() bool {
 	if buttonPressed != 0 {
 		characterEntry := getCellInformationUnderMouseCursor(mouseXLocation, mouseYLocation)
 		if previousButtonPressed == 0 && characterEntry.AttributeEntry.CellType == constants.CellTypeScrollBar {
-			if characterEntry.AttributeEntry.CellControlId == constants.CellControlIdScrollBarHandle {
-				// If you click on a scroll bar handle, start the scrolling event.
-				eventStateMemory.stateId = constants.EventStateDragAndDropScrollBar
-			} else if characterEntry.AttributeEntry.CellControlId == constants.CellControlIdUpScrollArrow {
-				// If you click on the up scroll bar button.
-				scrollBarEntry := memory.ScrollBarMemory[characterEntry.LayerAlias][characterEntry.AttributeEntry.CellControlAlias]
-				scrollBarEntry.ScrollValue = scrollBarEntry.ScrollValue - 1
-				computeScrollBarHandlePositionByScrollValue(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias)
-			} else if characterEntry.AttributeEntry.CellControlId == constants.CellControlIdDownScrollArrow {
-				// If you click on the down scroll bar button.
-				scrollBarEntry := memory.ScrollBarMemory[characterEntry.LayerAlias][characterEntry.AttributeEntry.CellControlAlias]
-				scrollBarEntry.ScrollValue = scrollBarEntry.ScrollValue + 1
-				computeScrollBarHandlePositionByScrollValue( characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias)
-			} else {
-				// If you click on the scroll bar area itself, jump the scroll bar to it.
-				scrollBarEntry := memory.ScrollBarMemory[characterEntry.LayerAlias][characterEntry.AttributeEntry.CellControlAlias]
-				scrollBarEntry.HandlePosition = characterEntry.AttributeEntry.CellControlId
-				computeScrollBarValueByHandlePosition(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias)
+			scrollBarEntry := memory.ScrollBarMemory[characterEntry.LayerAlias][characterEntry.AttributeEntry.CellControlAlias]
+			// Check for scrollbar input only if the scroll bar is not disabled (not null).
+			if scrollBarEntry.IsEnabled {
+				if characterEntry.AttributeEntry.CellControlId == constants.CellControlIdScrollBarHandle {
+					// If you click on a scroll bar handle, start the scrolling event.
+					eventStateMemory.stateId = constants.EventStateDragAndDropScrollBar
+				} else if characterEntry.AttributeEntry.CellControlId == constants.CellControlIdUpScrollArrow {
+					// If you click on the up scroll bar button.
+					scrollBarEntry.ScrollValue = scrollBarEntry.ScrollValue - 1
+					computeScrollBarHandlePositionByScrollValue(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias)
+				} else if characterEntry.AttributeEntry.CellControlId == constants.CellControlIdDownScrollArrow {
+					// If you click on the down scroll bar button.
+					scrollBarEntry.ScrollValue = scrollBarEntry.ScrollValue + 1
+					computeScrollBarHandlePositionByScrollValue( characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias)
+				} else {
+					// If you click on the scroll bar area itself,  jump the scroll bar to it.
+					scrollBarEntry.HandlePosition = characterEntry.AttributeEntry.CellControlId
+					computeScrollBarValueByHandlePosition(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias)
+				}
 			}
-			eventStateMemory.focusedLayerAlias = characterEntry.LayerAlias
-			eventStateMemory.focusedControlAlias = characterEntry.AttributeEntry.CellControlAlias
-			eventStateMemory.focusedControlType = constants.CellTypeScrollBar
-		}
-		if previousButtonPressed != 0 && eventStateMemory.stateId == constants.EventStateDragAndDropScrollBar {
+			setFocusedControl(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias, constants.CellTypeScrollBar)
+			isScreenUpdateRequired = true
+		} else if previousButtonPressed != 0 && eventStateMemory.stateId == constants.EventStateDragAndDropScrollBar {
 			xMove := mouseXLocation - previousMouseXLocation
 			yMove := mouseYLocation - previousMouseYLocation
 			scrollBarEntry := memory.ScrollBarMemory[eventStateMemory.focusedLayerAlias][eventStateMemory.focusedControlAlias]
@@ -153,7 +163,7 @@ func updateMouseEventScrollBar() bool {
 			isScreenUpdateRequired = true
 		}
 	} else {
-		eventStateMemory.stateId = 0
+		eventStateMemory.stateId = constants.EventStateNone
 	}
 	return isScreenUpdateRequired
 }

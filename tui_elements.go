@@ -702,6 +702,7 @@ func drawScrollBar(layerEntry *memory.LayerEntryType, scrollBarAlias string, sty
 	attributeEntry.CellControlAlias = scrollBarAlias
 	attributeEntry.ForegroundColor = styleEntry.ScrollBarForegroundColor
 	attributeEntry.BackgroundColor = styleEntry.ScrollBarBackgroundColor
+	scrollBarEntry := memory.ScrollBarMemory[layerEntry.LayerAlias][scrollBarAlias]
 	//numberOfScrollSegments := length - 2
 	//segmentPosition := math.RoundToEven(float64(currentValue) / float64(numberOfTicks) * float64(numberOfScrollSegments))
 	if isHorizontal {
@@ -716,7 +717,9 @@ func drawScrollBar(layerEntry *memory.LayerEntryType, scrollBarAlias string, sty
 		attributeEntry.ForegroundColor = styleEntry.ScrollBarHandleColor
 		attributeEntry.CellControlId = constants.CellControlIdScrollBarHandle
 		// Here we add 1 to the xLocation since handle bars cannot be drawn on scroll arrows.
-		printLayer(layerEntry, attributeEntry, xLocation + 1 + handlePosition, yLocation, []rune{styleEntry.ScrollBarHandle})
+		if scrollBarEntry.IsEnabled {
+			printLayer(layerEntry, attributeEntry, xLocation + 1 + handlePosition, yLocation, []rune{styleEntry.ScrollBarHandle})
+		}
 	} else {
 		for currentYLocation := 1; currentYLocation <= length; currentYLocation++ {
 			attributeEntry.CellControlId = currentYLocation - 1 // make all Ids 0 based.
@@ -728,7 +731,9 @@ func drawScrollBar(layerEntry *memory.LayerEntryType, scrollBarAlias string, sty
 		printLayer(layerEntry, attributeEntry, xLocation, yLocation + length + 1, []rune{styleEntry.ScrollBarDownArrow})
 		attributeEntry.ForegroundColor = styleEntry.ScrollBarHandleColor
 		attributeEntry.CellControlId = constants.CellControlIdScrollBarHandle
-		printLayer(layerEntry, attributeEntry, xLocation, yLocation + 1 + handlePosition, []rune{styleEntry.ScrollBarHandle})
+		if scrollBarEntry.IsEnabled {
+			printLayer(layerEntry, attributeEntry, xLocation, yLocation+1+handlePosition, []rune{styleEntry.ScrollBarHandle})
+		}
 	}
 }
 

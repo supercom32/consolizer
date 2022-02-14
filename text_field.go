@@ -112,7 +112,7 @@ func drawCursor(layerEntry *memory.LayerEntryType, styleEntry memory.TuiStyleEnt
 	attributeEntry.ForegroundColor = styleEntry.CursorForegroundColor
 	attributeEntry.BackgroundColor = styleEntry.CursorBackgroundColor
 	attributeEntry.CellType = constants.CellTypeTextField
-	attributeEntry.CellAlias = textFieldAlias
+	attributeEntry.CellControlAlias = textFieldAlias
 	attributeEntry.CellControlId = cursorPosition
 	var arrayOfRunes []rune
 	arrayOfRunes = append(arrayOfRunes, characterUnderCursor)
@@ -143,7 +143,7 @@ func drawInputString(layerEntry *memory.LayerEntryType, styleEntry memory.TuiSty
 	attributeEntry.ForegroundColor = styleEntry.TextInputForegroundColor
 	attributeEntry.BackgroundColor = styleEntry.TextInputBackgroundColor
 	attributeEntry.CellType = constants.CellTypeTextField
-	attributeEntry.CellAlias = textFieldAlias
+	attributeEntry.CellControlAlias = textFieldAlias
 	runeSlice := []rune(inputString)
 	var safeSubstring string
 	if stringPosition+width <= len(inputString) {
@@ -293,8 +293,9 @@ func updateMouseEventTextField() bool {
 	if buttonPressed != 0 {
 		characterEntry = getCellInformationUnderMouseCursor(mouseXLocation, mouseYLocation)
 		if characterEntry.AttributeEntry.CellType == constants.CellTypeTextField {
-			textFieldEntry := memory.GetTextField(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellAlias)
+			textFieldEntry := memory.GetTextField(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias)
 			textFieldEntry.CursorPosition = characterEntry.AttributeEntry.CellControlId
+			setFocusedControl(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias, constants.CellTypeTextField)
 			isScreenUpdateRequired = true
 		}
 	}

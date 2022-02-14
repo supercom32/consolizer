@@ -6,6 +6,7 @@ import (
 	"github.com/supercom32/consolizer/constants"
 	"github.com/supercom32/consolizer/internal/recast"
 	"golang.org/x/text/width"
+	"github.com/google/uuid"
 )
 
 const maxLen = 4096
@@ -115,4 +116,9 @@ func GetFilledString(lengthOfString int, character string) string {
 		newString += character
 	}
 	return newString
+}
+
+func GetUUID() string {
+	id := uuid.New()
+	return id.String()
 }

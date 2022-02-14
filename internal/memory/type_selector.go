@@ -15,6 +15,8 @@ type SelectorEntryType struct {
 	ViewportPosition int
 	ItemHighlighted  int
 	ItemSelected int
+	IsVisible bool
+	IsBorderDrawn bool
 }
 
 func (shared SelectorEntryType) MarshalJSON() ([]byte, error) {
@@ -28,6 +30,8 @@ func (shared SelectorEntryType) MarshalJSON() ([]byte, error) {
 		ViewportPosition int
 		ItemHighlighted int
 		ItemSelected int
+		IsVisible bool
+		IsBorderDrawn bool
 	}{
 		StyleEntry: shared.StyleEntry,
 		SelectionEntry: shared.SelectionEntry,
@@ -38,6 +42,8 @@ func (shared SelectorEntryType) MarshalJSON() ([]byte, error) {
 		ViewportPosition: shared.ViewportPosition,
 		ItemHighlighted: shared.ItemHighlighted,
 		ItemSelected: shared.ItemSelected,
+		IsVisible: shared.IsVisible,
+		IsBorderDrawn: shared.IsBorderDrawn,
 	})
 	if err != nil {
 		return nil, err
@@ -54,17 +60,19 @@ func (shared SelectorEntryType) GetEntryAsJsonDump() string {
 }
 
 func NewSelectorEntry(existingSelectorEntry ...*SelectorEntryType) SelectorEntryType {
-	var menuBarEntry SelectorEntryType
+	var selectorEntry SelectorEntryType
 	if existingSelectorEntry != nil {
-		menuBarEntry.StyleEntry = existingSelectorEntry[0].StyleEntry
-		menuBarEntry.SelectionEntry = existingSelectorEntry[0].SelectionEntry
-		menuBarEntry.XLocation = existingSelectorEntry[0].XLocation
-		menuBarEntry.YLocation = existingSelectorEntry[0].YLocation
-		menuBarEntry.ItemWidth = existingSelectorEntry[0].ItemWidth
-		menuBarEntry.NumberOfColumns = existingSelectorEntry[0].NumberOfColumns
-		menuBarEntry.ViewportPosition = existingSelectorEntry[0].ViewportPosition
-		menuBarEntry.ItemHighlighted = existingSelectorEntry[0].ItemHighlighted
-		menuBarEntry.ItemSelected = existingSelectorEntry[0].ItemSelected
+		selectorEntry.StyleEntry = existingSelectorEntry[0].StyleEntry
+		selectorEntry.SelectionEntry = existingSelectorEntry[0].SelectionEntry
+		selectorEntry.XLocation = existingSelectorEntry[0].XLocation
+		selectorEntry.YLocation = existingSelectorEntry[0].YLocation
+		selectorEntry.ItemWidth = existingSelectorEntry[0].ItemWidth
+		selectorEntry.NumberOfColumns = existingSelectorEntry[0].NumberOfColumns
+		selectorEntry.ViewportPosition = existingSelectorEntry[0].ViewportPosition
+		selectorEntry.ItemHighlighted = existingSelectorEntry[0].ItemHighlighted
+		selectorEntry.ItemSelected = existingSelectorEntry[0].ItemSelected
+		selectorEntry.IsVisible = existingSelectorEntry[0].IsVisible
+		selectorEntry.IsBorderDrawn = existingSelectorEntry[0].IsBorderDrawn
 	}
-	return menuBarEntry
+	return selectorEntry
 }

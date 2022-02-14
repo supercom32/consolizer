@@ -52,6 +52,7 @@ func InitializeTerminal(width int, height int) {
 	memory.InitializeTimerMemory()
 	memory.InitializeSelectorMemory()
 	memory.InitializeScrollBarMemory()
+	memory.InitializeDropdownMemory()
 	commonResource.terminalWidth = width
 	commonResource.terminalHeight = height
 	commonResource.debugDirectory = "/tmp/"
@@ -726,7 +727,13 @@ noted:
 a panic will be thrown to fail as fast as possible.
 */
 func getRuneOnLayer(layerEntry *memory.LayerEntryType, xLocation int, yLocation int) rune {
-	validateLayerLocationByLayerEntry(layerEntry, xLocation, yLocation)
+	//validateLayerLocationByLayerEntry(layerEntry, xLocation, yLocation)
+	// We don't do validation here because if we draw outside the layer intentionally, we don't want to panic.
+	// For example, if rendering a control that pops off-screen.
+	if xLocation < 0 || yLocation < 0 ||
+		xLocation >= layerEntry.Width || yLocation >= layerEntry.Height {
+		return 0
+	}
 	characterMemory := layerEntry.CharacterMemory
 	return characterMemory[yLocation][xLocation].Character
 }
@@ -840,8 +847,11 @@ func renderLayers(rootLayerEntry *memory.LayerEntryType, sortedLayerAliasSlice m
 }
 
 func renderControls(currentLayerEntry memory.LayerEntryType) {
+	// Order matters as complex controls need to be drawn first above basic controls (so that any
+	// pop up controls appear over complex controls).
 	drawButtonsOnLayer(currentLayerEntry)
 	drawTextFieldOnLayer(currentLayerEntry)
+	drawDropdownsOnLayer(currentLayerEntry)
 	drawSelectorsOnLayer(currentLayerEntry)
 	drawScrollBarsOnLayer(currentLayerEntry)
 }

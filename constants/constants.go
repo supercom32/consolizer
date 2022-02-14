@@ -131,6 +131,7 @@ const CellTypeTextField = 2
 const CellTypeFrameTop = 3
 const CellTypeSelectiorItem = 4
 const CellTypeScrollBar = 5
+const CellTypeDropdown = 6
 
 const CellControlIdUpScrollArrow = -1
 const CellControlIdDownScrollArrow = -2
@@ -138,6 +139,9 @@ const CellControlIdScrollBarHandle = -3
 
 const VirtualFileSystemZip = 1
 const VirtualFileSystemRar = 2
+const EventStateNone = 0
 const EventStateDragAndDrop = 1
 const EventStateDragAndDropScrollBar = 2
 const NullControlType = 0
+
+const NullScrollBarValue = -1

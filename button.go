@@ -162,6 +162,7 @@ func updateButtonStateMouse() bool {
 			//memory.scrollBarMemory[layerAlias][buttonAlias].IsSelected = true
 			memory.ButtonMemory[layerAlias][buttonAlias].IsPressed = true
 			memory.ButtonMemory[layerAlias][buttonAlias].Mutex.Unlock()
+			setFocusedControl(layerAlias, buttonAlias, constants.CellTypeButton)
 			isUpdateRequired = true
 		}
 	}

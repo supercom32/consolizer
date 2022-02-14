@@ -8,11 +8,55 @@ import (
 )
 
 func TestMainStub(test *testing.T) {
-	testScrollBars()
+	testDropdown()
+	//testScrollBars()
 	//testSelector()
 	//testTextField()
 	//testWindowMovement()
 	//testButtonPressAction()
+	RestoreTerminalSettings()
+}
+func testDropdown() {
+	commonResource.isDebugEnabled = false
+	layerAlias1 := "Layer1"
+	layerAlias2 := "Layer2"
+	InitializeTerminal(80, 40)
+	AddLayer(layerAlias1, 0, 0, 80, 40, 1, "")
+	AddLayer(layerAlias2, 20, 15, 40, 20, 1, layerAlias1)
+	Layer(layerAlias1)
+	ColorRGB(255,0,0,0,0,0)
+	FillLayer(layerAlias1, "#")
+	FillLayer(layerAlias2, "@")
+	styleEntry := memory.NewTuiStyleEntry()
+	styleEntry.SelectorTextAlignment = 0
+	selectionEntry := memory.NewSelectionEntry()
+	selectionEntry.Add("1", "OK")
+	selectionEntry.Add("2", "CANCEL")
+	selectionEntry.Add("3", "EXIT")
+	selectionEntry.Add("4", "GOTO")
+	selectionEntry.Add("5", "RUN")
+	selectionEntry.Add("6", "DELETE")
+	for i := 0; i < 20; i++ {
+		selectionEntry.Add(strconv.Itoa(i), strconv.Itoa(i))
+	}
+	selectionEntry2 := memory.NewSelectionEntry()
+	selectionEntry2.Add("1", "1")
+	selectionEntry2.Add("2", "2")
+	selectionEntry2.Add("3", "3")
+	AddDropdown(layerAlias1, "myDropdown", styleEntry, selectionEntry, 2, 2, 8, 7, 0)
+	AddDropdown(layerAlias1, "myDropdown2", styleEntry, selectionEntry2, 6, 4, 3, 7, 0)
+	for {
+		UpdateDisplay()
+		key := Inkey()
+		//fmt.Print(key)
+		if key == "w" {
+		}
+		if key == "q" {
+			break
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+	DeleteAllLayers()
 	RestoreTerminalSettings()
 }
 func testScrollBars() {
@@ -80,7 +124,7 @@ func testSelector() {
 	selectionEntry.Add("4", "GOTO")
 	selectionEntry.Add("5", "RUN")
 	selectionEntry.Add("6", "DELETE")
-	menuBarInstance := AddSelector(layerAlias1, "menuBar", styleEntry, selectionEntry, 0, 10, 3, 7, 2, 0, -1)
+	menuBarInstance := AddSelector(layerAlias1, "menuBar", styleEntry, selectionEntry, 0, 10, 3, 7, 2, 0, -1, false)
 	LocateLayer(layerAlias1, 3, 3)
 	PrintLayer(layerAlias1, menuBarInstance.layerAlias)
 	for i := 0; i < 200; i++ {

@@ -39,9 +39,9 @@ type TuiStyleEntryType struct {
 	TextInputForegroundColor     constants.ColorType
 	TextInputBackgroundColor constants.ColorType
 	CursorForegroundColor    constants.ColorType
-	CursorBackgroundColor    constants.ColorType
-	MenuForegroundColor      constants.ColorType
-	MenuBackgroundColor      constants.ColorType
+	CursorBackgroundColor   constants.ColorType
+	SelectorForegroundColor  constants.ColorType
+	SelectorBackgroundColor  constants.ColorType
 	HighlightForegroundColor constants.ColorType
 	HighlightBackgroundColor constants.ColorType
 	ButtonRaisedColor        constants.ColorType
@@ -92,8 +92,8 @@ func NewTuiStyleEntry(existingStyleEntry ...*TuiStyleEntryType) TuiStyleEntryTyp
 		styleEntry.TextInputBackgroundColor = existingStyleEntry[0].TextInputBackgroundColor
 		styleEntry.CursorForegroundColor = existingStyleEntry[0].CursorForegroundColor
 		styleEntry.CursorBackgroundColor = existingStyleEntry[0].CursorBackgroundColor
-		styleEntry.MenuForegroundColor = existingStyleEntry[0].MenuForegroundColor
-		styleEntry.MenuBackgroundColor = existingStyleEntry[0].MenuBackgroundColor
+		styleEntry.SelectorForegroundColor = existingStyleEntry[0].SelectorForegroundColor
+		styleEntry.SelectorBackgroundColor = existingStyleEntry[0].SelectorBackgroundColor
 		styleEntry.HighlightForegroundColor = existingStyleEntry[0].HighlightForegroundColor
 		styleEntry.HighlightBackgroundColor = existingStyleEntry[0].HighlightBackgroundColor
 		styleEntry.ButtonRaisedColor = existingStyleEntry[0].ButtonRaisedColor
@@ -134,8 +134,8 @@ func NewTuiStyleEntry(existingStyleEntry ...*TuiStyleEntryType) TuiStyleEntryTyp
 		styleEntry.ScrollBarHandleColor = constants.AnsiColorByIndex[15]
 		styleEntry.CursorForegroundColor = constants.AnsiColorByIndex[0]
 		styleEntry.CursorBackgroundColor = constants.AnsiColorByIndex[15]
-		styleEntry.MenuForegroundColor = constants.AnsiColorByIndex[15]
-		styleEntry.MenuBackgroundColor = constants.AnsiColorByIndex[0]
+		styleEntry.SelectorForegroundColor = constants.AnsiColorByIndex[15]
+		styleEntry.SelectorBackgroundColor = constants.AnsiColorByIndex[0]
 		styleEntry.HighlightForegroundColor = constants.AnsiColorByIndex[0]
 		styleEntry.HighlightBackgroundColor = constants.AnsiColorByIndex[15]
 		styleEntry.ButtonRaisedColor = constants.AnsiColorByIndex[15]

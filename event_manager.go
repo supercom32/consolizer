@@ -80,7 +80,6 @@ func updateEventQueues() {
 		}
 		isScreenUpdateRequired := false
 		memory.SetMouseStatus(mouseXLocation, mouseYLocation, mouseButtonNumber, wheelState)
-		setFocusedControl()
 		bringLayerToFrontIfRequired()
 		if moveLayerIfRequired() {
 			isScreenUpdateRequired = true
@@ -97,13 +96,16 @@ func updateEventQueues() {
 		if updateMouseEventScrollBar() {
 			isScreenUpdateRequired =  true
 		}
+		if updateDropdownStateMouse() {
+			isScreenUpdateRequired =  true
+		}
 		if isScreenUpdateRequired {
 			UpdateDisplay()
 		}
 	}
 }
-
-func setFocusedControl() {
+// TODO: Questionable functionality?
+func setFocusedControl_old() {
 	mouseXLocation, mouseYLocation, buttonPressed, _ := memory.GetMouseStatus()
 	if buttonPressed != 0 {
 		characterEntry := getCellInformationUnderMouseCursor(mouseXLocation, mouseYLocation)
@@ -113,6 +115,21 @@ func setFocusedControl() {
 			eventStateMemory.focusedLayerAlias = characterEntry.LayerAlias
 		}
 	}
+}
+
+func setFocusedControl(layerAlias string, controlAlias string, cellType int) {
+	eventStateMemory.focusedLayerAlias = layerAlias
+	eventStateMemory.focusedControlAlias = controlAlias
+	eventStateMemory.focusedControlType = cellType
+}
+
+func isControlFocusMatch(layerAlias string, controlAlias string, cellType int) bool {
+	if eventStateMemory.focusedLayerAlias == layerAlias &&
+		eventStateMemory.focusedControlAlias == controlAlias &&
+		eventStateMemory.focusedControlType == cellType {
+		return true
+	}
+	return false
 }
 
 /*

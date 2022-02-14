@@ -22,6 +22,7 @@ func AddScrollBar(layerAlias string, scrollBarAlias string, styleEntry TuiStyleE
 	scrollBarEntry.MaxScrollValue = MaxScrollValue -1 // Since scroll values are 0 based, we minus 1 from total.
 	scrollBarEntry.ScrollValue = ScrollValue
 	scrollBarEntry.IsVisible = true
+	scrollBarEntry.IsEnabled = true
 	scrollBarEntry.IsHorizontal = isHorizontal
 	if ScrollBarMemory[layerAlias] == nil {
 		ScrollBarMemory[layerAlias] = make(map[string]*ScrollBarEntryType)

@@ -8,36 +8,34 @@ func InitializeDropdownMemory() {
 	DropdownMemory = make(map[string]map[string]*DropdownEntryType)
 }
 
-func AddDropdown(layerAlias string, menuBarAlias string, styleEntry TuiStyleEntryType, selectionEntry SelectionEntryType, xLocation int, yLocation int, selectorHeight int, itemWidth int, numberOfColumns int, viewportPosition int, itemSelected int) {
+func AddDropdown(layerAlias string, dropdownAlias string, styleEntry TuiStyleEntryType, selectionEntry SelectionEntryType, xLocation int, yLocation int, itemWidth int, itemSelected int) {
 	dropDownEntry := NewDropdownEntry()
 	dropDownEntry.StyleEntry = styleEntry
 	dropDownEntry.SelectionEntry = selectionEntry
 	dropDownEntry.XLocation = xLocation
 	dropDownEntry.YLocation = yLocation
-	dropDownEntry.SelectorHeight = selectorHeight
 	dropDownEntry.ItemWidth = itemWidth
-	dropDownEntry.ViewportPosition = viewportPosition
-	dropDownEntry.ItemHighlighted = itemSelected
+	dropDownEntry.ItemSelected = itemSelected
 	if DropdownMemory[layerAlias] == nil {
 		DropdownMemory[layerAlias] = make(map[string]*DropdownEntryType)
 	}
-	DropdownMemory[layerAlias][menuBarAlias] = &dropDownEntry
+	DropdownMemory[layerAlias][dropdownAlias] = &dropDownEntry
 }
 
-func DeleteDropdown(layerAlias string, menuBarAlias string) {
-	delete(DropdownMemory[layerAlias], menuBarAlias)
+func DeleteDropdown(layerAlias string, dropdownAlias string) {
+	delete(DropdownMemory[layerAlias], dropdownAlias)
 }
 
-func IsDropdownExists(layerAlias string, menuBarAlias string) bool {
-	if _, isExist := DropdownMemory[layerAlias][menuBarAlias]; isExist {
+func IsDropdownExists(layerAlias string, dropdownAlias string) bool {
+	if _, isExist := DropdownMemory[layerAlias][dropdownAlias]; isExist {
 		return true
 	}
 	return false
 }
 
-func GetDropdown(layerAlias string, selectorAlias string) *DropdownEntryType {
-	if !IsDropdownExists(layerAlias, selectorAlias) {
-		panic(fmt.Sprintf("The selector '%s' under layer '%s' could not be obtained since it does not exist!", selectorAlias,  layerAlias))
+func GetDropdown(layerAlias string, dropdownAlias string) *DropdownEntryType {
+	if !IsDropdownExists(layerAlias, dropdownAlias) {
+		panic(fmt.Sprintf("The selector '%s' under layer '%s' could not be obtained since it does not exist!", dropdownAlias,  layerAlias))
 	}
-	return DropdownMemory[layerAlias][selectorAlias]
+	return DropdownMemory[layerAlias][dropdownAlias]
 }

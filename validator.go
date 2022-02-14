@@ -17,6 +17,11 @@ func validateLayerLocationByLayerAlias(layerAlias string, xLocation int, yLocati
 	layerEntry := memory.GetLayer(layerAlias)
 	validateLayerLocationByLayerEntry(layerEntry, xLocation, yLocation)
 }
+func validateSelectionEntry(selectionEntry memory.SelectionEntryType) {
+	if len(selectionEntry.SelectionValue) == 0 {
+		safeSttyPanic(fmt.Sprintf("The selection entry passed was empty."))
+	}
+}
 func validateLayerLocationByLayerEntry(layerEntry *memory.LayerEntryType, xLocation int, yLocation int) {
 	if xLocation < 0 || yLocation < 0 ||
 		xLocation >= layerEntry.Width || yLocation >= layerEntry.Height {

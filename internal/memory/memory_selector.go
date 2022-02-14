@@ -8,7 +8,7 @@ func InitializeSelectorMemory() {
 	SelectorMemory = make(map[string]map[string]*SelectorEntryType)
 }
 
-func AddSelector(layerAlias string, menuBarAlias string, styleEntry TuiStyleEntryType, selectionEntry SelectionEntryType, xLocation int, yLocation int, selectorHeight int, itemWidth int, numberOfColumns int, viewportPosition int, itemSelected int) {
+func AddSelector(layerAlias string, menuBarAlias string, styleEntry TuiStyleEntryType, selectionEntry SelectionEntryType, xLocation int, yLocation int, selectorHeight int, itemWidth int, numberOfColumns int, viewportPosition int, itemSelected int, isBorderDrawn bool) {
 	selectorEntry := NewSelectorEntry()
 	selectorEntry.StyleEntry = styleEntry
 	selectorEntry.SelectionEntry = selectionEntry
@@ -19,6 +19,7 @@ func AddSelector(layerAlias string, menuBarAlias string, styleEntry TuiStyleEntr
 	selectorEntry.NumberOfColumns = numberOfColumns
 	selectorEntry.ViewportPosition = viewportPosition
 	selectorEntry.ItemHighlighted = itemSelected
+	selectorEntry.IsBorderDrawn = isBorderDrawn
 	if SelectorMemory[layerAlias] == nil {
 		SelectorMemory[layerAlias] = make(map[string]*SelectorEntryType)
 	}
