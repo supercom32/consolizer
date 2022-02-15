@@ -4,6 +4,7 @@ import (
 	"github.com/supercom32/consolizer/constants"
 	"github.com/supercom32/consolizer/internal/memory"
 	"github.com/supercom32/consolizer/internal/stringformat"
+	"sort"
 )
 
 type selectorInstanceType struct {
@@ -32,8 +33,27 @@ func (shared *selectorInstanceType) setViewport(viewportPosition int) {
 func AddSelector(layerAlias string, selectorAlias string, styleEntry memory.TuiStyleEntryType, selectionEntry memory.SelectionEntryType, xLocation int, yLocation int, selectorHeight int, itemWidth int, numberOfColumns int, viewportPosition int, selectedItem int, isBorderDrawn bool) selectorInstanceType {
 	validateLayerLocationByLayerAlias(layerAlias, xLocation, yLocation)
 	validateSelectionEntry(selectionEntry)
-	// TODO: Add verification to ensure no item can be 0 length/number.
+	// TODO: Add verification to ensure no item can be 0 length/number. 
 	memory.AddSelector(layerAlias, selectorAlias, styleEntry, selectionEntry, xLocation, yLocation, selectorHeight, itemWidth, numberOfColumns, viewportPosition, selectedItem, isBorderDrawn)
+	selectorEntry := memory.SelectorMemory[layerAlias][selectorAlias]
+	selectorEntry.ScrollBarAlias = stringformat.GetLastSortedUUID()
+	scrollBarMaxValue := len(selectionEntry.SelectionValue) - (selectorHeight * numberOfColumns) + 1
+	scrollBarXLocation := xLocation + (itemWidth * numberOfColumns)
+	scrollBarYLocation := yLocation
+	scrollBarHeight := selectorHeight - 2
+	if isBorderDrawn {
+		scrollBarXLocation = xLocation + (itemWidth * numberOfColumns) + 1
+		scrollBarYLocation = scrollBarYLocation - 1
+		scrollBarHeight = selectorHeight
+	}
+	AddScrollBar(layerAlias, selectorEntry.ScrollBarAlias, styleEntry, scrollBarXLocation, scrollBarYLocation, scrollBarHeight, scrollBarMaxValue, 0, numberOfColumns,false)
+	scrollBarEntry := memory.ScrollBarMemory[layerAlias][selectorEntry.ScrollBarAlias]
+	selectorWidth := itemWidth
+	if len(selectionEntry.SelectionValue) <= selectorHeight * numberOfColumns {
+		scrollBarEntry.IsEnabled = false
+		scrollBarEntry.IsVisible = false
+		selectorWidth = selectorWidth + 1
+	}
 	var selectorInstance selectorInstanceType
 	selectorInstance.layerAlias = layerAlias
 	selectorInstance.selectorAlias = selectorAlias
@@ -92,9 +112,18 @@ func DrawSelector(selectorAlias string, layerEntry *memory.LayerEntryType, style
 
 func drawSelectorsOnLayer(layerEntry memory.LayerEntryType) {
 	layerAlias := layerEntry.LayerAlias
+	// Range over all our selector aliases and add them to an array.
+	keyList := make([]string, 0)
 	for currentKey := range memory.SelectorMemory[layerAlias] {
-		selectorEntry := memory.SelectorMemory[layerAlias][currentKey]
-		DrawSelector(currentKey, &layerEntry, selectorEntry.StyleEntry, selectorEntry.SelectionEntry, selectorEntry.XLocation, selectorEntry.YLocation, selectorEntry.SelectorHeight, selectorEntry.ItemWidth, selectorEntry.NumberOfColumns, selectorEntry.ViewportPosition, selectorEntry.ItemHighlighted)
+		keyList = append(keyList, currentKey)
+	}
+	// Sort array so internally generated selectors appear last (Since sorted by name, and
+	// UUID generates "zzz" prefixes). This prevents dropdown selectors from appearing under
+	// user created selectors, when they should always be on top.
+	sort.Strings(keyList)
+	for currentKey := range keyList {
+		selectorEntry := memory.SelectorMemory[layerAlias][keyList[currentKey]]
+		DrawSelector(keyList[currentKey], &layerEntry, selectorEntry.StyleEntry, selectorEntry.SelectionEntry, selectorEntry.XLocation, selectorEntry.YLocation, selectorEntry.SelectorHeight, selectorEntry.ItemWidth, selectorEntry.NumberOfColumns, selectorEntry.ViewportPosition, selectorEntry.ItemHighlighted)
 	}
 }
 
@@ -183,6 +212,43 @@ func updateMouseEventSelector() bool {
 			eventStateMemory.previousHighlightedControlAlias = ""
 			eventStateMemory.previousHighlightedControlType = 0
 			isScreenUpdateRequired = true
+		}
+	}
+
+	// --- SCROLL BAR SYNC CODE ---
+	layerAlias := characterEntry.LayerAlias
+
+	// If a button is pressed AND (you are in a drag and drop event OR the cell type is scroll bar), then
+	// sync all dropdown selectors with their appropriate scroll bars. If the control under focus
+	// matches a control that belongs to a dropdown list, then stop processing (Do not attempt to close dropdown).
+	if buttonPressed != 0 && (eventStateMemory.stateId == constants.EventStateDragAndDropScrollBar ||
+		characterEntry.AttributeEntry.CellType == constants.CellTypeScrollBar) {
+		isMatchFound := false
+		for currentKey := range memory.SelectorMemory[layerAlias] {
+			selectorEntry := memory.SelectorMemory[layerAlias][currentKey]
+			scrollBarEntry := memory.ScrollBarMemory[layerAlias][selectorEntry.ScrollBarAlias]
+			if selectorEntry.ViewportPosition != scrollBarEntry.ScrollValue {
+				selectorEntry.ViewportPosition = scrollBarEntry.ScrollValue
+				isScreenUpdateRequired = true
+			}
+			if isControlFocusMatch(layerAlias, selectorEntry.ScrollBarAlias, constants.CellTypeScrollBar) {
+				isMatchFound = true
+				break; // If the current scrollbar being dragged and dropped matches, don't process more dropdowns.
+			}
+		}
+		if isMatchFound {
+			return isScreenUpdateRequired
+		}
+	}
+	for currentKey := range memory.SelectorMemory[layerAlias] {
+		selectorEntry := memory.SelectorMemory[layerAlias][currentKey]
+		scrollBarEntry := memory.ScrollBarMemory[layerAlias][selectorEntry.ScrollBarAlias]
+		if !selectorEntry.IsVisible {
+			scrollBarEntry.IsVisible = false
+		} else {
+			if scrollBarEntry.IsEnabled {
+				scrollBarEntry.IsVisible = true
+			}
 		}
 	}
 	return isScreenUpdateRequired

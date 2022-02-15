@@ -44,7 +44,10 @@ func testDropdown() {
 	selectionEntry2.Add("2", "2")
 	selectionEntry2.Add("3", "3")
 	AddDropdown(layerAlias1, "myDropdown", styleEntry, selectionEntry, 2, 2, 8, 7, 0)
-	AddDropdown(layerAlias1, "myDropdown2", styleEntry, selectionEntry2, 6, 4, 3, 7, 0)
+	AddDropdown(layerAlias1, "myDropdown2", styleEntry, selectionEntry2, 18, 9, 3, 7, 0)
+	AddSelector(layerAlias1, "menuBar", styleEntry, selectionEntry, 6, 10, 4, 7, 3, 0, -1, false)
+	AddSelector(layerAlias1, "menuBar2", styleEntry, selectionEntry, 10, 20, 4, 7, 1, 0, -1, false)
+
 	for {
 		UpdateDisplay()
 		key := Inkey()
@@ -78,8 +81,8 @@ func testScrollBars() {
 	selectionEntry.Add("4", "GOTO")
 	selectionEntry.Add("5", "RUN")
 	selectionEntry.Add("6", "DELETE")
-	s1 := AddScrollBar(layerAlias1, "scrollBar1", styleEntry, 2, 2, 8,80,0, false)
-	s2 := AddScrollBar(layerAlias1, "scrollBar2", styleEntry, 10, 5, 8,8,4, true)
+	s1 := AddScrollBar(layerAlias1, "scrollBar1", styleEntry, 2, 2, 8,80,0, 1, false)
+	s2 := AddScrollBar(layerAlias1, "scrollBar2", styleEntry, 10, 5, 8,8,4, 1,true)
 	s1.setScrollValue(4)
 	s2.setHandlePosition(4)
 	for {
@@ -124,15 +127,24 @@ func testSelector() {
 	selectionEntry.Add("4", "GOTO")
 	selectionEntry.Add("5", "RUN")
 	selectionEntry.Add("6", "DELETE")
-	menuBarInstance := AddSelector(layerAlias1, "menuBar", styleEntry, selectionEntry, 0, 10, 3, 7, 2, 0, -1, false)
+	for i := 0; i < 20; i++ {
+		selectionEntry.Add(strconv.Itoa(i), strconv.Itoa(i))
+	}
+	menuBarInstance := AddSelector(layerAlias1, "menuBar", styleEntry, selectionEntry, 2, 10, 4, 7, 3, 0, -1, false)
+	menuBarInstance2 := AddSelector(layerAlias1, "menuBar2", styleEntry, selectionEntry, 10, 20, 4, 7, 1, 0, -1, false)
 	LocateLayer(layerAlias1, 3, 3)
 	PrintLayer(layerAlias1, menuBarInstance.layerAlias)
-	for i := 0; i < 200; i++ {
+	for {
 		UpdateDisplay()
 		time.Sleep(50 * time.Millisecond)
-		if menuBarInstance.GetSelected() == "6" {
-			LocateLayer(layerAlias1, 3, 3)
-			PrintLayer(layerAlias1, "HIT")
+		LocateLayer(layerAlias1, 3, 3)
+		PrintLayer(layerAlias1, menuBarInstance.GetSelected())
+		LocateLayer(layerAlias1, 3, 4)
+		PrintLayer(layerAlias1, menuBarInstance2.GetSelected())
+		key := Inkey()
+		//fmt.Print(key)
+		if key == "q" {
+			break
 		}
 	}
 	DeleteAllLayers()

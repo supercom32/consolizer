@@ -13,17 +13,18 @@ func InitializeScrollBarMemory() {
 	ScrollBarMemory = make(map[string]map[string]*ScrollBarEntryType)
 }
 
-func AddScrollBar(layerAlias string, scrollBarAlias string, styleEntry TuiStyleEntryType, xLocation int, yLocation int, length int, MaxScrollValue int, ScrollValue int, isHorizontal bool) {
+func AddScrollBar(layerAlias string, scrollBarAlias string, styleEntry TuiStyleEntryType, xLocation int, yLocation int, length int, maxScrollValue int, scrollValue int, ScrollIncrement int, isHorizontal bool) {
 	scrollBarEntry := NewScrollBarEntry()
 	scrollBarEntry.StyleEntry = styleEntry
 	scrollBarEntry.XLocation = xLocation
 	scrollBarEntry.YLocation = yLocation
 	scrollBarEntry.Length = length
-	scrollBarEntry.MaxScrollValue = MaxScrollValue -1 // Since scroll values are 0 based, we minus 1 from total.
-	scrollBarEntry.ScrollValue = ScrollValue
+	scrollBarEntry.MaxScrollValue = maxScrollValue -1 // Since scroll values are 0 based, we minus 1 from total.
+	scrollBarEntry.ScrollValue = scrollValue
 	scrollBarEntry.IsVisible = true
 	scrollBarEntry.IsEnabled = true
 	scrollBarEntry.IsHorizontal = isHorizontal
+	scrollBarEntry.ScrollIncrement = ScrollIncrement
 	if ScrollBarMemory[layerAlias] == nil {
 		ScrollBarMemory[layerAlias] = make(map[string]*ScrollBarEntryType)
 	}

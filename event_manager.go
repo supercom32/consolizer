@@ -90,15 +90,16 @@ func updateEventQueues() {
 		if updateButtonStates(true) {
 			isScreenUpdateRequired = true
 		}
+		if updateDropdownStateMouse() {
+			isScreenUpdateRequired =  true
+		}
 		if updateMouseEventSelector() {
 			isScreenUpdateRequired =  true
 		}
 		if updateMouseEventScrollBar() {
 			isScreenUpdateRequired =  true
 		}
-		if updateDropdownStateMouse() {
-			isScreenUpdateRequired =  true
-		}
+
 		if isScreenUpdateRequired {
 			UpdateDisplay()
 		}

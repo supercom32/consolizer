@@ -20,6 +20,7 @@ func AddSelector(layerAlias string, menuBarAlias string, styleEntry TuiStyleEntr
 	selectorEntry.ViewportPosition = viewportPosition
 	selectorEntry.ItemHighlighted = itemSelected
 	selectorEntry.IsBorderDrawn = isBorderDrawn
+	selectorEntry.IsVisible = true
 	if SelectorMemory[layerAlias] == nil {
 		SelectorMemory[layerAlias] = make(map[string]*SelectorEntryType)
 	}

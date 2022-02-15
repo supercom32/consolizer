@@ -27,8 +27,8 @@ func (shared *ScrollBarInstanceType) setHandlePosition(positionIndex int) {
 	computeScrollBarValueByHandlePosition(shared.layerAlias, shared.scrollBarAlias)
 }
 
-func AddScrollBar(layerAlias string, scrollBarAlias string, styleEntry memory.TuiStyleEntryType, xLocation int, yLocation int, length int, MaxScrollValue int, ScrollValue int, isHorizontal bool) ScrollBarInstanceType {
-	memory.AddScrollBar(layerAlias, scrollBarAlias, styleEntry, xLocation, yLocation, length, MaxScrollValue, ScrollValue, isHorizontal)
+func AddScrollBar(layerAlias string, scrollBarAlias string, styleEntry memory.TuiStyleEntryType, xLocation int, yLocation int, length int, maxScrollValue int, scrollValue int, scrollIncrement int, isHorizontal bool) ScrollBarInstanceType {
+	memory.AddScrollBar(layerAlias, scrollBarAlias, styleEntry, xLocation, yLocation, length, maxScrollValue, scrollValue, scrollIncrement, isHorizontal)
 	var ScrollBarInstance ScrollBarInstanceType
 	ScrollBarInstance.layerAlias = layerAlias
 	ScrollBarInstance.scrollBarAlias = scrollBarAlias
@@ -102,19 +102,19 @@ func updateKeyboardEventScrollBar(keystroke string) bool {
 	scrollBarEntry := memory.ScrollBarMemory[eventStateMemory.focusedLayerAlias][eventStateMemory.focusedControlAlias]
 	if scrollBarEntry.IsEnabled {
 		if keystroke == "up" || keystroke == "left"{
-			scrollBarEntry.ScrollValue = scrollBarEntry.ScrollValue - 1
+			scrollBarEntry.ScrollValue = scrollBarEntry.ScrollValue - scrollBarEntry.ScrollIncrement
 			computeScrollBarHandlePositionByScrollValue(eventStateMemory.focusedLayerAlias, eventStateMemory.focusedControlAlias)
 		}
 		if keystroke == "down" || keystroke == "right" {
-			scrollBarEntry.ScrollValue = scrollBarEntry.ScrollValue + 1
+			scrollBarEntry.ScrollValue = scrollBarEntry.ScrollValue + scrollBarEntry.ScrollIncrement
 			computeScrollBarHandlePositionByScrollValue(eventStateMemory.focusedLayerAlias, eventStateMemory.focusedControlAlias)
 		}
 		if keystroke == "pgup" {
-			scrollBarEntry.ScrollValue = scrollBarEntry.ScrollValue - 10
+			scrollBarEntry.ScrollValue = scrollBarEntry.ScrollValue - (scrollBarEntry.ScrollIncrement * 3)
 			computeScrollBarHandlePositionByScrollValue(eventStateMemory.focusedLayerAlias, eventStateMemory.focusedControlAlias)
 		}
 		if keystroke == "pgdn" {
-			scrollBarEntry.ScrollValue = scrollBarEntry.ScrollValue + 10
+			scrollBarEntry.ScrollValue = scrollBarEntry.ScrollValue + (scrollBarEntry.ScrollIncrement * 3)
 			computeScrollBarHandlePositionByScrollValue(eventStateMemory.focusedLayerAlias, eventStateMemory.focusedControlAlias)
 		}
 	}
@@ -136,11 +136,11 @@ func updateMouseEventScrollBar() bool {
 					eventStateMemory.stateId = constants.EventStateDragAndDropScrollBar
 				} else if characterEntry.AttributeEntry.CellControlId == constants.CellControlIdUpScrollArrow {
 					// If you click on the up scroll bar button.
-					scrollBarEntry.ScrollValue = scrollBarEntry.ScrollValue - 1
+					scrollBarEntry.ScrollValue = scrollBarEntry.ScrollValue - scrollBarEntry.ScrollIncrement
 					computeScrollBarHandlePositionByScrollValue(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias)
 				} else if characterEntry.AttributeEntry.CellControlId == constants.CellControlIdDownScrollArrow {
 					// If you click on the down scroll bar button.
-					scrollBarEntry.ScrollValue = scrollBarEntry.ScrollValue + 1
+					scrollBarEntry.ScrollValue = scrollBarEntry.ScrollValue + scrollBarEntry.ScrollIncrement
 					computeScrollBarHandlePositionByScrollValue( characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias)
 				} else {
 					// If you click on the scroll bar area itself,  jump the scroll bar to it.

@@ -14,21 +14,24 @@ type DropdownInstanceType struct {
 func AddDropdown(layerAlias string, dropdownAlias string, styleEntry memory.TuiStyleEntryType, selectionEntry memory.SelectionEntryType, xLocation int, yLocation int, selectorHeight int, itemWidth int, itemSelected int) DropdownInstanceType {
 	memory.AddDropdown(layerAlias, dropdownAlias, styleEntry, selectionEntry, xLocation, yLocation, itemWidth, itemSelected)
 	dropdownEntry := memory.GetDropdown(layerAlias, dropdownAlias)
-	dropdownEntry.ScrollBarAlias = stringformat.GetUUID()
-	scrollBarMaxValue := len(selectionEntry.SelectionValue) - selectorHeight + 1
+	dropdownEntry.ScrollBarAlias = stringformat.GetLastSortedUUID()
 	// Here we add +2 to x to account for the scroll bar being outside the selector border on ether side. Also, we
 	// minus the scroll bar max size by the height of the selector so we don't scroll over values which do not change viewport.
-	AddScrollBar(layerAlias, dropdownEntry.ScrollBarAlias, styleEntry, xLocation + itemWidth + 2, yLocation, selectorHeight, scrollBarMaxValue, 0, false)
-	scrollBarEntry := memory.ScrollBarMemory[layerAlias][dropdownEntry.ScrollBarAlias]
-	scrollBarEntry.IsVisible = false
 	selectorWidth := itemWidth
 	if len(selectionEntry.SelectionValue) <= selectorHeight {
-		scrollBarEntry.IsEnabled = false
 		selectorWidth = selectorWidth + 1
 	}
-	dropdownEntry.SelectorAlias = stringformat.GetUUID()
+	dropdownEntry.SelectorAlias = stringformat.GetLastSortedUUID()
 	// Here we add +1 to x and y to account for borders around the selection.
 	AddSelector(layerAlias, dropdownEntry.SelectorAlias, styleEntry, selectionEntry, xLocation + 1, yLocation + 1, selectorHeight, selectorWidth, 1, 0, 0, true)
+	selectorEntry := memory.SelectorMemory[layerAlias][dropdownEntry.SelectorAlias]
+	selectorEntry.IsVisible = false
+	dropdownEntry.ScrollBarAlias = selectorEntry.ScrollBarAlias
+	scrollBarEntry := memory.ScrollBarMemory[layerAlias][dropdownEntry.ScrollBarAlias]
+	scrollBarEntry.IsVisible = false
+	if len(selectionEntry.SelectionValue) <= selectorHeight {
+		scrollBarEntry.IsEnabled = false
+	}
 	var dropdownInstance DropdownInstanceType
 	dropdownInstance.layerAlias = layerAlias
 	dropdownInstance.dropdownAlias = dropdownAlias

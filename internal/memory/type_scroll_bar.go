@@ -19,6 +19,7 @@ type ScrollBarEntryType struct {
 	IsVisible bool
 	IsHorizontal            bool
 	IsEnabled bool
+	ScrollIncrement int
 }
 
 func (shared ScrollBarEntryType) MarshalJSON() ([]byte, error) {
@@ -34,6 +35,7 @@ func (shared ScrollBarEntryType) MarshalJSON() ([]byte, error) {
 		IsVisible bool
 		IsHorizontal bool
 		IsEnabled bool
+		ScrollIncrement int
 	}{
 		StyleEntry: shared.StyleEntry,
 		ScrollBarAlias: shared.ScrollBarAlias,
@@ -45,6 +47,7 @@ func (shared ScrollBarEntryType) MarshalJSON() ([]byte, error) {
 		IsVisible: shared.IsVisible,
 		IsHorizontal: shared.IsHorizontal,
 		IsEnabled: shared.IsEnabled,
+		ScrollIncrement: shared.ScrollIncrement,
 	})
 	if err != nil {
 		return nil, err
@@ -73,6 +76,7 @@ func NewScrollBarEntry(existingScrollBarEntry ...*ScrollBarEntryType) ScrollBarE
 		scrollBarEntry.IsVisible = existingScrollBarEntry[0].IsVisible
 		scrollBarEntry.IsHorizontal = existingScrollBarEntry[0].IsHorizontal
 		scrollBarEntry.IsEnabled = existingScrollBarEntry[0].IsEnabled
+		scrollBarEntry.ScrollIncrement = existingScrollBarEntry[0].ScrollIncrement
 	}
 	return scrollBarEntry
 }
@@ -87,7 +91,8 @@ func IsScrollBarEntryEqual(sourceScrollBarEntry *ScrollBarEntryType, targetScrol
 		sourceScrollBarEntry.HandlePosition == targetScrollBarEntry.HandlePosition &&
 		sourceScrollBarEntry.IsVisible == targetScrollBarEntry.IsVisible &&
 		sourceScrollBarEntry.IsHorizontal == targetScrollBarEntry.IsHorizontal &&
-		sourceScrollBarEntry.IsEnabled == targetScrollBarEntry.IsEnabled {
+		sourceScrollBarEntry.IsEnabled == targetScrollBarEntry.IsEnabled &&
+		sourceScrollBarEntry.ScrollIncrement == targetScrollBarEntry.ScrollIncrement {
 		return true
 	}
 	return false

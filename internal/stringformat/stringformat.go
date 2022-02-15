@@ -3,10 +3,10 @@ package stringformat
 import (
 	"encoding/base64"
 	"fmt"
+	"github.com/google/uuid"
 	"github.com/supercom32/consolizer/constants"
 	"github.com/supercom32/consolizer/internal/recast"
 	"golang.org/x/text/width"
-	"github.com/google/uuid"
 )
 
 const maxLen = 4096
@@ -118,7 +118,7 @@ func GetFilledString(lengthOfString int, character string) string {
 	return newString
 }
 
-func GetUUID() string {
+func GetLastSortedUUID() string {
 	id := uuid.New()
-	return id.String()
+	return "zzzzzzz" + id.String()
 }
