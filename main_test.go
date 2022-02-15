@@ -53,6 +53,11 @@ func testDropdown() {
 		key := Inkey()
 		//fmt.Print(key)
 		if key == "w" {
+			Locate(0,0)
+			PrintLayer(layerAlias1, "                                                ")
+			Locate(0,0)
+			_, _, pressed, _ := memory.GetPreviousMouseStatus()
+			PrintLayer(layerAlias1, "***" + strconv.Itoa(int(pressed)) + "***")
 		}
 		if key == "q" {
 			break

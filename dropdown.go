@@ -75,7 +75,6 @@ func updateDropdownStateMouse() bool {
 	characterEntry := getCellInformationUnderMouseCursor(mouseXLocation, mouseYLocation)
 	layerAlias := characterEntry.LayerAlias
 	cellAlias := characterEntry.AttributeEntry.CellAlias
-
 	// If a button is pressed AND (you are in a drag and drop event OR the cell type is scroll bar), then
 	// sync all dropdown selectors with their appropriate scroll bars. If the control under focus
 	// matches a control that belongs to a dropdown list, then stop processing (Do not attempt to close dropdown).
@@ -99,7 +98,6 @@ func updateDropdownStateMouse() bool {
 			return isUpdateRequired
 		}
 	}
-
 	// If our dropdown alias is not empty, then open our dropdown.
 	if buttonPressed != 0 && cellAlias != "" && characterEntry.AttributeEntry.CellType == constants.CellTypeDropdown {
 		closeAllOpenDropdowns(layerAlias)
@@ -110,12 +108,13 @@ func updateDropdownStateMouse() bool {
 		scrollBarEntry := memory.ScrollBarMemory[layerAlias][dropdownEntry.ScrollBarAlias]
 		if scrollBarEntry.IsEnabled {
 			scrollBarEntry.IsVisible = true
+			setFocusedControl(layerAlias, selectorEntry.ScrollBarAlias, constants.CellTypeScrollBar)
 		}
 		isUpdateRequired = true
 		return isUpdateRequired
 	}
-
-	if buttonPressed != 0 && characterEntry.AttributeEntry.CellType != constants.CellTypeDropdown {
+	_, _, previousButtonPress, _ := memory.GetPreviousMouseStatus()
+	if buttonPressed != 0 && previousButtonPress == 0 && characterEntry.AttributeEntry.CellType != constants.CellTypeDropdown {
 		closeAllOpenDropdowns(layerAlias)
 	}
 	return isUpdateRequired
@@ -134,6 +133,8 @@ func closeAllOpenDropdowns(layerAlias string) {
 				dropdownEntry.ItemSelected = selectorEntry.ItemSelected
 			}
 			setFocusedControl("", "", constants.NullCellType)
+			// Reset the event state only if a tray is closed.
+			eventStateMemory.stateId = constants.EventStateNone
 		}
 	}
 }

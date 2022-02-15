@@ -33,7 +33,7 @@ func (shared *selectorInstanceType) setViewport(viewportPosition int) {
 func AddSelector(layerAlias string, selectorAlias string, styleEntry memory.TuiStyleEntryType, selectionEntry memory.SelectionEntryType, xLocation int, yLocation int, selectorHeight int, itemWidth int, numberOfColumns int, viewportPosition int, selectedItem int, isBorderDrawn bool) selectorInstanceType {
 	validateLayerLocationByLayerAlias(layerAlias, xLocation, yLocation)
 	validateSelectionEntry(selectionEntry)
-	// TODO: Add verification to ensure no item can be 0 length/number. 
+	// TODO: Add verification to ensure no item can be 0 length/number.
 	memory.AddSelector(layerAlias, selectorAlias, styleEntry, selectionEntry, xLocation, yLocation, selectorHeight, itemWidth, numberOfColumns, viewportPosition, selectedItem, isBorderDrawn)
 	selectorEntry := memory.SelectorMemory[layerAlias][selectorAlias]
 	selectorEntry.ScrollBarAlias = stringformat.GetLastSortedUUID()
@@ -183,34 +183,42 @@ func updateMouseEventSelector() bool {
 			selectorEntry := memory.GetSelector(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias)
 			selectorEntry.ItemHighlighted = characterEntry.AttributeEntry.CellControlId
 			selectorEntry.ItemSelected = characterEntry.AttributeEntry.CellControlId
+			/*
 			eventStateMemory.focusedControlAlias = characterEntry.AttributeEntry.CellControlAlias
 			eventStateMemory.focusedLayerAlias = characterEntry.LayerAlias
 			eventStateMemory.focusedControlType = constants.CellTypeSelectiorItem
 			eventStateMemory.previousHighlightedLayerAlias = characterEntry.LayerAlias
 			eventStateMemory.previousHighlightedControlAlias = characterEntry.AttributeEntry.CellControlAlias
 			eventStateMemory.previousHighlightedControlType = constants.CellTypeSelectiorItem
+			 */
 			isScreenUpdateRequired = true
 		} else {
 			selectorEntry := memory.GetSelector(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias)
 			selectorEntry.ItemHighlighted = characterEntry.AttributeEntry.CellControlId
+			/*
 			eventStateMemory.focusedControlAlias = characterEntry.AttributeEntry.CellControlAlias
 			eventStateMemory.focusedLayerAlias = characterEntry.LayerAlias
 			eventStateMemory.focusedControlType = constants.CellTypeSelectiorItem
 			eventStateMemory.previousHighlightedLayerAlias = characterEntry.LayerAlias
 			eventStateMemory.previousHighlightedControlAlias = characterEntry.AttributeEntry.CellControlAlias
 			eventStateMemory.previousHighlightedControlType = constants.CellTypeSelectiorItem
+
+			 */
 			isScreenUpdateRequired = true
 		}
 	} else {
 		if eventStateMemory.previousHighlightedControlType == constants.CellTypeSelectiorItem && memory.IsSelectorExists(eventStateMemory.previousHighlightedLayerAlias, eventStateMemory.previousHighlightedControlAlias) {
 			selectorEntry := memory.GetSelector(eventStateMemory.previousHighlightedLayerAlias, eventStateMemory.previousHighlightedControlAlias)
 			selectorEntry.ItemHighlighted = constants.NullItemSelection
+			/*
 			eventStateMemory.focusedControlAlias = ""
 			eventStateMemory.focusedLayerAlias = ""
 			eventStateMemory.focusedControlType = constants.NullControlType
 			eventStateMemory.previousHighlightedLayerAlias = ""
 			eventStateMemory.previousHighlightedControlAlias = ""
 			eventStateMemory.previousHighlightedControlType = 0
+
+			 */
 			isScreenUpdateRequired = true
 		}
 	}

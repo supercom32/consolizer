@@ -7,6 +7,7 @@ import (
 	"github.com/supercom32/consolizer/constants"
 	"github.com/supercom32/consolizer/internal/recast"
 	"golang.org/x/text/width"
+	"time"
 )
 
 const maxLen = 4096
@@ -120,5 +121,6 @@ func GetFilledString(lengthOfString int, character string) string {
 
 func GetLastSortedUUID() string {
 	id := uuid.New()
-	return "zzzzzzz" + id.String()
+	time := string(time.Now().Unix())
+	return "zzzzzzz" + time + id.String()
 }

@@ -3,6 +3,7 @@ package consolizer
 import (
 	"github.com/supercom32/consolizer/constants"
 	"github.com/supercom32/consolizer/internal/memory"
+	"sort"
 )
 
 type ScrollBarInstanceType struct {
@@ -41,10 +42,15 @@ func DeleteScrollBar(layerAlias string, scrollBarAlias string) {
 
 func drawScrollBarsOnLayer(layerEntry memory.LayerEntryType) {
 	layerAlias := layerEntry.LayerAlias
+	keyList := make([]string, 0)
 	for currentKey := range memory.ScrollBarMemory[layerAlias] {
-		scrollBarEntry := memory.ScrollBarMemory[layerAlias][currentKey]
+		keyList = append(keyList, currentKey)
+	}
+	sort.Strings(keyList)
+	for currentKey := range keyList{
+		scrollBarEntry := memory.ScrollBarMemory[layerAlias][keyList[currentKey]]
 		if scrollBarEntry.IsVisible {
-			drawScrollBar(&layerEntry, currentKey, scrollBarEntry.StyleEntry, scrollBarEntry.XLocation, scrollBarEntry.YLocation, scrollBarEntry.Length, scrollBarEntry.HandlePosition, scrollBarEntry.IsHorizontal)
+			drawScrollBar(&layerEntry, keyList[currentKey], scrollBarEntry.StyleEntry, scrollBarEntry.XLocation, scrollBarEntry.YLocation, scrollBarEntry.Length, scrollBarEntry.HandlePosition, scrollBarEntry.IsHorizontal)
 		}
 	}
 }
