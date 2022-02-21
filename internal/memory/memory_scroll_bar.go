@@ -31,11 +31,11 @@ func AddScrollBar(layerAlias string, scrollBarAlias string, styleEntry TuiStyleE
 	ScrollBarMemory[layerAlias][scrollBarAlias] = &scrollBarEntry
 }
 
-func GetScrollBar(layerAlias string, scrollBarAlias string) ScrollBarEntryType {
+func GetScrollBar(layerAlias string, scrollBarAlias string) *ScrollBarEntryType {
 	if ScrollBarMemory[layerAlias][scrollBarAlias] == nil {
 		panic(fmt.Sprintf("The requested scroll bar with alias '%s' on layer '%s' could not be returned since it does not exist.", scrollBarAlias, layerAlias))
 	}
-	return *ScrollBarMemory[layerAlias][scrollBarAlias]
+	return ScrollBarMemory[layerAlias][scrollBarAlias]
 }
 
 func DeleteScrollBar(layerAlias string, scrollBarAlias string) {

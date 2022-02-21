@@ -18,7 +18,11 @@ type TuiStyleEntryType struct {
 	LowerRightCorner             rune
 	LowerLeftCorner              rune
 	CrossConnector               rune
-	DesktopPattern        rune
+	DesktopPattern          rune
+	CheckboxForegroundColor   constants.ColorType
+	CheckboxBackgroundColor   constants.ColorType
+	CheckboxSelectedCharacter rune
+	CheckboxUnselectedCharacter rune
 	ScrollBarTrackPattern rune
 	ScrollBarHandle rune
 	ScrollBarUpArrow      rune
@@ -38,6 +42,8 @@ type TuiStyleEntryType struct {
 	TextLabelColor				 constants.ColorType
 	TextInputForegroundColor     constants.ColorType
 	TextInputBackgroundColor constants.ColorType
+	TextboxForegroundColor constants.ColorType
+	TextboxBackgroundColor constants.ColorType
 	CursorForegroundColor    constants.ColorType
 	CursorBackgroundColor   constants.ColorType
 	SelectorForegroundColor  constants.ColorType
@@ -74,6 +80,10 @@ func NewTuiStyleEntry(existingStyleEntry ...*TuiStyleEntryType) TuiStyleEntryTyp
 		styleEntry.LowerLeftCorner = existingStyleEntry[0].LowerLeftCorner
 		styleEntry.CrossConnector = existingStyleEntry[0].CrossConnector
 		styleEntry.DesktopPattern = existingStyleEntry[0].DesktopPattern
+		styleEntry.CheckboxForegroundColor = existingStyleEntry[0].CheckboxForegroundColor
+		styleEntry.CheckboxBackgroundColor = existingStyleEntry[0].CheckboxBackgroundColor
+		styleEntry.CheckboxSelectedCharacter = existingStyleEntry[0].CheckboxSelectedCharacter
+		styleEntry.CheckboxUnselectedCharacter = existingStyleEntry[0].CheckboxUnselectedCharacter
 		styleEntry.ScrollBarTrackPattern = existingStyleEntry[0].ScrollBarTrackPattern
 		styleEntry.ScrollBarHandle = existingStyleEntry[0].ScrollBarHandle
 		styleEntry.ScrollBarUpArrow = existingStyleEntry[0].ScrollBarUpArrow
@@ -90,6 +100,8 @@ func NewTuiStyleEntry(existingStyleEntry ...*TuiStyleEntryType) TuiStyleEntryTyp
 		styleEntry.TextLabelColor = existingStyleEntry[0].TextLabelColor
 		styleEntry.TextInputForegroundColor = existingStyleEntry[0].TextInputForegroundColor
 		styleEntry.TextInputBackgroundColor = existingStyleEntry[0].TextInputBackgroundColor
+		styleEntry.TextboxForegroundColor = existingStyleEntry[0].TextboxForegroundColor
+		styleEntry.TextboxBackgroundColor = existingStyleEntry[0].TextboxBackgroundColor
 		styleEntry.CursorForegroundColor = existingStyleEntry[0].CursorForegroundColor
 		styleEntry.CursorBackgroundColor = existingStyleEntry[0].CursorBackgroundColor
 		styleEntry.SelectorForegroundColor = existingStyleEntry[0].SelectorForegroundColor
@@ -129,6 +141,12 @@ func NewTuiStyleEntry(existingStyleEntry ...*TuiStyleEntryType) TuiStyleEntryTyp
 		styleEntry.TextLabelColor = constants.AnsiColorByIndex[15]
 		styleEntry.TextInputForegroundColor = constants.AnsiColorByIndex[15]
 		styleEntry.TextInputBackgroundColor = constants.AnsiColorByIndex[0]
+		styleEntry.TextboxForegroundColor = constants.AnsiColorByIndex[15]
+		styleEntry.TextboxBackgroundColor = constants.AnsiColorByIndex[0]
+		styleEntry.CheckboxForegroundColor = constants.AnsiColorByIndex[15]
+		styleEntry.CheckboxBackgroundColor = constants.AnsiColorByIndex[0]
+		styleEntry.CheckboxSelectedCharacter = constants.CharUncheckedBox
+		styleEntry.CheckboxUnselectedCharacter = constants.CharCheckedBox
 		styleEntry.ScrollBarForegroundColor = constants.AnsiColorByIndex[15]
 		styleEntry.ScrollBarBackgroundColor = constants.AnsiColorByIndex[0]
 		styleEntry.ScrollBarHandleColor = constants.AnsiColorByIndex[15]

@@ -6,6 +6,7 @@ require (
 	github.com/gdamore/tcell/v2 v2.4.0
 	github.com/google/uuid v1.3.0
 	github.com/stretchr/testify v1.7.0
+	github.com/supercom32/filesystem v0.0.0-20211004192037-50da3c289705
 	golang.org/x/text v0.3.7
 )
 

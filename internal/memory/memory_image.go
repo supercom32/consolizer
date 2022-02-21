@@ -13,11 +13,11 @@ func AddImage(imageAlias string, imageEntry ImageEntryType) {
 	ImageMemory[imageAlias] = &imageEntry
 }
 
-func GetImage(imageAlias string) ImageEntryType {
+func GetImage(imageAlias string) *ImageEntryType {
 	if ImageMemory[imageAlias] == nil {
 		panic(fmt.Sprintf("The requested image with alias '%s' could not be returned since it does not exist.", imageAlias))
 	}
-	return *ImageMemory[imageAlias]
+	return ImageMemory[imageAlias]
 }
 func DeleteImage(imageAlias string) {
 	delete(ImageMemory, imageAlias)

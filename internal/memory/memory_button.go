@@ -28,11 +28,11 @@ func AddButton(layerAlias string, buttonAlias string, buttonLabel string, styleE
 	ButtonMemory[layerAlias][buttonAlias] = &buttonEntry
 }
 
-func GetButton(layerAlias string, buttonAlias string) ButtonEntryType {
+func GetButton(layerAlias string, buttonAlias string) *ButtonEntryType {
 	if ButtonMemory[layerAlias][buttonAlias] == nil {
 		panic(fmt.Sprintf("The requested button with alias '%s' on layer '%s' could not be returned since it does not exist.", buttonAlias, layerAlias))
 	}
-	return *ButtonMemory[layerAlias][buttonAlias]
+	return ButtonMemory[layerAlias][buttonAlias]
 }
 
 func DeleteButton(layerAlias string, buttonAlias string) {

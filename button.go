@@ -95,7 +95,7 @@ entry.
 func drawButtonsOnLayer(layerEntry memory.LayerEntryType) {
 	layerAlias := layerEntry.LayerAlias
 	for currentKey := range memory.ButtonMemory[layerAlias] {
-		buttonEntry := memory.ButtonMemory[layerAlias][currentKey]
+		buttonEntry := memory.GetButton(layerAlias, currentKey)
 		drawButton(&layerEntry, currentKey, buttonEntry.ButtonLabel, buttonEntry.StyleEntry, buttonEntry.IsPressed, buttonEntry.IsSelected, buttonEntry.XLocation, buttonEntry.YLocation, buttonEntry.Width, buttonEntry.Height)
 	}
 }
@@ -126,18 +126,19 @@ func updateButtonStateMouse() bool {
 	mouseXLocation, mouseYLocation, buttonPressed, _ := memory.GetMouseStatus()
 	characterEntry := getCellInformationUnderMouseCursor(mouseXLocation, mouseYLocation)
 	layerAlias := characterEntry.LayerAlias
-	buttonAlias := characterEntry.AttributeEntry.CellAlias
+	buttonAlias := characterEntry.AttributeEntry.CellControlAlias
 	// If not a button, reset all buttons if needed.
 	if characterEntry.AttributeEntry.CellType != constants.CellTypeButton {
 		for currentLayer, _ := range memory.ButtonMemory {
 			for currentButton, _ := range memory.ButtonMemory[currentLayer] {
 				// If button not found, reset all buttons if necessary...
-				if memory.ButtonMemory[currentLayer][currentButton].IsPressed == true {
+				buttonEntry := memory.GetButton(currentLayer,currentButton)
+				if buttonEntry.IsPressed == true {
 					buttonHistory.layerAlias = layerAlias
 					buttonHistory.buttonAlias = buttonAlias
-					memory.ButtonMemory[currentLayer][currentButton].Mutex.Lock()
-					memory.ButtonMemory[currentLayer][currentButton].IsPressed = false
-					memory.ButtonMemory[currentLayer][currentButton].Mutex.Unlock()
+					buttonEntry.Mutex.Lock()
+					buttonEntry.IsPressed = false
+					buttonEntry.Mutex.Unlock()
 					isUpdateRequired = true
 				}
 			}
@@ -147,21 +148,23 @@ func updateButtonStateMouse() bool {
 	if buttonAlias != "" && buttonPressed == 0 {
 		// If button was found, but mouse is not being pressed, update button
 		// only if required.
-		if  memory.ButtonMemory[layerAlias][buttonAlias].IsPressed == true {
-			memory.ButtonMemory[layerAlias][buttonAlias].Mutex.Lock()
+		buttonEntry := memory.GetButton(layerAlias, buttonAlias)
+		if buttonEntry.IsPressed == true {
+			buttonEntry.Mutex.Lock()
 			//memory.scrollBarMemory[layerAlias][buttonAlias].IsSelected = true
-			memory.ButtonMemory[layerAlias][buttonAlias].IsPressed = false
-			memory.ButtonMemory[layerAlias][buttonAlias].Mutex.Unlock()
+			buttonEntry.IsPressed = false
+			buttonEntry.Mutex.Unlock()
 			isUpdateRequired = true
 		}
 	} else if buttonAlias != "" && buttonPressed != 0 {
 		// If button was found and mouse is being pressed, update button only
 		// if required.
-		if  memory.ButtonMemory[layerAlias][buttonAlias].IsPressed == false {
-			memory.ButtonMemory[layerAlias][buttonAlias].Mutex.Lock()
+		buttonEntry := memory.GetButton(layerAlias, buttonAlias)
+		if  buttonEntry.IsPressed == false {
+			buttonEntry.Mutex.Lock()
 			//memory.scrollBarMemory[layerAlias][buttonAlias].IsSelected = true
-			memory.ButtonMemory[layerAlias][buttonAlias].IsPressed = true
-			memory.ButtonMemory[layerAlias][buttonAlias].Mutex.Unlock()
+			buttonEntry.IsPressed = true
+			buttonEntry.Mutex.Unlock()
 			setFocusedControl(layerAlias, buttonAlias, constants.CellTypeButton)
 			isUpdateRequired = true
 		}

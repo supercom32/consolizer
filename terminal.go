@@ -53,6 +53,8 @@ func InitializeTerminal(width int, height int) {
 	memory.InitializeSelectorMemory()
 	memory.InitializeScrollBarMemory()
 	memory.InitializeDropdownMemory()
+	memory.InitializeCheckboxMemory()
+	memory.InitializeTextboxMemory()
 	commonResource.terminalWidth = width
 	commonResource.terminalHeight = height
 	commonResource.debugDirectory = "/tmp/"
@@ -638,7 +640,7 @@ the following information should be noted:
 - If the location to print falls outside the range of the text layer,
 then only the visible portion of your text will be printed.
 */
-func printLayer(layerEntry *memory.LayerEntryType, attributeEntry memory.AttributeEntryType, xLocation int, yLocation int, textToPrint []rune) {
+func printLayer(layerEntry *memory.LayerEntryType, attributeEntry memory.AttributeEntryType, xLocation int, yLocation int, textToPrint []rune) int {
 	layerWidth := layerEntry.Width
 	layerHeight := layerEntry.Height
 	cursorXLocation := xLocation
@@ -650,14 +652,19 @@ func printLayer(layerEntry *memory.LayerEntryType, attributeEntry memory.Attribu
 			characterMemory[cursorYLocation][cursorXLocation].Character = currentCharacter
 		}
 		if stringformat.IsRuneCharacterWide(currentCharacter) {
-			cursorXLocation += 2
-		} else {
 			cursorXLocation++
+			if cursorXLocation >= layerWidth {
+				return cursorXLocation - xLocation
+			}
+			characterMemory[cursorYLocation][cursorXLocation].AttributeEntry = memory.NewAttributeEntry(&attributeEntry)
+			characterMemory[cursorYLocation][cursorXLocation].Character = ' '
 		}
+		cursorXLocation++
 		if cursorXLocation >= layerWidth {
-			return
+			return cursorXLocation - xLocation
 		}
 	}
+	return cursorXLocation - xLocation
 }
 
 /*
@@ -851,9 +858,11 @@ func renderControls(currentLayerEntry memory.LayerEntryType) {
 	// pop up controls appear over complex controls).
 	drawButtonsOnLayer(currentLayerEntry)
 	drawTextFieldOnLayer(currentLayerEntry)
+	drawCheckboxesOnLayer(currentLayerEntry)
 	drawDropdownsOnLayer(currentLayerEntry)
 	drawSelectorsOnLayer(currentLayerEntry)
 	drawScrollBarsOnLayer(currentLayerEntry)
+	drawTextboxesOnLayer(currentLayerEntry)
 }
 
 /*

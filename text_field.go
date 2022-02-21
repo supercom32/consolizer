@@ -16,7 +16,7 @@ GetValue allows you to get the current value of your text field with.
 */
 func (shared *textFieldInstanceType) GetValue() string {
 	validatorTextField(shared.layerAlias, shared.textFieldAlias)
-	textFieldEntry := memory.TextFieldMemory[shared.layerAlias][shared.textFieldAlias]
+	textFieldEntry := memory.GetTextField(shared.layerAlias, shared.textFieldAlias)
 	value := textFieldEntry.CurrentValue
 	return value
 }
@@ -27,7 +27,7 @@ SetLocation allows you to set the current location of your text field.
 func (shared *textFieldInstanceType) SetLocation(xLocation int, yLocation int) {
 	validatorTextField(shared.layerAlias, shared.textFieldAlias)
 	validateLayerLocationByLayerAlias(shared.layerAlias, xLocation, yLocation)
-	textFieldEntry := memory.TextFieldMemory[shared.layerAlias][shared.textFieldAlias]
+	textFieldEntry := memory.GetTextField(shared.layerAlias, shared.textFieldAlias)
 	textFieldEntry.XLocation = xLocation
 	textFieldEntry.YLocation = yLocation
 }
@@ -79,8 +79,12 @@ entry.
 */
 func drawTextFieldOnLayer(layerEntry memory.LayerEntryType) {
 	layerAlias := layerEntry.LayerAlias
+	focusedLayerAlias := eventStateMemory.currentlyFocusedControl.layerAlias
+	focusedControlAlias := eventStateMemory.currentlyFocusedControl.controlAlias
+	focusedControlType := eventStateMemory.currentlyFocusedControl.controlType
+
 	for currentKey := range memory.TextFieldMemory[layerAlias] {
-		textFieldEntry := memory.TextFieldMemory[layerAlias][currentKey]
+		textFieldEntry := memory.GetTextField(layerAlias, currentKey)
 		drawInputString(&layerEntry, textFieldEntry.StyleEntry, currentKey, textFieldEntry.XLocation, textFieldEntry.YLocation, textFieldEntry.Width, textFieldEntry.ViewportPosition, textFieldEntry.CurrentValue)
 		cursorPosition := textFieldEntry.ViewportPosition + textFieldEntry.CursorPosition
 		runeSlice := []rune(textFieldEntry.CurrentValue)
@@ -88,7 +92,7 @@ func drawTextFieldOnLayer(layerEntry memory.LayerEntryType) {
 		if cursorPosition < len(runeSlice) { // Protect against empty strings
 			characterUnderCursor = runeSlice[cursorPosition]
 		}
-		if eventStateMemory.focusedControlType == constants.CellTypeTextField && eventStateMemory.focusedLayerAlias == layerAlias && eventStateMemory.focusedControlAlias == currentKey {
+		if focusedControlType == constants.CellTypeTextField && focusedLayerAlias == layerAlias && focusedControlAlias == currentKey {
 			drawCursor(&layerEntry, textFieldEntry.StyleEntry, currentKey, characterUnderCursor, textFieldEntry.XLocation, textFieldEntry.YLocation, textFieldEntry.CursorPosition, false)
 		}
 	}
@@ -162,10 +166,14 @@ func drawInputString(layerEntry *memory.LayerEntryType, styleEntry memory.TuiSty
 
 func updateKeyboardEventTextField(keystroke string) bool {
 	isScreenUpdateRequired := true
-	if eventStateMemory.focusedControlType != constants.CellTypeTextField {
+	focusedLayerAlias := eventStateMemory.currentlyFocusedControl.layerAlias
+	focusedControlAlias := eventStateMemory.currentlyFocusedControl.controlAlias
+	focusedControlType := eventStateMemory.currentlyFocusedControl.controlType
+
+	if focusedControlType != constants.CellTypeTextField {
 		return false
 	}
-	textFieldEntry := memory.GetTextField(eventStateMemory.focusedLayerAlias, eventStateMemory.focusedControlAlias)
+	textFieldEntry := memory.GetTextField(focusedLayerAlias, focusedControlAlias)
 	viewportPosition := textFieldEntry.ViewportPosition
 	cursorPosition := textFieldEntry.CursorPosition
 	currentValue := textFieldEntry.CurrentValue

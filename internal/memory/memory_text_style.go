@@ -12,11 +12,11 @@ func AddTextStyle(textStyleAlias string, attributeEntry TextStyleEntryType) {
 	TextStyleMemory[textStyleAlias] = &attributeEntry
 }
 
-func GetTextStyle(textStyleAlias string) TextStyleEntryType {
+func GetTextStyle(textStyleAlias string) *TextStyleEntryType {
 	if TextStyleMemory[textStyleAlias] == nil {
 		panic(fmt.Sprintf("The requested text style with alias '%s' could not be returned since it does not exist.", textStyleAlias))
 	}
-	return *TextStyleMemory[textStyleAlias]
+	return TextStyleMemory[textStyleAlias]
 }
 
 func GetTextStyleAsAttributeEntry(textStyleAlias string) AttributeEntryType {

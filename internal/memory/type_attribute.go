@@ -17,9 +17,9 @@ type AttributeEntryType struct {
 	BackgroundTransformValue float32
 	CellUserId               int
 	CellControlId            int    // The unique ID of a control type
-	CellControlAlias		 string
+	CellControlAlias         string
 	CellType                 int    // The type of control a cell belongs to
-	CellAlias                string // The alias of the cell control.
+	CellUserAlias            string // The alias of the cell control.
 }
 
 func (shared AttributeEntryType) MarshalJSON() ([]byte, error) {
@@ -33,11 +33,11 @@ func (shared AttributeEntryType) MarshalJSON() ([]byte, error) {
 		IsItalic bool
 		ForegroundTransformValue float32
 		BackgroundTransformValue float32
+		CellUserAlias string
 		CellUserId int
-		CellControlId int
 		CellControlAlias string
+		CellControlId int
 		CellType int
-		CellAlias string
 	}{
 		ForegroundColor: shared.ForegroundColor,
 		BackgroundColor: shared.BackgroundColor,
@@ -48,12 +48,13 @@ func (shared AttributeEntryType) MarshalJSON() ([]byte, error) {
 		IsItalic: shared.IsItalic,
 		ForegroundTransformValue: shared.ForegroundTransformValue,
 		BackgroundTransformValue: shared.ForegroundTransformValue,
+		CellUserAlias: shared.CellUserAlias, // A string that represents some kind of string id.
 		CellUserId: shared.CellUserId, // An identifier for the instance of a cell type (Ie. button instance, etc).
-		CellControlId: shared.CellControlId,
 		CellControlAlias: shared.CellControlAlias,
+		CellControlId: shared.CellControlId,
 		// Need an attribute for sub cell type.
-		CellType: shared.CellType, // Type of control the cell belongs to
-		CellAlias: shared.CellAlias, // A string that represents some kind of string id.
+		CellType: shared.CellType,       // Type of control the cell belongs to
+
 	})
 	if err != nil {
 		return nil, err
@@ -81,11 +82,11 @@ func NewAttributeEntry(existingAttributeEntry ...*AttributeEntryType) AttributeE
 		attributeEntry.IsItalic = existingAttributeEntry[0].IsItalic
 		attributeEntry.ForegroundTransformValue = existingAttributeEntry[0].ForegroundTransformValue
 		attributeEntry.BackgroundTransformValue = existingAttributeEntry[0].BackgroundTransformValue
+		attributeEntry.CellUserAlias = existingAttributeEntry[0].CellUserAlias
 		attributeEntry.CellUserId = existingAttributeEntry[0].CellUserId
 		attributeEntry.CellType = existingAttributeEntry[0].CellType
 		attributeEntry.CellControlId = existingAttributeEntry[0].CellControlId
 		attributeEntry.CellControlAlias = existingAttributeEntry[0].CellControlAlias
-		attributeEntry.CellAlias = existingAttributeEntry[0].CellAlias
 	} else {
 		attributeEntry.ForegroundTransformValue = 1
 		attributeEntry.BackgroundTransformValue = 1
@@ -94,6 +95,7 @@ func NewAttributeEntry(existingAttributeEntry ...*AttributeEntryType) AttributeE
 		attributeEntry.CellUserId = constants.NullCellId
 		attributeEntry.CellType = constants.NullCellType
 		attributeEntry.CellControlId = constants.NullCellId
+		attributeEntry.CellUserId = constants.NullCellId
 	}
 	return attributeEntry
 }

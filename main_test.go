@@ -1,6 +1,7 @@
 package consolizer
 
 import (
+	"github.com/supercom32/consolizer/constants"
 	"github.com/supercom32/consolizer/internal/memory"
 	"strconv"
 	"testing"
@@ -8,12 +9,94 @@ import (
 )
 
 func TestMainStub(test *testing.T) {
-	testDropdown()
+	testTextboxes()
+	//testCheckboxes()
+	//testDropdown()
 	//testScrollBars()
 	//testSelector()
 	//testTextField()
 	//testWindowMovement()
 	//testButtonPressAction()
+	RestoreTerminalSettings()
+}
+
+func testTextboxes () {
+	commonResource.isDebugEnabled = false
+	layerAlias1 := "Layer1"
+	layerAlias2 := "Layer2"
+	InitializeTerminal(80, 40)
+	AddLayer(layerAlias1, 0, 0, 80, 40, 1, "")
+	AddLayer(layerAlias2, 20, 15, 40, 20, 1, layerAlias1)
+	Layer(layerAlias1)
+	ColorRGB(255,0,0,0,0,0)
+	FillLayer(layerAlias1, "#")
+	FillLayer(layerAlias2, "@")
+	Locate(0,0)
+	Print("Enable ☑ Enable ○ ● (U+25CB, U+25CF)")
+	styleEntry := memory.NewTuiStyleEntry()
+	styleEntry.SelectorTextAlignment = 0
+	textBox := AddTextbox(layerAlias1, "textbox1", styleEntry, 2, 2, 20, 5, true)
+	textBox.setText("This is a test \n this is ☑ second line which is very long and big \n this is 文字 third line.")
+	textBox2 := AddTextbox(layerAlias1, "textbox2", styleEntry, 40, 2, 20, 5, false)
+	textBox2.setText("This is a test \n this is ☑ second line which is very long and big \n this is 文字 third line.")
+	xLocation := 0
+	yLocation := 0
+	for {
+		UpdateDisplay()
+		key := Inkey()
+		if key == "d" {
+			xLocation++
+			textBox.setViewport(xLocation, yLocation)
+		}
+		if key == "a" {
+			xLocation--
+			textBox.setViewport(xLocation, yLocation)
+		}
+		if key == "w" {
+			yLocation--
+			textBox.setViewport(xLocation, yLocation)
+		}
+		if key == "s" {
+			yLocation++
+			textBox.setViewport(xLocation, yLocation)
+		}
+		if key == "q" {
+			break
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+	DeleteAllLayers()
+	RestoreTerminalSettings()
+}
+
+func testCheckboxes () {
+	commonResource.isDebugEnabled = false
+	layerAlias1 := "Layer1"
+	layerAlias2 := "Layer2"
+	InitializeTerminal(80, 40)
+	AddLayer(layerAlias1, 0, 0, 80, 40, 1, "")
+	AddLayer(layerAlias2, 20, 15, 40, 20, 1, layerAlias1)
+	Layer(layerAlias1)
+	ColorRGB(255,0,0,0,0,0)
+	FillLayer(layerAlias1, "#")
+	FillLayer(layerAlias2, "@")
+	Locate(0,0)
+
+	Print("Enable ☑ Enable ○ ● (U+25CB, U+25CF) ▾☒♪")
+	styleEntry := memory.NewTuiStyleEntry()
+	styleEntry.SelectorTextAlignment = 0
+	AddCheckbox(layerAlias1, "checkbox1", "Enable 文字 Feature", styleEntry, 2, 2, true)
+	for {
+		UpdateDisplay()
+		key := Inkey()
+		if key == "w" {
+		}
+		if key == "q" {
+			break
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+	DeleteAllLayers()
 	RestoreTerminalSettings()
 }
 func testDropdown() {
@@ -27,14 +110,16 @@ func testDropdown() {
 	ColorRGB(255,0,0,0,0,0)
 	FillLayer(layerAlias1, "#")
 	FillLayer(layerAlias2, "@")
+	Locate(0,0)
+	Print("Enable ☑ Enable ○ ● (U+25CB, U+25CF)")
 	styleEntry := memory.NewTuiStyleEntry()
 	styleEntry.SelectorTextAlignment = 0
 	selectionEntry := memory.NewSelectionEntry()
-	selectionEntry.Add("1", "OK")
-	selectionEntry.Add("2", "CANCEL")
-	selectionEntry.Add("3", "EXIT")
-	selectionEntry.Add("4", "GOTO")
-	selectionEntry.Add("5", "RUN")
+	selectionEntry.Add("1", "")
+	selectionEntry.Add("2", "Enabl文e ○ ●")
+	selectionEntry.Add("3", "☑ Enable ○ ●")
+	selectionEntry.Add("4", "GET 文字文字")
+	selectionEntry.Add("5", "IE文字文字")
 	selectionEntry.Add("6", "DELETE")
 	for i := 0; i < 20; i++ {
 		selectionEntry.Add(strconv.Itoa(i), strconv.Itoa(i))
@@ -45,9 +130,12 @@ func testDropdown() {
 	selectionEntry2.Add("3", "3")
 	AddDropdown(layerAlias1, "myDropdown", styleEntry, selectionEntry, 2, 2, 8, 7, 0)
 	AddDropdown(layerAlias1, "myDropdown2", styleEntry, selectionEntry2, 18, 9, 3, 7, 0)
+
 	AddSelector(layerAlias1, "menuBar", styleEntry, selectionEntry, 6, 10, 4, 7, 3, 0, -1, false)
 	AddSelector(layerAlias1, "menuBar2", styleEntry, selectionEntry, 10, 20, 4, 7, 1, 0, -1, false)
 
+	styleEntry.SelectorTextAlignment = constants.AlignmentNoPadding
+	AddSelector(layerAlias1, "menuBar3", styleEntry, selectionEntry, 6, 30, 4, 7, 1, 0, -1, false)
 	for {
 		UpdateDisplay()
 		key := Inkey()

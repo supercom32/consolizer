@@ -24,10 +24,10 @@ func AddDropdown(layerAlias string, dropdownAlias string, styleEntry memory.TuiS
 	dropdownEntry.SelectorAlias = stringformat.GetLastSortedUUID()
 	// Here we add +1 to x and y to account for borders around the selection.
 	AddSelector(layerAlias, dropdownEntry.SelectorAlias, styleEntry, selectionEntry, xLocation + 1, yLocation + 1, selectorHeight, selectorWidth, 1, 0, 0, true)
-	selectorEntry := memory.SelectorMemory[layerAlias][dropdownEntry.SelectorAlias]
+	selectorEntry := memory.GetSelector(layerAlias, dropdownEntry.SelectorAlias)
 	selectorEntry.IsVisible = false
 	dropdownEntry.ScrollBarAlias = selectorEntry.ScrollBarAlias
-	scrollBarEntry := memory.ScrollBarMemory[layerAlias][dropdownEntry.ScrollBarAlias]
+	scrollBarEntry := memory.GetScrollBar(layerAlias, dropdownEntry.ScrollBarAlias)
 	scrollBarEntry.IsVisible = false
 	if len(selectionEntry.SelectionValue) <= selectorHeight {
 		scrollBarEntry.IsEnabled = false
@@ -51,13 +51,13 @@ func drawDropdownsOnLayer(layerEntry memory.LayerEntryType) {
 
 func drawDropdown(layerEntry *memory.LayerEntryType, dropdownAlias string) {
 	layerAlias := layerEntry.LayerAlias
-	dropdownEntry := memory.DropdownMemory[layerAlias][dropdownAlias]
+	dropdownEntry := memory.GetDropdown(layerAlias, dropdownAlias)
 	localStyleEntry := memory.NewTuiStyleEntry(&dropdownEntry.StyleEntry)
 	attributeEntry := memory.NewAttributeEntry()
 	attributeEntry.ForegroundColor = localStyleEntry.SelectorForegroundColor
 	attributeEntry.BackgroundColor = localStyleEntry.SelectorBackgroundColor
 	attributeEntry.CellType = constants.CellTypeDropdown
-	attributeEntry.CellAlias = dropdownAlias
+	attributeEntry.CellControlAlias = dropdownAlias
 	itemSelected := dropdownEntry.SelectionEntry.SelectionValue[dropdownEntry.ItemSelected]
 	// We add +2 to account for the dropdown border window which will appear. Otherwise, the item name
 	// will appear 2 characters smaller than the popup dropdown window.
@@ -74,7 +74,7 @@ func updateDropdownStateMouse() bool {
 	mouseXLocation, mouseYLocation, buttonPressed, _ := memory.GetMouseStatus()
 	characterEntry := getCellInformationUnderMouseCursor(mouseXLocation, mouseYLocation)
 	layerAlias := characterEntry.LayerAlias
-	cellAlias := characterEntry.AttributeEntry.CellAlias
+	cellControlAlias := characterEntry.AttributeEntry.CellControlAlias
 	// If a button is pressed AND (you are in a drag and drop event OR the cell type is scroll bar), then
 	// sync all dropdown selectors with their appropriate scroll bars. If the control under focus
 	// matches a control that belongs to a dropdown list, then stop processing (Do not attempt to close dropdown).
@@ -82,14 +82,14 @@ func updateDropdownStateMouse() bool {
 		characterEntry.AttributeEntry.CellType == constants.CellTypeScrollBar) {
 		isMatchFound := false
 		for currentKey := range memory.DropdownMemory[layerAlias] {
-			dropdownEntry := memory.DropdownMemory[layerAlias][currentKey]
-			selectorEntry := memory.SelectorMemory[layerAlias][dropdownEntry.SelectorAlias]
-			scrollBarEntry := memory.ScrollBarMemory[layerAlias][dropdownEntry.ScrollBarAlias]
+			dropdownEntry := memory.GetDropdown(layerAlias, currentKey)
+			selectorEntry := memory.GetSelector(layerAlias, dropdownEntry.SelectorAlias)
+			scrollBarEntry := memory.GetScrollBar(layerAlias, dropdownEntry.ScrollBarAlias)
 			if selectorEntry.ViewportPosition != scrollBarEntry.ScrollValue {
 				selectorEntry.ViewportPosition = scrollBarEntry.ScrollValue
 				isUpdateRequired = true
 			}
-			if isControlFocusMatch(layerAlias, dropdownEntry.ScrollBarAlias, constants.CellTypeScrollBar) {
+			if isControlCurrentlyFocused(layerAlias, dropdownEntry.ScrollBarAlias, constants.CellTypeScrollBar) {
 				isMatchFound = true
 				break; // If the current scrollbar being dragged and dropped matches, don't process more dropdowns.
 			}
@@ -99,13 +99,13 @@ func updateDropdownStateMouse() bool {
 		}
 	}
 	// If our dropdown alias is not empty, then open our dropdown.
-	if buttonPressed != 0 && cellAlias != "" && characterEntry.AttributeEntry.CellType == constants.CellTypeDropdown {
+	if buttonPressed != 0 && cellControlAlias != "" && characterEntry.AttributeEntry.CellType == constants.CellTypeDropdown {
 		closeAllOpenDropdowns(layerAlias)
-		dropdownEntry := memory.DropdownMemory[layerAlias][cellAlias]
+		dropdownEntry := memory.GetDropdown(layerAlias, cellControlAlias)
 		dropdownEntry.IsTrayOpen = true
-		selectorEntry := memory.SelectorMemory[layerAlias][dropdownEntry.SelectorAlias]
+		selectorEntry := memory.GetSelector(layerAlias, dropdownEntry.SelectorAlias)
 		selectorEntry.IsVisible = true
-		scrollBarEntry := memory.ScrollBarMemory[layerAlias][dropdownEntry.ScrollBarAlias]
+		scrollBarEntry := memory.GetScrollBar(layerAlias, dropdownEntry.ScrollBarAlias)
 		if scrollBarEntry.IsEnabled {
 			scrollBarEntry.IsVisible = true
 			setFocusedControl(layerAlias, selectorEntry.ScrollBarAlias, constants.CellTypeScrollBar)
@@ -122,11 +122,11 @@ func updateDropdownStateMouse() bool {
 
 func closeAllOpenDropdowns(layerAlias string) {
 	for currentKey := range memory.DropdownMemory[layerAlias] {
-		dropdownEntry := memory.DropdownMemory[layerAlias][currentKey]
+		dropdownEntry := memory.GetDropdown(layerAlias, currentKey)
 		if dropdownEntry.IsTrayOpen == true {
-			selectorEntry := memory.SelectorMemory[layerAlias][dropdownEntry.SelectorAlias]
+			selectorEntry := memory.GetSelector(layerAlias, dropdownEntry.SelectorAlias)
 			selectorEntry.IsVisible = false
-			scrollBarEntry := memory.ScrollBarMemory[layerAlias][dropdownEntry.ScrollBarAlias]
+			scrollBarEntry := memory.GetScrollBar(layerAlias, dropdownEntry.ScrollBarAlias)
 			scrollBarEntry.IsVisible = false
 			dropdownEntry.IsTrayOpen = false
 			if dropdownEntry.ItemSelected != selectorEntry.ItemSelected {

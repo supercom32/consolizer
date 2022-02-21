@@ -8,19 +8,18 @@ import (
 	"strings"
 )
 
+type controlIdentifierType struct {
+	layerAlias string
+	controlAlias string
+	controlType int
+}
+
 type eventStateType struct {
 	stateId int
-	// These variables are for controls which have "focus" and will accept
-	// keyboard input or other controls.
-	focusedLayerAlias string
-	focusedControlAlias string
-	focusedControlType              int
-	// These variables record previously highlighted control items so that if an
-	// item is no longer being hovered, its state can be reset without searching
-	// over all controls.
-	previousHighlightedLayerAlias   string
-	previousHighlightedControlAlias string
-	previousHighlightedControlType  int
+	currentlyFocusedControl controlIdentifierType
+	// This variable is used to keep track of items which were highlighted so that they can be
+	// un-highlighted later. Currently, only used by selectors.
+	previouslyHighlightedControl controlIdentifierType
 }
 
 var eventStateMemory eventStateType
@@ -87,13 +86,16 @@ func updateEventQueues() {
 		if updateMouseEventTextField() {
 			isScreenUpdateRequired = true
 		}
+		if updateMouseEventCheckbox() {
+			isScreenUpdateRequired = true
+		}
 		if updateButtonStates(true) {
 			isScreenUpdateRequired = true
 		}
-		if updateMouseEventSelector() {
+		if updateMouseEventScrollBar() {
 			isScreenUpdateRequired =  true
 		}
-		if updateMouseEventScrollBar() {
+		if updateMouseEventSelector() {
 			isScreenUpdateRequired =  true
 		}
 		// This is done last so that it can update itself if a selector or scroll bar change was detected.
@@ -105,32 +107,26 @@ func updateEventQueues() {
 		}
 	}
 }
-// TODO: Questionable functionality?
-func setFocusedControl_old() {
-	mouseXLocation, mouseYLocation, buttonPressed, _ := memory.GetMouseStatus()
-	if buttonPressed != 0 {
-		characterEntry := getCellInformationUnderMouseCursor(mouseXLocation, mouseYLocation)
-		if characterEntry.AttributeEntry.CellType == constants.CellTypeTextField {
-			eventStateMemory.focusedControlType = constants.CellTypeTextField
-			eventStateMemory.focusedControlAlias = characterEntry.AttributeEntry.CellAlias
-			eventStateMemory.focusedLayerAlias = characterEntry.LayerAlias
-		}
-	}
+
+func setFocusedControl(layerAlias string, controlAlias string, controlType int) {
+	eventStateMemory.currentlyFocusedControl.layerAlias = layerAlias
+	eventStateMemory.currentlyFocusedControl.controlAlias = controlAlias
+	eventStateMemory.currentlyFocusedControl.controlType = controlType
 }
 
-func setFocusedControl(layerAlias string, controlAlias string, cellType int) {
-	eventStateMemory.focusedLayerAlias = layerAlias
-	eventStateMemory.focusedControlAlias = controlAlias
-	eventStateMemory.focusedControlType = cellType
-}
-
-func isControlFocusMatch(layerAlias string, controlAlias string, cellType int) bool {
-	if eventStateMemory.focusedLayerAlias == layerAlias &&
-		eventStateMemory.focusedControlAlias == controlAlias &&
-		eventStateMemory.focusedControlType == cellType {
+func isControlCurrentlyFocused(layerAlias string, controlAlias string, cellType int) bool {
+	if eventStateMemory.currentlyFocusedControl.layerAlias == layerAlias &&
+		eventStateMemory.currentlyFocusedControl.controlAlias == controlAlias &&
+		eventStateMemory.currentlyFocusedControl.controlType == cellType {
 		return true
 	}
 	return false
+}
+
+func setPreviouslyHighlightedControl(layerAlias string, controlAlias string, controlType int) {
+	eventStateMemory.previouslyHighlightedControl.layerAlias = layerAlias
+	eventStateMemory.previouslyHighlightedControl.controlAlias = controlAlias
+	eventStateMemory.previouslyHighlightedControl.controlType = controlType
 }
 
 /*
@@ -154,15 +150,15 @@ func moveLayerIfRequired() bool {
 		if previousButtonPressed != 0 && eventStateMemory.stateId == constants.EventStateDragAndDrop {
 			xMove := mouseXLocation - previousMouseXLocation
 			yMove := mouseYLocation - previousMouseYLocation
-			MoveLayerByRelativeValue(eventStateMemory.focusedLayerAlias, xMove, yMove)
-			if isInteractiveLayerOffscreen(eventStateMemory.focusedLayerAlias) {
-				MoveLayerByRelativeValue(eventStateMemory.focusedLayerAlias, -xMove, -yMove)
+			MoveLayerByRelativeValue(eventStateMemory.currentlyFocusedControl.layerAlias, xMove, yMove)
+			if isInteractiveLayerOffscreen(eventStateMemory.currentlyFocusedControl.layerAlias) {
+				MoveLayerByRelativeValue(eventStateMemory.currentlyFocusedControl.layerAlias, -xMove, -yMove)
 			}
 			isScreenUpdateRequired = true
 		}
 		if characterEntry.AttributeEntry.CellType == constants.CellTypeFrameTop {
 			eventStateMemory.stateId = constants.EventStateDragAndDrop
-			eventStateMemory.focusedLayerAlias = characterEntry.LayerAlias
+			eventStateMemory.currentlyFocusedControl.layerAlias = characterEntry.LayerAlias
 		}
 	} else {
 		eventStateMemory.stateId = 0
