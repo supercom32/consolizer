@@ -98,6 +98,9 @@ func updateEventQueues() {
 		if updateMouseEventSelector() {
 			isScreenUpdateRequired =  true
 		}
+		if updateMouseEventTextbox() {
+			isScreenUpdateRequired =  true
+		}
 		// This is done last so that it can update itself if a selector or scroll bar change was detected.
 		if updateDropdownStateMouse() {
 			isScreenUpdateRequired =  true

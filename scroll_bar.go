@@ -138,7 +138,11 @@ func computeScrollBarHandlePositionByScrollValue(layerAlias string, scrollBarAli
 	if scrollBarEntry.ScrollValue < 0 {
 		scrollBarEntry.ScrollValue = 0
 	}
-	percentScrolled := float64(scrollBarEntry.ScrollValue) / float64(scrollBarEntry.MaxScrollValue)
+	percentScrolled := float64(0)
+	// Protect against divide by zero cases.
+	if scrollBarEntry.MaxScrollValue != 0 {
+		percentScrolled = float64(scrollBarEntry.ScrollValue) / float64(scrollBarEntry.MaxScrollValue)
+	}
 	scrollBarEntry.HandlePosition = int(float64(scrollBarEntry.Length - 3) * percentScrolled)
 	// Protect in case drawing over the bar limit.
 	if scrollBarEntry.HandlePosition >= scrollBarEntry.Length {

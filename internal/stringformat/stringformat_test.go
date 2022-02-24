@@ -59,20 +59,31 @@ func TestGetStringFromBase64(test *testing.T) {
 }
 
 func TestGetNumberOfWideCharacters(test *testing.T) {
-	arrayOfRunes := GetRunesFromString("AL ⌘读写汉字 ひらがな コンピュータワンワンローソク 보리밥보리밥 ⌘ EX")
+	arrayOfRunes := GetRunesFromString("AL 读写汉字 ひらがな コンピュータワンワンローソク 보리밥보리밥☑○ ●  EX")
 	obtainedResult := GetNumberOfWideCharacters(arrayOfRunes)
-	expectedResult := 28
+	expectedResult := 31
 	assert.Equalf(test, expectedResult, obtainedResult, "The number of wide characters detected did not match what was expected!")
 }
 
 func TestGetFormattedString(test *testing.T) {
-	obtainedResult := GetFormattedString("Formatted String", 40, constants.AlignmentLeft)
-	expectedResult := "Formatted String                        "
+	obtainedResult := GetFormattedString("Formatted 밥☑ String", 40, constants.AlignmentLeft)
+	expectedResult := "Formatted 밥☑ String                   "
 	assert.Equalf(test, expectedResult, obtainedResult, "The formatted string obtained was not left aligned as expected.")
-	obtainedResult = GetFormattedString("Formatted String", 40, constants.AlignmentRight)
-	expectedResult = "                        Formatted String"
+	obtainedSize := len(GetRunesFromString(obtainedResult))
+	expectedSize := 38
+	assert.Equalf(test, expectedSize, obtainedSize, "The formatted string obtained was not the right size as expected.")
+
+	obtainedResult = GetFormattedString("Formatted 밥☑ String", 40, constants.AlignmentRight)
+	expectedResult = "                   Formatted 밥☑ String"
 	assert.Equalf(test, expectedResult, obtainedResult, "The formatted string obtained was not right aligned as expected.")
-	obtainedResult = GetFormattedString("Formatted String", 40, constants.AlignmentCenter)
-	expectedResult = "            Formatted String            "
+	obtainedSize = len(GetRunesFromString(obtainedResult))
+	expectedSize = 38
+	assert.Equalf(test, expectedSize, obtainedSize, "The formatted string obtained was not the right size as expected.")
+
+	obtainedResult = GetFormattedString("Formatted 밥☑ String", 40, constants.AlignmentCenter)
+	expectedResult = "         Formatted 밥☑ String          "
 	assert.Equalf(test, expectedResult, obtainedResult, "The formatted string obtained was not center aligned as expected.")
+	obtainedSize = len(GetRunesFromString(obtainedResult))
+	expectedSize = 38
+	assert.Equalf(test, expectedSize, obtainedSize, "The formatted string obtained was not the right size as expected.")
 }

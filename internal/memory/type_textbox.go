@@ -15,6 +15,8 @@ type TextboxEntryType struct {
 	Height            int
 	ViewportXLocation int
 	ViewportYLocation int
+	CursorXLocation int
+	CursorYLocation int
 	IsEnabled         bool
 	IsVisible bool
 	IsBorderDrawn bool
@@ -32,6 +34,8 @@ func (shared TextboxEntryType) MarshalJSON() ([]byte, error) {
 		Height int
 		ViewportXLocation int
 		ViewportYLocation int
+		CursorXLocation int
+		CursorYLocation int
 		IsEnabled bool
 		IsVisible bool
 		IsBorderDrawn bool
@@ -46,6 +50,8 @@ func (shared TextboxEntryType) MarshalJSON() ([]byte, error) {
 		Height: shared.Height,
 		ViewportXLocation: shared.ViewportXLocation,
 		ViewportYLocation: shared.ViewportYLocation,
+		CursorXLocation: shared.CursorXLocation,
+		CursorYLocation: shared.CursorYLocation,
 		IsEnabled:  shared.IsEnabled,
 		IsVisible:  shared.IsVisible,
 		IsBorderDrawn: shared.IsBorderDrawn,
@@ -77,6 +83,8 @@ func NewTexboxEntry(existingButtonEntry ...*TextboxEntryType) TextboxEntryType {
 		textboxEntry.Height = existingButtonEntry[0].Height
 		textboxEntry.ViewportXLocation = existingButtonEntry[0].ViewportXLocation
 		textboxEntry.ViewportYLocation = existingButtonEntry[0].ViewportYLocation
+		textboxEntry.CursorXLocation = existingButtonEntry[0].CursorXLocation
+		textboxEntry.CursorYLocation = existingButtonEntry[0].CursorYLocation
 		textboxEntry.IsEnabled = existingButtonEntry[0].IsEnabled
 		textboxEntry.IsVisible = existingButtonEntry[0].IsVisible
 		textboxEntry.IsBorderDrawn = existingButtonEntry[0].IsBorderDrawn

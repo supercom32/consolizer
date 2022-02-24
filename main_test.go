@@ -1,6 +1,7 @@
 package consolizer
 
 import (
+	"fmt"
 	"github.com/supercom32/consolizer/constants"
 	"github.com/supercom32/consolizer/internal/memory"
 	"strconv"
@@ -26,7 +27,7 @@ func testTextboxes () {
 	layerAlias2 := "Layer2"
 	InitializeTerminal(80, 40)
 	AddLayer(layerAlias1, 0, 0, 80, 40, 1, "")
-	AddLayer(layerAlias2, 20, 15, 40, 20, 1, layerAlias1)
+	AddLayer(layerAlias2, 25, 15, 40, 20, 1, layerAlias1)
 	Layer(layerAlias1)
 	ColorRGB(255,0,0,0,0,0)
 	FillLayer(layerAlias1, "#")
@@ -34,14 +35,23 @@ func testTextboxes () {
 	Locate(0,0)
 	Print("Enable ☑ Enable ○ ● (U+25CB, U+25CF)")
 	styleEntry := memory.NewTuiStyleEntry()
-	styleEntry.SelectorTextAlignment = 0
+	styleEntry.SelectorTextAlignment = 2
 	textBox := AddTextbox(layerAlias1, "textbox1", styleEntry, 2, 2, 20, 5, true)
-	textBox.setText("This is a test \n this is ☑ second line which is very long and big \n this is 文字 third line.")
+	textBox.setText("This is a test\nthis is ☑ second line which is very long and big\nthis is 文字 third line.")
+
 	textBox2 := AddTextbox(layerAlias1, "textbox2", styleEntry, 40, 2, 20, 5, false)
-	textBox2.setText("This is a test \n this is ☑ second line which is very long and big \n this is 文字 third line.")
+	textBox2.setText("This is a test\nthis is ☑ second line which is very long and big\nthis is 文字 third line.")
+	textBox3 := AddTextbox(layerAlias1, "textbox3", styleEntry, 1, 10, 20, 5, true)
+	textBox3.setText("This is a test123456\nThis is a test123456\nThis is a test1234\nThis is a test123456\nThis is a test123456\n")
+
 	xLocation := 0
 	yLocation := 0
 	for {
+		mouseXLocation, mouseYLocation, _, _ := memory.GetMouseStatus()
+		characterEntry := getCellInformationUnderMouseCursor(mouseXLocation, mouseYLocation)
+		Locate(0,0)
+		Print(fmt.Sprintf("%d   ", characterEntry.AttributeEntry.CellControlId))
+
 		UpdateDisplay()
 		key := Inkey()
 		if key == "d" {

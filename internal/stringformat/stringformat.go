@@ -134,62 +134,80 @@ func GetNumberOfWideCharacters(arrayOfRunes []rune) int {
 	return numberOfWideCharacters
 }
 
-func GetMaxCharactersThatFitInStringSize(arrayOfRunes []rune, lengthOfString int) []rune {
+// This returns an array pf all the characters that will fit inside the length specified.
+func GetMaxCharactersThatFitInStringSize(arrayOfRunes []rune, maxLengthOfString int) []rune {
 	numberOfCharactersUsed := 0
-	for currentIndex, currentRune := range arrayOfRunes {
+	formattedArray := []rune{}
+	for _, currentRune := range arrayOfRunes {
 		if IsRuneCharacterWide(currentRune) {
 			numberOfCharactersUsed = numberOfCharactersUsed + 2
+			if numberOfCharactersUsed > maxLengthOfString {
+				// If you added a wide character and it won't fit (needs two free spaces),
+				// we just add a blank space to pad it out.
+				formattedArray = append(formattedArray, ' ')
+				return formattedArray
+			}
 		} else {
 			numberOfCharactersUsed++
 		}
-		if numberOfCharactersUsed == lengthOfString {
-			// If your last character printed fills your string exactly, include it to your string.
-			formattedArray := arrayOfRunes[:currentIndex+1]
-			return formattedArray
-		} else if numberOfCharactersUsed > lengthOfString {
-			formattedArray := arrayOfRunes[:currentIndex]
-			// If you just printed a double width character that exceeds the printing limit, just add a blank space
-			// padding, since you only have 1 space left.
-			formattedArray = append(formattedArray, ' ')
+		formattedArray = append(formattedArray, currentRune)
+		if numberOfCharactersUsed == maxLengthOfString {
 			return formattedArray
 		}
 	}
-	return arrayOfRunes
+	return formattedArray
 }
 
 func logInfo(info string) {
-	filesystem.WriteBytesToFile("/tmp/debug.log", []byte(info), 666)
+	filesystem.AppendLineToFile("/tmp/debug.log", info + "\n", 0)
 }
 
 func GetFormattedString(stringToFormat string, lengthOfString int, position int) string {
 	arrayOfRunes := GetRunesFromString(stringToFormat)
-	if len(stringToFormat) == 0 {
-		return GetFilledString(lengthOfString, " ")
+	return string(GetFormattedRuneArray(arrayOfRunes, lengthOfString, position))
+}
+func GetFormattedRuneArray(arrayOfRunes []rune, desiredLengthOfArray int, textAlignment int) []rune {
+	if len(arrayOfRunes) == 0 {
+		return GetRunesFromString(GetFilledString(desiredLengthOfArray, " "))
 	}
 	widthOfRunesWhenPrinted := GetWidthOfRunesWhenPrinted(arrayOfRunes)
-	paddingSize := lengthOfString - widthOfRunesWhenPrinted
+	paddingSize := desiredLengthOfArray - widthOfRunesWhenPrinted
 	if paddingSize <= 0 {
 		paddingSize = 0
-		return string(GetMaxCharactersThatFitInStringSize(GetRunesFromString(stringToFormat), lengthOfString))
+		return GetMaxCharactersThatFitInStringSize(arrayOfRunes, desiredLengthOfArray)
 	}
-	stringPaddingInRunes := GetRunesFromString(GetFilledString(paddingSize, " "))
+
+	// If you're viewing the end of a long string (so you need padding) and some characters are wide,
+	// you need to add padding to compensate for the missing width.
+	//paddingSize = paddingSize + GetNumberOfWideCharacters(arrayOfRunes)
+
+	//stringPaddingInRunes := GetRunesFromString(GetFilledString(paddingSize, " "))
+	fullStringPadding := GetFilledRuneArray(paddingSize, ' ')
+	halfStringPadding := GetFilledRuneArray(paddingSize/2, ' ')
+
 	formattedArrayOfRunes := []rune{}
-	if position == constants.AlignmentRight {
-		formattedArrayOfRunes = append(stringPaddingInRunes, arrayOfRunes...)
-	} else if position == constants.AlignmentCenter {
-		formattedArrayOfRunes = append(stringPaddingInRunes, arrayOfRunes...)
-		formattedArrayOfRunes = append(formattedArrayOfRunes, stringPaddingInRunes...)
-		if len(formattedArrayOfRunes) < lengthOfString {
+	if textAlignment == constants.AlignmentRight {
+		formattedArrayOfRunes = append(GetMaxCharactersThatFitInStringSize(arrayOfRunes, desiredLengthOfArray))
+		formattedArrayOfRunes = append(fullStringPadding, formattedArrayOfRunes...)
+	} else if textAlignment == constants.AlignmentCenter {
+		formattedArrayOfRunes = append(halfStringPadding, arrayOfRunes...)
+		formattedArrayOfRunes = append(formattedArrayOfRunes, halfStringPadding...)
+		if len(formattedArrayOfRunes) < desiredLengthOfArray {
 			formattedArrayOfRunes = append(formattedArrayOfRunes, ' ')
 		}
-	} else if position == constants.AlignmentNoPadding {
+	} else if textAlignment == constants.AlignmentNoPadding {
 		formattedArrayOfRunes = append(formattedArrayOfRunes, ' ')
 		formattedArrayOfRunes = append(formattedArrayOfRunes, arrayOfRunes...)
 		formattedArrayOfRunes = append(formattedArrayOfRunes, ' ')
 	} else {
-		formattedArrayOfRunes = append(arrayOfRunes, stringPaddingInRunes...)
+		formattedArrayOfRunes = append(GetMaxCharactersThatFitInStringSize(arrayOfRunes, desiredLengthOfArray))
+		formattedArrayOfRunes = append(formattedArrayOfRunes, fullStringPadding...)
 	}
-	return string(formattedArrayOfRunes)
+	return formattedArrayOfRunes
+}
+func GetFilledRuneArray(lengthOfString int, character rune) []rune {
+	result := GetFilledString(lengthOfString, string(character))
+	return GetRunesFromString((result))
 }
 
 func GetFilledString(lengthOfString int, character string) string {
@@ -202,6 +220,6 @@ func GetFilledString(lengthOfString int, character string) string {
 
 func GetLastSortedUUID() string {
 	id := uuid.New()
-	time := string(time.Now().Unix())
+	time := fmt.Sprint(time.Now().Unix())
 	return "zzzzzzz" + time + id.String()
 }
