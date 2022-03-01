@@ -416,7 +416,7 @@ func drawButton(layerEntry *memory.LayerEntryType, buttonAlias string, buttonLab
 	}
 	localStyleEntry.TextForegroundColor = localStyleEntry.ButtonRaisedColor
 	localStyleEntry.TextBackgroundColor = localStyleEntry.ButtonBackgroundColor
-	fillArea(layerEntry, attributeEntry, " ", xLocation, yLocation, width, height)
+	fillArea(layerEntry, attributeEntry, " ", xLocation, yLocation, width, height, constants.NullCellControlLocation)
 	if isPressed {
 		drawFrame(layerEntry, localStyleEntry, attributeEntry, constants.FrameStyleSunken, xLocation, yLocation, width, height, false)
 	} else {
@@ -654,7 +654,7 @@ func drawWindow(layerEntry *memory.LayerEntryType, styleEntry memory.TuiStyleEnt
 	} else {
 		drawShadow(layerEntry, localAttributeEntry, xLocation+2, yLocation+1, width, height, 0.5)
 	}
-	fillArea(layerEntry, localAttributeEntry, " ", xLocation, yLocation, width, height)
+	fillArea(layerEntry, localAttributeEntry, " ", xLocation, yLocation, width, height, constants.NullCellControlLocation)
 	drawBorder(layerEntry, styleEntry, localAttributeEntry, xLocation, yLocation, width, height, isInteractive)
 	if styleEntry.IsWindowHeaderDrawn {
 		drawHorizontalLine(layerEntry, styleEntry, localAttributeEntry, xLocation, yLocation+2, width, true)
@@ -688,7 +688,7 @@ func drawShadow(layerEntry *memory.LayerEntryType, attributeEntry memory.Attribu
 	localAttributeEntry := memory.NewAttributeEntry(&attributeEntry)
 	localAttributeEntry.ForegroundTransformValue = alphaValue
 	localAttributeEntry.BackgroundTransformValue = alphaValue
-	fillArea(layerEntry, localAttributeEntry, "", xLocation, yLocation, width, height)
+	fillArea(layerEntry, localAttributeEntry, "", xLocation, yLocation, width, height, constants.NullCellControlLocation)
 }
 
 /*
@@ -703,7 +703,7 @@ the visible portion of the fill will be drawn.
 func FillArea(layerAlias string, fillCharacters string, xLocation int, yLocation int, width int, height int) {
 	layerEntry := memory.GetLayer(layerAlias)
 	attributeEntry := layerEntry.DefaultAttribute
-	fillArea(layerEntry, attributeEntry, fillCharacters, xLocation, yLocation, width, height)
+	fillArea(layerEntry, attributeEntry, fillCharacters, xLocation, yLocation, width, height, constants.NullCellControlLocation)
 }
 
 /*
@@ -715,10 +715,12 @@ noted:
 - If the area to fill falls outside the range of the specified layer, then only
 the visible portion of the fill will be drawn.
 */
-func fillArea(layerEntry *memory.LayerEntryType, attributeEntry memory.AttributeEntryType, fillCharacters string, xLocation int, yLocation int, width int, height int) {
+func fillArea(layerEntry *memory.LayerEntryType, attributeEntry memory.AttributeEntryType, fillCharacters string, xLocation int, yLocation int, width int, height int, startingControlLocation int) {
 	currentFillCharacterIndex := 0
 	arrayOfRunes := stringformat.GetRunesFromString(fillCharacters)
 	for currentRow := 0; currentRow < height; currentRow++ {
+		// We make the cell location equal to the current location being printed.
+		attributeEntry.CellControlLocation = startingControlLocation + currentRow
 		for currentCharacter := 0; currentCharacter < width; currentCharacter++ {
 			if yLocation >=0 && yLocation < layerEntry.Height && xLocation+currentCharacter >= 0 && xLocation+currentCharacter < layerEntry.Width {
 				printLayer(layerEntry, attributeEntry, xLocation+currentCharacter, yLocation+currentRow, []rune{arrayOfRunes[currentFillCharacterIndex]})
@@ -752,7 +754,7 @@ If you wish to fill the layer with repeating text, simply provide the string
 you wish to repeat.
 */
 func fillLayer(layerEntry *memory.LayerEntryType, attributeEntry memory.AttributeEntryType, fillCharacters string) {
-	fillArea(layerEntry, attributeEntry, fillCharacters, 0, 0, layerEntry.Width, layerEntry.Height)
+	fillArea(layerEntry, attributeEntry, fillCharacters, 0, 0, layerEntry.Width, layerEntry.Height, constants.NullCellControlLocation)
 }
 
 /*
@@ -762,7 +764,7 @@ useful for drawing application headers or status bar footers.
 func DrawBar(layerAlias string, xLocation int, yLocation int, barLength int, fillCharacters string) {
 	layerEntry := memory.GetLayer(layerAlias)
 	attributeEntry := layerEntry.DefaultAttribute
-	fillArea(layerEntry, attributeEntry, fillCharacters, xLocation, yLocation, barLength, 1)
+	fillArea(layerEntry, attributeEntry, fillCharacters, xLocation, yLocation, barLength, 1, constants.NullCellControlLocation)
 }
 
 /*

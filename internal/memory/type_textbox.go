@@ -8,7 +8,7 @@ type TextboxEntryType struct {
 	HorizontalScrollbarAlias string
 	VerticalScrollbarAlias string
 	StyleEntry  TuiStyleEntryType
-	TextData []string
+	TextData [][]rune
 	XLocation   int
 	YLocation   int
 	Width int
@@ -27,7 +27,7 @@ func (shared TextboxEntryType) MarshalJSON() ([]byte, error) {
 		HorizontalScrollbarAlias string
 		VerticalScrollbarAlias string
 		StyleEntry TuiStyleEntryType
-		TextData   []string
+		TextData   [][]rune
 		XLocation  int
 		YLocation   int
 		Width int

@@ -44,6 +44,9 @@ func updateEventQueues() {
 		if updateKeyboardEventTextField(keystroke) {
 			isScreenUpdateRequired = true
 		}
+		if updateKeyboardEventTextbox(keystroke) {
+			isScreenUpdateRequired = true
+		}
 		if updateKeyboardEventSelector(keystroke) {
 			isScreenUpdateRequired = true
 		}

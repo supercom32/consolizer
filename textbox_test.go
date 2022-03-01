@@ -6,6 +6,6 @@ import (
 )
 
 func TestGetTextboxClickCoordinates(test *testing.T) {
-	xLocation, yLocation := getTextboxClickCoordinates(99, 10, 10)
+	xLocation, yLocation := getTextboxClickCoordinates(39, 20)
 	fmt.Printf("%d, %d\n", xLocation, yLocation)
 }

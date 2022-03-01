@@ -76,7 +76,7 @@ func DrawSelector(selectorAlias string, layerEntry *memory.LayerEntryType, style
 	menuAttributeEntry.ForegroundColor = styleEntry.SelectorForegroundColor
 	menuAttributeEntry.BackgroundColor = styleEntry.SelectorBackgroundColor
 	if selectorEntry.IsBorderDrawn {
-		fillArea(layerEntry, menuAttributeEntry," ", xLocation - 1,yLocation - 1, itemWidth + 2, selectorHeight + 2)
+		fillArea(layerEntry, menuAttributeEntry," ", xLocation - 1,yLocation - 1, itemWidth + 2, selectorHeight + 2, constants.NullCellControlLocation)
 		drawBorder(layerEntry, styleEntry, menuAttributeEntry, xLocation -1, yLocation - 1, itemWidth + 2, selectorHeight + 2, false)
 	}
 	highlightAttributeEntry := memory.NewAttributeEntry()

@@ -37,38 +37,28 @@ func testTextboxes () {
 	styleEntry := memory.NewTuiStyleEntry()
 	styleEntry.SelectorTextAlignment = 2
 	textBox := AddTextbox(layerAlias1, "textbox1", styleEntry, 2, 2, 20, 5, true)
-	textBox.setText("This is a test\nthis is ☑ second line which is very long and big\nthis is 文字 third line.")
+	textBox.setText("This is a test 1\nthis is ☑ second line which is very long and big 1\n文字文字文字文字文字文字文字文字 third line. 1")
 
 	textBox2 := AddTextbox(layerAlias1, "textbox2", styleEntry, 40, 2, 20, 5, false)
 	textBox2.setText("This is a test\nthis is ☑ second line which is very long and big\nthis is 文字 third line.")
-	textBox3 := AddTextbox(layerAlias1, "textbox3", styleEntry, 1, 10, 20, 5, true)
-	textBox3.setText("This is a test123456\nThis is a test123456\nThis is a test1234\nThis is a test123456\nThis is a test123456\n")
+	textBox3 := AddTextbox(layerAlias1, "textbox3", styleEntry, 1, 10, 20, 7, true)
+	textBox3.setText("This is a test123456\nThis DDDDtesdfsfsdfsdfsdfsdfsdfsddffdsfdsst123456\nThis is GGGGGst1234\nThis is a ZZZZst123456\nThis is a test123456\nzzzzzzzzz\naaaa\ndddddd\nttttt\n222222\n555555")
 
-	xLocation := 0
-	yLocation := 0
 	for {
 		mouseXLocation, mouseYLocation, _, _ := memory.GetMouseStatus()
 		characterEntry := getCellInformationUnderMouseCursor(mouseXLocation, mouseYLocation)
 		Locate(0,0)
-		Print(fmt.Sprintf("%d   ", characterEntry.AttributeEntry.CellControlId))
+		Print(fmt.Sprintf("%d, %d   ", characterEntry.AttributeEntry.CellControlId, characterEntry.AttributeEntry.CellControlLocation))
 
 		UpdateDisplay()
 		key := Inkey()
 		if key == "d" {
-			xLocation++
-			textBox.setViewport(xLocation, yLocation)
 		}
 		if key == "a" {
-			xLocation--
-			textBox.setViewport(xLocation, yLocation)
 		}
 		if key == "w" {
-			yLocation--
-			textBox.setViewport(xLocation, yLocation)
 		}
 		if key == "s" {
-			yLocation++
-			textBox.setViewport(xLocation, yLocation)
 		}
 		if key == "q" {
 			break

@@ -17,6 +17,7 @@ type AttributeEntryType struct {
 	BackgroundTransformValue float32
 	CellUserId               int
 	CellControlId            int    // The unique ID of a control type
+	CellControlLocation      int    // The relative location of a cell from within a control
 	CellControlAlias         string
 	CellType                 int    // The type of control a cell belongs to
 	CellUserAlias            string // The alias of the cell control.
@@ -37,6 +38,7 @@ func (shared AttributeEntryType) MarshalJSON() ([]byte, error) {
 		CellUserId int
 		CellControlAlias string
 		CellControlId int
+		CellControlLocation int
 		CellType int
 	}{
 		ForegroundColor: shared.ForegroundColor,
@@ -52,6 +54,7 @@ func (shared AttributeEntryType) MarshalJSON() ([]byte, error) {
 		CellUserId: shared.CellUserId, // An identifier for the instance of a cell type (Ie. button instance, etc).
 		CellControlAlias: shared.CellControlAlias,
 		CellControlId: shared.CellControlId,
+		CellControlLocation: shared.CellControlLocation,
 		// Need an attribute for sub cell type.
 		CellType: shared.CellType,       // Type of control the cell belongs to
 
@@ -87,6 +90,7 @@ func NewAttributeEntry(existingAttributeEntry ...*AttributeEntryType) AttributeE
 		attributeEntry.CellType = existingAttributeEntry[0].CellType
 		attributeEntry.CellControlId = existingAttributeEntry[0].CellControlId
 		attributeEntry.CellControlAlias = existingAttributeEntry[0].CellControlAlias
+		attributeEntry.CellControlLocation = existingAttributeEntry[0].CellControlLocation
 	} else {
 		attributeEntry.ForegroundTransformValue = 1
 		attributeEntry.BackgroundTransformValue = 1
@@ -95,7 +99,7 @@ func NewAttributeEntry(existingAttributeEntry ...*AttributeEntryType) AttributeE
 		attributeEntry.CellUserId = constants.NullCellId
 		attributeEntry.CellType = constants.NullCellType
 		attributeEntry.CellControlId = constants.NullCellId
-		attributeEntry.CellUserId = constants.NullCellId
+		attributeEntry.CellControlLocation = constants.NullCellControlLocation
 	}
 	return attributeEntry
 }
