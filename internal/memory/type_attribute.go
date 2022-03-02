@@ -98,7 +98,7 @@ func NewAttributeEntry(existingAttributeEntry ...*AttributeEntryType) AttributeE
 		attributeEntry.BackgroundColor = constants.AnsiColorByIndex[0]
 		attributeEntry.CellUserId = constants.NullCellId
 		attributeEntry.CellType = constants.NullCellType
-		attributeEntry.CellControlId = constants.NullCellId
+		attributeEntry.CellControlId = constants.NullCellControlId
 		attributeEntry.CellControlLocation = constants.NullCellControlLocation
 	}
 	return attributeEntry

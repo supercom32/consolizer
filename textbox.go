@@ -43,29 +43,6 @@ func insertCharacterUsingRelativeCoordinates(textboxEntry *memory.TextboxEntryTy
 	textboxEntry.TextData[yLocation] = append(textboxEntry.TextData[yLocation][:xLocation], characterToInsert)
 	textboxEntry.TextData[yLocation] = append(textboxEntry.TextData[yLocation], stringDataSuffixAfterInsert...)
 	textboxEntry.CursorXLocation++
-	// We need to detect if the cursor is at the end of the visible textbox viewing area, so we can move the
-	// viewport. However, we only do this check if the remaining amount of text to print on a line is greater
-	// than the viewport width.
-	if textboxEntry.ViewportXLocation < len(textboxEntry.TextData[yLocation]) - textboxEntry.Width {
-		// Get the number of runes we could potentially print.
-		arrayOfRunesAvaliableToPrint := textboxEntry.TextData[yLocation][textboxEntry.ViewportXLocation:textboxEntry.ViewportXLocation + textboxEntry.Width]
-		// Get the number of runes we can actually print, since some wide runes take up more space on screen.
-		arrayOfRunesThatFitStringSize := stringformat.GetMaxCharactersThatFitInStringSize(arrayOfRunesAvaliableToPrint, textboxEntry.Width)
-		// If amount of runes that fit is equal to width, we just do a normal calculation.
-		if len(arrayOfRunesThatFitStringSize) == textboxEntry.Width {
-			// If cursor is greater than viewport + printable text, then increase viewport location.
-			if textboxEntry.CursorXLocation >= textboxEntry.ViewportXLocation + len(arrayOfRunesThatFitStringSize) {
-				textboxEntry.ViewportXLocation++
-			}
-		} else {
-			// If the amount of runes available to print is less than the textbox width, then some runes are wide and take up
-			// more space than normal. In this case, we do the same calculation but minus 1 since runes are wide and
-			// the last displayable character is a blank (so start checking a space early).
-			if textboxEntry.CursorXLocation >= textboxEntry.ViewportXLocation + len(arrayOfRunesThatFitStringSize) - 1 {
-				textboxEntry.ViewportXLocation++
-			}
-		}
-	}
 }
 
 func deleteCharacterUsingRelativeCoordinates(textboxEntry *memory.TextboxEntryType, xLocation int, yLocation int){
@@ -89,8 +66,12 @@ func deleteCharacterUsingRelativeCoordinates(textboxEntry *memory.TextboxEntryTy
 }
 
 func insertLine(textData [][]rune, lineData []rune, index int) [][]rune {
-	textData = append(textData[:index+1], textData[index:]...)
-	textData[index] = lineData
+	if index < len(textData) {
+		textData = append(textData[:index+1], textData[index:]...)
+		textData[index] = lineData
+	} else {
+		textData = append(textData, []rune {' '})
+	}
 	/*
 	textData = append(textData, []rune{'z', 'z'})
 	copy(textData[index:], textData[index+2:])
@@ -102,59 +83,29 @@ func insertLine(textData [][]rune, lineData []rune, index int) [][]rune {
 }
 
 func insertLineUsingRelativeCoordinates(textboxEntry *memory.TextboxEntryType, xLocation int, yLocation int){
-	textboxEntry.TextData = insertLine(textboxEntry.TextData, []rune{' '}, yLocation)
+	textboxEntry.TextData = insertLine(textboxEntry.TextData, []rune{' '}, yLocation+1)
+	charactersToCopy := textboxEntry.TextData[textboxEntry.CursorYLocation][textboxEntry.CursorXLocation:]
+	copyOfCharacters := make([]rune, len(textboxEntry.TextData[textboxEntry.CursorYLocation][textboxEntry.CursorXLocation:]))
+	copy(copyOfCharacters, charactersToCopy)
+
+
+	logInfo(fmt.Sprintf("1: %s\n", string(copyOfCharacters)))
+	offsetValue := 0
+	if textboxEntry.CursorXLocation == 0 {
+		offsetValue = 0
+	}
+	textboxEntry.TextData[textboxEntry.CursorYLocation] = append(textboxEntry.TextData[textboxEntry.CursorYLocation][:textboxEntry.CursorXLocation - offsetValue], ' ')
+	logInfo(fmt.Sprintf("1: %s\n", string(copyOfCharacters)))
 	textboxEntry.CursorYLocation++
-	logInfo(fmt.Sprintf("out %d\n", len(textboxEntry.TextData)))
+	textboxEntry.CursorXLocation = 0
+	textboxEntry.TextData[textboxEntry.CursorYLocation] = make([]rune, len(copyOfCharacters))
+	copy(textboxEntry.TextData[textboxEntry.CursorYLocation], copyOfCharacters)
+
+
 	//textboxEntry.TextData = append(textboxEntry.TextData, []rune{' '})
 	//copy(textboxEntry.TextData[yLocation:], textboxEntry.TextData[yLocation+1:])
 }
 
-func setCursorLocation(layerAlias string, textboxAlias string, cellControlId int, cellControlLocation int) {
-	textboxEntry := memory.GetTextbox(layerAlias, textboxAlias)
-	// If your Y selection is not on a text area.
-	if cellControlLocation >= len(textboxEntry.TextData) {
-		textboxEntry.CursorYLocation = len(textboxEntry.TextData) - 1
-		textboxEntry.CursorXLocation = len(textboxEntry.TextData[textboxEntry.CursorYLocation]) - 1
-		// If your cursor xLocation is greater than the remaining viewport width, get how much space it actually
-		// takes to print the remaining text and set your viewport accordingly.
-		if textboxEntry.CursorXLocation >= textboxEntry.ViewportXLocation + textboxEntry.Width {
-			maxVisible := stringformat.GetMaxCharactersThatFitInStringSize(textboxEntry.TextData[textboxEntry.CursorYLocation][textboxEntry.ViewportXLocation:], textboxEntry.Width)
-			textboxEntry.ViewportXLocation = textboxEntry.CursorXLocation - len(maxVisible) + 1
-		} else if textboxEntry.CursorXLocation < textboxEntry.ViewportXLocation {
-			// If your cursor xLocation is less than the current viewport position, calculate how much space it takes
-			// to actually print a viewport width of space before your cursor, and set the viewport accordingly.
-			var maxVisible []rune
-			// If the text to print is less than the textbox width, start at 0.
-			if textboxEntry.CursorXLocation - textboxEntry.Width < 0 {
-				maxVisible = stringformat.GetMaxCharactersThatFitInStringSize(textboxEntry.TextData[textboxEntry.CursorYLocation][0:], textboxEntry.Width)
-			} else {
-				 maxVisible = stringformat.GetMaxCharactersThatFitInStringSize(textboxEntry.TextData[textboxEntry.CursorYLocation][textboxEntry.CursorXLocation - textboxEntry.Width:], textboxEntry.Width)
-			}
-			textboxEntry.ViewportXLocation = textboxEntry.CursorXLocation - len(maxVisible) + 1
-			logInfo(fmt.Sprintf("D: %d, x: %d, v: %s\n", textboxEntry.ViewportXLocation, textboxEntry.CursorXLocation, string(maxVisible)))
-			if textboxEntry.ViewportXLocation < 0 {
-				textboxEntry.ViewportXLocation = 0
-			}
-		}
-		if textboxEntry.CursorYLocation >= textboxEntry.ViewportYLocation + textboxEntry.Height {
-			textboxEntry.ViewportYLocation = textboxEntry.CursorYLocation
-		}
-	} else if cellControlId == constants.NullCellControlId {
-		// If your Y location is fine, but x location is not on a text layer
-		textboxEntry.CursorYLocation = cellControlLocation
-		textboxEntry.CursorXLocation = len(textboxEntry.TextData[cellControlLocation]) - 1
-		if textboxEntry.CursorXLocation < textboxEntry.ViewportXLocation {
-			textboxEntry.ViewportXLocation = textboxEntry.CursorXLocation - textboxEntry.Width + 1
-			if textboxEntry.ViewportXLocation < 0 {
-				textboxEntry.ViewportXLocation = 0
-			}
-		}
-	} else {
-		textboxEntry.CursorXLocation = cellControlId
-		textboxEntry.CursorYLocation = cellControlLocation
-		logInfo("HIT3\n")
-	}
-}
 func updateScrollbarBasedOnTextboxViewport(layerAlias string, textboxAlias string) {
 	textboxEntry := memory.GetTextbox(layerAlias, textboxAlias)
 	horizontalScrollbarEntry := memory.GetScrollBar(layerAlias, textboxEntry.HorizontalScrollbarAlias)
@@ -317,52 +268,6 @@ func printControlText(layerEntry *memory.LayerEntryType, textboxAlias string, st
 		currentControlId++
 	}
 }
-func updateViewport2(textboxEntry *memory.TextboxEntryType) {
-	// If cursor xLocation is greater than the line, make it max line length
-	if textboxEntry.CursorXLocation >= len(textboxEntry.TextData[textboxEntry.CursorYLocation]) {
-		textboxEntry.CursorXLocation = len(textboxEntry.TextData[textboxEntry.CursorYLocation]) - 1
-		textboxEntry.ViewportXLocation = textboxEntry.CursorXLocation - textboxEntry.Width
-		if textboxEntry.ViewportXLocation < 0 {
-			textboxEntry.ViewportXLocation = 0
-		}
-	}
-	// if cursor yLocation is less than viewport y, then update viewport yLocation
-	if textboxEntry.CursorYLocation < textboxEntry.ViewportYLocation {
-		textboxEntry.ViewportYLocation = textboxEntry.CursorYLocation
-	}
-	// We need to detect if the cursor is at the end of the visible textbox viewing area, so we can move the
-	// viewport. However, we only do this check if the remaining amount of text to print on a line is greater
-	// than the viewport width.
-	if textboxEntry.ViewportXLocation < len(textboxEntry.TextData[textboxEntry.CursorYLocation]) - textboxEntry.Width {
-		// Get the number of runes we could potentially print.
-		arrayOfRunesAvaliableToPrint := textboxEntry.TextData[textboxEntry.CursorYLocation][textboxEntry.ViewportXLocation:textboxEntry.ViewportXLocation + textboxEntry.Width]
-		// Get the number of runes we can actually print, since some wide runes take up more space on screen.
-		arrayOfRunesThatFitStringSize := stringformat.GetMaxCharactersThatFitInStringSize(arrayOfRunesAvaliableToPrint, textboxEntry.Width)
-		// If amount of runes that fit is equal to width, we just do a normal calculation.
-		if len(arrayOfRunesThatFitStringSize) == textboxEntry.Width {
-			// If cursor is greater than viewport + printable text, then increase viewport location.
-			if textboxEntry.CursorXLocation >= textboxEntry.ViewportXLocation + len(arrayOfRunesThatFitStringSize) {
-				textboxEntry.ViewportXLocation++
-			}
-		} else {
-			// If the amount of runes available to print is less than the textbox width, then some runes are wide and take up
-			// more space than normal. In this case, we do the same calculation but minus 1 since runes are wide and
-			// the last displayable character is a blank (so start checking a space early).
-			if textboxEntry.CursorXLocation >= textboxEntry.ViewportXLocation + len(arrayOfRunesThatFitStringSize) - 1 {
-				textboxEntry.ViewportXLocation++
-			}
-		}
-	}
-	if textboxEntry.CursorYLocation >= textboxEntry.ViewportYLocation + textboxEntry.Height {
-		textboxEntry.ViewportYLocation++
-	}
-	if textboxEntry.ViewportXLocation > textboxEntry.CursorXLocation {
-		textboxEntry.ViewportXLocation--
-	}
-	if textboxEntry.ViewportYLocation > textboxEntry.CursorYLocation {
-		textboxEntry.ViewportXLocation--
-	}
-}
 
 func updateCursor(textboxEntry *memory.TextboxEntryType, xLocation int, yLocation int) {
 	textboxEntry.CursorXLocation = xLocation
@@ -375,11 +280,14 @@ func updateCursor(textboxEntry *memory.TextboxEntryType, xLocation int, yLocatio
 	if textboxEntry.CursorYLocation > len(textboxEntry.TextData) - 1 {
 		textboxEntry.CursorYLocation = len(textboxEntry.TextData) - 1
 	}
-	// If x is less than or greater than row data bounds, set it to max length of current line
-	if textboxEntry.CursorXLocation < 0 || textboxEntry.CursorXLocation > len(textboxEntry.TextData[textboxEntry.CursorYLocation]) - 1 {
+	// If our cursor xLocation was jumped (due to NullCellControlId) or placed in an invalid xLocation spot greater than the length of our text line.
+	// Move it to the end of the line.
+	if textboxEntry.CursorXLocation == constants.NullCellControlId || textboxEntry.CursorXLocation > len(textboxEntry.TextData[textboxEntry.CursorYLocation]) - 1 {
 		textboxEntry.CursorXLocation = len(textboxEntry.TextData[textboxEntry.CursorYLocation]) - 1
+	} else if textboxEntry.CursorXLocation < 0 {
+		// If the cursor xLocation was scrolled to be out of lower bounds, just set the location to 0.
+		textboxEntry.CursorXLocation = 0
 	}
-	//logInfo(fmt.Sprintf("ix: %d, iy: %d cx: %d, cy: %d  \n", xLocation, yLocation, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation))
 }
 
 func updateViewport(textboxEntry *memory.TextboxEntryType) {
@@ -395,17 +303,25 @@ func updateViewport(textboxEntry *memory.TextboxEntryType) {
 	if textboxEntry.CursorYLocation <= 0 {
 		textboxEntry.ViewportYLocation = 0
 	}
-
 	// If cursor xLocation is less than viewport.
 	if textboxEntry.CursorXLocation < textboxEntry.ViewportXLocation {
+		isCursorJumped := false
+		if textboxEntry.ViewportXLocation - textboxEntry.CursorXLocation > 2 {
+			isCursorJumped = true
+		}
 		if textboxEntry.CursorXLocation - textboxEntry.Width < 0 {
-			//arrayOfRunesAvailableToPrint = textboxEntry.TextData[textboxEntry.CursorYLocation][:textboxEntry.CursorXLocation]
-			//arrayOfRunesThatFitStringSize = stringformat.GetMaxCharactersThatFitInStringSize(arrayOfRunesAvailableToPrint, textboxEntry.Width)
-			textboxEntry.ViewportXLocation = textboxEntry.CursorXLocation
+			if isCursorJumped {
+				textboxEntry.ViewportXLocation = 0
+			} else {
+				textboxEntry.ViewportXLocation = textboxEntry.CursorXLocation
+			}
 		} else {
-			//arrayOfRunesAvailableToPrint = textboxEntry.TextData[textboxEntry.CursorYLocation][textboxEntry.CursorXLocation:textboxEntry.CursorXLocation + textboxEntry.Width]
-			//arrayOfRunesThatFitStringSize = stringformat.GetMaxCharactersThatFitInStringSize(arrayOfRunesAvailableToPrint, textboxEntry.Width)
-			textboxEntry.ViewportXLocation = textboxEntry.CursorXLocation
+			if isCursorJumped {
+				textboxEntry.ViewportXLocation = textboxEntry.CursorXLocation - textboxEntry.Width
+			} else {
+				// If the cursor xLocation was just scrolled, scroll the viewport accordingly.
+				textboxEntry.ViewportXLocation = textboxEntry.CursorXLocation
+			}
 		}
 	}
 
@@ -415,52 +331,18 @@ func updateViewport(textboxEntry *memory.TextboxEntryType) {
 	if textboxEntry.ViewportXLocation + textboxEntry.Width >= len(textboxEntry.TextData[textboxEntry.CursorYLocation]) {
 		arrayOfRunesAvailableToPrint = textboxEntry.TextData[textboxEntry.CursorYLocation][textboxEntry.ViewportXLocation:]
 		arrayOfRunesThatFitStringSize = stringformat.GetMaxCharactersThatFitInStringSize(arrayOfRunesAvailableToPrint, len(textboxEntry.TextData[textboxEntry.CursorYLocation]) - textboxEntry.ViewportXLocation)
+		logInfo("HIT1\n")
 	} else {
 		arrayOfRunesAvailableToPrint = textboxEntry.TextData[textboxEntry.CursorYLocation][textboxEntry.ViewportXLocation:textboxEntry.ViewportXLocation + textboxEntry.Width]
 		arrayOfRunesThatFitStringSize = stringformat.GetMaxCharactersThatFitInStringSize(arrayOfRunesAvailableToPrint, textboxEntry.Width)
+		logInfo("HIT2\n")
 	}
-
-	if textboxEntry.CursorXLocation >= textboxEntry.ViewportXLocation + len(arrayOfRunesThatFitStringSize){
+	// If the cursor xLocation >= the visible viewport xLocation + amount of text that can be visibly drawn, and if the cursor xLocation is != 1
+	// (For the case of a single wide character on a line), then move the viewport, so it makes your cursor appear at the end of it.
+	if textboxEntry.CursorXLocation >= textboxEntry.ViewportXLocation + len(arrayOfRunesThatFitStringSize) && textboxEntry.CursorXLocation != 1 {
+		logInfo(fmt.Sprintf("c: %d, v: %d, l: %d\n", textboxEntry.CursorXLocation, textboxEntry.ViewportXLocation, len(arrayOfRunesThatFitStringSize)))
 		textboxEntry.ViewportXLocation = textboxEntry.CursorXLocation - len(arrayOfRunesThatFitStringSize) + 1
 	}
-
-	/*
-	if textboxEntry.ViewportXLocation + textboxEntry.Width < len(textboxEntry.TextData[textboxEntry.CursorYLocation]) {
-		arrayOfRunesAvailableToPrint = textboxEntry.TextData[textboxEntry.CursorYLocation][textboxEntry.ViewportXLocation:textboxEntry.ViewportXLocation + textboxEntry.Width]
-	} else {
-		arrayOfRunesAvailableToPrint = textboxEntry.TextData[textboxEntry.CursorYLocation][textboxEntry.ViewportXLocation:]
-	}
-	arrayOfRunesThatFitStringSize = stringformat.GetMaxCharactersThatFitInStringSize(arrayOfRunesAvailableToPrint, textboxEntry.Width)
-	if textboxEntry.CursorXLocation >= textboxEntry.ViewportXLocation + len(arrayOfRunesThatFitStringSize) {
-		textboxEntry.ViewportXLocation = textboxEntry.CursorXLocation - len(arrayOfRunesThatFitStringSize)
-	}
-	*/
-	//logInfo(fmt.Sprint("ZZZZZZZZZZZZZZZZZZZZZZZZZ"))
-
-	/*
-	// If cursor xLocation is greater than the line, make it max line length
-	if textboxEntry.CursorXLocation >= len(textboxEntry.TextData[textboxEntry.CursorYLocation]) {
-		// If the text for the line is shorter than width of viewport, just set viewport to 0.
-		if len(textboxEntry.TextData[textboxEntry.CursorYLocation]) - 1 < textboxEntry.Width {
-			textboxEntry.ViewportXLocation = 0
-			return
-		}
-		textboxEntry.CursorXLocation = len(textboxEntry.TextData[textboxEntry.CursorYLocation]) - 1
-		textboxEntry.ViewportXLocation = textboxEntry.CursorXLocation - textboxEntry.Width
-		// Get the number of runes we could potentially print.
-		arrayOfRunesAvailableToPrint := textboxEntry.TextData[textboxEntry.CursorYLocation][textboxEntry.ViewportXLocation:textboxEntry.ViewportXLocation + textboxEntry.Width]
-		// Get the number of runes we can actually print, since some wide runes take up more space on screen.
-		arrayOfRunesThatFitStringSize := stringformat.GetMaxCharactersThatFitInStringSize(arrayOfRunesAvailableToPrint, textboxEntry.Width)
-		// If the size are the same, no wide runes exist.
-		if len(arrayOfRunesThatFitStringSize) != textboxEntry.Width {
-			textboxEntry.ViewportXLocation = textboxEntry.ViewportXLocation - len(arrayOfRunesThatFitStringSize)
-		}
-		if textboxEntry.ViewportXLocation < 0 {
-			textboxEntry.ViewportXLocation = 0
-		}
-	}
-	*/
-
 }
 
 
@@ -475,39 +357,68 @@ func updateKeyboardEventTextbox(keystroke string) bool {
 	textboxEntry := memory.GetTextbox(focusedLayerAlias, focusedControlAlias)
 	if len(keystroke) == 1 { // If a regular char is entered.
 		insertCharacterUsingRelativeCoordinates(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation, []rune(keystroke)[0])
+		updateCursor(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
+		updateViewport(textboxEntry)
 		SetTextboxMaxScrollBarValues(focusedLayerAlias, focusedControlAlias)
 		updateScrollbarBasedOnTextboxViewport(focusedLayerAlias, focusedControlAlias)
 	}
 	if keystroke == "delete" {
 		deleteCharacterUsingRelativeCoordinates(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
+		updateCursor(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
+		updateViewport(textboxEntry)
 		SetTextboxMaxScrollBarValues(focusedLayerAlias, focusedControlAlias)
 		updateScrollbarBasedOnTextboxViewport(focusedLayerAlias, focusedControlAlias)
 	}
 	if keystroke == "enter" {
 		insertLineUsingRelativeCoordinates(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
+		updateCursor(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
+		updateViewport(textboxEntry)
 		SetTextboxMaxScrollBarValues(focusedLayerAlias, focusedControlAlias)
 		updateScrollbarBasedOnTextboxViewport(focusedLayerAlias, focusedControlAlias)
 	}
 	if keystroke == "home" {
-
+		textboxEntry.CursorXLocation = 0
+		updateCursor(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
+		updateViewport(textboxEntry)
+		SetTextboxMaxScrollBarValues(focusedLayerAlias, focusedControlAlias)
+		updateScrollbarBasedOnTextboxViewport(focusedLayerAlias, focusedControlAlias)
 	}
 	if keystroke == "end" {
-
+		textboxEntry.CursorXLocation = len(textboxEntry.TextData[textboxEntry.CursorYLocation])
+		updateCursor(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
+		updateViewport(textboxEntry)
+		SetTextboxMaxScrollBarValues(focusedLayerAlias, focusedControlAlias)
+		updateScrollbarBasedOnTextboxViewport(focusedLayerAlias, focusedControlAlias)
+	}
+	if keystroke == "pgup" {
+		textboxEntry.CursorYLocation = textboxEntry.CursorYLocation - textboxEntry.Width
+		updateCursor(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
+		updateViewport(textboxEntry)
+		SetTextboxMaxScrollBarValues(focusedLayerAlias, focusedControlAlias)
+		updateScrollbarBasedOnTextboxViewport(focusedLayerAlias, focusedControlAlias)
+	}
+	if keystroke == "pgdn" {
+		textboxEntry.CursorYLocation = textboxEntry.CursorYLocation + textboxEntry.Width
+		updateCursor(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
+		updateViewport(textboxEntry)
+		SetTextboxMaxScrollBarValues(focusedLayerAlias, focusedControlAlias)
+		updateScrollbarBasedOnTextboxViewport(focusedLayerAlias, focusedControlAlias)
 	}
 	if keystroke == "backspace" || keystroke == "backspace2" {
-
+		if textboxEntry.CursorXLocation != 0 {
+			textboxEntry.CursorXLocation--
+			updateCursor(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
+			deleteCharacterUsingRelativeCoordinates(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
+			updateCursor(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
+			updateViewport(textboxEntry)
+			SetTextboxMaxScrollBarValues(focusedLayerAlias, focusedControlAlias)
+			updateScrollbarBasedOnTextboxViewport(focusedLayerAlias, focusedControlAlias)
+		}
 	}
 	if keystroke == "left" {
 		textboxEntry.CursorXLocation--
-		if textboxEntry.CursorXLocation < 0 {
-			textboxEntry.CursorXLocation = 0
-		}
-		if textboxEntry.CursorXLocation >= len(textboxEntry.TextData[textboxEntry.CursorYLocation]) {
-			textboxEntry.CursorXLocation = len(textboxEntry.TextData[textboxEntry.CursorYLocation])
-		}
 		updateCursor(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
 		updateViewport(textboxEntry)
-		//setCursorLocation(focusedLayerAlias, focusedControlAlias, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
 		SetTextboxMaxScrollBarValues(focusedLayerAlias, focusedControlAlias)
 		updateScrollbarBasedOnTextboxViewport(focusedLayerAlias, focusedControlAlias)
 	}
@@ -521,7 +432,6 @@ func updateKeyboardEventTextbox(keystroke string) bool {
 		}
 		updateCursor(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
 		updateViewport(textboxEntry)
-		//setCursorLocation(focusedLayerAlias, focusedControlAlias, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
 		SetTextboxMaxScrollBarValues(focusedLayerAlias, focusedControlAlias)
 		updateScrollbarBasedOnTextboxViewport(focusedLayerAlias, focusedControlAlias)
 	}
@@ -555,7 +465,6 @@ func updateMouseEventTextbox() bool {
 		textboxEntry := memory.GetTextbox(layerAlias, characterEntry.AttributeEntry.CellControlAlias)
 		updateCursor(textboxEntry, characterEntry.AttributeEntry.CellControlId, characterEntry.AttributeEntry.CellControlLocation)
 		updateViewport(textboxEntry)
-		//setCursorLocation(layerAlias, characterEntry.AttributeEntry.CellControlAlias, characterEntry.AttributeEntry.CellControlId, characterEntry.AttributeEntry.CellControlLocation)
 		SetTextboxMaxScrollBarValues(layerAlias, characterEntry.AttributeEntry.CellControlAlias)
 		updateScrollbarBasedOnTextboxViewport(layerAlias, characterEntry.AttributeEntry.CellControlAlias)
 		setFocusedControl(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias, characterEntry.AttributeEntry.CellType)

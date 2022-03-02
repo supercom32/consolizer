@@ -118,7 +118,7 @@ const NullItemSelection = -1
 const NullCellId = -1
 const NullCellType = -1
 const NullCellControlLocation = -1
-const NullCellControlId = -1
+const NullCellControlId = -2
 const TransformContrast = 0
 const TransformTransparency = 0
 
