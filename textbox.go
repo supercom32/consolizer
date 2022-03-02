@@ -328,11 +328,14 @@ func updateViewport(textboxEntry *memory.TextboxEntryType) {
 	var arrayOfRunesAvailableToPrint []rune
 	var arrayOfRunesThatFitStringSize []rune
 
+	// If the viewport xLocation + view width is greater than the string to print, just get the length of the string
+	// to calculate how many characters will print on screen.
 	if textboxEntry.ViewportXLocation + textboxEntry.Width >= len(textboxEntry.TextData[textboxEntry.CursorYLocation]) {
 		arrayOfRunesAvailableToPrint = textboxEntry.TextData[textboxEntry.CursorYLocation][textboxEntry.ViewportXLocation:]
-		arrayOfRunesThatFitStringSize = stringformat.GetMaxCharactersThatFitInStringSize(arrayOfRunesAvailableToPrint, len(textboxEntry.TextData[textboxEntry.CursorYLocation]) - textboxEntry.ViewportXLocation)
+		arrayOfRunesThatFitStringSize = stringformat.GetMaxCharactersThatFitInStringSize(arrayOfRunesAvailableToPrint, textboxEntry.Width)
 		logInfo("HIT1\n")
 	} else {
+		// Otherwise your string is longer than the viewport width, so just use the length of the viewport to do your string check.
 		arrayOfRunesAvailableToPrint = textboxEntry.TextData[textboxEntry.CursorYLocation][textboxEntry.ViewportXLocation:textboxEntry.ViewportXLocation + textboxEntry.Width]
 		arrayOfRunesThatFitStringSize = stringformat.GetMaxCharactersThatFitInStringSize(arrayOfRunesAvailableToPrint, textboxEntry.Width)
 		logInfo("HIT2\n")
