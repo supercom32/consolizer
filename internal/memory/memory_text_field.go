@@ -16,7 +16,7 @@ func AddTextField(layerAlias string, textFieldAlias string, styleEntry TuiStyleE
 	textFieldEntry.Width = width
 	textFieldEntry.MaxLengthAllowed = maxLengthAllowed
 	textFieldEntry.IsPasswordProtected = IsPasswordProtected
-	textFieldEntry.CurrentValue = defaultValue
+	textFieldEntry.CurrentValue = []rune(defaultValue)
 	textFieldEntry.DefaultValue = defaultValue
 	if TextFieldMemory[layerAlias] == nil {
 		TextFieldMemory[layerAlias] = make(map[string]*TextFieldEntryType)

@@ -14,5 +14,5 @@ func dumpScreenComparisons(originalScreenAsBase64 string, expectedScreenAsBase64
 }
 
 func logInfo(info string) {
-	filesystem.AppendLineToFile("/tmp/debug.log", info, 0)
+	filesystem.AppendLineToFile("/tmp/debug.log", info + "\n", 0)
 }

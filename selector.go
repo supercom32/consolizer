@@ -127,13 +127,14 @@ func drawSelectorsOnLayer(layerEntry memory.LayerEntryType) {
 	}
 }
 
-func updateKeyboardEventSelector(keystroke string) bool {
+func updateKeyboardEventSelector(keystroke []rune) bool {
+	keystrokeAsString := string(keystroke)
 	isScreenUpdateRequired := false
 	if eventStateMemory.currentlyFocusedControl.controlType != constants.CellTypeSelectorItem {
 		return isScreenUpdateRequired
 	}
 	selectorEntry := memory.GetSelector(eventStateMemory.currentlyFocusedControl.layerAlias, eventStateMemory.currentlyFocusedControl.controlAlias)
-	if keystroke == "down" {
+	if keystrokeAsString == "down" {
 		//remainder := selectorEntry.ItemHighlighted % selectorEntry.NumberOfColumns
 		selectorEntry.ItemHighlighted = selectorEntry.ItemHighlighted + selectorEntry.NumberOfColumns
 		if selectorEntry.ItemHighlighted >= len(selectorEntry.SelectionEntry.SelectionAlias) {
@@ -141,14 +142,14 @@ func updateKeyboardEventSelector(keystroke string) bool {
 		}
 		isScreenUpdateRequired = true
 	}
-	if keystroke == "up" {
+	if keystrokeAsString == "up" {
 		selectorEntry.ItemHighlighted = selectorEntry.ItemHighlighted - selectorEntry.NumberOfColumns
 		if selectorEntry.ItemHighlighted < 0 {
 			selectorEntry.ItemHighlighted = selectorEntry.ItemHighlighted + selectorEntry.NumberOfColumns
 		}
 		isScreenUpdateRequired = true
 	}
-	if keystroke == "left" {
+	if keystrokeAsString == "left" {
 		if selectorEntry.ItemHighlighted % selectorEntry.NumberOfColumns != 0 {
 			selectorEntry.ItemHighlighted = selectorEntry.ItemHighlighted - 1
 			if selectorEntry.ItemHighlighted < 0 {
@@ -157,7 +158,7 @@ func updateKeyboardEventSelector(keystroke string) bool {
 			isScreenUpdateRequired = true
 		}
 	}
-	if keystroke == "right" {
+	if keystrokeAsString == "right" {
 		if selectorEntry.ItemHighlighted % selectorEntry.NumberOfColumns != selectorEntry.NumberOfColumns - 1 {
 			selectorEntry.ItemHighlighted = selectorEntry.ItemHighlighted + 1
 			if selectorEntry.ItemHighlighted >= len(selectorEntry.SelectionEntry.SelectionAlias) {
@@ -166,7 +167,7 @@ func updateKeyboardEventSelector(keystroke string) bool {
 			isScreenUpdateRequired = true
 		}
 	}
-	if keystroke == "enter" {
+	if keystrokeAsString == "enter" {
 		selectorEntry.ItemSelected = selectorEntry.ItemHighlighted
 		isScreenUpdateRequired = true
 	}

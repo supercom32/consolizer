@@ -10,12 +10,12 @@ import (
 )
 
 func TestMainStub(test *testing.T) {
-	testTextboxes()
+	//testTextboxes()
 	//testCheckboxes()
 	//testDropdown()
 	//testScrollBars()
 	//testSelector()
-	//testTextField()
+	testTextField()
 	//testWindowMovement()
 	//testButtonPressAction()
 	RestoreTerminalSettings()
@@ -37,7 +37,7 @@ func testTextboxes () {
 	styleEntry := memory.NewTuiStyleEntry()
 	styleEntry.SelectorTextAlignment = 2
 	textBox := AddTextbox(layerAlias1, "textbox1", styleEntry, 2, 2, 20, 5, true)
-	textBox.setText("This is a test 1\nthis is ☑ second line which is very long and big 1\n文字文字文字文字文字文字文字文字 third line. 1")
+	textBox.setText("This is a test 1\nthis is ☑ second line which is very long and big 1\n李克强宣布中国今年经济增长的目标为 third line. 1")
 
 	textBox2 := AddTextbox(layerAlias1, "textbox2", styleEntry, 40, 2, 20, 5, false)
 	textBox2.setText("This is a test\nthis is ☑ second line which is very long and big\nthis is 文字 third line.")
@@ -51,7 +51,7 @@ func testTextboxes () {
 		Print(fmt.Sprintf("%d, %d   ", characterEntry.AttributeEntry.CellControlId, characterEntry.AttributeEntry.CellControlLocation))
 
 		UpdateDisplay()
-		key := Inkey()
+		key := string(Inkey())
 		if key == "d" {
 		}
 		if key == "a" {
@@ -88,7 +88,7 @@ func testCheckboxes () {
 	AddCheckbox(layerAlias1, "checkbox1", "Enable 文字 Feature", styleEntry, 2, 2, true)
 	for {
 		UpdateDisplay()
-		key := Inkey()
+		key := string(Inkey())
 		if key == "w" {
 		}
 		if key == "q" {
@@ -138,7 +138,7 @@ func testDropdown() {
 	AddSelector(layerAlias1, "menuBar3", styleEntry, selectionEntry, 6, 30, 4, 7, 1, 0, -1, false)
 	for {
 		UpdateDisplay()
-		key := Inkey()
+		key := string(Inkey())
 		//fmt.Print(key)
 		if key == "w" {
 			Locate(0,0)
@@ -190,7 +190,7 @@ func testScrollBars() {
 		PrintLayer(layerAlias1, "  ")
 		LocateLayer(layerAlias1, 10, 1)
 		PrintLayer(layerAlias1, strconv.Itoa(s2.getScrollValue()))
-		key := Inkey()
+		key := string(Inkey())
 		//fmt.Print(key)
 		if key == "q" {
 			break
@@ -234,7 +234,7 @@ func testSelector() {
 		PrintLayer(layerAlias1, menuBarInstance.GetSelected())
 		LocateLayer(layerAlias1, 3, 4)
 		PrintLayer(layerAlias1, menuBarInstance2.GetSelected())
-		key := Inkey()
+		key := string(Inkey())
 		//fmt.Print(key)
 		if key == "q" {
 			break
@@ -255,13 +255,22 @@ func testTextField() {
 	FillLayer(layerAlias1, "#")
 	FillLayer(layerAlias2, "@")
 	styleEntry := memory.NewTuiStyleEntry()
-	textFieldInstance := AddTextField(layerAlias1, "textField", styleEntry, 0, 0, 10, 60, false, "Alex Chang is the man" )
-	LocateLayer(layerAlias1, 3, 3)
+	textFieldInstance := AddTextField(layerAlias1, "textField", styleEntry, 0, 3, 10, 60, false, "Alex Chang is the man" )
+	LocateLayer(layerAlias1, 3, 20)
 	PrintLayer(layerAlias1, textFieldInstance.GetValue())
-	memory.AddTextField(layerAlias1, "textField2", styleEntry, 0, 2, 10, 20, false, "Test" )
-	for i := 0; i < 15; i++ {
+	memory.AddTextField(layerAlias1, "textField2", styleEntry, 0, 5, 15, 30, false, "Test 李克强宣布中国今年经济增长的目 acbc1")
+	memory.AddScrollBar(layerAlias1, "Anything", styleEntry, 0, 8, 10, 10, 0, 1, false)
+	for {
+		mouseXLocation, mouseYLocation, _, _ := memory.GetMouseStatus()
+		characterEntry := getCellInformationUnderMouseCursor(mouseXLocation, mouseYLocation)
+		Locate(0,0)
+		Print(fmt.Sprintf("%d, %d   ", characterEntry.AttributeEntry.CellControlId, characterEntry.AttributeEntry.CellControlLocation))
 		UpdateDisplay()
-		time.Sleep(1000 * time.Millisecond)
+		time.Sleep(50 * time.Millisecond)
+		key := string(Inkey())
+		if key == "q" {
+			break
+		}
 	}
 	DeleteAllLayers()
 	RestoreTerminalSettings()

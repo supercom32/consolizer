@@ -1,6 +1,7 @@
 package consolizer
 
 import (
+	"fmt"
 	"github.com/supercom32/consolizer/constants"
 	"github.com/supercom32/consolizer/internal/memory"
 	"github.com/supercom32/consolizer/internal/stringformat"
@@ -18,7 +19,7 @@ func (shared *textFieldInstanceType) GetValue() string {
 	validatorTextField(shared.layerAlias, shared.textFieldAlias)
 	textFieldEntry := memory.GetTextField(shared.layerAlias, shared.textFieldAlias)
 	value := textFieldEntry.CurrentValue
-	return value
+	return string(value)
 }
 
 /*
@@ -58,7 +59,7 @@ visible.
 func AddTextField(layerAlias string, textFieldAlias string, styleEntry memory.TuiStyleEntryType, xLocation int, yLocation int, width int, maxLengthAllowed int, IsPasswordProtected bool, defaultValue string) textFieldInstanceType {
 	validateLayerLocationByLayerAlias(layerAlias, xLocation, yLocation)
 	validateTextFieldWidth(width)
-	memory.AddTextField(layerAlias, textFieldAlias, styleEntry, xLocation, yLocation, width, maxLengthAllowed, IsPasswordProtected, defaultValue)
+	memory.AddTextField(layerAlias, textFieldAlias, styleEntry, xLocation, yLocation, width, maxLengthAllowed, IsPasswordProtected, defaultValue + " ")
 	var textFieldInstance textFieldInstanceType
 	textFieldInstance.layerAlias = layerAlias
 	textFieldInstance.textFieldAlias = textFieldAlias
@@ -79,22 +80,26 @@ entry.
 */
 func drawTextFieldOnLayer(layerEntry memory.LayerEntryType) {
 	layerAlias := layerEntry.LayerAlias
+	/*
 	focusedLayerAlias := eventStateMemory.currentlyFocusedControl.layerAlias
 	focusedControlAlias := eventStateMemory.currentlyFocusedControl.controlAlias
 	focusedControlType := eventStateMemory.currentlyFocusedControl.controlType
-
+	 */
 	for currentKey := range memory.TextFieldMemory[layerAlias] {
 		textFieldEntry := memory.GetTextField(layerAlias, currentKey)
 		drawInputString(&layerEntry, textFieldEntry.StyleEntry, currentKey, textFieldEntry.XLocation, textFieldEntry.YLocation, textFieldEntry.Width, textFieldEntry.ViewportPosition, textFieldEntry.CurrentValue)
+		/*
 		cursorPosition := textFieldEntry.ViewportPosition + textFieldEntry.CursorPosition
 		runeSlice := []rune(textFieldEntry.CurrentValue)
 		characterUnderCursor := ' '
 		if cursorPosition < len(runeSlice) { // Protect against empty strings
 			characterUnderCursor = runeSlice[cursorPosition]
 		}
+
 		if focusedControlType == constants.CellTypeTextField && focusedLayerAlias == layerAlias && focusedControlAlias == currentKey {
 			drawCursor(&layerEntry, textFieldEntry.StyleEntry, currentKey, characterUnderCursor, textFieldEntry.XLocation, textFieldEntry.YLocation, textFieldEntry.CursorPosition, false)
 		}
+		 */
 	}
 }
 
@@ -142,154 +147,162 @@ the text layer, then only the visible portion will be displayed.
 start. If the remainder of your string is too long for the specified width,
 then only the visible portion will be displayed.
 */
-func drawInputString(layerEntry *memory.LayerEntryType, styleEntry memory.TuiStyleEntryType, textFieldAlias string, xLocation int, yLocation int, width int, stringPosition int, inputString string) {
+func drawInputString(layerEntry *memory.LayerEntryType, styleEntry memory.TuiStyleEntryType, textFieldAlias string, xLocation int, yLocation int, width int, stringPosition int, inputValue []rune) {
 	attributeEntry := memory.NewAttributeEntry()
 	attributeEntry.ForegroundColor = styleEntry.TextInputForegroundColor
 	attributeEntry.BackgroundColor = styleEntry.TextInputBackgroundColor
 	attributeEntry.CellType = constants.CellTypeTextField
 	attributeEntry.CellControlAlias = textFieldAlias
-	runeSlice := []rune(inputString)
-	var safeSubstring string
-	if stringPosition+width <= len(inputString) {
-		safeSubstring = string(runeSlice[stringPosition : stringPosition+width])
-	} else {
-		safeSubstring = string(runeSlice[stringPosition : stringPosition+len(inputString)-stringPosition])
-	}
-	arrayOfRunes := stringformat.GetRunesFromString(safeSubstring)
-	// Here we loop over each character to draw since we need to accommodate for unique
-	// cell IDs (if required for mouse location detection).
-	for currentRuneIndex := 0; currentRuneIndex < len(arrayOfRunes); currentRuneIndex ++ {
-		attributeEntry.CellControlId = currentRuneIndex
-		printLayer(layerEntry, attributeEntry, xLocation + currentRuneIndex, yLocation, []rune{arrayOfRunes[currentRuneIndex]})
-	}
-}
-
-func updateKeyboardEventTextField(keystroke string) bool {
-	isScreenUpdateRequired := true
+	numberOfCharactersToSafelyPrint := stringformat.GetMaxCharactersThatFitInStringSize(inputValue[stringPosition:], width)
+	textFieldEntry := memory.GetTextField(layerEntry.LayerAlias, textFieldAlias)
 	focusedLayerAlias := eventStateMemory.currentlyFocusedControl.layerAlias
 	focusedControlAlias := eventStateMemory.currentlyFocusedControl.controlAlias
 	focusedControlType := eventStateMemory.currentlyFocusedControl.controlType
 
+	fillArea(layerEntry, attributeEntry," ", xLocation, yLocation, width, 1, 0)
+	// Here we loop over each character to draw since we need to accommodate for unique
+	// cell IDs (if required for mouse location detection).
+	xLocationOffset := 0
+	for currentRuneIndex := 0; currentRuneIndex < len(numberOfCharactersToSafelyPrint); currentRuneIndex ++ {
+		if focusedControlType == constants.CellTypeTextField && focusedLayerAlias == layerEntry.LayerAlias && focusedControlAlias == textFieldAlias {
+			if stringPosition+currentRuneIndex == textFieldEntry.CursorPosition {
+				attributeEntry.ForegroundColor = styleEntry.CursorForegroundColor
+				attributeEntry.BackgroundColor = styleEntry.CursorBackgroundColor
+			} else {
+				attributeEntry.ForegroundColor = styleEntry.TextInputForegroundColor
+				attributeEntry.BackgroundColor = styleEntry.TextInputBackgroundColor
+			}
+		}
+		attributeEntry.CellControlId = stringPosition + currentRuneIndex
+		printLayer(layerEntry, attributeEntry, xLocation + xLocationOffset, yLocation, []rune{inputValue[stringPosition + currentRuneIndex]})
+		xLocationOffset++
+		if stringformat.IsRuneCharacterWide(inputValue[stringPosition + currentRuneIndex]) {
+			xLocationOffset++
+			printLayer(layerEntry, attributeEntry, xLocation + xLocationOffset, yLocation, []rune{' '})
+		}
+	}
+}
+
+func updateCursor2(textFieldEntry *memory.TextFieldEntryType, xLocation int) {
+	textFieldEntry.CursorPosition = xLocation
+	// If our cursor xLocation was jumped (due to NullCellControlId) or placed in an invalid xLocation spot greater than the length of our text line.
+	// Move it to the end of the line.
+	if textFieldEntry.CursorPosition == constants.NullCellControlId || textFieldEntry.CursorPosition > len(textFieldEntry.CurrentValue) - 1 {
+		textFieldEntry.CursorPosition = 0
+	}
+}
+
+func updateTextfieldViewport2(textFieldEntry *memory.TextFieldEntryType) {
+	// If cursor xLocation is lower than the viewport window
+	if textFieldEntry.CursorPosition <= textFieldEntry.ViewportPosition {
+		maxViewportWidthAvaliable := textFieldEntry.Width
+		if textFieldEntry.CursorPosition - textFieldEntry.Width < 0 {
+			maxViewportWidthAvaliable = textFieldEntry.CursorPosition
+		}
+		arrayOfRunesAvailableToPrint := textFieldEntry.CurrentValue[textFieldEntry.CursorPosition - maxViewportWidthAvaliable : textFieldEntry.CursorPosition]
+		numberOfRunesThatFitStringSize := stringformat.GetMaxCharactersThatFitInStringSizeReverse(arrayOfRunesAvailableToPrint, textFieldEntry.Width)
+		textFieldEntry.ViewportPosition = textFieldEntry.CursorPosition - numberOfRunesThatFitStringSize
+	}
+	// Figure out how much displayable space is in our current viewport window.
+	arrayOfRunesAvailableToPrint := textFieldEntry.CurrentValue[textFieldEntry.ViewportPosition:]
+	arrayOfRunesThatFitStringSize := stringformat.GetMaxCharactersThatFitInStringSize(arrayOfRunesAvailableToPrint, textFieldEntry.Width)
+	// If the cursor xLocation is equal or greater than the visible viewport window width.
+	if textFieldEntry.CursorPosition >= textFieldEntry.ViewportPosition + len(arrayOfRunesThatFitStringSize) {
+		// Then make the viewport xLocation equal to the visible viewport width behind it.
+		maxViewportWidthAvaliable := textFieldEntry.Width
+		if textFieldEntry.CursorPosition - textFieldEntry.Width < 0 {
+			maxViewportWidthAvaliable = textFieldEntry.CursorPosition
+		}
+		arrayOfRunesAvailableToPrint = textFieldEntry.CurrentValue[textFieldEntry.CursorPosition - maxViewportWidthAvaliable : textFieldEntry.CursorPosition]
+		numberOfRunesThatFitStringSize := stringformat.GetMaxCharactersThatFitInStringSizeReverse(arrayOfRunesAvailableToPrint, textFieldEntry.Width)
+		logInfo(fmt.Sprintf("v: %d x: %d off: %d fit: %d, aval: %s", textFieldEntry.ViewportPosition, textFieldEntry.CursorPosition, maxViewportWidthAvaliable, numberOfRunesThatFitStringSize, string(arrayOfRunesAvailableToPrint)))
+		textFieldEntry.ViewportPosition = textFieldEntry.CursorPosition - numberOfRunesThatFitStringSize + 1
+	}
+}
+
+func insertCharacterAtPosition(textFieldEntry *memory.TextFieldEntryType, characterToInsert rune) {
+	textAfterCursor := stringformat.GetRuneArrayCopy(textFieldEntry.CurrentValue[textFieldEntry.CursorPosition:])
+	textFieldEntry.CurrentValue = append(textFieldEntry.CurrentValue[:textFieldEntry.CursorPosition], characterToInsert)
+	textFieldEntry.CurrentValue = append(textFieldEntry.CurrentValue, textAfterCursor...)
+}
+
+func deleteCharacterAtPosition(textFieldEntry *memory.TextFieldEntryType) {
+	if len(textFieldEntry.CurrentValue) != 1 {
+		if textFieldEntry.CursorPosition != len(textFieldEntry.CurrentValue) - 1 {
+			textFieldEntry.CurrentValue = append(textFieldEntry.CurrentValue[:textFieldEntry.CursorPosition], textFieldEntry.CurrentValue[textFieldEntry.CursorPosition+1:]...)
+		}
+	}
+}
+
+func backspaceCharacterAtPosition(textFieldEntry *memory.TextFieldEntryType) {
+	if textFieldEntry.CursorPosition >= 0 {
+		textFieldEntry.CurrentValue = append(textFieldEntry.CurrentValue[:textFieldEntry.CursorPosition], textFieldEntry.CurrentValue[textFieldEntry.CursorPosition+1:]...)
+	}
+}
+
+func updateTextFieldCursor(textFieldEntry *memory.TextFieldEntryType) {
+	if textFieldEntry.CursorPosition < 0 {
+		textFieldEntry.CursorPosition = 0
+	}
+	if textFieldEntry.CursorPosition >= len(textFieldEntry.CurrentValue) {
+		textFieldEntry.CursorPosition = len(textFieldEntry.CurrentValue) - 1
+	}
+}
+
+func updateKeyboardEventTextField(keystroke []rune) bool {
+	keystrokeAsString := string(keystroke)
+	isScreenUpdateRequired := true
+	focusedLayerAlias := eventStateMemory.currentlyFocusedControl.layerAlias
+	focusedControlAlias := eventStateMemory.currentlyFocusedControl.controlAlias
+	focusedControlType := eventStateMemory.currentlyFocusedControl.controlType
 	if focusedControlType != constants.CellTypeTextField {
 		return false
 	}
 	textFieldEntry := memory.GetTextField(focusedLayerAlias, focusedControlAlias)
-	viewportPosition := textFieldEntry.ViewportPosition
-	cursorPosition := textFieldEntry.CursorPosition
-	currentValue := textFieldEntry.CurrentValue
-	viewportWidth := textFieldEntry.Width
-	maxLengthAllowed := textFieldEntry.MaxLengthAllowed
 	if len(keystroke) == 1 { // If a regular char is entered.
-		if len(currentValue) < maxLengthAllowed {
-			currentValue = currentValue[:viewportPosition+cursorPosition] + keystroke + currentValue[viewportPosition+cursorPosition:]
-			if cursorPosition < viewportWidth {
-				cursorPosition++
-			} else {
-				viewportPosition++
-			}
+		if len(textFieldEntry.CurrentValue) < textFieldEntry.MaxLengthAllowed {
+			logInfo(fmt.Sprintf("cur: %d view: %d", textFieldEntry.CursorPosition, textFieldEntry.ViewportPosition))
+			insertCharacterAtPosition(textFieldEntry, keystroke[0])
+			textFieldEntry.CursorPosition++
+			updateTextFieldCursor(textFieldEntry)
+			updateTextfieldViewport2(textFieldEntry)
 			isScreenUpdateRequired = true
 		}
 	}
-	if keystroke == "delete" {
-		if currentValue != "" {
-			// Protect if nothing else to delete left of string
-			if viewportPosition+cursorPosition+1 <= len(currentValue) {
-				currentValue = currentValue[:viewportPosition+cursorPosition] + currentValue[viewportPosition+cursorPosition+1:]
-				if viewportPosition+cursorPosition == len(currentValue) {
-					cursorPosition--
-					if cursorPosition < 0 {
-						cursorPosition = 0
-					}
-				}
-				isScreenUpdateRequired = true
-			}
-		}
-	}
-	if keystroke == "home" {
-		cursorPosition = 0
-		viewportPosition = 0
+	if keystrokeAsString == "delete" {
+		deleteCharacterAtPosition(textFieldEntry)
 		isScreenUpdateRequired = true
 	}
-	if keystroke == "end" {
-		// If your current viewport shows the end of the input string, just move the cursor to the end of the string.
-		if viewportPosition > len(currentValue)- viewportWidth {
-			cursorPosition = len(currentValue) - viewportPosition
-		} else {
-			// Otherwise advance viewport to end of input string.
-			viewportPosition = len(currentValue) - viewportWidth
-			if viewportPosition < 0 {
-				// If input string is smaller than even one viewport block, just set cursor to end.
-				viewportPosition = 0
-				cursorPosition = len(currentValue)
-			} else {
-				// Otherwise place cursor at end of viewport / string
-				cursorPosition = viewportWidth
-			}
-		}
+	if keystrokeAsString == "home" {
+		textFieldEntry.CursorPosition = 0
+		textFieldEntry.ViewportPosition = 0
 		isScreenUpdateRequired = true
 	}
-	if keystroke == "backspace" || keystroke == "backspace2" {
-		if currentValue == "" {
-			return false
-		}
-		// Protect if nothing else to delete left of string
-		if viewportPosition + cursorPosition - 1 >= 0 {
-			currentValue = currentValue[:viewportPosition+cursorPosition-1] + currentValue[viewportPosition+cursorPosition:]
-			cursorPosition--
-			if cursorPosition < 1 {
-				if len(currentValue) < viewportWidth {
-					cursorPosition = viewportPosition + cursorPosition
-					viewportPosition = 0
-				} else {
-					if viewportPosition != 0 { // If your not at the start of an input string
-						if cursorPosition == 0 {
-							viewportPosition = viewportPosition - viewportWidth + 1
-						} else {
-							viewportPosition = viewportPosition - viewportWidth
-						}
-						if viewportPosition < 0 {
-							viewportPosition = 0
-						}
-						cursorPosition = viewportWidth - 1
-					}
-				}
-			}
-			isScreenUpdateRequired = true
-		}
-	}
-	if keystroke == "left" {
-		cursorPosition--
-		if cursorPosition < 0 {
-			if viewportPosition == 0 {
-				cursorPosition = 0
-			} else {
-				viewportPosition =- viewportWidth
-				if viewportPosition < 0 {
-					viewportPosition = 0
-				}
-				cursorPosition = viewportWidth
-			}
-		}
+	if keystrokeAsString == "end" {
+		textFieldEntry.CursorPosition = len(textFieldEntry.CurrentValue) - 1
+		updateTextfieldViewport2(textFieldEntry)
 		isScreenUpdateRequired = true
 	}
-	if keystroke == "right" {
-		cursorPosition++
-		if viewportPosition + cursorPosition > len(currentValue){
-			cursorPosition--
-		} else {
-			if cursorPosition >= viewportWidth {
-				viewportPosition++
-				cursorPosition = viewportWidth - 1
-			}
-		}
+	if keystrokeAsString == "backspace" || keystrokeAsString == "backspace2" {
+		textFieldEntry.CursorPosition--
+		backspaceCharacterAtPosition(textFieldEntry)
+		updateTextFieldCursor(textFieldEntry)
+		updateTextfieldViewport2(textFieldEntry)
+
 		isScreenUpdateRequired = true
 	}
-	if isScreenUpdateRequired {
-		textFieldEntry.ViewportPosition = viewportPosition
-		textFieldEntry.CursorPosition = cursorPosition
-		textFieldEntry.CurrentValue = currentValue
-		textFieldEntry.Width = viewportWidth
-		textFieldEntry.MaxLengthAllowed = maxLengthAllowed
+	if keystrokeAsString == "left" {
+		textFieldEntry.CursorPosition--
+		updateTextFieldCursor(textFieldEntry)
+		updateTextfieldViewport2(textFieldEntry)
+
+		isScreenUpdateRequired = true
+	}
+	if keystrokeAsString == "right" {
+		textFieldEntry.CursorPosition++
+		updateTextFieldCursor(textFieldEntry)
+		updateTextfieldViewport2(textFieldEntry)
+		isScreenUpdateRequired = true
 	}
 	return isScreenUpdateRequired
 }

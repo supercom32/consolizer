@@ -126,7 +126,7 @@ In addition, the following information should be noted:
 in the input buffer and this method needs to be called repeatedly in
 order to read them.
 */
-func Inkey() string {
+func Inkey() []rune {
 	return memory.KeyboardMemory.GetKeystrokeFromKeyboardBuffer()
 }
 

@@ -158,6 +158,36 @@ func GetMaxCharactersThatFitInStringSize(arrayOfRunes []rune, maxLengthOfString 
 	return formattedArray
 }
 
+func GetMaxCharactersThatFitInStringSizeReverse(arrayOfRunes []rune, maxLengthOfString int) int {
+	numberOfCharactersUsed := 0
+	formattedArray := []rune{}
+	for currentRuneIndex := range arrayOfRunes {
+		 currentRune := arrayOfRunes[len(arrayOfRunes) - 1 - currentRuneIndex]
+		if IsRuneCharacterWide(currentRune) {
+			numberOfCharactersUsed = numberOfCharactersUsed + 2
+			if numberOfCharactersUsed > maxLengthOfString {
+				// If you added a wide character and it won't fit (needs two free spaces),
+				// we just add a blank space to pad it out.
+				formattedArray = append(formattedArray, ' ')
+				return len(formattedArray)
+			}
+		} else {
+			numberOfCharactersUsed++
+		}
+		formattedArray = append(formattedArray, currentRune)
+		if numberOfCharactersUsed == maxLengthOfString {
+			return len(formattedArray)
+		}
+	}
+	return len(formattedArray)
+}
+
+func GetRuneArrayCopy(sourceRuneArray []rune) []rune {
+	copyOfRuneArray := make([]rune, len(sourceRuneArray))
+	copy(copyOfRuneArray, sourceRuneArray)
+	return copyOfRuneArray
+}
+
 func logInfo(info string) {
 	filesystem.AppendLineToFile("/tmp/debug.log", info + "\n", 0)
 }

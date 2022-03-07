@@ -7,6 +7,7 @@ import (
 	"github.com/supercom32/consolizer/internal/stringformat"
 	"math"
 	"strings"
+	"time"
 )
 
 type TextboxInstanceType struct {
@@ -45,65 +46,85 @@ func insertCharacterUsingRelativeCoordinates(textboxEntry *memory.TextboxEntryTy
 	textboxEntry.CursorXLocation++
 }
 
+func backspaceCharacterUsingRelativeCoordinates(textboxEntry *memory.TextboxEntryType) {
+	// If nothing left to backspace, do nothing.
+	if textboxEntry.CursorXLocation == 0 && textboxEntry.CursorYLocation == 0 {
+		return
+	} else if textboxEntry.CursorXLocation == 0 {
+		// If at the beginning of a line, move cursor the previous line ending.
+		textboxEntry.CursorXLocation = len(textboxEntry.TextData[textboxEntry.CursorYLocation - 1]) - 1
+		moveRemainingTextToPreviousLine(textboxEntry, textboxEntry.CursorYLocation)
+		textboxEntry.CursorYLocation--
+		return
+	}
+	// Otherwise, just backspace a single character.
+	textboxEntry.CursorXLocation--
+	deleteCharacterUsingRelativeCoordinates(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
+}
+
 func deleteCharacterUsingRelativeCoordinates(textboxEntry *memory.TextboxEntryType, xLocation int, yLocation int){
+	// If cursor yLocation is out of bounds, do nothing.
 	if yLocation >= len(textboxEntry.TextData){
 		return
 	}
+	// If cursor xLocation is at/out of bounds, move previous line to current line and position.
 	if xLocation >= len(textboxEntry.TextData[yLocation]) -1 {
 		if len(textboxEntry.TextData) - 1 == yLocation && (len(textboxEntry.TextData[yLocation]) <= 1 || xLocation >= len(textboxEntry.TextData[yLocation])-1) {
 			return
 		}
-		logInfo(fmt.Sprintf("x: %d, len: %d \n", xLocation, len(textboxEntry.TextData[yLocation])-1))
 		textboxEntry.TextData[yLocation] = textboxEntry.TextData[yLocation][:len(textboxEntry.TextData[yLocation]) - 1]
 		textboxEntry.TextData[yLocation] = append(textboxEntry.TextData[yLocation], textboxEntry.TextData[yLocation + 1]...)
 		copy(textboxEntry.TextData[yLocation + 1:], textboxEntry.TextData[yLocation + 2:])
 		textboxEntry.TextData = textboxEntry.TextData[:len(textboxEntry.TextData) - 1]
 		return
 	}
+	// Remove the current character.
 	stringDataSuffixAfterInsert := textboxEntry.TextData[yLocation][xLocation+1:len(textboxEntry.TextData[yLocation])]
 	textboxEntry.TextData[yLocation] = append([]rune{}, textboxEntry.TextData[yLocation][:xLocation]...)
 	textboxEntry.TextData[yLocation] = append(textboxEntry.TextData[yLocation], stringDataSuffixAfterInsert...)
 }
 
+func moveRemainingTextToPreviousLine(textboxEntry *memory.TextboxEntryType, yLocation int) {
+	// If the only row of text or the cursor yLocation is out of bounds, then exit.
+	if len(textboxEntry.TextData) == 1 || yLocation >= len(textboxEntry.TextData) {
+		return
+	}
+	textboxEntry.TextData[yLocation - 1] = textboxEntry.TextData[yLocation - 1][:len(textboxEntry.TextData[yLocation - 1]) - 1]
+	textboxEntry.TextData[yLocation - 1] = append(textboxEntry.TextData[yLocation - 1], textboxEntry.TextData[yLocation]...)
+	textboxEntry.TextData = removeLine(textboxEntry.TextData, yLocation)
+}
+
+func removeLine(textData [][]rune, index int) [][]rune{
+	return append(textData[:index], textData[index+1:]...)
+}
+
+
 func insertLine(textData [][]rune, lineData []rune, index int) [][]rune {
+	// If the index provided is inbounds, insert the line data accordingly.
 	if index < len(textData) {
 		textData = append(textData[:index+1], textData[index:]...)
 		textData[index] = lineData
 	} else {
+		// Otherwise, append the line data to the end of the array.
 		textData = append(textData, []rune {' '})
 	}
-	/*
-	textData = append(textData, []rune{'z', 'z'})
-	copy(textData[index:], textData[index+2:])
-	logInfo(fmt.Sprintf("%d\n", len(textData)-1))
-	 */
 	return textData
-
-	//textData = append(textData[:index], lineData)
 }
 
-func insertLineUsingRelativeCoordinates(textboxEntry *memory.TextboxEntryType, xLocation int, yLocation int){
+func insertLineUsingRelativeCoordinates(textboxEntry *memory.TextboxEntryType, yLocation int){
+	// Create a new line with our default ' ' rune.
 	textboxEntry.TextData = insertLine(textboxEntry.TextData, []rune{' '}, yLocation+1)
+	// Copy everything past our cursor on the current line.
 	charactersToCopy := textboxEntry.TextData[textboxEntry.CursorYLocation][textboxEntry.CursorXLocation:]
 	copyOfCharacters := make([]rune, len(textboxEntry.TextData[textboxEntry.CursorYLocation][textboxEntry.CursorXLocation:]))
 	copy(copyOfCharacters, charactersToCopy)
-
-
-	logInfo(fmt.Sprintf("1: %s\n", string(copyOfCharacters)))
-	offsetValue := 0
-	if textboxEntry.CursorXLocation == 0 {
-		offsetValue = 0
-	}
-	textboxEntry.TextData[textboxEntry.CursorYLocation] = append(textboxEntry.TextData[textboxEntry.CursorYLocation][:textboxEntry.CursorXLocation - offsetValue], ' ')
-	logInfo(fmt.Sprintf("1: %s\n", string(copyOfCharacters)))
+	// Make our current line = everything up to our cursor + ' ' ending.
+	textboxEntry.TextData[textboxEntry.CursorYLocation] = append(textboxEntry.TextData[textboxEntry.CursorYLocation][:textboxEntry.CursorXLocation], ' ')
+	// Paste the copied text to our new line.
 	textboxEntry.CursorYLocation++
 	textboxEntry.CursorXLocation = 0
 	textboxEntry.TextData[textboxEntry.CursorYLocation] = make([]rune, len(copyOfCharacters))
 	copy(textboxEntry.TextData[textboxEntry.CursorYLocation], copyOfCharacters)
-
-
-	//textboxEntry.TextData = append(textboxEntry.TextData, []rune{' '})
-	//copy(textboxEntry.TextData[yLocation:], textboxEntry.TextData[yLocation+1:])
 }
 
 func updateScrollbarBasedOnTextboxViewport(layerAlias string, textboxAlias string) {
@@ -122,7 +143,6 @@ func getMaxHorizontalTextValue(layerAlias string, textboxAlias string) int {
 	for _, currentLine := range textboxEntry.TextData {
 		lengthOfLine := stringformat.GetWidthOfRunesWhenPrinted(currentLine)
 		over := lengthOfLine - len(currentLine)
-		// logInfo(fmt.Sprintf("done: %d\n", over))
 		if lengthOfLine > maxHorizontalValue {
 			maxHorizontalValue = lengthOfLine - (over / 2)
 		}
@@ -244,6 +264,7 @@ func printControlText(layerEntry *memory.LayerEntryType, textboxAlias string, st
 	for _, currentCharacter := range arrayOfRunes {
 		attributeEntry.CellControlId = currentControlId
 		attributeEntry.CellControlLocation = controlYLocation
+		// If the textbox being drawn is focused, render the cursor as well.
 		if isControlCurrentlyFocused(layerEntry.LayerAlias, textboxAlias, constants.CellTypeTextbox) {
 			if cursorXLocation == currentControlId && cursorYLocation == controlYLocation {
 				attributeEntry.ForegroundColor = styleEntry.CursorForegroundColor
@@ -258,8 +279,6 @@ func printControlText(layerEntry *memory.LayerEntryType, textboxAlias string, st
 			// If we find a wide character, we add a blank space with the same ID as the previous
 			// character so the next printed character doesn't get covered by the wide one.
 			currentXOffset++
-			// we also increment the control ID for logInfo(fmt.Sprintf("zzz %d, %d \n", textboxEntry.CursorXLocation, textboxEntry.CursorYLocation))the blank space, so we can keep the control ID (location of screen)
-			// accurate. TODO: We need a new variable to keep track of proper indexes so when they select a cell the right char is picked.
 			printLayer(layerEntry, attributeEntry, xLocation + currentXOffset, yLocation, []rune{' '})
 			currentXOffset++
 		} else {
@@ -291,65 +310,55 @@ func updateCursor(textboxEntry *memory.TextboxEntryType, xLocation int, yLocatio
 }
 
 func updateViewport(textboxEntry *memory.TextboxEntryType) {
-	// If cursor yLocation is greater than viewport width, set viewport to one width before cursor.
+	// If cursor yLocation is higher than the viewport window, move the window to make the cursor appear at the end.
 	if textboxEntry.CursorYLocation >= textboxEntry.ViewportYLocation + textboxEntry.Height {
 		textboxEntry.ViewportYLocation = textboxEntry.CursorYLocation - textboxEntry.Height + 1
 	}
-	// If cursor yLocation is less than viewport, set viewport to one width before cursor.
+	// If cursor yLocation is lower than viewport window, make the viewport window start at yLocation.
 	if textboxEntry.CursorYLocation < textboxEntry.ViewportYLocation {
 		textboxEntry.ViewportYLocation = textboxEntry.CursorYLocation
 	}
-	// If cursor yLocation is less <= 0, set the viewport to zero.
+	// If cursor yLocation is less than 0 (Out of range), just set viewport window to 0.
 	if textboxEntry.CursorYLocation <= 0 {
 		textboxEntry.ViewportYLocation = 0
 	}
-	// If cursor xLocation is less than viewport.
+
+	// If cursor xLocation is lower than the viewport window
 	if textboxEntry.CursorXLocation < textboxEntry.ViewportXLocation {
+		logInfo("YES1 " + fmt.Sprintf("%d", time.Now().Unix()))
 		isCursorJumped := false
-		if textboxEntry.ViewportXLocation - textboxEntry.CursorXLocation > 2 {
+		// Detect if the cursor xLocation was jumped or if it was scrolled.
+		if textboxEntry.ViewportXLocation - textboxEntry.CursorXLocation > 2 || textboxEntry.CursorXLocation - textboxEntry.ViewportXLocation > 2 {
 			isCursorJumped = true
 		}
-		if textboxEntry.CursorXLocation - textboxEntry.Width < 0 {
-			if isCursorJumped {
-				textboxEntry.ViewportXLocation = 0
-			} else {
-				textboxEntry.ViewportXLocation = textboxEntry.CursorXLocation
-			}
+		// If the cursor xLocation is less than the size of our viewport and was jumped, just set the viewport to 0.
+		if isCursorJumped && textboxEntry.CursorXLocation - textboxEntry.Width < 0  {
+			textboxEntry.ViewportXLocation = 0
 		} else {
-			if isCursorJumped {
-				textboxEntry.ViewportXLocation = textboxEntry.CursorXLocation - textboxEntry.Width
-			} else {
-				// If the cursor xLocation was just scrolled, scroll the viewport accordingly.
-				textboxEntry.ViewportXLocation = textboxEntry.CursorXLocation
-			}
+			// Otherwise, this is a normal backwards scroll so make viewport equal to our cursor location.
+			textboxEntry.ViewportXLocation = textboxEntry.CursorXLocation
 		}
 	}
-
-	var arrayOfRunesAvailableToPrint []rune
-	var arrayOfRunesThatFitStringSize []rune
-
-	// If the viewport xLocation + view width is greater than the string to print, just get the length of the string
-	// to calculate how many characters will print on screen.
-	if textboxEntry.ViewportXLocation + textboxEntry.Width >= len(textboxEntry.TextData[textboxEntry.CursorYLocation]) {
-		arrayOfRunesAvailableToPrint = textboxEntry.TextData[textboxEntry.CursorYLocation][textboxEntry.ViewportXLocation:]
-		arrayOfRunesThatFitStringSize = stringformat.GetMaxCharactersThatFitInStringSize(arrayOfRunesAvailableToPrint, textboxEntry.Width)
-		logInfo("HIT1\n")
-	} else {
-		// Otherwise your string is longer than the viewport width, so just use the length of the viewport to do your string check.
-		arrayOfRunesAvailableToPrint = textboxEntry.TextData[textboxEntry.CursorYLocation][textboxEntry.ViewportXLocation:textboxEntry.ViewportXLocation + textboxEntry.Width]
-		arrayOfRunesThatFitStringSize = stringformat.GetMaxCharactersThatFitInStringSize(arrayOfRunesAvailableToPrint, textboxEntry.Width)
-		logInfo("HIT2\n")
-	}
-	// If the cursor xLocation >= the visible viewport xLocation + amount of text that can be visibly drawn, and if the cursor xLocation is != 1
-	// (For the case of a single wide character on a line), then move the viewport, so it makes your cursor appear at the end of it.
-	if textboxEntry.CursorXLocation >= textboxEntry.ViewportXLocation + len(arrayOfRunesThatFitStringSize) && textboxEntry.CursorXLocation != 1 {
-		logInfo(fmt.Sprintf("c: %d, v: %d, l: %d\n", textboxEntry.CursorXLocation, textboxEntry.ViewportXLocation, len(arrayOfRunesThatFitStringSize)))
-		textboxEntry.ViewportXLocation = textboxEntry.CursorXLocation - len(arrayOfRunesThatFitStringSize) + 1
+	// Figure out how much displayable space is in our current viewport window.
+	arrayOfRunesAvailableToPrint := textboxEntry.TextData[textboxEntry.CursorYLocation][textboxEntry.ViewportXLocation:]
+	arrayOfRunesThatFitStringSize := stringformat.GetMaxCharactersThatFitInStringSize(arrayOfRunesAvailableToPrint, textboxEntry.Width)
+	// If the cursor xLocation is equal or greater than the visible viewport window width.
+	if textboxEntry.CursorXLocation >= textboxEntry.ViewportXLocation + len(arrayOfRunesThatFitStringSize) {
+		// Then make the viewport xLocation equal to the visible viewport width behind it.
+		maxViewportWidthAvaliable := textboxEntry.Width
+		if textboxEntry.CursorXLocation - textboxEntry.Width < 0 {
+			maxViewportWidthAvaliable = textboxEntry.CursorXLocation
+		}
+		arrayOfRunesAvailableToPrint = textboxEntry.TextData[textboxEntry.CursorYLocation][textboxEntry.CursorXLocation - maxViewportWidthAvaliable :textboxEntry.CursorXLocation]
+		numberOfRunesThatFitStringSize := stringformat.GetMaxCharactersThatFitInStringSizeReverse(arrayOfRunesAvailableToPrint, textboxEntry.Width)
+		logInfo(fmt.Sprintf("v: %d x: %d off: %d fit: %d, aval: %s", textboxEntry.ViewportXLocation, textboxEntry.CursorXLocation, maxViewportWidthAvaliable, numberOfRunesThatFitStringSize, string(arrayOfRunesAvailableToPrint)))
+		textboxEntry.ViewportXLocation = textboxEntry.CursorXLocation - numberOfRunesThatFitStringSize + 1
 	}
 }
 
 
-func updateKeyboardEventTextbox(keystroke string) bool {
+func updateKeyboardEventTextbox(keystroke []rune) bool {
+	keystrokeAsString := string(keystroke)
 	isScreenUpdateRequired := true
 	focusedLayerAlias := eventStateMemory.currentlyFocusedControl.layerAlias
 	focusedControlAlias := eventStateMemory.currentlyFocusedControl.controlAlias
@@ -359,73 +368,70 @@ func updateKeyboardEventTextbox(keystroke string) bool {
 	}
 	textboxEntry := memory.GetTextbox(focusedLayerAlias, focusedControlAlias)
 	if len(keystroke) == 1 { // If a regular char is entered.
-		insertCharacterUsingRelativeCoordinates(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation, []rune(keystroke)[0])
+		insertCharacterUsingRelativeCoordinates(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation, []rune(keystrokeAsString)[0])
 		updateCursor(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
 		updateViewport(textboxEntry)
 		SetTextboxMaxScrollBarValues(focusedLayerAlias, focusedControlAlias)
 		updateScrollbarBasedOnTextboxViewport(focusedLayerAlias, focusedControlAlias)
 	}
-	if keystroke == "delete" {
+	if keystrokeAsString == "delete" {
 		deleteCharacterUsingRelativeCoordinates(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
 		updateCursor(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
 		updateViewport(textboxEntry)
 		SetTextboxMaxScrollBarValues(focusedLayerAlias, focusedControlAlias)
 		updateScrollbarBasedOnTextboxViewport(focusedLayerAlias, focusedControlAlias)
 	}
-	if keystroke == "enter" {
-		insertLineUsingRelativeCoordinates(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
+	if keystrokeAsString == "enter" {
+		insertLineUsingRelativeCoordinates(textboxEntry, textboxEntry.CursorYLocation)
 		updateCursor(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
 		updateViewport(textboxEntry)
 		SetTextboxMaxScrollBarValues(focusedLayerAlias, focusedControlAlias)
 		updateScrollbarBasedOnTextboxViewport(focusedLayerAlias, focusedControlAlias)
 	}
-	if keystroke == "home" {
+	if keystrokeAsString == "home" {
 		textboxEntry.CursorXLocation = 0
 		updateCursor(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
 		updateViewport(textboxEntry)
 		SetTextboxMaxScrollBarValues(focusedLayerAlias, focusedControlAlias)
 		updateScrollbarBasedOnTextboxViewport(focusedLayerAlias, focusedControlAlias)
 	}
-	if keystroke == "end" {
+	if keystrokeAsString == "end" {
 		textboxEntry.CursorXLocation = len(textboxEntry.TextData[textboxEntry.CursorYLocation])
 		updateCursor(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
 		updateViewport(textboxEntry)
 		SetTextboxMaxScrollBarValues(focusedLayerAlias, focusedControlAlias)
 		updateScrollbarBasedOnTextboxViewport(focusedLayerAlias, focusedControlAlias)
 	}
-	if keystroke == "pgup" {
+	if keystrokeAsString == "pgup" {
 		textboxEntry.CursorYLocation = textboxEntry.CursorYLocation - textboxEntry.Width
 		updateCursor(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
 		updateViewport(textboxEntry)
 		SetTextboxMaxScrollBarValues(focusedLayerAlias, focusedControlAlias)
 		updateScrollbarBasedOnTextboxViewport(focusedLayerAlias, focusedControlAlias)
 	}
-	if keystroke == "pgdn" {
+	if keystrokeAsString == "pgdn" {
 		textboxEntry.CursorYLocation = textboxEntry.CursorYLocation + textboxEntry.Width
 		updateCursor(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
 		updateViewport(textboxEntry)
 		SetTextboxMaxScrollBarValues(focusedLayerAlias, focusedControlAlias)
 		updateScrollbarBasedOnTextboxViewport(focusedLayerAlias, focusedControlAlias)
 	}
-	if keystroke == "backspace" || keystroke == "backspace2" {
-		if textboxEntry.CursorXLocation != 0 {
-			textboxEntry.CursorXLocation--
-			updateCursor(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
-			deleteCharacterUsingRelativeCoordinates(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
-			updateCursor(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
-			updateViewport(textboxEntry)
-			SetTextboxMaxScrollBarValues(focusedLayerAlias, focusedControlAlias)
-			updateScrollbarBasedOnTextboxViewport(focusedLayerAlias, focusedControlAlias)
-		}
+	if keystrokeAsString == "backspace" || keystrokeAsString == "backspace2" {
+		updateCursor(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
+		backspaceCharacterUsingRelativeCoordinates(textboxEntry)
+		updateCursor(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
+		updateViewport(textboxEntry)
+		SetTextboxMaxScrollBarValues(focusedLayerAlias, focusedControlAlias)
+		updateScrollbarBasedOnTextboxViewport(focusedLayerAlias, focusedControlAlias)
 	}
-	if keystroke == "left" {
+	if keystrokeAsString == "left" {
 		textboxEntry.CursorXLocation--
 		updateCursor(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
 		updateViewport(textboxEntry)
 		SetTextboxMaxScrollBarValues(focusedLayerAlias, focusedControlAlias)
 		updateScrollbarBasedOnTextboxViewport(focusedLayerAlias, focusedControlAlias)
 	}
-	if keystroke == "right" {
+	if keystrokeAsString == "right" {
 		textboxEntry.CursorXLocation++
 		if textboxEntry.CursorXLocation >= len(textboxEntry.TextData[textboxEntry.CursorYLocation]) {
 			textboxEntry.CursorXLocation = len(textboxEntry.TextData[textboxEntry.CursorYLocation]) - 1
@@ -438,7 +444,7 @@ func updateKeyboardEventTextbox(keystroke string) bool {
 		SetTextboxMaxScrollBarValues(focusedLayerAlias, focusedControlAlias)
 		updateScrollbarBasedOnTextboxViewport(focusedLayerAlias, focusedControlAlias)
 	}
-	if keystroke == "up" {
+	if keystrokeAsString == "up" {
 		textboxEntry.CursorYLocation--
 		if textboxEntry.CursorYLocation < 0 {
 			textboxEntry.CursorYLocation = 0
@@ -447,7 +453,7 @@ func updateKeyboardEventTextbox(keystroke string) bool {
 		updateViewport(textboxEntry)
 		updateScrollbarBasedOnTextboxViewport(focusedLayerAlias, focusedControlAlias)
 	}
-	if keystroke == "down" {
+	if keystrokeAsString == "down" {
 		textboxEntry.CursorYLocation++
 		if textboxEntry.CursorYLocation >= len(textboxEntry.TextData) {
 			textboxEntry.CursorYLocation = len(textboxEntry.TextData) - 1
@@ -464,6 +470,7 @@ func updateMouseEventTextbox() bool {
 	mouseXLocation, mouseYLocation, buttonPressed, _ := memory.GetMouseStatus()
 	characterEntry := getCellInformationUnderMouseCursor(mouseXLocation, mouseYLocation)
 	layerAlias := characterEntry.LayerAlias
+	// If your clicking on a text box and not in the drag and drop event state.
 	if buttonPressed != 0 && characterEntry.AttributeEntry.CellType == constants.CellTypeTextbox && eventStateMemory.stateId != constants.EventStateDragAndDropScrollBar {
 		textboxEntry := memory.GetTextbox(layerAlias, characterEntry.AttributeEntry.CellControlAlias)
 		updateCursor(textboxEntry, characterEntry.AttributeEntry.CellControlId, characterEntry.AttributeEntry.CellControlLocation)
@@ -473,6 +480,7 @@ func updateMouseEventTextbox() bool {
 		setFocusedControl(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias, characterEntry.AttributeEntry.CellType)
 		isUpdateRequired = true
 	}
+	// If you are dragging and dropping, then update the scroll bars as needed.
 	if buttonPressed != 0 && (eventStateMemory.stateId == constants.EventStateDragAndDropScrollBar ||
 		characterEntry.AttributeEntry.CellType == constants.CellTypeScrollBar) {
 			isMatchFound := false
@@ -498,25 +506,5 @@ func updateMouseEventTextbox() bool {
 				return isUpdateRequired
 			}
 	}
-	/*
-	isUpdateRequired := false
-	mouseXLocation, mouseYLocation, buttonPressed, _ := memory.GetMouseStatus()
-	characterEntry := getCellInformationUnderMouseCursor(mouseXLocation, mouseYLocation)
-	layerAlias := characterEntry.LayerAlias
-	controlAlias := characterEntry.AttributeEntry.CellControlAlias
-	if characterEntry.AttributeEntry.CellType == constants.CellTypeTextbox && characterEntry.AttributeEntry.CellControlId != constants.NullCellId {
-		_, _, previousButtonPressed, _ := memory.GetPreviousMouseStatus()
-		if buttonPressed != 0 && previousButtonPressed == 0 {
-			checkboxEntry := memory.GetTextbox(layerAlias, controlAlias)
-			if checkboxEntry.IsSelected {
-				checkboxEntry.IsSelected = false
-			} else {
-				checkboxEntry.IsSelected = true
-			}
-			return isUpdateRequired
-		}
-	}
-	return isUpdateRequired
-	*/
 	return false
 }

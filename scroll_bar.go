@@ -150,7 +150,8 @@ func computeScrollBarHandlePositionByScrollValue(layerAlias string, scrollBarAli
 	}
 }
 
-func updateKeyboardEventScrollBar(keystroke string) bool {
+func updateKeyboardEventScrollBar(keystroke []rune) bool {
+	keystrokeAsString := string(keystroke)
 	isScreenUpdateRequired := false
 	focusedLayerAlias := eventStateMemory.currentlyFocusedControl.layerAlias
 	focusedControlAlias := eventStateMemory.currentlyFocusedControl.controlAlias
@@ -161,19 +162,19 @@ func updateKeyboardEventScrollBar(keystroke string) bool {
 	// Check for scrollbar input only if the scroll bar is not disabled (not null).
 	scrollBarEntry := memory.GetScrollBar(focusedLayerAlias, focusedControlAlias)
 	if scrollBarEntry.IsEnabled {
-		if keystroke == "up" || keystroke == "left"{
+		if keystrokeAsString == "up" || keystrokeAsString == "left"{
 			scrollBarEntry.ScrollValue = scrollBarEntry.ScrollValue - scrollBarEntry.ScrollIncrement
 			computeScrollBarHandlePositionByScrollValue(focusedLayerAlias, focusedControlAlias)
 		}
-		if keystroke == "down" || keystroke == "right" {
+		if keystrokeAsString == "down" || keystrokeAsString == "right" {
 			scrollBarEntry.ScrollValue = scrollBarEntry.ScrollValue + scrollBarEntry.ScrollIncrement
 			computeScrollBarHandlePositionByScrollValue(focusedLayerAlias, focusedControlAlias)
 		}
-		if keystroke == "pgup" {
+		if keystrokeAsString == "pgup" {
 			scrollBarEntry.ScrollValue = scrollBarEntry.ScrollValue - (scrollBarEntry.ScrollIncrement * 3)
 			computeScrollBarHandlePositionByScrollValue(focusedLayerAlias, focusedControlAlias)
 		}
-		if keystroke == "pgdn" {
+		if keystrokeAsString == "pgdn" {
 			scrollBarEntry.ScrollValue = scrollBarEntry.ScrollValue + (scrollBarEntry.ScrollIncrement * 3)
 			computeScrollBarHandlePositionByScrollValue(focusedLayerAlias, focusedControlAlias)
 		}

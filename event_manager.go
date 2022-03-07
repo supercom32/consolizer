@@ -1,7 +1,6 @@
 package consolizer
 
 import (
-	"fmt"
 	"github.com/gdamore/tcell/v2"
 	"github.com/supercom32/consolizer/constants"
 	"github.com/supercom32/consolizer/internal/memory"
@@ -35,11 +34,11 @@ func updateEventQueues() {
 		commonResource.screen.Sync()
 	case *tcell.EventKey:
 		isScreenUpdateRequired := false
-		keystroke := ""
+		var keystroke []rune
 		if strings.Contains(event.Name(), "Rune") {
-			keystroke = fmt.Sprintf("%c", event.Rune())
+			keystroke = []rune{event.Rune()}
 		} else {
-			keystroke = strings.ToLower(event.Name())
+			keystroke = []rune(strings.ToLower(event.Name()))
 		}
 		if updateKeyboardEventTextField(keystroke) {
 			isScreenUpdateRequired = true
