@@ -72,13 +72,15 @@ func InitializeTerminal(width int, height int) {
 	}
 	detectedWidth, detectedHeight := GetTerminalSize()
 	if width == 0 {
-		commonResource.terminalWidth = 	detectedWidth
+		commonResource.terminalWidth = detectedWidth
+	} else {
+		commonResource.terminalWidth = width
 	}
 	if height == 0 {
 		commonResource.terminalHeight = detectedHeight
+	} else {
+		commonResource.terminalHeight = height
 	}
-	commonResource.terminalWidth = width
-	commonResource.terminalHeight = height
 	commonResource.debugDirectory = "/tmp/"
 	validateTerminalWidthAndHeight(commonResource.terminalWidth, commonResource.terminalHeight)
 }
