@@ -80,7 +80,7 @@ func InitializeTerminal(width int, height int) {
 	commonResource.terminalWidth = width
 	commonResource.terminalHeight = height
 	commonResource.debugDirectory = "/tmp/"
-	validateTerminalWidthAndHeight(width, height)
+	validateTerminalWidthAndHeight(commonResource.terminalWidth, commonResource.terminalHeight)
 }
 
 /*
