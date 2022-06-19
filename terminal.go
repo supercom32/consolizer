@@ -43,7 +43,6 @@ information should be noted:
 will be generated to fail as fast as possible.
 */
 func InitializeTerminal(width int, height int) {
-	validateTerminalWidthAndHeight(width, height)
 	memory.InitializeScreenMemory()
 	memory.InitializeTextFieldMemory()
 	memory.InitializeButtonMemory()
@@ -56,9 +55,6 @@ func InitializeTerminal(width int, height int) {
 	memory.InitializeCheckboxMemory()
 	memory.InitializeTextboxMemory()
 	memory.InitializeRadioButtonMemory()
-	commonResource.terminalWidth = width
-	commonResource.terminalHeight = height
-	commonResource.debugDirectory = "/tmp/"
 	if !commonResource.isDebugEnabled {
 		screen, err := tcell.NewScreen()
 		if err != nil {
@@ -74,6 +70,17 @@ func InitializeTerminal(width int, height int) {
 		setupCloseHandler()
 		go setupEventUpdater()
 	}
+	detectedWidth, detectedHeight := GetTerminalSize()
+	if width == 0 {
+		commonResource.terminalWidth = 	detectedWidth
+	}
+	if height == 0 {
+		commonResource.terminalHeight = detectedHeight
+	}
+	commonResource.terminalWidth = width
+	commonResource.terminalHeight = height
+	commonResource.debugDirectory = "/tmp/"
+	validateTerminalWidthAndHeight(width, height)
 }
 
 /*
