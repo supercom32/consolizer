@@ -34,6 +34,13 @@ func GetTextbox(layerAlias string, textboxAlias string) *TextboxEntryType {
 	return TextboxMemory[layerAlias][textboxAlias]
 }
 
+func IsTextboxExists(layerAlias string, textboxAlias string) bool {
+	if TextboxMemory[layerAlias][textboxAlias] == nil {
+		return false
+	}
+	return true
+}
+
 func DeleteTextbox(layerAlias string, textboxAlias string) {
 	delete(TextboxMemory[layerAlias], textboxAlias)
 }

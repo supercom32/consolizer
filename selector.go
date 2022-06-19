@@ -12,26 +12,53 @@ type selectorInstanceType struct {
 	selectorAlias string
 }
 
+type selectorType struct {}
+var selector selectorType
+
 /*
-GetValue allows you to get the current value of your text field with.
+GetSelected allows you to retrieve the currently selected item. If the selector instance
+no longer exists, then an empty result is always returned.
 */
 func (shared *selectorInstanceType) GetSelected() string {
-	validatorMenu(shared.layerAlias, shared.selectorAlias)
-	menuEntry := memory.GetSelector(shared.layerAlias, shared.selectorAlias)
-	value := menuEntry.ItemSelected
-	return menuEntry.SelectionEntry.SelectionAlias[value]
+	if memory.IsSelectorExists(shared.layerAlias, shared.selectorAlias) {
+		validatorMenu(shared.layerAlias, shared.selectorAlias)
+		menuEntry := memory.GetSelector(shared.layerAlias, shared.selectorAlias)
+		value := menuEntry.ItemSelected
+		return menuEntry.SelectionEntry.SelectionAlias[value]
+	}
+	return ""
 }
 
+/*
+setViewport allows you to specify the current viewport index for a given selector. If the selector instance
+no longer exists, then no operation occurs.
+*/
 func (shared *selectorInstanceType) setViewport(viewportPosition int) {
-	validatorMenu(shared.layerAlias, shared.selectorAlias)
-	menuEntry := memory.GetSelector(shared.layerAlias, shared.selectorAlias)
-	menuEntry.ViewportPosition = viewportPosition
+	if memory.IsSelectorExists(shared.layerAlias, shared.selectorAlias) {
+		validatorMenu(shared.layerAlias, shared.selectorAlias)
+		menuEntry := memory.GetSelector(shared.layerAlias, shared.selectorAlias)
+		menuEntry.ViewportPosition = viewportPosition
+	}
 }
 
+/*
+AddSelector allows you to add a selector to a given text layer. Once called, an instance of your control is returned
+which will allow you to read or manipulate the properties for it. The Style of the selector
+will be determined by the style entry passed in. If you wish to remove a selector from a text layer, simply
+call 'DeleteSelector'. In addition, the following information should be noted:
 
+- Selectors are not drawn physically to the text layer provided. Instead,
+they are rendered to the terminal at the same time when the text layer is
+rendered. This allows you to create selectors without actually overwriting
+the text layer data under it.
+
+- If the selector to be drawn falls outside the range of the provided layer,
+then only the visible portion of the radio button will be drawn.
+
+- If the selector height is greater than the number of selections available, then no scroll bars are drawn.
+*/
 // TODO: Protect against viewport out of range errors.
-func AddSelector(layerAlias string, selectorAlias string, styleEntry memory.TuiStyleEntryType, selectionEntry memory.SelectionEntryType, xLocation int, yLocation int, selectorHeight int, itemWidth int, numberOfColumns int, viewportPosition int, selectedItem int, isBorderDrawn bool) selectorInstanceType {
-	validateLayerLocationByLayerAlias(layerAlias, xLocation, yLocation)
+func (shared *selectorType) AddSelector(layerAlias string, selectorAlias string, styleEntry memory.TuiStyleEntryType, selectionEntry memory.SelectionEntryType, xLocation int, yLocation int, selectorHeight int, itemWidth int, numberOfColumns int, viewportPosition int, selectedItem int, isBorderDrawn bool) selectorInstanceType {
 	validateSelectionEntry(selectionEntry)
 	// TODO: Add verification to ensure no item can be 0 length/number.
 	memory.AddSelector(layerAlias, selectorAlias, styleEntry, selectionEntry, xLocation, yLocation, selectorHeight, itemWidth, numberOfColumns, viewportPosition, selectedItem, isBorderDrawn)
@@ -46,8 +73,8 @@ func AddSelector(layerAlias string, selectorAlias string, styleEntry memory.TuiS
 		scrollBarYLocation = scrollBarYLocation - 1
 		scrollBarHeight = selectorHeight + 2
 	}
-	AddScrollBar(layerAlias, selectorEntry.ScrollBarAlias, styleEntry, scrollBarXLocation, scrollBarYLocation, scrollBarHeight, scrollBarMaxValue, 0, numberOfColumns,false)
-	scrollBarEntry := memory.GetScrollBar(layerAlias, selectorEntry.ScrollBarAlias)
+	scrollbar.AddScrollbar(layerAlias, selectorEntry.ScrollBarAlias, styleEntry, scrollBarXLocation, scrollBarYLocation, scrollBarHeight, scrollBarMaxValue, 0, numberOfColumns,false)
+	scrollBarEntry := memory.GetScrollbar(layerAlias, selectorEntry.ScrollBarAlias)
 	selectorWidth := itemWidth
 	if len(selectionEntry.SelectionValue) <= selectorHeight * numberOfColumns || styleEntry.SelectorTextAlignment == constants.AlignmentNoPadding {
 		scrollBarEntry.IsEnabled = false
@@ -61,13 +88,19 @@ func AddSelector(layerAlias string, selectorAlias string, styleEntry memory.TuiS
 }
 
 /*
-DrawSelector allows you to obtain a user selection from a horizontal menu.
-In addition, the following information should be noted:
+DrawSelector allows you to draw a selector on a given text layer. The
+Style of the selector will be determined by the style entry passed in. In
+addition, the following information should be noted:
 
-- If the location to draw a menu item falls outside the range of the text
-layer, then only the visible portion of your menu item will be drawn.
+- Selectors are not drawn physically to the text layer provided. Instead,
+they are rendered to the terminal at the same time when the text layer is
+rendered. This allows you to create selectors without actually overwriting
+the text layer data under it.
+
+- If the selector to be drawn falls outside the range of the provided layer,
+then only the visible portion of the selector will be drawn.
 */
-func DrawSelector(selectorAlias string, layerEntry *memory.LayerEntryType, styleEntry memory.TuiStyleEntryType, selectionEntry memory.SelectionEntryType, xLocation int, yLocation int, selectorHeight int, itemWidth int, numberOfColumns int, viewportPosition int, itemHighlighted int) {
+func (shared *selectorType) DrawSelector(selectorAlias string, layerEntry *memory.LayerEntryType, styleEntry memory.TuiStyleEntryType, selectionEntry memory.SelectionEntryType, xLocation int, yLocation int, selectorHeight int, itemWidth int, numberOfColumns int, viewportPosition int, itemHighlighted int) {
 	selectorEntry := memory.GetSelector(layerEntry.LayerAlias, selectorAlias)
 	if selectorEntry.IsVisible == false {
 		return
@@ -110,7 +143,10 @@ func DrawSelector(selectorAlias string, layerEntry *memory.LayerEntryType, style
 	}
 }
 
-func drawSelectorsOnLayer(layerEntry memory.LayerEntryType) {
+/*
+drawSelectorsOnLayer allows you to draw all selectors on a given text layer.
+*/
+func (shared *selectorType) drawSelectorsOnLayer(layerEntry memory.LayerEntryType) {
 	layerAlias := layerEntry.LayerAlias
 	// Range over all our selector aliases and add them to an array.
 	keyList := make([]string, 0)
@@ -123,11 +159,15 @@ func drawSelectorsOnLayer(layerEntry memory.LayerEntryType) {
 	sort.Strings(keyList)
 	for currentKey := range keyList {
 		selectorEntry := memory.GetSelector(layerAlias, keyList[currentKey])
-		DrawSelector(keyList[currentKey], &layerEntry, selectorEntry.StyleEntry, selectorEntry.SelectionEntry, selectorEntry.XLocation, selectorEntry.YLocation, selectorEntry.SelectorHeight, selectorEntry.ItemWidth, selectorEntry.NumberOfColumns, selectorEntry.ViewportPosition, selectorEntry.ItemHighlighted)
+		shared.DrawSelector(keyList[currentKey], &layerEntry, selectorEntry.StyleEntry, selectorEntry.SelectionEntry, selectorEntry.XLocation, selectorEntry.YLocation, selectorEntry.SelectorHeight, selectorEntry.ItemWidth, selectorEntry.NumberOfColumns, selectorEntry.ViewportPosition, selectorEntry.ItemHighlighted)
 	}
 }
 
-func updateKeyboardEventSelector(keystroke []rune) bool {
+/*
+updateKeyboardEventSelector allows you to update the state of all selectors according to the current keystroke event.
+In the event that a screen update is required this method returns true.
+*/
+func (shared *selectorType) updateKeyboardEventSelector(keystroke []rune) bool {
 	keystrokeAsString := string(keystroke)
 	isScreenUpdateRequired := false
 	if eventStateMemory.currentlyFocusedControl.controlType != constants.CellTypeSelectorItem {
@@ -174,7 +214,11 @@ func updateKeyboardEventSelector(keystroke []rune) bool {
 	return isScreenUpdateRequired
 }
 
-func updateMouseEventSelector() bool {
+/*
+updateMouseEventSelector allows you to update the state of all selectors according to the current mouse event state.
+In the event that a screen update is required this method returns true.
+*/
+func (shared *selectorType) updateMouseEventSelector() bool {
 	isScreenUpdateRequired := false
 	focusedLayerAlias := eventStateMemory.currentlyFocusedControl.layerAlias
 	var characterEntry memory.CharacterEntryType
@@ -205,14 +249,14 @@ func updateMouseEventSelector() bool {
 	// --- SCROLL BAR SYNC CODE ---
 	layerAlias := characterEntry.LayerAlias
 
-	// If a button is pressed AND (you are in a drag and drop event OR the cell type is scroll bar), then
+	// If a buttonType is pressed AND (you are in a drag and drop event OR the cell type is scroll bar), then
 	// sync all dropdown selectors with their appropriate scroll bars. If the control under focus
 	// matches a control that belongs to a dropdown list, then stop processing (Do not attempt to close dropdown).
-	if buttonPressed != 0 && (eventStateMemory.stateId == constants.EventStateDragAndDropScrollBar ||
-		characterEntry.AttributeEntry.CellType == constants.CellTypeScrollBar) {
+	if buttonPressed != 0 && (eventStateMemory.stateId == constants.EventStateDragAndDropScrollbar ||
+		characterEntry.AttributeEntry.CellType == constants.CellTypeScrollbar) {
 		for currentKey := range memory.SelectorMemory[focusedLayerAlias] {
 			selectorEntry := memory.GetSelector(focusedLayerAlias, currentKey)
-			scrollBarEntry := memory.GetScrollBar(focusedLayerAlias, selectorEntry.ScrollBarAlias)
+			scrollBarEntry := memory.GetScrollbar(focusedLayerAlias, selectorEntry.ScrollBarAlias)
 			if selectorEntry.ViewportPosition != scrollBarEntry.ScrollValue {
 				selectorEntry.ViewportPosition = scrollBarEntry.ScrollValue
 				isScreenUpdateRequired = true
@@ -222,7 +266,7 @@ func updateMouseEventSelector() bool {
 	// If a selector is no longer visible, then make the scroll bars associated with it invisible as well.
 	for currentKey := range memory.SelectorMemory[layerAlias] {
 		selectorEntry := memory.GetSelector(layerAlias, currentKey)
-		scrollBarEntry := memory.GetScrollBar(layerAlias, selectorEntry.ScrollBarAlias)
+		scrollBarEntry := memory.GetScrollbar(layerAlias, selectorEntry.ScrollBarAlias)
 		if !selectorEntry.IsVisible {
 			scrollBarEntry.IsVisible = false
 		} else {

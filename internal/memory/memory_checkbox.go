@@ -33,6 +33,13 @@ func GetCheckbox(layerAlias string, checkboxAlias string) *CheckboxEntryType {
 	return CheckboxMemory[layerAlias][checkboxAlias]
 }
 
+func IsCheckboxExists(layerAlias string, checkboxAlias string) bool {
+	if CheckboxMemory[layerAlias][checkboxAlias] == nil {
+		return false
+	}
+	return true
+}
+
 func DeleteCheckbox(layerAlias string, checkboxAlias string) {
 	delete(CheckboxMemory[layerAlias], checkboxAlias)
 }

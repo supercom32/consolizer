@@ -70,37 +70,37 @@ func (shared TextboxEntryType) GetEntryAsJsonDump() string {
 	return string(j)
 }
 
-func NewTexboxEntry(existingButtonEntry ...*TextboxEntryType) TextboxEntryType {
+func NewTexboxEntry(existingTextboxEntry ...*TextboxEntryType) TextboxEntryType {
 	var textboxEntry TextboxEntryType
-	if existingButtonEntry != nil {
-		textboxEntry.HorizontalScrollbarAlias = existingButtonEntry[0].HorizontalScrollbarAlias
-		textboxEntry.VerticalScrollbarAlias = existingButtonEntry[0].VerticalScrollbarAlias
-		textboxEntry.StyleEntry = NewTuiStyleEntry(&existingButtonEntry[0].StyleEntry)
-		textboxEntry.TextData = existingButtonEntry[0].TextData
-		textboxEntry.XLocation = existingButtonEntry[0].XLocation
-		textboxEntry.YLocation = existingButtonEntry[0].YLocation
-		textboxEntry.Width = existingButtonEntry[0].Width
-		textboxEntry.Height = existingButtonEntry[0].Height
-		textboxEntry.ViewportXLocation = existingButtonEntry[0].ViewportXLocation
-		textboxEntry.ViewportYLocation = existingButtonEntry[0].ViewportYLocation
-		textboxEntry.CursorXLocation = existingButtonEntry[0].CursorXLocation
-		textboxEntry.CursorYLocation = existingButtonEntry[0].CursorYLocation
-		textboxEntry.IsEnabled = existingButtonEntry[0].IsEnabled
-		textboxEntry.IsVisible = existingButtonEntry[0].IsVisible
-		textboxEntry.IsBorderDrawn = existingButtonEntry[0].IsBorderDrawn
+	if existingTextboxEntry != nil {
+		textboxEntry.HorizontalScrollbarAlias = existingTextboxEntry[0].HorizontalScrollbarAlias
+		textboxEntry.VerticalScrollbarAlias = existingTextboxEntry[0].VerticalScrollbarAlias
+		textboxEntry.StyleEntry = NewTuiStyleEntry(&existingTextboxEntry[0].StyleEntry)
+		textboxEntry.TextData = existingTextboxEntry[0].TextData
+		textboxEntry.XLocation = existingTextboxEntry[0].XLocation
+		textboxEntry.YLocation = existingTextboxEntry[0].YLocation
+		textboxEntry.Width = existingTextboxEntry[0].Width
+		textboxEntry.Height = existingTextboxEntry[0].Height
+		textboxEntry.ViewportXLocation = existingTextboxEntry[0].ViewportXLocation
+		textboxEntry.ViewportYLocation = existingTextboxEntry[0].ViewportYLocation
+		textboxEntry.CursorXLocation = existingTextboxEntry[0].CursorXLocation
+		textboxEntry.CursorYLocation = existingTextboxEntry[0].CursorYLocation
+		textboxEntry.IsEnabled = existingTextboxEntry[0].IsEnabled
+		textboxEntry.IsVisible = existingTextboxEntry[0].IsVisible
+		textboxEntry.IsBorderDrawn = existingTextboxEntry[0].IsBorderDrawn
 	}
 	return textboxEntry
 }
 
-func IsTexboxEqual(sourceCheckboxEntry *TextboxEntryType, targetCheckboxEntry *TextboxEntryType) bool {
-	if sourceCheckboxEntry.StyleEntry == targetCheckboxEntry.StyleEntry &&
-		sourceCheckboxEntry.XLocation == targetCheckboxEntry.XLocation &&
-		sourceCheckboxEntry.YLocation == targetCheckboxEntry.YLocation &&
-		sourceCheckboxEntry.Width == targetCheckboxEntry.Width &&
-		sourceCheckboxEntry.Height == targetCheckboxEntry.Height &&
-		sourceCheckboxEntry.IsEnabled == targetCheckboxEntry.IsEnabled &&
-		sourceCheckboxEntry.IsVisible == targetCheckboxEntry.IsVisible &&
-		sourceCheckboxEntry.IsBorderDrawn == targetCheckboxEntry.IsBorderDrawn {
+func IsTexboxEqual(sourceTextboxEntry *TextboxEntryType, targetTextboxEntry *TextboxEntryType) bool {
+	if sourceTextboxEntry.StyleEntry == targetTextboxEntry.StyleEntry &&
+		sourceTextboxEntry.XLocation == targetTextboxEntry.XLocation &&
+		sourceTextboxEntry.YLocation == targetTextboxEntry.YLocation &&
+		sourceTextboxEntry.Width == targetTextboxEntry.Width &&
+		sourceTextboxEntry.Height == targetTextboxEntry.Height &&
+		sourceTextboxEntry.IsEnabled == targetTextboxEntry.IsEnabled &&
+		sourceTextboxEntry.IsVisible == targetTextboxEntry.IsVisible &&
+		sourceTextboxEntry.IsBorderDrawn == targetTextboxEntry.IsBorderDrawn {
 		return true
 	}
 	return false

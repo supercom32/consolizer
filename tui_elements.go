@@ -389,49 +389,6 @@ func drawHorizontalLine(layerEntry *memory.LayerEntryType, styleEntry memory.Tui
 }
 
 /*
-drawButtonsOnLayer allows you to draw A button on a given text layer. The
-Style of the button will be determined by the style entry passed in. In
-addition, the following information should be noted:
-
-- Buttons are not drawn physically to the text layer provided. Instead,
-they are rendered to the terminal at the same time when the text layer is
-rendered. This allows you to create buttons without actually overwriting
-the text layer data under it.
-
-- If the button to be drawn falls outside the range of the provided layer,
-then only the visible portion of the button will be drawn.
-*/
-func drawButton(layerEntry *memory.LayerEntryType, buttonAlias string, buttonLabel string, styleEntry memory.TuiStyleEntryType, isPressed bool, isSelected bool, xLocation int, yLocation int, width int, height int) {
-	localStyleEntry := memory.NewTuiStyleEntry(&styleEntry)
-	attributeEntry := memory.NewAttributeEntry()
-	attributeEntry.ForegroundColor = styleEntry.ButtonForegroundColor
-	attributeEntry.BackgroundColor = styleEntry.ButtonBackgroundColor
-	attributeEntry.CellType = constants.CellTypeButton
-	attributeEntry.CellControlAlias = buttonAlias
-	if height < 3 {
-		height = 3
-	}
-	if width < len(buttonLabel) {
-		width = len(buttonLabel) + 2
-	}
-	localStyleEntry.TextForegroundColor = localStyleEntry.ButtonRaisedColor
-	localStyleEntry.TextBackgroundColor = localStyleEntry.ButtonBackgroundColor
-	fillArea(layerEntry, attributeEntry, " ", xLocation, yLocation, width, height, constants.NullCellControlLocation)
-	if isPressed {
-		drawFrame(layerEntry, localStyleEntry, attributeEntry, constants.FrameStyleSunken, xLocation, yLocation, width, height, false)
-	} else {
-		drawFrame(layerEntry, localStyleEntry, attributeEntry, constants.FrameStyleRaised, xLocation, yLocation, width, height, false)
-	}
-	centerXLocation := (width - len(buttonLabel)) / 2
-	centerYLocation := height / 2
-	arrayOfRunes := stringformat.GetRunesFromString(buttonLabel)
-	if isSelected {
-		attributeEntry.IsUnderlined = true
-	}
-	printLayer(layerEntry, attributeEntry, xLocation+centerXLocation, yLocation+centerYLocation, arrayOfRunes)
-}
-
-/*
 DrawBorder allows you to draw a border on a given text layer. Borders differ
 from frames since they are flat shaded and do not have a raised or sunken
 look to them. In addition, the following information should be noted:
@@ -570,8 +527,10 @@ func drawFrame(layerEntry *memory.LayerEntryType, styleEntry memory.TuiStyleEntr
 						}
 					}
 				} else if currentRow == height-1 {
-					// Reset cell attribute if it was set to something layer interactive.
-					currentAttributeEntry.CellType = 0
+					if isInteractive {
+						// Reset cell attribute if it was set to something layer interactive.
+						currentAttributeEntry.CellType = 0
+					}
 					if currentCharacter == 0 {
 						characterToDraw = styleEntry.LowerLeftCorner
 						if frameStyle == constants.FrameStyleSunken {

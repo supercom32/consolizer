@@ -5,8 +5,7 @@ import (
 	"sync"
 )
 
-// func DrawButton(LayerAlias string, ButtonLabel string, StyleEntry TuiStyleEntryType, IsPressed bool, IsSelected bool, XLocation int, YLocation int, Width int, Length int) {
-type ScrollBarEntryType struct {
+type ScrollbarEntryType struct {
 	Mutex                   sync.Mutex
 	StyleEntry              TuiStyleEntryType
 	ScrollBarAlias          string
@@ -22,7 +21,7 @@ type ScrollBarEntryType struct {
 	ScrollIncrement int
 }
 
-func (shared ScrollBarEntryType) MarshalJSON() ([]byte, error) {
+func (shared ScrollbarEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
 		StyleEntry  TuiStyleEntryType
 		ScrollBarAlias string
@@ -55,7 +54,7 @@ func (shared ScrollBarEntryType) MarshalJSON() ([]byte, error) {
 	return j, nil
 }
 
-func (shared ScrollBarEntryType) GetEntryAsJsonDump() string {
+func (shared ScrollbarEntryType) GetEntryAsJsonDump() string {
 	j, err := json.Marshal(shared)
 	if err != nil {
 		panic(err)
@@ -63,36 +62,36 @@ func (shared ScrollBarEntryType) GetEntryAsJsonDump() string {
 	return string(j)
 }
 
-func NewScrollBarEntry(existingScrollBarEntry ...*ScrollBarEntryType) ScrollBarEntryType {
-	var scrollBarEntry ScrollBarEntryType
-	if existingScrollBarEntry != nil {
-		scrollBarEntry.StyleEntry = NewTuiStyleEntry(&existingScrollBarEntry[0].StyleEntry)
-		scrollBarEntry.XLocation = existingScrollBarEntry[0].XLocation
-		scrollBarEntry.YLocation = existingScrollBarEntry[0].YLocation
-		scrollBarEntry.Length = existingScrollBarEntry[0].Length
-		scrollBarEntry.MaxScrollValue = existingScrollBarEntry[0].MaxScrollValue
-		scrollBarEntry.ScrollValue = existingScrollBarEntry[0].ScrollValue
-		scrollBarEntry.HandlePosition = existingScrollBarEntry[0].HandlePosition
-		scrollBarEntry.IsVisible = existingScrollBarEntry[0].IsVisible
-		scrollBarEntry.IsHorizontal = existingScrollBarEntry[0].IsHorizontal
-		scrollBarEntry.IsEnabled = existingScrollBarEntry[0].IsEnabled
-		scrollBarEntry.ScrollIncrement = existingScrollBarEntry[0].ScrollIncrement
+func NewScrollbarEntry(existingScrollbarEntry ...*ScrollbarEntryType) ScrollbarEntryType {
+	var scrollbarEntry ScrollbarEntryType
+	if existingScrollbarEntry != nil {
+		scrollbarEntry.StyleEntry = NewTuiStyleEntry(&existingScrollbarEntry[0].StyleEntry)
+		scrollbarEntry.XLocation = existingScrollbarEntry[0].XLocation
+		scrollbarEntry.YLocation = existingScrollbarEntry[0].YLocation
+		scrollbarEntry.Length = existingScrollbarEntry[0].Length
+		scrollbarEntry.MaxScrollValue = existingScrollbarEntry[0].MaxScrollValue
+		scrollbarEntry.ScrollValue = existingScrollbarEntry[0].ScrollValue
+		scrollbarEntry.HandlePosition = existingScrollbarEntry[0].HandlePosition
+		scrollbarEntry.IsVisible = existingScrollbarEntry[0].IsVisible
+		scrollbarEntry.IsHorizontal = existingScrollbarEntry[0].IsHorizontal
+		scrollbarEntry.IsEnabled = existingScrollbarEntry[0].IsEnabled
+		scrollbarEntry.ScrollIncrement = existingScrollbarEntry[0].ScrollIncrement
 	}
-	return scrollBarEntry
+	return scrollbarEntry
 }
 
-func IsScrollBarEntryEqual(sourceScrollBarEntry *ScrollBarEntryType, targetScrollBarEntry *ScrollBarEntryType) bool {
-	if sourceScrollBarEntry.StyleEntry == targetScrollBarEntry.StyleEntry &&
-		sourceScrollBarEntry.XLocation == targetScrollBarEntry.XLocation &&
-		sourceScrollBarEntry.YLocation == targetScrollBarEntry.YLocation &&
-		sourceScrollBarEntry.Length == targetScrollBarEntry.Length &&
-		sourceScrollBarEntry.MaxScrollValue == targetScrollBarEntry.MaxScrollValue &&
-		sourceScrollBarEntry.ScrollValue == targetScrollBarEntry.ScrollValue &&
-		sourceScrollBarEntry.HandlePosition == targetScrollBarEntry.HandlePosition &&
-		sourceScrollBarEntry.IsVisible == targetScrollBarEntry.IsVisible &&
-		sourceScrollBarEntry.IsHorizontal == targetScrollBarEntry.IsHorizontal &&
-		sourceScrollBarEntry.IsEnabled == targetScrollBarEntry.IsEnabled &&
-		sourceScrollBarEntry.ScrollIncrement == targetScrollBarEntry.ScrollIncrement {
+func IsScrollbarEntryEqual(sourceScrollbarEntry *ScrollbarEntryType, targetScrollBarEntry *ScrollbarEntryType) bool {
+	if sourceScrollbarEntry.StyleEntry == targetScrollBarEntry.StyleEntry &&
+		sourceScrollbarEntry.XLocation == targetScrollBarEntry.XLocation &&
+		sourceScrollbarEntry.YLocation == targetScrollBarEntry.YLocation &&
+		sourceScrollbarEntry.Length == targetScrollBarEntry.Length &&
+		sourceScrollbarEntry.MaxScrollValue == targetScrollBarEntry.MaxScrollValue &&
+		sourceScrollbarEntry.ScrollValue == targetScrollBarEntry.ScrollValue &&
+		sourceScrollbarEntry.HandlePosition == targetScrollBarEntry.HandlePosition &&
+		sourceScrollbarEntry.IsVisible == targetScrollBarEntry.IsVisible &&
+		sourceScrollbarEntry.IsHorizontal == targetScrollBarEntry.IsHorizontal &&
+		sourceScrollbarEntry.IsEnabled == targetScrollBarEntry.IsEnabled &&
+		sourceScrollbarEntry.ScrollIncrement == targetScrollBarEntry.ScrollIncrement {
 		return true
 	}
 	return false

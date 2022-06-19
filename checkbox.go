@@ -11,19 +11,40 @@ type CheckboxInstanceType struct {
 	checkboxAlias string
 }
 
+type checkboxType struct {}
+
+var checkbox checkboxType
+
 /*
-IsButtonPressed allows you to detect if any text button was pressed or not. In
-order to obtain the button pressed and clear this state, you must call the
-GetButtonPressed method.
+IsCheckboxSelected allows you to detect if the given checkbox is selected or not. If the checkbox instance
+no longer exists, then a result of false is always returned.
 */
 func (shared *CheckboxInstanceType) IsCheckboxSelected() bool {
-	if buttonHistory.layerAlias != "" && buttonHistory.buttonAlias != "" {
-		return true
+	if memory.IsCheckboxExists(shared.layerAlias, shared.checkboxAlias){
+		checkboxEntry := memory.GetCheckbox(shared.layerAlias, shared.checkboxAlias)
+		if checkboxEntry.IsSelected == true {
+			return true
+		}
 	}
 	return false
 }
 
- func AddCheckbox(layerAlias string, checkboxAlias string, checkboxLabel string, styleEntry memory.TuiStyleEntryType, xLocation int, yLocation int, isSelected bool) CheckboxInstanceType {
+/*
+AddCheckbox allows you to add a checkbox to a given text layer. Once called, an instance
+of your control is returned which will allow you to read or manipulate the properties for it.
+The Style of the checkbox will be determined by the style entry passed in. If you wish to
+remove a checkbox from a text layer, simply call 'DeleteCheckbox'. In addition, the following
+information should be noted:
+
+- Checkboxes are not drawn physically to the text layer provided. Instead,
+they are rendered to the terminal at the same time when the text layer is
+rendered. This allows you to create checkboxes without actually overwriting
+the text layer data under it.
+
+- If the checkbox to be drawn falls outside the range of the provided layer,
+then only the visible portion of the checkbox will be drawn.
+*/
+ func (shared *checkboxType) AddCheckbox(layerAlias string, checkboxAlias string, checkboxLabel string, styleEntry memory.TuiStyleEntryType, xLocation int, yLocation int, isSelected bool) CheckboxInstanceType {
 	memory.AddCheckbox(layerAlias, checkboxAlias, checkboxLabel, styleEntry, xLocation, yLocation, isSelected)
 	var checkboxInstance CheckboxInstanceType
 	 checkboxInstance.layerAlias = layerAlias
@@ -32,29 +53,41 @@ func (shared *CheckboxInstanceType) IsCheckboxSelected() bool {
 }
 
 /*
-DeleteButton allows you to remove a button from a text layer. In addition,
+DeleteCheckbox allows you to remove a checkbox from a text layer. In addition,
 the following information should be noted:
 
-- If you attempt to delete a button which does not exist, then the request
+- If you attempt to delete a checkbox which does not exist, then the request
 will simply be ignored.
 */
-func DeleteCheckbox(layerAlias string, checkboxAlias string) {
+func (shared *checkboxType) DeleteCheckbox(layerAlias string, checkboxAlias string) {
 	memory.DeleteCheckbox(layerAlias, checkboxAlias)
 }
 
 /*
-drawButtonsOnLayer allows you to draw all buttons on a given text layer
-entry.
+drawCheckboxesOnLayer allows you to draw all checkboxes on a given text layer.
 */
-func drawCheckboxesOnLayer(layerEntry memory.LayerEntryType) {
+func (shared *checkboxType) drawCheckboxesOnLayer(layerEntry memory.LayerEntryType) {
 	layerAlias := layerEntry.LayerAlias
 	for currentKey := range memory.CheckboxMemory[layerAlias] {
 		checkboxEntry := memory.GetCheckbox(layerAlias, currentKey)
-		drawCheckbox(&layerEntry, currentKey, checkboxEntry.Label, checkboxEntry.StyleEntry, checkboxEntry.XLocation, checkboxEntry.YLocation, checkboxEntry.IsSelected, checkboxEntry.IsEnabled)
+		shared.drawCheckbox(&layerEntry, currentKey, checkboxEntry.Label, checkboxEntry.StyleEntry, checkboxEntry.XLocation, checkboxEntry.YLocation, checkboxEntry.IsSelected, checkboxEntry.IsEnabled)
 	}
 }
 
-func drawCheckbox (layerEntry *memory.LayerEntryType, checkboxAlias string, checkboxLabel string, styleEntry memory.TuiStyleEntryType, xLocation int, yLocation int, isSelected bool, isEnabled bool ) {
+/*
+drawCheckbox allows you to draw A checkbox on a given text layer. The
+Style of the checkbox will be determined by the style entry passed in. In
+addition, the following information should be noted:
+
+- Checkboxes are not drawn physically to the text layer provided. Instead,
+they are rendered to the terminal at the same time when the text layer is
+rendered. This allows you to create checkboxes without actually overwriting
+the text layer data under it.
+
+- If the checkbox to be drawn falls outside the range of the provided layer,
+then only the visible portion of the checkbox will be drawn.
+*/
+func (shared *checkboxType) drawCheckbox (layerEntry *memory.LayerEntryType, checkboxAlias string, checkboxLabel string, styleEntry memory.TuiStyleEntryType, xLocation int, yLocation int, isSelected bool, isEnabled bool ) {
 	localStyleEntry := memory.NewTuiStyleEntry(&styleEntry)
 	attributeEntry := memory.NewAttributeEntry()
 	attributeEntry.ForegroundColor = localStyleEntry.CheckboxForegroundColor
@@ -76,7 +109,11 @@ func drawCheckbox (layerEntry *memory.LayerEntryType, checkboxAlias string, chec
 	printLayer(layerEntry, attributeEntry, xLocation + numberOfSpacesUsed, yLocation, secondArrayOfRunes)
 }
 
-func updateMouseEventCheckbox() bool {
+/*
+updateMouseEventCheckbox allows you to update the state of all checkboxes according to the current mouse event state.
+In the event that a screen update is required this method returns true.
+*/
+func (shared *checkboxType) updateMouseEventCheckbox() bool {
 	isUpdateRequired := false
 	mouseXLocation, mouseYLocation, buttonPressed, _ := memory.GetMouseStatus()
 	characterEntry := getCellInformationUnderMouseCursor(mouseXLocation, mouseYLocation)

@@ -8,7 +8,7 @@ func InitializeSelectorMemory() {
 	SelectorMemory = make(map[string]map[string]*SelectorEntryType)
 }
 
-func AddSelector(layerAlias string, menuBarAlias string, styleEntry TuiStyleEntryType, selectionEntry SelectionEntryType, xLocation int, yLocation int, selectorHeight int, itemWidth int, numberOfColumns int, viewportPosition int, itemSelected int, isBorderDrawn bool) {
+func AddSelector(layerAlias string, selectorAlias string, styleEntry TuiStyleEntryType, selectionEntry SelectionEntryType, xLocation int, yLocation int, selectorHeight int, itemWidth int, numberOfColumns int, viewportPosition int, itemSelected int, isBorderDrawn bool) {
 	selectorEntry := NewSelectorEntry()
 	selectorEntry.StyleEntry = styleEntry
 	selectorEntry.SelectionEntry = selectionEntry
@@ -24,15 +24,15 @@ func AddSelector(layerAlias string, menuBarAlias string, styleEntry TuiStyleEntr
 	if SelectorMemory[layerAlias] == nil {
 		SelectorMemory[layerAlias] = make(map[string]*SelectorEntryType)
 	}
-	SelectorMemory[layerAlias][menuBarAlias] = &selectorEntry
+	SelectorMemory[layerAlias][selectorAlias] = &selectorEntry
 }
 
-func DeleteSelector(layerAlias string, menuBarAlias string) {
-	delete(SelectorMemory[layerAlias], menuBarAlias)
+func DeleteSelector(layerAlias string, selectorAlias string) {
+	delete(SelectorMemory[layerAlias], selectorAlias)
 }
 
-func IsSelectorExists(layerAlias string, menuBarAlias string) bool {
-	if _, isExist := SelectorMemory[layerAlias][menuBarAlias]; isExist {
+func IsSelectorExists(layerAlias string, selectorAlias string) bool {
+	if _, isExist := SelectorMemory[layerAlias][selectorAlias]; isExist {
 		return true
 	}
 	return false

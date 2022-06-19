@@ -12,25 +12,33 @@ type textFieldInstanceType struct {
 	textFieldAlias string
 }
 
+type textFieldType struct {}
+var textField textFieldType
+
 /*
 GetValue allows you to get the current value of your text field with.
 */
 func (shared *textFieldInstanceType) GetValue() string {
-	validatorTextField(shared.layerAlias, shared.textFieldAlias)
-	textFieldEntry := memory.GetTextField(shared.layerAlias, shared.textFieldAlias)
-	value := textFieldEntry.CurrentValue
-	return string(value)
+	if memory.IsTextFieldExists(shared.layerAlias, shared.textFieldAlias) {
+		validatorTextField(shared.layerAlias, shared.textFieldAlias)
+		textFieldEntry := memory.GetTextField(shared.layerAlias, shared.textFieldAlias)
+		value := textFieldEntry.CurrentValue
+		return string(value)
+	}
+	return ""
 }
 
 /*
 SetLocation allows you to set the current location of your text field.
 */
 func (shared *textFieldInstanceType) SetLocation(xLocation int, yLocation int) {
-	validatorTextField(shared.layerAlias, shared.textFieldAlias)
-	validateLayerLocationByLayerAlias(shared.layerAlias, xLocation, yLocation)
-	textFieldEntry := memory.GetTextField(shared.layerAlias, shared.textFieldAlias)
-	textFieldEntry.XLocation = xLocation
-	textFieldEntry.YLocation = yLocation
+	if memory.IsTextFieldExists(shared.layerAlias, shared.textFieldAlias) {
+		validatorTextField(shared.layerAlias, shared.textFieldAlias)
+		validateLayerLocationByLayerAlias(shared.layerAlias, xLocation, yLocation)
+		textFieldEntry := memory.GetTextField(shared.layerAlias, shared.textFieldAlias)
+		textFieldEntry.XLocation = xLocation
+		textFieldEntry.YLocation = yLocation
+	}
 }
 
 /*
@@ -39,24 +47,24 @@ a text field instance is returned which will allow you to read or
 manipulate properties of your text field. In addition, the following
 information should be noted:
 
-- If the location specified for the input field  falls outside the range
+- If the location specified for the text field falls outside the range
 of the text layer, then only the visible portion of your input field will be
 drawn.
 
-- If the max length of your input field is less than or equal to 0, a panic
+- If the max length of your text field is less than or equal to 0, a panic
 will be generated to fail as fast as possible.
 
 - Password protection will echo back '*' characters to the terminal instead
 of the actual characters entered.
 
-- Specifying a default value will simply pre-populate the input field with
+- Specifying a default value will simply pre-populate the text field with
 the value specified.
 
 - If the cursor position moves outside the visible display area of the
-field, then the entire input field will shift to ensure the cursor is always
+field, then the entire text field will shift to ensure the cursor is always
 visible.
 */
-func AddTextField(layerAlias string, textFieldAlias string, styleEntry memory.TuiStyleEntryType, xLocation int, yLocation int, width int, maxLengthAllowed int, IsPasswordProtected bool, defaultValue string) textFieldInstanceType {
+func (shared *textFieldType) AddTextField(layerAlias string, textFieldAlias string, styleEntry memory.TuiStyleEntryType, xLocation int, yLocation int, width int, maxLengthAllowed int, IsPasswordProtected bool, defaultValue string) textFieldInstanceType {
 	validateLayerLocationByLayerAlias(layerAlias, xLocation, yLocation)
 	validateTextFieldWidth(width)
 	memory.AddTextField(layerAlias, textFieldAlias, styleEntry, xLocation, yLocation, width, maxLengthAllowed, IsPasswordProtected, defaultValue + " ")
@@ -69,7 +77,7 @@ func AddTextField(layerAlias string, textFieldAlias string, styleEntry memory.Tu
 /*
 DeleteTextField allows you to delete a text field on a given layer.
 */
-func DeleteTextField(layerAlias string, textFieldAlias string) {
+func (shared *textFieldType) DeleteTextField(layerAlias string, textFieldAlias string) {
 	validatorTextField(layerAlias, textFieldAlias)
 	memory.DeleteTextField(layerAlias, textFieldAlias)
 }
@@ -78,56 +86,11 @@ func DeleteTextField(layerAlias string, textFieldAlias string) {
 drawTextFieldOnLayer allows you to draw all text fields on a given text layer
 entry.
 */
-func drawTextFieldOnLayer(layerEntry memory.LayerEntryType) {
+func (shared *textFieldType) drawTextFieldOnLayer(layerEntry memory.LayerEntryType) {
 	layerAlias := layerEntry.LayerAlias
-	/*
-	focusedLayerAlias := eventStateMemory.currentlyFocusedControl.layerAlias
-	focusedControlAlias := eventStateMemory.currentlyFocusedControl.controlAlias
-	focusedControlType := eventStateMemory.currentlyFocusedControl.controlType
-	 */
 	for currentKey := range memory.TextFieldMemory[layerAlias] {
 		textFieldEntry := memory.GetTextField(layerAlias, currentKey)
-		drawInputString(&layerEntry, textFieldEntry.StyleEntry, currentKey, textFieldEntry.XLocation, textFieldEntry.YLocation, textFieldEntry.Width, textFieldEntry.ViewportPosition, textFieldEntry.CurrentValue)
-		/*
-		cursorPosition := textFieldEntry.ViewportPosition + textFieldEntry.CursorPosition
-		runeSlice := []rune(textFieldEntry.CurrentValue)
-		characterUnderCursor := ' '
-		if cursorPosition < len(runeSlice) { // Protect against empty strings
-			characterUnderCursor = runeSlice[cursorPosition]
-		}
-
-		if focusedControlType == constants.CellTypeTextField && focusedLayerAlias == layerAlias && focusedControlAlias == currentKey {
-			drawCursor(&layerEntry, textFieldEntry.StyleEntry, currentKey, characterUnderCursor, textFieldEntry.XLocation, textFieldEntry.YLocation, textFieldEntry.CursorPosition, false)
-		}
-		 */
-	}
-}
-
-/*
-drawCursor allows you to draw a cursor at the appropriate location for a
-text field. In addition, the following information should be noted:
-
-- If the location specified for the cursor range falls outside of the text
-layer, then the cursor will only be rendered on the visible portion.
-
-- The cursor position indicates how many spaces to the right of the starting x
-and y location your cursor should be drawn at.
-
-- If it is indicated that your cursor is moving backwards, then the space in
-which the cursor was previously located will be automatically cleared.
-*/
-func drawCursor(layerEntry *memory.LayerEntryType, styleEntry memory.TuiStyleEntryType, textFieldAlias string, characterUnderCursor rune, xLocation int, yLocation int, cursorPosition int, isMovementBackwards bool) {
-	attributeEntry := memory.NewAttributeEntry()
-	attributeEntry.ForegroundColor = styleEntry.CursorForegroundColor
-	attributeEntry.BackgroundColor = styleEntry.CursorBackgroundColor
-	attributeEntry.CellType = constants.CellTypeTextField
-	attributeEntry.CellControlAlias = textFieldAlias
-	attributeEntry.CellControlId = cursorPosition
-	var arrayOfRunes []rune
-	arrayOfRunes = append(arrayOfRunes, characterUnderCursor)
-	printLayer(layerEntry, attributeEntry, xLocation+cursorPosition, yLocation, arrayOfRunes)
-	if isMovementBackwards {
-		printLayer(layerEntry, attributeEntry, xLocation+cursorPosition+1, yLocation, arrayOfRunes)
+		shared.drawInputString(&layerEntry, textFieldEntry.StyleEntry, currentKey, textFieldEntry.XLocation, textFieldEntry.YLocation, textFieldEntry.Width, textFieldEntry.ViewportPosition, textFieldEntry.CurrentValue)
 	}
 }
 
@@ -147,7 +110,7 @@ the text layer, then only the visible portion will be displayed.
 start. If the remainder of your string is too long for the specified width,
 then only the visible portion will be displayed.
 */
-func drawInputString(layerEntry *memory.LayerEntryType, styleEntry memory.TuiStyleEntryType, textFieldAlias string, xLocation int, yLocation int, width int, stringPosition int, inputValue []rune) {
+func (shared *textFieldType) drawInputString(layerEntry *memory.LayerEntryType, styleEntry memory.TuiStyleEntryType, textFieldAlias string, xLocation int, yLocation int, width int, stringPosition int, inputValue []rune) {
 	attributeEntry := memory.NewAttributeEntry()
 	attributeEntry.ForegroundColor = styleEntry.TextInputForegroundColor
 	attributeEntry.BackgroundColor = styleEntry.TextInputBackgroundColor
@@ -158,7 +121,6 @@ func drawInputString(layerEntry *memory.LayerEntryType, styleEntry memory.TuiSty
 	focusedLayerAlias := eventStateMemory.currentlyFocusedControl.layerAlias
 	focusedControlAlias := eventStateMemory.currentlyFocusedControl.controlAlias
 	focusedControlType := eventStateMemory.currentlyFocusedControl.controlType
-
 	fillArea(layerEntry, attributeEntry," ", xLocation, yLocation, width, 1, 0)
 	// Here we loop over each character to draw since we need to accommodate for unique
 	// cell IDs (if required for mouse location detection).
@@ -174,25 +136,28 @@ func drawInputString(layerEntry *memory.LayerEntryType, styleEntry memory.TuiSty
 			}
 		}
 		attributeEntry.CellControlId = stringPosition + currentRuneIndex
-		printLayer(layerEntry, attributeEntry, xLocation + xLocationOffset, yLocation, []rune{inputValue[stringPosition + currentRuneIndex]})
+		if textFieldEntry.IsPasswordProtected {
+			printLayer(layerEntry, attributeEntry, xLocation + xLocationOffset, yLocation, []rune{'*'})
+		} else {
+			printLayer(layerEntry, attributeEntry, xLocation + xLocationOffset, yLocation, []rune{inputValue[stringPosition + currentRuneIndex]})
+		}
 		xLocationOffset++
 		if stringformat.IsRuneCharacterWide(inputValue[stringPosition + currentRuneIndex]) {
 			xLocationOffset++
-			printLayer(layerEntry, attributeEntry, xLocation + xLocationOffset, yLocation, []rune{' '})
+			if textFieldEntry.IsPasswordProtected {
+				printLayer(layerEntry, attributeEntry, xLocation + xLocationOffset, yLocation, []rune{'*'})
+			} else {
+				printLayer(layerEntry, attributeEntry, xLocation + xLocationOffset, yLocation, []rune{' '})
+			}
 		}
 	}
 }
 
-func updateCursor2(textFieldEntry *memory.TextFieldEntryType, xLocation int) {
-	textFieldEntry.CursorPosition = xLocation
-	// If our cursor xLocation was jumped (due to NullCellControlId) or placed in an invalid xLocation spot greater than the length of our text line.
-	// Move it to the end of the line.
-	if textFieldEntry.CursorPosition == constants.NullCellControlId || textFieldEntry.CursorPosition > len(textFieldEntry.CurrentValue) - 1 {
-		textFieldEntry.CursorPosition = 0
-	}
-}
-
-func updateTextfieldViewport2(textFieldEntry *memory.TextFieldEntryType) {
+/*
+updateTextfieldViewport allows you to update the current viewport based on the current text and cursor
+location.
+*/
+func (shared *textFieldType) updateTextfieldViewport(textFieldEntry *memory.TextFieldEntryType) {
 	// If cursor xLocation is lower than the viewport window
 	if textFieldEntry.CursorPosition <= textFieldEntry.ViewportPosition {
 		maxViewportWidthAvaliable := textFieldEntry.Width
@@ -220,13 +185,21 @@ func updateTextfieldViewport2(textFieldEntry *memory.TextFieldEntryType) {
 	}
 }
 
-func insertCharacterAtPosition(textFieldEntry *memory.TextFieldEntryType, characterToInsert rune) {
+/*
+insertCharacterAtPosition allows you to insert a character into a given text field. The location to insert is
+determined automatically by the current cursor position.
+*/
+func (shared *textFieldType) insertCharacterAtPosition(textFieldEntry *memory.TextFieldEntryType, characterToInsert rune) {
 	textAfterCursor := stringformat.GetRuneArrayCopy(textFieldEntry.CurrentValue[textFieldEntry.CursorPosition:])
 	textFieldEntry.CurrentValue = append(textFieldEntry.CurrentValue[:textFieldEntry.CursorPosition], characterToInsert)
 	textFieldEntry.CurrentValue = append(textFieldEntry.CurrentValue, textAfterCursor...)
 }
 
-func deleteCharacterAtPosition(textFieldEntry *memory.TextFieldEntryType) {
+/*
+deleteCharacterAtPosition allows you to delete a character from a given text field. The location to delete is
+determined automatically by the current cursor position.
+*/
+func (shared *textFieldType) deleteCharacterAtPosition(textFieldEntry *memory.TextFieldEntryType) {
 	if len(textFieldEntry.CurrentValue) != 1 {
 		if textFieldEntry.CursorPosition != len(textFieldEntry.CurrentValue) - 1 {
 			textFieldEntry.CurrentValue = append(textFieldEntry.CurrentValue[:textFieldEntry.CursorPosition], textFieldEntry.CurrentValue[textFieldEntry.CursorPosition+1:]...)
@@ -234,13 +207,20 @@ func deleteCharacterAtPosition(textFieldEntry *memory.TextFieldEntryType) {
 	}
 }
 
-func backspaceCharacterAtPosition(textFieldEntry *memory.TextFieldEntryType) {
+/*
+backspaceCharacterAtPosition allows you to backspace a character from a given text field. The location to backspace is
+determined automatically by the current cursor position.
+*/
+func (shared *textFieldType) backspaceCharacterAtPosition(textFieldEntry *memory.TextFieldEntryType) {
 	if textFieldEntry.CursorPosition >= 0 {
 		textFieldEntry.CurrentValue = append(textFieldEntry.CurrentValue[:textFieldEntry.CursorPosition], textFieldEntry.CurrentValue[textFieldEntry.CursorPosition+1:]...)
 	}
 }
 
-func updateTextFieldCursor(textFieldEntry *memory.TextFieldEntryType) {
+/*
+updateTextFieldCursor allows you to update a text field cursors location to ensure that no values are out of bounds.
+*/
+func (shared *textFieldType) updateTextFieldCursor(textFieldEntry *memory.TextFieldEntryType) {
 	if textFieldEntry.CursorPosition < 0 {
 		textFieldEntry.CursorPosition = 0
 	}
@@ -249,7 +229,11 @@ func updateTextFieldCursor(textFieldEntry *memory.TextFieldEntryType) {
 	}
 }
 
-func updateKeyboardEventTextField(keystroke []rune) bool {
+/*
+updateKeyboardEventTextField allows you to update the state of all text fields according to the current keystroke event.
+In the event that a screen update is required this method returns true.
+*/
+func (shared *textFieldType) updateKeyboardEventTextField(keystroke []rune) bool {
 	keystrokeAsString := string(keystroke)
 	isScreenUpdateRequired := true
 	focusedLayerAlias := eventStateMemory.currentlyFocusedControl.layerAlias
@@ -262,15 +246,15 @@ func updateKeyboardEventTextField(keystroke []rune) bool {
 	if len(keystroke) == 1 { // If a regular char is entered.
 		if len(textFieldEntry.CurrentValue) < textFieldEntry.MaxLengthAllowed {
 			logInfo(fmt.Sprintf("cur: %d view: %d", textFieldEntry.CursorPosition, textFieldEntry.ViewportPosition))
-			insertCharacterAtPosition(textFieldEntry, keystroke[0])
+			shared.insertCharacterAtPosition(textFieldEntry, keystroke[0])
 			textFieldEntry.CursorPosition++
-			updateTextFieldCursor(textFieldEntry)
-			updateTextfieldViewport2(textFieldEntry)
+			shared.updateTextFieldCursor(textFieldEntry)
+			shared.updateTextfieldViewport(textFieldEntry)
 			isScreenUpdateRequired = true
 		}
 	}
 	if keystrokeAsString == "delete" {
-		deleteCharacterAtPosition(textFieldEntry)
+		shared.deleteCharacterAtPosition(textFieldEntry)
 		isScreenUpdateRequired = true
 	}
 	if keystrokeAsString == "home" {
@@ -280,34 +264,38 @@ func updateKeyboardEventTextField(keystroke []rune) bool {
 	}
 	if keystrokeAsString == "end" {
 		textFieldEntry.CursorPosition = len(textFieldEntry.CurrentValue) - 1
-		updateTextfieldViewport2(textFieldEntry)
+		shared.updateTextfieldViewport(textFieldEntry)
 		isScreenUpdateRequired = true
 	}
 	if keystrokeAsString == "backspace" || keystrokeAsString == "backspace2" {
 		textFieldEntry.CursorPosition--
-		backspaceCharacterAtPosition(textFieldEntry)
-		updateTextFieldCursor(textFieldEntry)
-		updateTextfieldViewport2(textFieldEntry)
+		shared.backspaceCharacterAtPosition(textFieldEntry)
+		shared.updateTextFieldCursor(textFieldEntry)
+		shared.updateTextfieldViewport(textFieldEntry)
 
 		isScreenUpdateRequired = true
 	}
 	if keystrokeAsString == "left" {
 		textFieldEntry.CursorPosition--
-		updateTextFieldCursor(textFieldEntry)
-		updateTextfieldViewport2(textFieldEntry)
+		shared.updateTextFieldCursor(textFieldEntry)
+		shared.updateTextfieldViewport(textFieldEntry)
 
 		isScreenUpdateRequired = true
 	}
 	if keystrokeAsString == "right" {
 		textFieldEntry.CursorPosition++
-		updateTextFieldCursor(textFieldEntry)
-		updateTextfieldViewport2(textFieldEntry)
+		shared.updateTextFieldCursor(textFieldEntry)
+		shared.updateTextfieldViewport(textFieldEntry)
 		isScreenUpdateRequired = true
 	}
 	return isScreenUpdateRequired
 }
 
-func updateMouseEventTextField() bool {
+/*
+updateMouseEventTextField allows you to update the state of all text fields according to the current mouse event state.
+In the event that a screen update is required this method returns true.
+*/
+func (shared *textFieldType) updateMouseEventTextField() bool {
 	isScreenUpdateRequired := false
 	var characterEntry memory.CharacterEntryType
 	mouseXLocation, mouseYLocation, buttonPressed, _ := memory.GetMouseStatus()

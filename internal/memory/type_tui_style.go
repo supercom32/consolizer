@@ -23,15 +23,19 @@ type TuiStyleEntryType struct {
 	CheckboxBackgroundColor   constants.ColorType
 	CheckboxSelectedCharacter rune
 	CheckboxUnselectedCharacter rune
-	ScrollBarTrackPattern rune
-	ScrollBarHandle rune
-	ScrollBarUpArrow      rune
-	ScrollBarDownArrow			 rune
-	ScrollBarLeftArrow      rune
-	ScrollBarRightArrow			 rune
-	ScrollBarForegroundColor	constants.ColorType
-	ScrollBarBackgroundColor	constants.ColorType
-	ScrollBarHandleColor	 	constants.ColorType
+	RadioButtonForegroundColor constants.ColorType
+	RadioButtonBackgroundColor constants.ColorType
+	RadioButtonSelectedCharacter rune
+	RadioButtonUnselectedCharacter rune
+	ScrollbarTrackPattern rune
+	ScrollbarHandle    rune
+	ScrollbarUpArrow   rune
+	ScrollbarDownArrow  rune
+	ScrollbarLeftArrow       rune
+	ScrollbarRightArrow      rune
+	ScrollbarForegroundColor constants.ColorType
+	ScrollbarBackgroundColor     constants.ColorType
+	ScrollbarHandleColor         constants.ColorType
 	ProgressBarBackgroundPattern rune
 	ProgressBarForegroundPattern rune
 	IsSquareFont                 bool
@@ -84,15 +88,19 @@ func NewTuiStyleEntry(existingStyleEntry ...*TuiStyleEntryType) TuiStyleEntryTyp
 		styleEntry.CheckboxBackgroundColor = existingStyleEntry[0].CheckboxBackgroundColor
 		styleEntry.CheckboxSelectedCharacter = existingStyleEntry[0].CheckboxSelectedCharacter
 		styleEntry.CheckboxUnselectedCharacter = existingStyleEntry[0].CheckboxUnselectedCharacter
-		styleEntry.ScrollBarTrackPattern = existingStyleEntry[0].ScrollBarTrackPattern
-		styleEntry.ScrollBarHandle = existingStyleEntry[0].ScrollBarHandle
-		styleEntry.ScrollBarUpArrow = existingStyleEntry[0].ScrollBarUpArrow
-		styleEntry.ScrollBarDownArrow = existingStyleEntry[0].ScrollBarDownArrow
-		styleEntry.ScrollBarLeftArrow = existingStyleEntry[0].ScrollBarLeftArrow
-		styleEntry.ScrollBarRightArrow = existingStyleEntry[0].ScrollBarRightArrow
-		styleEntry.ScrollBarForegroundColor = existingStyleEntry[0].ScrollBarForegroundColor
-		styleEntry.ScrollBarBackgroundColor = existingStyleEntry[0].ScrollBarBackgroundColor
-		styleEntry.ScrollBarHandleColor = existingStyleEntry[0].ScrollBarHandleColor
+		styleEntry.RadioButtonForegroundColor = existingStyleEntry[0].RadioButtonForegroundColor
+		styleEntry.RadioButtonBackgroundColor = existingStyleEntry[0].RadioButtonBackgroundColor
+		styleEntry.RadioButtonSelectedCharacter = existingStyleEntry[0].RadioButtonSelectedCharacter
+		styleEntry.RadioButtonUnselectedCharacter = existingStyleEntry[0].RadioButtonUnselectedCharacter
+		styleEntry.ScrollbarTrackPattern = existingStyleEntry[0].ScrollbarTrackPattern
+		styleEntry.ScrollbarHandle = existingStyleEntry[0].ScrollbarHandle
+		styleEntry.ScrollbarUpArrow = existingStyleEntry[0].ScrollbarUpArrow
+		styleEntry.ScrollbarDownArrow = existingStyleEntry[0].ScrollbarDownArrow
+		styleEntry.ScrollbarLeftArrow = existingStyleEntry[0].ScrollbarLeftArrow
+		styleEntry.ScrollbarRightArrow = existingStyleEntry[0].ScrollbarRightArrow
+		styleEntry.ScrollbarForegroundColor = existingStyleEntry[0].ScrollbarForegroundColor
+		styleEntry.ScrollbarBackgroundColor = existingStyleEntry[0].ScrollbarBackgroundColor
+		styleEntry.ScrollbarHandleColor = existingStyleEntry[0].ScrollbarHandleColor
 		styleEntry.ProgressBarBackgroundPattern = existingStyleEntry[0].ProgressBarBackgroundPattern
 		styleEntry.ProgressBarForegroundPattern = existingStyleEntry[0].ProgressBarForegroundPattern
 		styleEntry.TextForegroundColor = existingStyleEntry[0].TextForegroundColor
@@ -128,12 +136,12 @@ func NewTuiStyleEntry(existingStyleEntry ...*TuiStyleEntryType) TuiStyleEntryTyp
 		styleEntry.LowerLeftCorner = constants.CharSingleLineLowerLeftCorner
 		styleEntry.CrossConnector = constants.CharSingleLineCross
 		styleEntry.DesktopPattern = constants.CharBlockSparce
-		styleEntry.ScrollBarTrackPattern = constants.CharBlockSparce
-		styleEntry.ScrollBarHandle = constants.CharBlockSolid
-		styleEntry.ScrollBarUpArrow = constants.CharTriangleUp
-		styleEntry.ScrollBarDownArrow = constants.CharTriangleDown
-		styleEntry.ScrollBarLeftArrow = constants.CharTriangleLeft
-		styleEntry.ScrollBarRightArrow = constants.CharTriangleRight
+		styleEntry.ScrollbarTrackPattern = constants.CharBlockSparce
+		styleEntry.ScrollbarHandle = constants.CharBlockSolid
+		styleEntry.ScrollbarUpArrow = constants.CharTriangleUp
+		styleEntry.ScrollbarDownArrow = constants.CharTriangleDown
+		styleEntry.ScrollbarLeftArrow = constants.CharTriangleLeft
+		styleEntry.ScrollbarRightArrow = constants.CharTriangleRight
 		styleEntry.ProgressBarBackgroundPattern = constants.CharBlockSparce
 		styleEntry.ProgressBarForegroundPattern = constants.CharBlockSolid
 		styleEntry.TextForegroundColor = constants.AnsiColorByIndex[15]
@@ -147,9 +155,13 @@ func NewTuiStyleEntry(existingStyleEntry ...*TuiStyleEntryType) TuiStyleEntryTyp
 		styleEntry.CheckboxBackgroundColor = constants.AnsiColorByIndex[0]
 		styleEntry.CheckboxSelectedCharacter = constants.CharUncheckedBox
 		styleEntry.CheckboxUnselectedCharacter = constants.CharCheckedBox
-		styleEntry.ScrollBarForegroundColor = constants.AnsiColorByIndex[15]
-		styleEntry.ScrollBarBackgroundColor = constants.AnsiColorByIndex[0]
-		styleEntry.ScrollBarHandleColor = constants.AnsiColorByIndex[15]
+		styleEntry.RadioButtonForegroundColor = constants.AnsiColorByIndex[15]
+		styleEntry.RadioButtonBackgroundColor = constants.AnsiColorByIndex[0]
+		styleEntry.RadioButtonSelectedCharacter = constants.CharUncheckedRadioButton
+		styleEntry.RadioButtonUnselectedCharacter = constants.CharCheckedRadioButton
+		styleEntry.ScrollbarForegroundColor = constants.AnsiColorByIndex[15]
+		styleEntry.ScrollbarBackgroundColor = constants.AnsiColorByIndex[0]
+		styleEntry.ScrollbarHandleColor = constants.AnsiColorByIndex[15]
 		styleEntry.CursorForegroundColor = constants.AnsiColorByIndex[0]
 		styleEntry.CursorBackgroundColor = constants.AnsiColorByIndex[15]
 		styleEntry.SelectorForegroundColor = constants.AnsiColorByIndex[15]

@@ -15,30 +15,54 @@ type TextboxInstanceType struct {
 	textboxAlias string
 }
 
-func (shared *TextboxInstanceType) setText(text string) bool {
-	textData := strings.Split(text, "\n")
-	textboxEntry := memory.TextboxMemory[shared.layerAlias][shared.textboxAlias]
-	for _, text := range textData {
-		textboxEntry.TextData = append(textboxEntry.TextData, stringformat.GetRunesFromString(text))
+type textboxType struct {}
+var textbox textboxType
+
+/*
+setText allows you to set the text for a textbox. If the textbox instance
+no longer exists, then no operation takes place. In addition, the following
+information should be noted:
+
+- Text can be broke up into multiple lines by using the '\n' escape sequence.
+*/
+func (shared *TextboxInstanceType) setText(text string) {
+	if memory.IsTextboxExists(shared.layerAlias, shared.textboxAlias) {
+		textData := strings.Split(text, "\n")
+		textboxEntry := memory.TextboxMemory[shared.layerAlias][shared.textboxAlias]
+		for _, text := range textData {
+			textboxEntry.TextData = append(textboxEntry.TextData, stringformat.GetRunesFromString(text))
+		}
+		textbox.setTextboxMaxScrollBarValues(shared.layerAlias, shared.textboxAlias)
 	}
-	SetTextboxMaxScrollBarValues(shared.layerAlias, shared.textboxAlias)
-	return false
 }
 
-func (shared *TextboxInstanceType) setViewport(xLocation int, yLocation int) bool {
-	textboxEntry := memory.TextboxMemory[shared.layerAlias][shared.textboxAlias]
-	textboxEntry.ViewportXLocation = xLocation
-	textboxEntry.ViewportYLocation = yLocation
-	return false
+/*
+setViewport allows you to set the current viewport for a textbox. If the textbox instance
+no longer exists, then no operation takes place.
+*/
+func (shared *TextboxInstanceType) setViewport(xLocation int, yLocation int){
+	if memory.IsTextboxExists(shared.layerAlias, shared.textboxAlias) {
+		textboxEntry := memory.TextboxMemory[shared.layerAlias][shared.textboxAlias]
+		textboxEntry.ViewportXLocation = xLocation
+		textboxEntry.ViewportYLocation = yLocation
+	}
 }
 
-func getTextboxClickCoordinates(cellId int, tableWidth int) (int, int){
+/*
+getTextboxClickCoordinates allows you to obtain an xLocation and yLocations from a single number given
+a specified table width.
+*/
+func (shared *textboxType) getTextboxClickCoordinates(cellId int, tableWidth int) (int, int){
 	xLocation := cellId % tableWidth
 	yLocation := math.Floor(float64(cellId) / float64(tableWidth))
 	return xLocation, int(yLocation)
 }
 
-func insertCharacterUsingRelativeCoordinates(textboxEntry *memory.TextboxEntryType, xLocation int, yLocation int, characterToInsert rune){
+/*
+insertCharacterUsingAbsoluteCoordinates allows you to insert characters into your textbox at any absolute location
+value specified.
+*/
+func (shared *textboxType) insertCharacterUsingAbsoluteCoordinates(textboxEntry *memory.TextboxEntryType, xLocation int, yLocation int, characterToInsert rune){
 	stringDataSuffixAfterInsert := textboxEntry.TextData[yLocation][xLocation:len(textboxEntry.TextData[yLocation])]
 	textboxEntry.TextData[yLocation] = append([]rune{}, textboxEntry.TextData[yLocation][:xLocation]...)
 	textboxEntry.TextData[yLocation] = append(textboxEntry.TextData[yLocation][:xLocation], characterToInsert)
@@ -46,23 +70,32 @@ func insertCharacterUsingRelativeCoordinates(textboxEntry *memory.TextboxEntryTy
 	textboxEntry.CursorXLocation++
 }
 
-func backspaceCharacterUsingRelativeCoordinates(textboxEntry *memory.TextboxEntryType) {
+/*
+backspaceCharacterUsingRelativeCoordinates allows you to backspace a single character using the relative
+cursor coordinates of a text box. If the cursor location is at the begining of a line, then all text after
+the cursor is moved to the previous line.
+*/
+func (shared *textboxType) backspaceCharacterUsingRelativeCoordinates(textboxEntry *memory.TextboxEntryType) {
 	// If nothing left to backspace, do nothing.
 	if textboxEntry.CursorXLocation == 0 && textboxEntry.CursorYLocation == 0 {
 		return
 	} else if textboxEntry.CursorXLocation == 0 {
 		// If at the beginning of a line, move cursor the previous line ending.
 		textboxEntry.CursorXLocation = len(textboxEntry.TextData[textboxEntry.CursorYLocation - 1]) - 1
-		moveRemainingTextToPreviousLine(textboxEntry, textboxEntry.CursorYLocation)
+		shared.moveRemainingTextToPreviousLine(textboxEntry, textboxEntry.CursorYLocation)
 		textboxEntry.CursorYLocation--
 		return
 	}
 	// Otherwise, just backspace a single character.
 	textboxEntry.CursorXLocation--
-	deleteCharacterUsingRelativeCoordinates(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
+	shared.deleteCharacterUsingAbsoluteCoordinates(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
 }
 
-func deleteCharacterUsingRelativeCoordinates(textboxEntry *memory.TextboxEntryType, xLocation int, yLocation int){
+/*
+deleteCharacterUsingAbsoluteCoordinates allows you to delete characters using the absolute coordinates given for a textbox.
+If no more text can be found on a line, then the previous line is moved to the current line.
+*/
+func (shared *textboxType) deleteCharacterUsingAbsoluteCoordinates(textboxEntry *memory.TextboxEntryType, xLocation int, yLocation int){
 	// If cursor yLocation is out of bounds, do nothing.
 	if yLocation >= len(textboxEntry.TextData){
 		return
@@ -84,22 +117,30 @@ func deleteCharacterUsingRelativeCoordinates(textboxEntry *memory.TextboxEntryTy
 	textboxEntry.TextData[yLocation] = append(textboxEntry.TextData[yLocation], stringDataSuffixAfterInsert...)
 }
 
-func moveRemainingTextToPreviousLine(textboxEntry *memory.TextboxEntryType, yLocation int) {
+/*
+moveRemainingTextToPreviousLine allows you to move a block of text on a given line to the previous line before it.
+*/
+func (shared *textboxType) moveRemainingTextToPreviousLine(textboxEntry *memory.TextboxEntryType, yLocation int) {
 	// If the only row of text or the cursor yLocation is out of bounds, then exit.
 	if len(textboxEntry.TextData) == 1 || yLocation >= len(textboxEntry.TextData) {
 		return
 	}
 	textboxEntry.TextData[yLocation - 1] = textboxEntry.TextData[yLocation - 1][:len(textboxEntry.TextData[yLocation - 1]) - 1]
 	textboxEntry.TextData[yLocation - 1] = append(textboxEntry.TextData[yLocation - 1], textboxEntry.TextData[yLocation]...)
-	textboxEntry.TextData = removeLine(textboxEntry.TextData, yLocation)
+	textboxEntry.TextData = shared.removeLine(textboxEntry.TextData, yLocation)
 }
 
-func removeLine(textData [][]rune, index int) [][]rune{
+/*
+removeLine allows you to remove an arbitrary line from a textbox.
+*/
+func (shared *textboxType) removeLine(textData [][]rune, index int) [][]rune{
 	return append(textData[:index], textData[index+1:]...)
 }
 
-
-func insertLine(textData [][]rune, lineData []rune, index int) [][]rune {
+/*
+insertLine allows you to insert an arbitrary blank line for a textbox.
+*/
+func (shared *textboxType) insertLine(textData [][]rune, lineData []rune, index int) [][]rune {
 	// If the index provided is inbounds, insert the line data accordingly.
 	if index < len(textData) {
 		textData = append(textData[:index+1], textData[index:]...)
@@ -111,9 +152,12 @@ func insertLine(textData [][]rune, lineData []rune, index int) [][]rune {
 	return textData
 }
 
-func insertLineUsingRelativeCoordinates(textboxEntry *memory.TextboxEntryType, yLocation int){
+/*
+moveTextAfterCursorToNextLine allows you to move text after your cursor to a new line underneath it.
+*/
+func (shared *textboxType) moveTextAfterCursorToNextLine(textboxEntry *memory.TextboxEntryType, yLocation int){
 	// Create a new line with our default ' ' rune.
-	textboxEntry.TextData = insertLine(textboxEntry.TextData, []rune{' '}, yLocation+1)
+	textboxEntry.TextData = shared.insertLine(textboxEntry.TextData, []rune{' '}, yLocation+1)
 	// Copy everything past our cursor on the current line.
 	charactersToCopy := textboxEntry.TextData[textboxEntry.CursorYLocation][textboxEntry.CursorXLocation:]
 	copyOfCharacters := make([]rune, len(textboxEntry.TextData[textboxEntry.CursorYLocation][textboxEntry.CursorXLocation:]))
@@ -127,17 +171,24 @@ func insertLineUsingRelativeCoordinates(textboxEntry *memory.TextboxEntryType, y
 	copy(textboxEntry.TextData[textboxEntry.CursorYLocation], copyOfCharacters)
 }
 
-func updateScrollbarBasedOnTextboxViewport(layerAlias string, textboxAlias string) {
+/*
+updateScrollbarBasedOnTextboxViewport allows you to update a textboxes scroll bars depending on the current
+viewport value it has.
+*/
+func (shared *textboxType) updateScrollbarBasedOnTextboxViewport(layerAlias string, textboxAlias string) {
 	textboxEntry := memory.GetTextbox(layerAlias, textboxAlias)
-	horizontalScrollbarEntry := memory.GetScrollBar(layerAlias, textboxEntry.HorizontalScrollbarAlias)
+	horizontalScrollbarEntry := memory.GetScrollbar(layerAlias, textboxEntry.HorizontalScrollbarAlias)
 	horizontalScrollbarEntry.ScrollValue = textboxEntry.ViewportXLocation
-	computeScrollBarHandlePositionByScrollValue(layerAlias, textboxEntry.HorizontalScrollbarAlias)
-	verticalScrollbarEntry := memory.GetScrollBar(layerAlias, textboxEntry.VerticalScrollbarAlias)
+	scrollbar.computeScrollbarHandlePositionByScrollValue(layerAlias, textboxEntry.HorizontalScrollbarAlias)
+	verticalScrollbarEntry := memory.GetScrollbar(layerAlias, textboxEntry.VerticalScrollbarAlias)
 	verticalScrollbarEntry.ScrollValue = textboxEntry.ViewportYLocation
-	computeScrollBarHandlePositionByScrollValue(layerAlias, textboxEntry.VerticalScrollbarAlias)
+	scrollbar.computeScrollbarHandlePositionByScrollValue(layerAlias, textboxEntry.VerticalScrollbarAlias)
 }
 
-func getMaxHorizontalTextValue(layerAlias string, textboxAlias string) int {
+/*
+getMaxHorizontalTextValue returns the maximum line length of any single line of text in your textbox.
+*/
+func (shared *textboxType) getMaxHorizontalTextValue(layerAlias string, textboxAlias string) int {
 	textboxEntry := memory.TextboxMemory[layerAlias][textboxAlias]
 	maxHorizontalValue := 0
 	for _, currentLine := range textboxEntry.TextData {
@@ -150,12 +201,16 @@ func getMaxHorizontalTextValue(layerAlias string, textboxAlias string) int {
 	return maxHorizontalValue
 }
 
-func SetTextboxMaxScrollBarValues(layerAlias string, textboxAlias string) {
+/*
+setTextboxMaxScrollBarValues allows you to set the maximum scroll values for your scollbars which reflect
+the actual dimensions of the text within your textbox.
+*/
+func (shared *textboxType) setTextboxMaxScrollBarValues(layerAlias string, textboxAlias string) {
 	textboxEntry := memory.TextboxMemory[layerAlias][textboxAlias]
 	maxVerticalValue := len(textboxEntry.TextData)
-	maxHorizontalValue := getMaxHorizontalTextValue(layerAlias, textboxAlias)
-	hScrollBarEntry := memory.GetScrollBar(layerAlias, textboxEntry.HorizontalScrollbarAlias)
-	vScrollBarEntry := memory.GetScrollBar(layerAlias, textboxEntry.VerticalScrollbarAlias)
+	maxHorizontalValue := shared.getMaxHorizontalTextValue(layerAlias, textboxAlias)
+	hScrollBarEntry := memory.GetScrollbar(layerAlias, textboxEntry.HorizontalScrollbarAlias)
+	vScrollBarEntry := memory.GetScrollbar(layerAlias, textboxEntry.VerticalScrollbarAlias)
 	maxHorizontalValue = maxHorizontalValue - textboxEntry.Width
 	// If the max horizontal width is smaller than the textbox width, disable scrolling.
 	if maxHorizontalValue <= 0 {
@@ -180,7 +235,21 @@ func SetTextboxMaxScrollBarValues(layerAlias string, textboxAlias string) {
 	vScrollBarEntry.MaxScrollValue = maxVerticalValue
 }
 
-func AddTextbox(layerAlias string, textboxAlias string, styleEntry memory.TuiStyleEntryType, xLocation int, yLocation int, width int, height int, isBorderDrawn bool) TextboxInstanceType {
+/*
+AddTextbox allows you to add a text box to a text layer. Once called, an instance of your control is
+returned which will allow you to read or manipulate the properties for it. The Style of the text box
+will be determined by the style entry passed in. If you wish to remove a text box from a text
+layer, simply call 'DeleteTextBox'. In addition, the following information should be noted:
+
+- Text boxes are not drawn physically to the text layer provided. Instead
+they are rendered to the terminal at the same time when the text layer is
+rendered. This allows you to create text boxes without actually overwriting
+the text layer data under it.
+
+- If the text box to be drawn falls outside the range of the provided layer,
+then only the visible portion of the text box will be drawn.
+*/
+func (shared *textboxType) AddTextbox(layerAlias string, textboxAlias string, styleEntry memory.TuiStyleEntryType, xLocation int, yLocation int, width int, height int, isBorderDrawn bool) TextboxInstanceType {
 	memory.AddTextbox(layerAlias, textboxAlias, styleEntry, xLocation, yLocation, width, height, isBorderDrawn)
 	textboxEntry := memory.GetTextbox(layerAlias, textboxAlias)
 	textboxEntry.HorizontalScrollbarAlias = stringformat.GetLastSortedUUID()
@@ -199,27 +268,49 @@ func AddTextbox(layerAlias string, textboxAlias string, styleEntry memory.TuiSty
 		hScrollbarWidth = hScrollbarWidth + 2
 		vScrollbarHeight = vScrollbarHeight + 2
 	}
-	memory.AddScrollBar(layerAlias, textboxEntry.HorizontalScrollbarAlias, styleEntry, hScrollbarXLocation, hScrollbarYLocation, hScrollbarWidth, 0, 0, 1, true)
-	memory.AddScrollBar(layerAlias, textboxEntry.VerticalScrollbarAlias, styleEntry, vScrollbarXLocation, vScrollbarYLocation, vScrollbarHeight, 0, 0, 1, false)
+	memory.AddScrollbar(layerAlias, textboxEntry.HorizontalScrollbarAlias, styleEntry, hScrollbarXLocation, hScrollbarYLocation, hScrollbarWidth, 0, 0, 1, true)
+	memory.AddScrollbar(layerAlias, textboxEntry.VerticalScrollbarAlias, styleEntry, vScrollbarXLocation, vScrollbarYLocation, vScrollbarHeight, 0, 0, 1, false)
 	var textboxInstance TextboxInstanceType
 	textboxInstance.layerAlias = layerAlias
 	textboxInstance.textboxAlias = textboxAlias
 	return textboxInstance
 }
 
-func DeleteTextbox(layerAlias string, textboxAlias string) {
+/*
+DeleteTextbox allows you to remove a text box from a text layer. In addition,
+the following information should be noted:
+
+- If you attempt to delete a text box which does not exist, then the request
+will simply be ignored.
+*/
+func (shared *textboxType) DeleteTextbox(layerAlias string, textboxAlias string) {
 	memory.DeleteTextbox(layerAlias, textboxAlias)
 }
 
-
-func drawTextboxesOnLayer(layerEntry memory.LayerEntryType) {
+/*
+drawTextboxesOnLayer allows you to draw all text boxes on a given text layer.
+*/
+func (shared *textboxType) drawTextboxesOnLayer(layerEntry memory.LayerEntryType) {
 	layerAlias := layerEntry.LayerAlias
 	for currentKey := range memory.TextboxMemory[layerAlias] {
-		drawTextbox(&layerEntry, currentKey)
+		shared.drawTextbox(&layerEntry, currentKey)
 	}
 }
 
-func drawTextbox (layerEntry *memory.LayerEntryType, textboxAlias string) {
+/*
+drawTextbox allows you to draw a text box on a given text layer. The
+Style of the text box will be determined by the style entry passed in. In
+addition, the following information should be noted:
+
+- Text box are not drawn physically to the text layer provided. Instead,
+they are rendered to the terminal at the same time when the text layer is
+rendered. This allows you to create text box without actually overwriting
+the text layer data under it.
+
+- If the text box to be drawn falls outside the range of the provided layer,
+then only the visible portion of the text box will be drawn.
+*/
+func (shared *textboxType) drawTextbox (layerEntry *memory.LayerEntryType, textboxAlias string) {
 	t := memory.GetTextbox(layerEntry.LayerAlias, textboxAlias)
 	attributeEntry := memory.NewAttributeEntry()
 	attributeEntry.ForegroundColor = t.StyleEntry.TextboxForegroundColor
@@ -248,17 +339,20 @@ func drawTextbox (layerEntry *memory.LayerEntryType, textboxAlias string) {
 			}
 			//arrayOfRunes = stringformat.GetFormattedRuneArray(arrayOfRunes, t.Width, constants.AlignmentLeft)
 			arrayOfRunes = stringformat.GetMaxCharactersThatFitInStringSize(arrayOfRunes, t.Width)
-			printControlText(layerEntry, textboxAlias, t.StyleEntry, attributeEntry, t.XLocation, t.YLocation + currentLine, arrayOfRunes, t.ViewportYLocation + currentLine, t.ViewportXLocation, t.CursorXLocation, t.CursorYLocation)
+			shared.printControlText(layerEntry, textboxAlias, t.StyleEntry, attributeEntry, t.XLocation, t.YLocation + currentLine, arrayOfRunes, t.ViewportYLocation + currentLine, t.ViewportXLocation, t.CursorXLocation, t.CursorYLocation)
 		} else {
 			// If scrolled too far down and there are no more rows to print, just show blanks.
 			// If scrolled too far up and there are no rows to print, just print blanks. Note: This case should never happen really.
 			//arrayOfRunes = stringformat.GetFormattedRuneArray([]rune{}, t.Width, constants.AlignmentLeft)
-			printControlText(layerEntry, textboxAlias, t.StyleEntry, attributeEntry, t.XLocation, t.YLocation + currentLine, arrayOfRunes,  t.ViewportYLocation + currentLine, t.ViewportXLocation, t.CursorXLocation, t.CursorYLocation)
+			shared.printControlText(layerEntry, textboxAlias, t.StyleEntry, attributeEntry, t.XLocation, t.YLocation + currentLine, arrayOfRunes,  t.ViewportYLocation + currentLine, t.ViewportXLocation, t.CursorXLocation, t.CursorYLocation)
 		}
 	}
 }
 
-func printControlText(layerEntry *memory.LayerEntryType, textboxAlias string, styleEntry memory.TuiStyleEntryType, attributeEntry memory.AttributeEntryType, xLocation int, yLocation int, arrayOfRunes []rune, controlYLocation int, startingControlId int, cursorXLocation int, cursorYLocation int) {
+/*
+printControlText allows you to print some text with control IDs written to each character printed.
+*/
+func (shared *textboxType) printControlText(layerEntry *memory.LayerEntryType, textboxAlias string, styleEntry memory.TuiStyleEntryType, attributeEntry memory.AttributeEntryType, xLocation int, yLocation int, arrayOfRunes []rune, controlYLocation int, startingControlId int, cursorXLocation int, cursorYLocation int) {
 	currentControlId := startingControlId
 	currentXOffset := 0
 	for _, currentCharacter := range arrayOfRunes {
@@ -288,7 +382,10 @@ func printControlText(layerEntry *memory.LayerEntryType, textboxAlias string, st
 	}
 }
 
-func updateCursor(textboxEntry *memory.TextboxEntryType, xLocation int, yLocation int) {
+/*
+updateCursor allows you to update the textbox cursor, making sure that any values passed in are valid or not.
+*/
+func (shared *textboxType) updateCursor(textboxEntry *memory.TextboxEntryType, xLocation int, yLocation int) {
 	textboxEntry.CursorXLocation = xLocation
 	textboxEntry.CursorYLocation = yLocation
 	// If yLocation is less than text data bounds.
@@ -309,7 +406,10 @@ func updateCursor(textboxEntry *memory.TextboxEntryType, xLocation int, yLocatio
 	}
 }
 
-func updateViewport(textboxEntry *memory.TextboxEntryType) {
+/*
+updateViewport allows you to update the viewport position based on the current cursor position.
+*/
+func (shared *textboxType) updateViewport(textboxEntry *memory.TextboxEntryType) {
 	// If cursor yLocation is higher than the viewport window, move the window to make the cursor appear at the end.
 	if textboxEntry.CursorYLocation >= textboxEntry.ViewportYLocation + textboxEntry.Height {
 		textboxEntry.ViewportYLocation = textboxEntry.CursorYLocation - textboxEntry.Height + 1
@@ -356,8 +456,11 @@ func updateViewport(textboxEntry *memory.TextboxEntryType) {
 	}
 }
 
-
-func updateKeyboardEventTextbox(keystroke []rune) bool {
+/*
+updateKeyboardEventTextbox allows you to update the state of all text boxes according to the current keystroke event.
+In the event that a screen update is required this method returns true.
+*/
+func (shared *textboxType) updateKeyboardEventTextbox(keystroke []rune) bool {
 	keystrokeAsString := string(keystroke)
 	isScreenUpdateRequired := true
 	focusedLayerAlias := eventStateMemory.currentlyFocusedControl.layerAlias
@@ -368,68 +471,68 @@ func updateKeyboardEventTextbox(keystroke []rune) bool {
 	}
 	textboxEntry := memory.GetTextbox(focusedLayerAlias, focusedControlAlias)
 	if len(keystroke) == 1 { // If a regular char is entered.
-		insertCharacterUsingRelativeCoordinates(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation, []rune(keystrokeAsString)[0])
-		updateCursor(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
-		updateViewport(textboxEntry)
-		SetTextboxMaxScrollBarValues(focusedLayerAlias, focusedControlAlias)
-		updateScrollbarBasedOnTextboxViewport(focusedLayerAlias, focusedControlAlias)
+		shared.insertCharacterUsingAbsoluteCoordinates(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation, []rune(keystrokeAsString)[0])
+		shared.updateCursor(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
+		shared.updateViewport(textboxEntry)
+		shared.setTextboxMaxScrollBarValues(focusedLayerAlias, focusedControlAlias)
+		shared.updateScrollbarBasedOnTextboxViewport(focusedLayerAlias, focusedControlAlias)
 	}
 	if keystrokeAsString == "delete" {
-		deleteCharacterUsingRelativeCoordinates(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
-		updateCursor(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
-		updateViewport(textboxEntry)
-		SetTextboxMaxScrollBarValues(focusedLayerAlias, focusedControlAlias)
-		updateScrollbarBasedOnTextboxViewport(focusedLayerAlias, focusedControlAlias)
+		shared.deleteCharacterUsingAbsoluteCoordinates(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
+		shared.updateCursor(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
+		shared.updateViewport(textboxEntry)
+		shared.setTextboxMaxScrollBarValues(focusedLayerAlias, focusedControlAlias)
+		shared.updateScrollbarBasedOnTextboxViewport(focusedLayerAlias, focusedControlAlias)
 	}
 	if keystrokeAsString == "enter" {
-		insertLineUsingRelativeCoordinates(textboxEntry, textboxEntry.CursorYLocation)
-		updateCursor(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
-		updateViewport(textboxEntry)
-		SetTextboxMaxScrollBarValues(focusedLayerAlias, focusedControlAlias)
-		updateScrollbarBasedOnTextboxViewport(focusedLayerAlias, focusedControlAlias)
+		shared.moveTextAfterCursorToNextLine(textboxEntry, textboxEntry.CursorYLocation)
+		shared.updateCursor(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
+		shared.updateViewport(textboxEntry)
+		shared.setTextboxMaxScrollBarValues(focusedLayerAlias, focusedControlAlias)
+		shared.updateScrollbarBasedOnTextboxViewport(focusedLayerAlias, focusedControlAlias)
 	}
 	if keystrokeAsString == "home" {
 		textboxEntry.CursorXLocation = 0
-		updateCursor(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
-		updateViewport(textboxEntry)
-		SetTextboxMaxScrollBarValues(focusedLayerAlias, focusedControlAlias)
-		updateScrollbarBasedOnTextboxViewport(focusedLayerAlias, focusedControlAlias)
+		shared.updateCursor(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
+		shared.updateViewport(textboxEntry)
+		shared.setTextboxMaxScrollBarValues(focusedLayerAlias, focusedControlAlias)
+		shared.updateScrollbarBasedOnTextboxViewport(focusedLayerAlias, focusedControlAlias)
 	}
 	if keystrokeAsString == "end" {
 		textboxEntry.CursorXLocation = len(textboxEntry.TextData[textboxEntry.CursorYLocation])
-		updateCursor(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
-		updateViewport(textboxEntry)
-		SetTextboxMaxScrollBarValues(focusedLayerAlias, focusedControlAlias)
-		updateScrollbarBasedOnTextboxViewport(focusedLayerAlias, focusedControlAlias)
+		shared.updateCursor(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
+		shared.updateViewport(textboxEntry)
+		shared.setTextboxMaxScrollBarValues(focusedLayerAlias, focusedControlAlias)
+		shared.updateScrollbarBasedOnTextboxViewport(focusedLayerAlias, focusedControlAlias)
 	}
 	if keystrokeAsString == "pgup" {
 		textboxEntry.CursorYLocation = textboxEntry.CursorYLocation - textboxEntry.Width
-		updateCursor(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
-		updateViewport(textboxEntry)
-		SetTextboxMaxScrollBarValues(focusedLayerAlias, focusedControlAlias)
-		updateScrollbarBasedOnTextboxViewport(focusedLayerAlias, focusedControlAlias)
+		shared.updateCursor(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
+		shared.updateViewport(textboxEntry)
+		shared.setTextboxMaxScrollBarValues(focusedLayerAlias, focusedControlAlias)
+		shared.updateScrollbarBasedOnTextboxViewport(focusedLayerAlias, focusedControlAlias)
 	}
 	if keystrokeAsString == "pgdn" {
 		textboxEntry.CursorYLocation = textboxEntry.CursorYLocation + textboxEntry.Width
-		updateCursor(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
-		updateViewport(textboxEntry)
-		SetTextboxMaxScrollBarValues(focusedLayerAlias, focusedControlAlias)
-		updateScrollbarBasedOnTextboxViewport(focusedLayerAlias, focusedControlAlias)
+		shared.updateCursor(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
+		shared.updateViewport(textboxEntry)
+		shared.setTextboxMaxScrollBarValues(focusedLayerAlias, focusedControlAlias)
+		shared.updateScrollbarBasedOnTextboxViewport(focusedLayerAlias, focusedControlAlias)
 	}
 	if keystrokeAsString == "backspace" || keystrokeAsString == "backspace2" {
-		updateCursor(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
-		backspaceCharacterUsingRelativeCoordinates(textboxEntry)
-		updateCursor(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
-		updateViewport(textboxEntry)
-		SetTextboxMaxScrollBarValues(focusedLayerAlias, focusedControlAlias)
-		updateScrollbarBasedOnTextboxViewport(focusedLayerAlias, focusedControlAlias)
+		shared.updateCursor(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
+		shared.backspaceCharacterUsingRelativeCoordinates(textboxEntry)
+		shared.updateCursor(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
+		shared.updateViewport(textboxEntry)
+		shared.setTextboxMaxScrollBarValues(focusedLayerAlias, focusedControlAlias)
+		shared.updateScrollbarBasedOnTextboxViewport(focusedLayerAlias, focusedControlAlias)
 	}
 	if keystrokeAsString == "left" {
 		textboxEntry.CursorXLocation--
-		updateCursor(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
-		updateViewport(textboxEntry)
-		SetTextboxMaxScrollBarValues(focusedLayerAlias, focusedControlAlias)
-		updateScrollbarBasedOnTextboxViewport(focusedLayerAlias, focusedControlAlias)
+		shared.updateCursor(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
+		shared.updateViewport(textboxEntry)
+		shared.setTextboxMaxScrollBarValues(focusedLayerAlias, focusedControlAlias)
+		shared.updateScrollbarBasedOnTextboxViewport(focusedLayerAlias, focusedControlAlias)
 	}
 	if keystrokeAsString == "right" {
 		textboxEntry.CursorXLocation++
@@ -439,55 +542,59 @@ func updateKeyboardEventTextbox(keystroke []rune) bool {
 		if textboxEntry.CursorXLocation >= len(textboxEntry.TextData[textboxEntry.CursorYLocation]) {
 			textboxEntry.CursorXLocation = len(textboxEntry.TextData[textboxEntry.CursorYLocation])
 		}
-		updateCursor(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
-		updateViewport(textboxEntry)
-		SetTextboxMaxScrollBarValues(focusedLayerAlias, focusedControlAlias)
-		updateScrollbarBasedOnTextboxViewport(focusedLayerAlias, focusedControlAlias)
+		shared.updateCursor(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
+		shared.updateViewport(textboxEntry)
+		shared.setTextboxMaxScrollBarValues(focusedLayerAlias, focusedControlAlias)
+		shared.updateScrollbarBasedOnTextboxViewport(focusedLayerAlias, focusedControlAlias)
 	}
 	if keystrokeAsString == "up" {
 		textboxEntry.CursorYLocation--
 		if textboxEntry.CursorYLocation < 0 {
 			textboxEntry.CursorYLocation = 0
 		}
-		updateCursor(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
-		updateViewport(textboxEntry)
-		updateScrollbarBasedOnTextboxViewport(focusedLayerAlias, focusedControlAlias)
+		shared.updateCursor(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
+		shared.updateViewport(textboxEntry)
+		shared.updateScrollbarBasedOnTextboxViewport(focusedLayerAlias, focusedControlAlias)
 	}
 	if keystrokeAsString == "down" {
 		textboxEntry.CursorYLocation++
 		if textboxEntry.CursorYLocation >= len(textboxEntry.TextData) {
 			textboxEntry.CursorYLocation = len(textboxEntry.TextData) - 1
 		}
-		updateCursor(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
-		updateViewport(textboxEntry)
-		updateScrollbarBasedOnTextboxViewport(focusedLayerAlias, focusedControlAlias)
+		shared.updateCursor(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
+		shared.updateViewport(textboxEntry)
+		shared.updateScrollbarBasedOnTextboxViewport(focusedLayerAlias, focusedControlAlias)
 	}
 	return isScreenUpdateRequired
 }
 
-func updateMouseEventTextbox() bool {
+/*
+updateMouseEventTextbox allows you to update the state of all text boxes according to the current mouse event state.
+In the event that a screen update is required this method returns true.
+*/
+func (shared *textboxType) updateMouseEventTextbox() bool {
 	isUpdateRequired := false
 	mouseXLocation, mouseYLocation, buttonPressed, _ := memory.GetMouseStatus()
 	characterEntry := getCellInformationUnderMouseCursor(mouseXLocation, mouseYLocation)
 	layerAlias := characterEntry.LayerAlias
 	// If your clicking on a text box and not in the drag and drop event state.
-	if buttonPressed != 0 && characterEntry.AttributeEntry.CellType == constants.CellTypeTextbox && eventStateMemory.stateId != constants.EventStateDragAndDropScrollBar {
+	if buttonPressed != 0 && characterEntry.AttributeEntry.CellType == constants.CellTypeTextbox && eventStateMemory.stateId != constants.EventStateDragAndDropScrollbar {
 		textboxEntry := memory.GetTextbox(layerAlias, characterEntry.AttributeEntry.CellControlAlias)
-		updateCursor(textboxEntry, characterEntry.AttributeEntry.CellControlId, characterEntry.AttributeEntry.CellControlLocation)
-		updateViewport(textboxEntry)
-		SetTextboxMaxScrollBarValues(layerAlias, characterEntry.AttributeEntry.CellControlAlias)
-		updateScrollbarBasedOnTextboxViewport(layerAlias, characterEntry.AttributeEntry.CellControlAlias)
+		shared.updateCursor(textboxEntry, characterEntry.AttributeEntry.CellControlId, characterEntry.AttributeEntry.CellControlLocation)
+		shared.updateViewport(textboxEntry)
+		shared.setTextboxMaxScrollBarValues(layerAlias, characterEntry.AttributeEntry.CellControlAlias)
+		shared.updateScrollbarBasedOnTextboxViewport(layerAlias, characterEntry.AttributeEntry.CellControlAlias)
 		setFocusedControl(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias, characterEntry.AttributeEntry.CellType)
 		isUpdateRequired = true
 	}
 	// If you are dragging and dropping, then update the scroll bars as needed.
-	if buttonPressed != 0 && (eventStateMemory.stateId == constants.EventStateDragAndDropScrollBar ||
-		characterEntry.AttributeEntry.CellType == constants.CellTypeScrollBar) {
+	if buttonPressed != 0 && (eventStateMemory.stateId == constants.EventStateDragAndDropScrollbar ||
+		characterEntry.AttributeEntry.CellType == constants.CellTypeScrollbar) {
 			isMatchFound := false
 			for currentKey := range memory.TextboxMemory[layerAlias] {
 				textboxEntry := memory.GetTextbox(layerAlias, currentKey)
-				hScrollBarEntry := memory.GetScrollBar(layerAlias, textboxEntry.HorizontalScrollbarAlias)
-				vScrollBarEntry := memory.GetScrollBar(layerAlias, textboxEntry.VerticalScrollbarAlias)
+				hScrollBarEntry := memory.GetScrollbar(layerAlias, textboxEntry.HorizontalScrollbarAlias)
+				vScrollBarEntry := memory.GetScrollbar(layerAlias, textboxEntry.VerticalScrollbarAlias)
 				if textboxEntry.ViewportXLocation != hScrollBarEntry.ScrollValue {
 					textboxEntry.ViewportXLocation = hScrollBarEntry.ScrollValue
 					isUpdateRequired = true
@@ -496,8 +603,8 @@ func updateMouseEventTextbox() bool {
 					textboxEntry.ViewportYLocation = vScrollBarEntry.ScrollValue
 					isUpdateRequired = true
 				}
-				if isControlCurrentlyFocused(layerAlias, textboxEntry.HorizontalScrollbarAlias, constants.CellTypeScrollBar) ||
-					isControlCurrentlyFocused(layerAlias, textboxEntry.VerticalScrollbarAlias, constants.CellTypeScrollBar) {
+				if isControlCurrentlyFocused(layerAlias, textboxEntry.HorizontalScrollbarAlias, constants.CellTypeScrollbar) ||
+					isControlCurrentlyFocused(layerAlias, textboxEntry.VerticalScrollbarAlias, constants.CellTypeScrollbar) {
 					isMatchFound = true
 					break; // If the current scrollbar being dragged and dropped matches, don't process more dropdowns.
 				}

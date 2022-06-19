@@ -35,6 +35,13 @@ func GetButton(layerAlias string, buttonAlias string) *ButtonEntryType {
 	return ButtonMemory[layerAlias][buttonAlias]
 }
 
+func IsButtonExists(layerAlias string, buttonAlias string) bool {
+	if ButtonMemory[layerAlias][buttonAlias] == nil {
+		return false
+	}
+	return true
+}
+
 func DeleteButton(layerAlias string, buttonAlias string) {
 	delete(ButtonMemory[layerAlias], buttonAlias)
 }

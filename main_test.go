@@ -10,17 +10,59 @@ import (
 )
 
 func TestMainStub(test *testing.T) {
+	//testRadioButtons()
 	//testTextboxes()
 	//testCheckboxes()
 	//testDropdown()
 	//testScrollBars()
-	//testSelector()
-	testTextField()
+	testSelector()
+	//testTextField()
 	//testWindowMovement()
 	//testButtonPressAction()
 	RestoreTerminalSettings()
 }
+func testRadioButtons() {
+	commonResource.isDebugEnabled = false
+	layerAlias1 := "Layer1"
+	layerAlias2 := "Layer2"
+	InitializeTerminal(80, 40)
+	AddLayer(layerAlias1, 0, 0, 80, 40, 1, "")
+	AddLayer(layerAlias2, 20, 15, 40, 20, 1, layerAlias1)
+	Layer(layerAlias1)
+	ColorRGB(255,0,0,0,0,0)
+	FillLayer(layerAlias1, "#")
+	FillLayer(layerAlias2, "@")
+	Locate(0,0)
 
+	Print("Enable ☑ Enable ○ ● (U+25CB, U+25CF) ▾☒♪")
+	styleEntry := memory.NewTuiStyleEntry()
+	styleEntry.SelectorTextAlignment = 0
+	radioButton.AddRadioButton(layerAlias1, "radiobutton1", "Enable 文字 Feature 1", styleEntry, 2, 2, 0, true)
+	radioButton.AddRadioButton(layerAlias1, "radiobutton2", "Enable 文字 Feature 2", styleEntry, 2, 3, 0, false)
+	radioButton.AddRadioButton(layerAlias1, "radiobutton3", "Enable 文字 Feature 3", styleEntry, 2, 4, 0, false)
+
+	radioButton.AddRadioButton(layerAlias1, "radiobutton1.1", "Option 1.1", styleEntry, 2, 6, 1, true)
+	radioButton.AddRadioButton(layerAlias1, "radiobutton2.1", "Option 1.2", styleEntry, 2, 7, 1, false)
+	radioButton.AddRadioButton(layerAlias1, "radiobutton3.1", "Option 1.3", styleEntry, 2, 8, 1, false)
+
+	for {
+		UpdateDisplay()
+		selectedButton := getSelectedRadioButton(layerAlias1, "radiobutton1")
+		Locate(0,0)
+		Print("                                ")
+		Locate(0,0)
+		Print(selectedButton)
+		key := string(Inkey())
+		if key == "w" {
+		}
+		if key == "q" {
+			break
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+	DeleteAllLayers()
+	RestoreTerminalSettings()
+}
 func testTextboxes () {
 	commonResource.isDebugEnabled = false
 	layerAlias1 := "Layer1"
@@ -36,12 +78,12 @@ func testTextboxes () {
 	Print("Enable ☑ Enable ○ ● (U+25CB, U+25CF)")
 	styleEntry := memory.NewTuiStyleEntry()
 	styleEntry.SelectorTextAlignment = 2
-	textBox := AddTextbox(layerAlias1, "textbox1", styleEntry, 2, 2, 20, 5, true)
+	textBox := textbox.AddTextbox(layerAlias1, "textbox1", styleEntry, 2, 2, 20, 5, true)
 	textBox.setText("This is a test 1\nthis is ☑ second line which is very long and big 1\n李克强宣布中国今年经济增长的目标为 third line. 1")
 
-	textBox2 := AddTextbox(layerAlias1, "textbox2", styleEntry, 40, 2, 20, 5, false)
+	textBox2 := textbox.AddTextbox(layerAlias1, "textbox2", styleEntry, 40, 2, 20, 5, false)
 	textBox2.setText("This is a test\nthis is ☑ second line which is very long and big\nthis is 文字 third line.")
-	textBox3 := AddTextbox(layerAlias1, "textbox3", styleEntry, 1, 10, 20, 7, true)
+	textBox3 := textbox.AddTextbox(layerAlias1, "textbox3", styleEntry, 1, 10, 20, 7, true)
 	textBox3.setText("This is a test123456\nThis DDDDtesdfsfsdfsdfsdfsdfsdfsddffdsfdsst123456\nThis is GGGGGst1234\nThis is a ZZZZst123456\nThis is a test123456\nzzzzzzzzz\naaaa\ndddddd\nttttt\n222222\n555555")
 
 	for {
@@ -85,7 +127,7 @@ func testCheckboxes () {
 	Print("Enable ☑ Enable ○ ● (U+25CB, U+25CF) ▾☒♪")
 	styleEntry := memory.NewTuiStyleEntry()
 	styleEntry.SelectorTextAlignment = 0
-	AddCheckbox(layerAlias1, "checkbox1", "Enable 文字 Feature", styleEntry, 2, 2, true)
+	checkbox.AddCheckbox(layerAlias1, "checkbox1", "Enable 文字 Feature", styleEntry, 2, 2, true)
 	for {
 		UpdateDisplay()
 		key := string(Inkey())
@@ -128,14 +170,14 @@ func testDropdown() {
 	selectionEntry2.Add("1", "1")
 	selectionEntry2.Add("2", "2")
 	selectionEntry2.Add("3", "3")
-	AddDropdown(layerAlias1, "myDropdown", styleEntry, selectionEntry, 2, 2, 8, 7, 0)
-	AddDropdown(layerAlias1, "myDropdown2", styleEntry, selectionEntry2, 18, 9, 3, 7, 0)
+	dropdown.AddDropdown(layerAlias1, "myDropdown", styleEntry, selectionEntry, 2, 2, 8, 7, 3)
+	dropdown.AddDropdown(layerAlias1, "myDropdown2", styleEntry, selectionEntry2, 2, 39, 3, 7, 1)
 
-	AddSelector(layerAlias1, "menuBar", styleEntry, selectionEntry, 6, 10, 4, 7, 3, 0, -1, false)
-	AddSelector(layerAlias1, "menuBar2", styleEntry, selectionEntry, 10, 20, 4, 7, 1, 0, -1, false)
+	selector.AddSelector(layerAlias1, "menuBar", styleEntry, selectionEntry, 6, 10, 4, 7, 3, 0, -1, false)
+	selector.AddSelector(layerAlias1, "menuBar2", styleEntry, selectionEntry, 10, 20, 4, 7, 1, 0, -1, false)
 
 	styleEntry.SelectorTextAlignment = constants.AlignmentNoPadding
-	AddSelector(layerAlias1, "menuBar3", styleEntry, selectionEntry, 6, 30, 4, 7, 1, 0, -1, false)
+	selector.AddSelector(layerAlias1, "menuBar3", styleEntry, selectionEntry, 6, 30, 4, 7, 1, 0, -1, false)
 	for {
 		UpdateDisplay()
 		key := string(Inkey())
@@ -174,8 +216,8 @@ func testScrollBars() {
 	selectionEntry.Add("4", "GOTO")
 	selectionEntry.Add("5", "RUN")
 	selectionEntry.Add("6", "DELETE")
-	s1 := AddScrollBar(layerAlias1, "scrollBar1", styleEntry, 2, 2, 8,80,0, 1, false)
-	s2 := AddScrollBar(layerAlias1, "scrollBar2", styleEntry, 10, 5, 8,8,4, 1,true)
+	s1 := scrollbar.AddScrollbar(layerAlias1, "scrollBar1", styleEntry, 2, 2, 8,80,0, 1, false)
+	s2 := scrollbar.AddScrollbar(layerAlias1, "scrollBar2", styleEntry, 10, 5, 8,8,4, 1,true)
 	s1.setScrollValue(4)
 	s2.setHandlePosition(4)
 	for {
@@ -223,8 +265,8 @@ func testSelector() {
 	for i := 0; i < 20; i++ {
 		selectionEntry.Add(strconv.Itoa(i), strconv.Itoa(i))
 	}
-	menuBarInstance := AddSelector(layerAlias1, "menuBar", styleEntry, selectionEntry, 2, 10, 4, 7, 3, 0, -1, false)
-	menuBarInstance2 := AddSelector(layerAlias1, "menuBar2", styleEntry, selectionEntry, 10, 20, 4, 7, 1, 0, -1, false)
+	menuBarInstance := selector.AddSelector(layerAlias1, "menuBar", styleEntry, selectionEntry, 2, 10, 4, 7, 3, 0, -1, false)
+	menuBarInstance2 := selector.AddSelector(layerAlias1, "menuBar2", styleEntry, selectionEntry, 10, 20, 4, 7, 1, 0, -1, false)
 	LocateLayer(layerAlias1, 3, 3)
 	PrintLayer(layerAlias1, menuBarInstance.layerAlias)
 	for {
@@ -255,11 +297,11 @@ func testTextField() {
 	FillLayer(layerAlias1, "#")
 	FillLayer(layerAlias2, "@")
 	styleEntry := memory.NewTuiStyleEntry()
-	textFieldInstance := AddTextField(layerAlias1, "textField", styleEntry, 0, 3, 10, 60, false, "Alex Chang is the man" )
+	textFieldInstance := textField.AddTextField(layerAlias1, "textField", styleEntry, 0, 3, 10, 60, true, "Alex Chang is the man" )
 	LocateLayer(layerAlias1, 3, 20)
 	PrintLayer(layerAlias1, textFieldInstance.GetValue())
 	memory.AddTextField(layerAlias1, "textField2", styleEntry, 0, 5, 15, 30, false, "Test 李克强宣布中国今年经济增长的目 acbc1")
-	memory.AddScrollBar(layerAlias1, "Anything", styleEntry, 0, 8, 10, 10, 0, 1, false)
+	memory.AddScrollbar(layerAlias1, "Anything", styleEntry, 0, 8, 10, 10, 0, 1, false)
 	for {
 		mouseXLocation, mouseYLocation, _, _ := memory.GetMouseStatus()
 		characterEntry := getCellInformationUnderMouseCursor(mouseXLocation, mouseYLocation)
@@ -317,12 +359,22 @@ func testButtonPressAction() {
 	Locate(xLocation, yLocation)
 	Print("This is a test")
 	styleEntry := memory.NewTuiStyleEntry()
-	AddButton(layerAlias1, "button1", "CANCEL", styleEntry, 2, 2, 10, 10)
-	AddButton(layerAlias1, "button2", "OK", styleEntry, 15, 2, 10, 10)
+	button.AddButton(layerAlias1, "button1", "CANCEL", styleEntry, 2, 2, 10, 10)
+	button.AddButton(layerAlias1, "button2", "OK", styleEntry, 15, 2, 10, 10)
 	layerInformation := memory.GetLayer(layerAlias1)
-	drawButtonsOnLayer(*layerInformation)
-	UpdateDisplay()
-	time.Sleep(15000 * time.Millisecond)
+	button.drawButtonsOnLayer(*layerInformation)
+	for {
+		mouseXLocation, mouseYLocation, _, _ := memory.GetMouseStatus()
+		characterEntry := getCellInformationUnderMouseCursor(mouseXLocation, mouseYLocation)
+		Locate(0,0)
+		Print(fmt.Sprintf("%d, %d, %d   ", characterEntry.AttributeEntry.CellType, characterEntry.AttributeEntry.CellControlId, characterEntry.AttributeEntry.CellControlLocation))
+		UpdateDisplay()
+		key := string(Inkey())
+		if key == "q" {
+			break
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
 	DeleteAllLayers()
 	RestoreTerminalSettings()
 }

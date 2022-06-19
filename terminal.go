@@ -51,10 +51,11 @@ func InitializeTerminal(width int, height int) {
 	memory.InitializeTextStyleMemory()
 	memory.InitializeTimerMemory()
 	memory.InitializeSelectorMemory()
-	memory.InitializeScrollBarMemory()
+	memory.InitializeScrollbarMemory()
 	memory.InitializeDropdownMemory()
 	memory.InitializeCheckboxMemory()
 	memory.InitializeTextboxMemory()
+	memory.InitializeRadioButtonMemory()
 	commonResource.terminalWidth = width
 	commonResource.terminalHeight = height
 	commonResource.debugDirectory = "/tmp/"
@@ -114,6 +115,14 @@ func RestoreTerminalSettings() {
 		return
 	}
 	commonResource.screen.Fini()
+}
+
+/*
+GetTerminalSize allows you to obtain width and height of the current terminal
+characters.
+*/
+func GetTerminalSize() (int, int) {
+	return commonResource.screen.Size()
 }
 
 /*
@@ -856,13 +865,14 @@ func renderLayers(rootLayerEntry *memory.LayerEntryType, sortedLayerAliasSlice m
 func renderControls(currentLayerEntry memory.LayerEntryType) {
 	// Order matters as complex controls need to be drawn first above basic controls (so that any
 	// pop up controls appear over complex controls).
-	drawButtonsOnLayer(currentLayerEntry)
-	drawTextFieldOnLayer(currentLayerEntry)
-	drawCheckboxesOnLayer(currentLayerEntry)
-	drawDropdownsOnLayer(currentLayerEntry)
-	drawSelectorsOnLayer(currentLayerEntry)
-	drawScrollBarsOnLayer(currentLayerEntry)
-	drawTextboxesOnLayer(currentLayerEntry)
+	button.drawButtonsOnLayer(currentLayerEntry)
+	textField.drawTextFieldOnLayer(currentLayerEntry)
+	checkbox.drawCheckboxesOnLayer(currentLayerEntry)
+	dropdown.drawDropdownsOnLayer(currentLayerEntry)
+	selector.drawSelectorsOnLayer(currentLayerEntry)
+	scrollbar.drawScrollbarsOnLayer(currentLayerEntry)
+	textbox.drawTextboxesOnLayer(currentLayerEntry)
+	radioButton.drawRadioButtonsOnLayer(currentLayerEntry)
 }
 
 /*

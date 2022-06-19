@@ -3,6 +3,7 @@ package consolizer
 import (
 	"github.com/supercom32/consolizer/constants"
 	"github.com/supercom32/consolizer/internal/memory"
+	"github.com/supercom32/consolizer/internal/stringformat"
 )
 
 type buttonHistoryType struct {
@@ -17,9 +18,12 @@ type ButtonInstanceType struct {
 	buttonAlias string
 }
 
+type buttonType struct {}
+var button buttonType
+
 /*
 IsButtonPressed allows you to detect if any text button was pressed or not. In
-order to obtain the button pressed and clear this state, you must call the
+order to obtain the button pressed and to clear this state, you must call the
 GetButtonPressed method.
 */
 func (shared *ButtonInstanceType) IsButtonPressed() bool {
@@ -50,10 +54,10 @@ func (shared *ButtonInstanceType) GetButtonPressed() (string, string) {
 }
 
 /*
-AddButton allows you to add a button to a text layer. The Style of the button
-will be determined by the style entry passed in. If you wish to remove a
-button from a text layer, simply call 'DeleteButton'. In addition, the
-following information should be noted:
+AddButton allows you to add a button to a text layer. Once called, an instance of your control is
+returned which will allow you to read or manipulate the properties for it. The Style of the button
+will be determined by the style entry passed in. If you wish to remove a button from a text
+layer, simply call 'DeleteButton'. In addition, the following information should be noted:
 
 - Buttons are not drawn physically to the text layer provided. Instead
 they are rendered to the terminal at the same time when the text layer is
@@ -69,7 +73,7 @@ then the width will automatically default to the width of your button label.
 - If the height of your button is less than 3 characters high, then the height
 will automatically default to the minimum of 3 characters.
 */
- func AddButton(layerAlias string, buttonAlias string, buttonLabel string, styleEntry memory.TuiStyleEntryType, xLocation int, yLocation int, width int, height int) ButtonInstanceType {
+ func (shared *buttonType) AddButton(layerAlias string, buttonAlias string, buttonLabel string, styleEntry memory.TuiStyleEntryType, xLocation int, yLocation int, width int, height int) ButtonInstanceType {
 	memory.AddButton(layerAlias, buttonAlias, buttonLabel, styleEntry, xLocation, yLocation, width, height)
 	var buttonInstance ButtonInstanceType
 	buttonInstance.layerAlias = layerAlias
@@ -84,15 +88,14 @@ the following information should be noted:
 - If you attempt to delete a button which does not exist, then the request
 will simply be ignored.
 */
-func DeleteButton(layerAlias string, buttonAlias string) {
+func (shared *buttonType) DeleteButton(layerAlias string, buttonAlias string) {
 	memory.DeleteButton(layerAlias, buttonAlias)
 }
 
 /*
-drawButtonsOnLayer allows you to draw all buttons on a given text layer
-entry.
+drawButtonsOnLayer allows you to draw all buttons on a given text layer.
 */
-func drawButtonsOnLayer(layerEntry memory.LayerEntryType) {
+func (shared *buttonType) drawButtonsOnLayer(layerEntry memory.LayerEntryType) {
 	layerAlias := layerEntry.LayerAlias
 	for currentKey := range memory.ButtonMemory[layerAlias] {
 		buttonEntry := memory.GetButton(layerAlias, currentKey)
@@ -101,15 +104,58 @@ func drawButtonsOnLayer(layerEntry memory.LayerEntryType) {
 }
 
 /*
+drawButton allows you to draw A button on a given text layer. The
+Style of the button will be determined by the style entry passed in. In
+addition, the following information should be noted:
+
+- Buttons are not drawn physically to the text layer provided. Instead,
+they are rendered to the terminal at the same time when the text layer is
+rendered. This allows you to create buttons without actually overwriting
+the text layer data under it.
+
+- If the button to be drawn falls outside the range of the provided layer,
+then only the visible portion of the button will be drawn.
+*/
+func drawButton(layerEntry *memory.LayerEntryType, buttonAlias string, buttonLabel string, styleEntry memory.TuiStyleEntryType, isPressed bool, isSelected bool, xLocation int, yLocation int, width int, height int) {
+	localStyleEntry := memory.NewTuiStyleEntry(&styleEntry)
+	attributeEntry := memory.NewAttributeEntry()
+	attributeEntry.ForegroundColor = styleEntry.ButtonForegroundColor
+	attributeEntry.BackgroundColor = styleEntry.ButtonBackgroundColor
+	attributeEntry.CellType = constants.CellTypeButton
+	attributeEntry.CellControlAlias = buttonAlias
+	if height < 3 {
+		height = 3
+	}
+	if width < len(buttonLabel) {
+		width = len(buttonLabel) + 2
+	}
+	localStyleEntry.TextForegroundColor = localStyleEntry.ButtonRaisedColor
+	localStyleEntry.TextBackgroundColor = localStyleEntry.ButtonBackgroundColor
+	fillArea(layerEntry, attributeEntry, " ", xLocation, yLocation, width, height, constants.NullCellControlLocation)
+	if isPressed {
+		drawFrame(layerEntry, localStyleEntry, attributeEntry, constants.FrameStyleSunken, xLocation, yLocation, width, height, false)
+	} else {
+		drawFrame(layerEntry, localStyleEntry, attributeEntry, constants.FrameStyleRaised, xLocation, yLocation, width, height, false)
+	}
+	centerXLocation := (width - len(buttonLabel)) / 2
+	centerYLocation := height / 2
+	arrayOfRunes := stringformat.GetRunesFromString(buttonLabel)
+	if isSelected {
+		attributeEntry.IsUnderlined = true
+	}
+	printLayer(layerEntry, attributeEntry, xLocation+centerXLocation, yLocation+centerYLocation, arrayOfRunes)
+}
+
+/*
 updateButtonStates allows you to update the state of all buttons. This needs
 to be called when input occurs so that changes in button state are reflected
 to the user as quickly as possible. In the event that a screen update is
 required this method returns true.
 */
-func updateButtonStates(isMouseTriggered bool) bool {
+func (shared *buttonType) updateButtonStates(isMouseTriggered bool) bool {
 	if isMouseTriggered {
 		// Update the button state if a mouse caused a change.
-		return updateButtonStateMouse()
+		return shared.updateButtonStateMouse()
 	} else {
 		// Add code to update when keyboard caused a change.
 	}
@@ -121,7 +167,7 @@ updateButtonStateMouse allows you to update button states that are triggered
 by mouse events. If a screen update is required, then this method returns
 true.
 */
-func updateButtonStateMouse() bool {
+func (shared *buttonType) updateButtonStateMouse() bool {
 	isUpdateRequired := false
 	mouseXLocation, mouseYLocation, buttonPressed, _ := memory.GetMouseStatus()
 	characterEntry := getCellInformationUnderMouseCursor(mouseXLocation, mouseYLocation)
@@ -151,7 +197,6 @@ func updateButtonStateMouse() bool {
 		buttonEntry := memory.GetButton(layerAlias, buttonAlias)
 		if buttonEntry.IsPressed == true {
 			buttonEntry.Mutex.Lock()
-			//memory.scrollBarMemory[layerAlias][buttonAlias].IsSelected = true
 			buttonEntry.IsPressed = false
 			buttonEntry.Mutex.Unlock()
 			isUpdateRequired = true
@@ -162,7 +207,6 @@ func updateButtonStateMouse() bool {
 		buttonEntry := memory.GetButton(layerAlias, buttonAlias)
 		if  buttonEntry.IsPressed == false {
 			buttonEntry.Mutex.Lock()
-			//memory.scrollBarMemory[layerAlias][buttonAlias].IsSelected = true
 			buttonEntry.IsPressed = true
 			buttonEntry.Mutex.Unlock()
 			setFocusedControl(layerAlias, buttonAlias, constants.CellTypeButton)

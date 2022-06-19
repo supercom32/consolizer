@@ -40,16 +40,16 @@ func updateEventQueues() {
 		} else {
 			keystroke = []rune(strings.ToLower(event.Name()))
 		}
-		if updateKeyboardEventTextField(keystroke) {
+		if scrollbar.updateKeyboardEventScrollbar(keystroke) {
 			isScreenUpdateRequired = true
 		}
-		if updateKeyboardEventTextbox(keystroke) {
+		if textField.updateKeyboardEventTextField(keystroke) {
 			isScreenUpdateRequired = true
 		}
-		if updateKeyboardEventSelector(keystroke) {
+		if textbox.updateKeyboardEventTextbox(keystroke) {
 			isScreenUpdateRequired = true
 		}
-		if updateKeyboardEventScrollBar(keystroke) {
+		if selector.updateKeyboardEventSelector(keystroke) {
 			isScreenUpdateRequired = true
 		}
 		if isScreenUpdateRequired == true {
@@ -85,26 +85,29 @@ func updateEventQueues() {
 		if moveLayerIfRequired() {
 			isScreenUpdateRequired = true
 		}
-		if updateMouseEventTextField() {
+		if textField.updateMouseEventTextField() {
 			isScreenUpdateRequired = true
 		}
-		if updateMouseEventCheckbox() {
+		if checkbox.updateMouseEventCheckbox() {
 			isScreenUpdateRequired = true
 		}
-		if updateButtonStates(true) {
+		if button.updateButtonStates(true) {
 			isScreenUpdateRequired = true
 		}
-		if updateMouseEventScrollBar() {
+		if scrollbar.updateMouseEventScrollbar() {
 			isScreenUpdateRequired =  true
 		}
-		if updateMouseEventSelector() {
+		if selector.updateMouseEventSelector() {
 			isScreenUpdateRequired =  true
 		}
-		if updateMouseEventTextbox() {
+		if textbox.updateMouseEventTextbox() {
 			isScreenUpdateRequired =  true
+		}
+		if radioButton.updateMouseEventRadioButton() {
+			isScreenUpdateRequired = true
 		}
 		// This is done last so that it can update itself if a selector or scroll bar change was detected.
-		if updateDropdownStateMouse() {
+		if dropdown.updateDropdownStateMouse() {
 			isScreenUpdateRequired =  true
 		}
 		if isScreenUpdateRequired {
@@ -136,7 +139,7 @@ func setPreviouslyHighlightedControl(layerAlias string, controlAlias string, con
 
 /*
 moveLayerIfRequired allows you to move any interactive layer that has been
-captured in a drag and drop action. If the mouse button is pressed over an
+captured in a drag and drop action. If the mouse buttonType is pressed over an
 interactive part of a layer and not released, this method will move the
 layer according to the mice's new position. In addition, the following
 information should be noted:
@@ -226,9 +229,9 @@ func isInteractiveLayerOffscreen(layerAlias string) bool {
 }
 
 /*
-getButtonClickIdentifier allows you to obtain the layer alias and the button
+getButtonClickIdentifier allows you to obtain the layer alias and the buttonType
 alias for the text cell currently under the mouse cursor. This is useful
-for determining which button the user has clicked (if any).
+for determining which buttonType the user has clicked (if any).
 */
 func getCellInformationUnderMouseCursor(mouseXLocation int, mouseYLocation int) memory.CharacterEntryType{
 	var characterEntry memory.CharacterEntryType

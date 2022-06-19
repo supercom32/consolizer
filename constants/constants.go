@@ -66,6 +66,8 @@ const (
 	CharBlockUpperHalf  		   = '\u2580'
 	CharCheckedBox = '\u2610'
 	CharUncheckedBox = '\u2611'
+	CharCheckedRadioButton = '\u25CB'
+	CharUncheckedRadioButton = '\u25C9'
 )
 
 // Black
@@ -134,15 +136,15 @@ const CellTypeButton = 1
 const CellTypeTextField = 2
 const CellTypeFrameTop = 3
 const CellTypeSelectorItem = 4
-const CellTypeScrollBar = 5
+const CellTypeScrollbar = 5
 const CellTypeDropdown = 6
 const CellTypeCheckbox = 7
 const CellTypeTextbox = 8
-
+const CellTypeRadioButton = 9
 
 const CellControlIdUpScrollArrow = -1
 const CellControlIdDownScrollArrow = -2
-const CellControlIdScrollBarHandle = -3
+const CellControlIdScrollbarHandle = -3
 const CellControlIdUnchecked = 1
 const CellControlIdChecked = 2
 
@@ -150,7 +152,7 @@ const VirtualFileSystemZip = 1
 const VirtualFileSystemRar = 2
 const EventStateNone = 0
 const EventStateDragAndDrop = 1
-const EventStateDragAndDropScrollBar = 2
+const EventStateDragAndDropScrollbar = 2
 const NullControlType = 0
 
-const NullScrollBarValue = -1
+const NullScrollbarValue = -1
