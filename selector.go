@@ -42,7 +42,7 @@ func (shared *selectorInstanceType) setViewport(viewportPosition int) {
 }
 
 /*
-AddSelector allows you to add a Selector to a given text layer. Once called, an instance of your control is returned
+Add allows you to add a Selector to a given text layer. Once called, an instance of your control is returned
 which will allow you to read or manipulate the properties for it. The Style of the Selector
 will be determined by the style entry passed in. If you wish to remove a Selector from a text layer, simply
 call 'DeleteSelector'. In addition, the following information should be noted:
@@ -58,7 +58,7 @@ then only the visible portion of the radio button will be drawn.
 - If the Selector height is greater than the number of selections available, then no scroll bars are drawn.
 */
 // TODO: Protect against viewport out of range errors.
-func (shared *selectorType) AddSelector(layerAlias string, selectorAlias string, styleEntry memory.TuiStyleEntryType, selectionEntry memory.SelectionEntryType, xLocation int, yLocation int, selectorHeight int, itemWidth int, numberOfColumns int, viewportPosition int, selectedItem int, isBorderDrawn bool) selectorInstanceType {
+func (shared *selectorType) Add(layerAlias string, selectorAlias string, styleEntry memory.TuiStyleEntryType, selectionEntry memory.SelectionEntryType, xLocation int, yLocation int, selectorHeight int, itemWidth int, numberOfColumns int, viewportPosition int, selectedItem int, isBorderDrawn bool) selectorInstanceType {
 	validateSelectionEntry(selectionEntry)
 	// TODO: Add verification to ensure no item can be 0 length/number.
 	memory.AddSelector(layerAlias, selectorAlias, styleEntry, selectionEntry, xLocation, yLocation, selectorHeight, itemWidth, numberOfColumns, viewportPosition, selectedItem, isBorderDrawn)
@@ -88,7 +88,7 @@ func (shared *selectorType) AddSelector(layerAlias string, selectorAlias string,
 }
 
 /*
-DrawSelector allows you to draw a Selector on a given text layer. The
+drawSelector allows you to draw a Selector on a given text layer. The
 Style of the Selector will be determined by the style entry passed in. In
 addition, the following information should be noted:
 
@@ -100,7 +100,7 @@ the text layer data under it.
 - If the Selector to be drawn falls outside the range of the provided layer,
 then only the visible portion of the Selector will be drawn.
 */
-func (shared *selectorType) DrawSelector(selectorAlias string, layerEntry *memory.LayerEntryType, styleEntry memory.TuiStyleEntryType, selectionEntry memory.SelectionEntryType, xLocation int, yLocation int, selectorHeight int, itemWidth int, numberOfColumns int, viewportPosition int, itemHighlighted int) {
+func (shared *selectorType) drawSelector(selectorAlias string, layerEntry *memory.LayerEntryType, styleEntry memory.TuiStyleEntryType, selectionEntry memory.SelectionEntryType, xLocation int, yLocation int, selectorHeight int, itemWidth int, numberOfColumns int, viewportPosition int, itemHighlighted int) {
 	selectorEntry := memory.GetSelector(layerEntry.LayerAlias, selectorAlias)
 	if selectorEntry.IsVisible == false {
 		return
@@ -159,7 +159,7 @@ func (shared *selectorType) drawSelectorsOnLayer(layerEntry memory.LayerEntryTyp
 	sort.Strings(keyList)
 	for currentKey := range keyList {
 		selectorEntry := memory.GetSelector(layerAlias, keyList[currentKey])
-		shared.DrawSelector(keyList[currentKey], &layerEntry, selectorEntry.StyleEntry, selectorEntry.SelectionEntry, selectorEntry.XLocation, selectorEntry.YLocation, selectorEntry.SelectorHeight, selectorEntry.ItemWidth, selectorEntry.NumberOfColumns, selectorEntry.ViewportPosition, selectorEntry.ItemHighlighted)
+		shared.drawSelector(keyList[currentKey], &layerEntry, selectorEntry.StyleEntry, selectorEntry.SelectionEntry, selectorEntry.XLocation, selectorEntry.YLocation, selectorEntry.SelectorHeight, selectorEntry.ItemWidth, selectorEntry.NumberOfColumns, selectorEntry.ViewportPosition, selectorEntry.ItemHighlighted)
 	}
 }
 

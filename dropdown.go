@@ -14,7 +14,6 @@ type DropdownInstanceType struct {
 type dropdownType struct {}
 var dropdown dropdownType
 
-
 /*
 AddDropdown allows you to add a dropdown to a given text layer. Once called, an instance of
 your control is returned which will allow you to read or manipulate the properties for it.
@@ -47,7 +46,7 @@ func (shared *dropdownType) AddDropdown(layerAlias string, dropdownAlias string,
 	}
 	dropdownEntry.SelectorAlias = stringformat.GetLastSortedUUID()
 	// Here we add +1 to x and y to account for borders around the selection.
-	Selector.AddSelector(layerAlias, dropdownEntry.SelectorAlias, styleEntry, selectionEntry, xLocation + 1, yLocation + 1, selectorHeight, selectorWidth, 1, 0, 0, true)
+	Selector.Add(layerAlias, dropdownEntry.SelectorAlias, styleEntry, selectionEntry, xLocation + 1, yLocation + 1, selectorHeight, selectorWidth, 1, 0, 0, true)
 	selectorEntry := memory.GetSelector(layerAlias, dropdownEntry.SelectorAlias)
 	selectorEntry.IsVisible = false
 	dropdownEntry.ScrollBarAlias = selectorEntry.ScrollBarAlias
