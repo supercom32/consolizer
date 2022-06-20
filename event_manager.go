@@ -54,11 +54,8 @@ func updateEventQueues() {
 		}
 		if isScreenUpdateRequired == true {
 			UpdateDisplay()
-		} else {
-			// Only add keystrokes to the buffer if not already consumed by other controls.
-			//fmt.Print(keystroke)
-			memory.KeyboardMemory.AddKeystrokeToKeyboardBuffer(keystroke)
 		}
+		memory.KeyboardMemory.AddKeystrokeToKeyboardBuffer(keystroke)
 
 	case *tcell.EventMouse:
 		mouseXLocation, mouseYLocation := event.Position()
