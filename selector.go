@@ -84,6 +84,7 @@ func (shared *selectorType) Add(layerAlias string, selectorAlias string, styleEn
 	var selectorInstance selectorInstanceType
 	selectorInstance.layerAlias = layerAlias
 	selectorInstance.selectorAlias = selectorAlias
+	setFocusedControl(layerAlias, selectorAlias, constants.CellTypeSelectorItem)
 	return selectorInstance
 }
 
