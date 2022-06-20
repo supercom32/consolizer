@@ -19,14 +19,14 @@ var Selector selectorType
 GetSelected allows you to retrieve the currently selected item. If the Selector instance
 no longer exists, then an empty result is always returned.
 */
-func (shared *selectorInstanceType) GetSelected() string {
+func (shared *selectorInstanceType) GetSelected() (string, int) {
 	if memory.IsSelectorExists(shared.layerAlias, shared.selectorAlias) {
 		validatorMenu(shared.layerAlias, shared.selectorAlias)
 		menuEntry := memory.GetSelector(shared.layerAlias, shared.selectorAlias)
 		value := menuEntry.ItemSelected
-		return menuEntry.SelectionEntry.SelectionAlias[value]
+		return menuEntry.SelectionEntry.SelectionAlias[value], value
 	}
-	return ""
+	return "", -1
 }
 
 /*
