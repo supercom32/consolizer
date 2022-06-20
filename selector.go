@@ -13,10 +13,10 @@ type selectorInstanceType struct {
 }
 
 type selectorType struct {}
-var selector selectorType
+var Selector selectorType
 
 /*
-GetSelected allows you to retrieve the currently selected item. If the selector instance
+GetSelected allows you to retrieve the currently selected item. If the Selector instance
 no longer exists, then an empty result is always returned.
 */
 func (shared *selectorInstanceType) GetSelected() string {
@@ -42,9 +42,9 @@ func (shared *selectorInstanceType) setViewport(viewportPosition int) {
 }
 
 /*
-AddSelector allows you to add a selector to a given text layer. Once called, an instance of your control is returned
-which will allow you to read or manipulate the properties for it. The Style of the selector
-will be determined by the style entry passed in. If you wish to remove a selector from a text layer, simply
+AddSelector allows you to add a Selector to a given text layer. Once called, an instance of your control is returned
+which will allow you to read or manipulate the properties for it. The Style of the Selector
+will be determined by the style entry passed in. If you wish to remove a Selector from a text layer, simply
 call 'DeleteSelector'. In addition, the following information should be noted:
 
 - Selectors are not drawn physically to the text layer provided. Instead,
@@ -52,10 +52,10 @@ they are rendered to the terminal at the same time when the text layer is
 rendered. This allows you to create selectors without actually overwriting
 the text layer data under it.
 
-- If the selector to be drawn falls outside the range of the provided layer,
+- If the Selector to be drawn falls outside the range of the provided layer,
 then only the visible portion of the radio button will be drawn.
 
-- If the selector height is greater than the number of selections available, then no scroll bars are drawn.
+- If the Selector height is greater than the number of selections available, then no scroll bars are drawn.
 */
 // TODO: Protect against viewport out of range errors.
 func (shared *selectorType) AddSelector(layerAlias string, selectorAlias string, styleEntry memory.TuiStyleEntryType, selectionEntry memory.SelectionEntryType, xLocation int, yLocation int, selectorHeight int, itemWidth int, numberOfColumns int, viewportPosition int, selectedItem int, isBorderDrawn bool) selectorInstanceType {
@@ -88,8 +88,8 @@ func (shared *selectorType) AddSelector(layerAlias string, selectorAlias string,
 }
 
 /*
-DrawSelector allows you to draw a selector on a given text layer. The
-Style of the selector will be determined by the style entry passed in. In
+DrawSelector allows you to draw a Selector on a given text layer. The
+Style of the Selector will be determined by the style entry passed in. In
 addition, the following information should be noted:
 
 - Selectors are not drawn physically to the text layer provided. Instead,
@@ -97,8 +97,8 @@ they are rendered to the terminal at the same time when the text layer is
 rendered. This allows you to create selectors without actually overwriting
 the text layer data under it.
 
-- If the selector to be drawn falls outside the range of the provided layer,
-then only the visible portion of the selector will be drawn.
+- If the Selector to be drawn falls outside the range of the provided layer,
+then only the visible portion of the Selector will be drawn.
 */
 func (shared *selectorType) DrawSelector(selectorAlias string, layerEntry *memory.LayerEntryType, styleEntry memory.TuiStyleEntryType, selectionEntry memory.SelectionEntryType, xLocation int, yLocation int, selectorHeight int, itemWidth int, numberOfColumns int, viewportPosition int, itemHighlighted int) {
 	selectorEntry := memory.GetSelector(layerEntry.LayerAlias, selectorAlias)
@@ -148,7 +148,7 @@ drawSelectorsOnLayer allows you to draw all selectors on a given text layer.
 */
 func (shared *selectorType) drawSelectorsOnLayer(layerEntry memory.LayerEntryType) {
 	layerAlias := layerEntry.LayerAlias
-	// Range over all our selector aliases and add them to an array.
+	// Range over all our Selector aliases and add them to an array.
 	keyList := make([]string, 0)
 	for currentKey := range memory.SelectorMemory[layerAlias] {
 		keyList = append(keyList, currentKey)
@@ -263,7 +263,7 @@ func (shared *selectorType) updateMouseEventSelector() bool {
 			}
 		}
 	}
-	// If a selector is no longer visible, then make the scroll bars associated with it invisible as well.
+	// If a Selector is no longer visible, then make the scroll bars associated with it invisible as well.
 	for currentKey := range memory.SelectorMemory[layerAlias] {
 		selectorEntry := memory.GetSelector(layerAlias, currentKey)
 		scrollBarEntry := memory.GetScrollbar(layerAlias, selectorEntry.ScrollBarAlias)
