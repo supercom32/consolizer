@@ -30,7 +30,7 @@ the text layer data under it.
 - If the dropdown to be drawn falls outside the range of the provided layer,
 then only the visible portion of the checkbox will be drawn.
 
-- If the number of selections available is smaller or equal to the selector height,
+- If the number of selections available is smaller or equal to the Selector height,
 then no scrollbars will be drawn.
 */
 func (shared *dropdownType) AddDropdown(layerAlias string, dropdownAlias string, styleEntry memory.TuiStyleEntryType, selectionEntry memory.SelectionEntryType, xLocation int, yLocation int, selectorHeight int, itemWidth int, defaultItemSelected int) DropdownInstanceType {
@@ -38,8 +38,8 @@ func (shared *dropdownType) AddDropdown(layerAlias string, dropdownAlias string,
 	memory.AddDropdown(layerAlias, dropdownAlias, styleEntry, selectionEntry, xLocation, yLocation, itemWidth, defaultItemSelected)
 	dropdownEntry := memory.GetDropdown(layerAlias, dropdownAlias)
 	dropdownEntry.ScrollBarAlias = stringformat.GetLastSortedUUID()
-	// Here we add +2 to x to account for the scroll bar being outside the selector border on ether side. Also, we
-	// minus the scroll bar max selection size by the height of the selector, so we don't scroll over values
+	// Here we add +2 to x to account for the scroll bar being outside the Selector border on ether side. Also, we
+	// minus the scroll bar max selection size by the height of the Selector, so we don't scroll over values
 	// which do not change viewport.
 	selectorWidth := itemWidth
 	if len(selectionEntry.SelectionValue) <= selectorHeight {
@@ -47,7 +47,7 @@ func (shared *dropdownType) AddDropdown(layerAlias string, dropdownAlias string,
 	}
 	dropdownEntry.SelectorAlias = stringformat.GetLastSortedUUID()
 	// Here we add +1 to x and y to account for borders around the selection.
-	selector.AddSelector(layerAlias, dropdownEntry.SelectorAlias, styleEntry, selectionEntry, xLocation + 1, yLocation + 1, selectorHeight, selectorWidth, 1, 0, 0, true)
+	Selector.AddSelector(layerAlias, dropdownEntry.SelectorAlias, styleEntry, selectionEntry, xLocation + 1, yLocation + 1, selectorHeight, selectorWidth, 1, 0, 0, true)
 	selectorEntry := memory.GetSelector(layerAlias, dropdownEntry.SelectorAlias)
 	selectorEntry.IsVisible = false
 	dropdownEntry.ScrollBarAlias = selectorEntry.ScrollBarAlias

@@ -880,7 +880,7 @@ func renderControls(currentLayerEntry memory.LayerEntryType) {
 	textField.drawTextFieldOnLayer(currentLayerEntry)
 	checkbox.drawCheckboxesOnLayer(currentLayerEntry)
 	dropdown.drawDropdownsOnLayer(currentLayerEntry)
-	selector.drawSelectorsOnLayer(currentLayerEntry)
+	Selector.drawSelectorsOnLayer(currentLayerEntry)
 	scrollbar.drawScrollbarsOnLayer(currentLayerEntry)
 	textbox.drawTextboxesOnLayer(currentLayerEntry)
 	radioButton.drawRadioButtonsOnLayer(currentLayerEntry)

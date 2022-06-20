@@ -15,9 +15,9 @@ func TestMainStub(test *testing.T) {
 	//testCheckboxes()
 	//testDropdown()
 	//testScrollBars()
-	//testSelector()
+	testSelector()
 	//testTextField()
-	testWindowMovement()
+	//testWindowMovement()
 	//testButtonPressAction()
 	RestoreTerminalSettings()
 }
@@ -173,11 +173,11 @@ func testDropdown() {
 	dropdown.AddDropdown(layerAlias1, "myDropdown", styleEntry, selectionEntry, 2, 2, 8, 7, 3)
 	dropdown.AddDropdown(layerAlias1, "myDropdown2", styleEntry, selectionEntry2, 2, 39, 3, 7, 1)
 
-	selector.AddSelector(layerAlias1, "menuBar", styleEntry, selectionEntry, 6, 10, 4, 7, 3, 0, -1, false)
-	selector.AddSelector(layerAlias1, "menuBar2", styleEntry, selectionEntry, 10, 20, 4, 7, 1, 0, -1, false)
+	Selector.AddSelector(layerAlias1, "menuBar", styleEntry, selectionEntry, 6, 10, 4, 7, 3, 0, -1, false)
+	Selector.AddSelector(layerAlias1, "menuBar2", styleEntry, selectionEntry, 10, 20, 4, 7, 1, 0, -1, false)
 
 	styleEntry.SelectorTextAlignment = constants.AlignmentNoPadding
-	selector.AddSelector(layerAlias1, "menuBar3", styleEntry, selectionEntry, 6, 30, 4, 7, 1, 0, -1, false)
+	Selector.AddSelector(layerAlias1, "menuBar3", styleEntry, selectionEntry, 6, 30, 4, 7, 1, 0, -1, false)
 	for {
 		UpdateDisplay()
 		key := string(Inkey())
@@ -265,8 +265,8 @@ func testSelector() {
 	for i := 0; i < 20; i++ {
 		selectionEntry.Add(strconv.Itoa(i), strconv.Itoa(i))
 	}
-	menuBarInstance := selector.AddSelector(layerAlias1, "menuBar", styleEntry, selectionEntry, 2, 10, 4, 7, 3, 0, -1, false)
-	menuBarInstance2 := selector.AddSelector(layerAlias1, "menuBar2", styleEntry, selectionEntry, 10, 20, 4, 7, 1, 0, -1, false)
+	menuBarInstance := Selector.AddSelector(layerAlias1, "menuBar", styleEntry, selectionEntry, 2, 10, 4, 7, 3, 0, -1, false)
+	menuBarInstance2 := Selector.AddSelector(layerAlias1, "menuBar2", styleEntry, selectionEntry, 10, 20, 4, 7, 1, 0, -1, false)
 	LocateLayer(layerAlias1, 3, 3)
 	PrintLayer(layerAlias1, menuBarInstance.layerAlias)
 	for {

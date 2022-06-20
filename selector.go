@@ -30,7 +30,7 @@ func (shared *selectorInstanceType) GetSelected() string {
 }
 
 /*
-setViewport allows you to specify the current viewport index for a given selector. If the selector instance
+setViewport allows you to specify the current viewport index for a given Selector. If the Selector instance
 no longer exists, then no operation occurs.
 */
 func (shared *selectorInstanceType) setViewport(viewportPosition int) {

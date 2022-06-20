@@ -49,7 +49,7 @@ func updateEventQueues() {
 		if textbox.updateKeyboardEventTextbox(keystroke) {
 			isScreenUpdateRequired = true
 		}
-		if selector.updateKeyboardEventSelector(keystroke) {
+		if Selector.updateKeyboardEventSelector(keystroke) {
 			isScreenUpdateRequired = true
 		}
 		if isScreenUpdateRequired == true {
@@ -97,7 +97,7 @@ func updateEventQueues() {
 		if scrollbar.updateMouseEventScrollbar() {
 			isScreenUpdateRequired =  true
 		}
-		if selector.updateMouseEventSelector() {
+		if Selector.updateMouseEventSelector() {
 			isScreenUpdateRequired =  true
 		}
 		if textbox.updateMouseEventTextbox() {
@@ -106,7 +106,7 @@ func updateEventQueues() {
 		if radioButton.updateMouseEventRadioButton() {
 			isScreenUpdateRequired = true
 		}
-		// This is done last so that it can update itself if a selector or scroll bar change was detected.
+		// This is done last so that it can update itself if a Selector or scroll bar change was detected.
 		if dropdown.updateDropdownStateMouse() {
 			isScreenUpdateRequired =  true
 		}
