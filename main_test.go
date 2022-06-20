@@ -15,9 +15,9 @@ func TestMainStub(test *testing.T) {
 	//testCheckboxes()
 	//testDropdown()
 	//testScrollBars()
-	testSelector()
+	//testSelector()
 	//testTextField()
-	//testWindowMovement()
+	testWindowMovement()
 	//testButtonPressAction()
 	RestoreTerminalSettings()
 }

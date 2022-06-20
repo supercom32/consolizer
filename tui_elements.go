@@ -682,10 +682,14 @@ func fillArea(layerEntry *memory.LayerEntryType, attributeEntry memory.Attribute
 		attributeEntry.CellControlLocation = startingControlLocation + currentRow
 		for currentCharacter := 0; currentCharacter < width; currentCharacter++ {
 			if yLocation >=0 && yLocation < layerEntry.Height && xLocation+currentCharacter >= 0 && xLocation+currentCharacter < layerEntry.Width {
-				printLayer(layerEntry, attributeEntry, xLocation+currentCharacter, yLocation+currentRow, []rune{arrayOfRunes[currentFillCharacterIndex]})
-				// Double Width characters advance by 2 spaces. But what happens to characters between? Get lost?
-				if stringformat.IsRuneCharacterWide(arrayOfRunes[currentFillCharacterIndex]) {
-					currentCharacter++
+				if len(arrayOfRunes) == 0 {
+					printLayer(layerEntry, attributeEntry, xLocation+currentCharacter, yLocation+currentRow, []rune{0})
+				} else {
+					printLayer(layerEntry, attributeEntry, xLocation+currentCharacter, yLocation+currentRow, []rune{arrayOfRunes[currentFillCharacterIndex]})
+					// Double Width characters advance by 2 spaces. But what happens to characters between? Get lost?
+					if stringformat.IsRuneCharacterWide(arrayOfRunes[currentFillCharacterIndex]) {
+						currentCharacter++
+					}
 				}
 				currentFillCharacterIndex++
 				if currentFillCharacterIndex >= len(arrayOfRunes) {

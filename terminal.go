@@ -55,6 +55,8 @@ func InitializeTerminal(width int, height int) {
 	memory.InitializeCheckboxMemory()
 	memory.InitializeTextboxMemory()
 	memory.InitializeRadioButtonMemory()
+	var detectedWidth int
+	var detectedHeight int
 	if !commonResource.isDebugEnabled {
 		screen, err := tcell.NewScreen()
 		if err != nil {
@@ -69,8 +71,8 @@ func InitializeTerminal(width int, height int) {
 		commonResource.screen.EnableMouse()
 		setupCloseHandler()
 		go setupEventUpdater()
+		detectedWidth, detectedHeight = GetTerminalSize()
 	}
-	detectedWidth, detectedHeight := GetTerminalSize()
 	if width == 0 {
 		commonResource.terminalWidth = detectedWidth
 	} else {
