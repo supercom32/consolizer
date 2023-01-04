@@ -1,8 +1,8 @@
 package memory
 
 import (
-	"github.com/supercom32/consolizer/internal/recast"
 	"github.com/stretchr/testify/assert"
+	"github.com/supercom32/consolizer/internal/recast"
 	"testing"
 )
 
@@ -105,7 +105,7 @@ func TestScreenLayerSimpleDelete(test *testing.T) {
 	layerParentAlias := ""
 	InitializeScreenMemory()
 	AddLayer(layerAlias, layerXLocation, layerYLocation, layerWidth, layerHeight, layerZOrderPriority, layerParentAlias)
-	DeleteLayer(layerAlias)
+	DeleteLayer(layerAlias, false)
 	defer func() {
 		if r := recover(); r == nil {
 			test.Errorf("Obtaining a layer that has already been deleted should throw a panic!")
@@ -133,15 +133,15 @@ func TestScreenLayerChildrenDelete(test *testing.T) {
 	AddLayer(childAlias3, layerXLocation, layerYLocation, layerWidth, layerHeight, layerZOrderPriority, layerParentAlias)
 	var layerEntry = GetLayer(layerParentAlias)
 
-	DeleteLayer(childAlias2)
+	DeleteLayer(childAlias2, false)
 	if layerEntry.IsParent != true {
 		test.Errorf("The parent layer is no longer marked as a parent when it should have two children remaining!")
 	}
-	DeleteLayer(childAlias1)
+	DeleteLayer(childAlias1, false)
 	if layerEntry.IsParent != true {
 		test.Errorf("The parent layer is no longer marked as a parent when it should have one children remaining!")
 	}
-	DeleteLayer(childAlias3)
+	DeleteLayer(childAlias3, false)
 	if layerEntry.IsParent == true {
 		test.Errorf("The parent layer is no longer a parent, but is still marked as one!")
 	}
@@ -164,7 +164,7 @@ func TestScreenLayerParentDelete(test *testing.T) {
 	AddLayer(childAlias1, layerXLocation, layerYLocation, layerWidth, layerHeight, layerZOrderPriority, parentAlias)
 	AddLayer(childAlias2, layerXLocation, layerYLocation, layerWidth, layerHeight, layerZOrderPriority, parentAlias)
 	AddLayer(childAlias3, layerXLocation, layerYLocation, layerWidth, layerHeight, layerZOrderPriority, parentAlias)
-	DeleteLayer(parentAlias)
+	DeleteLayer(parentAlias, false)
 	if IsLayerExists(parentAlias) {
 		test.Errorf("The parent layer exists when it should have been deleted!")
 	}
@@ -200,7 +200,7 @@ func TestScreenLayerSubParentDelete(test *testing.T) {
 	AddLayer(childAlias3, layerXLocation, layerYLocation, layerWidth, layerHeight, layerZOrderPriority, parentAlias)
 	AddLayer(subChild1, layerXLocation, layerYLocation, layerWidth, layerHeight, layerZOrderPriority, subParent1)
 	AddLayer(subChild2, layerXLocation, layerYLocation, layerWidth, layerHeight, layerZOrderPriority, subParent1)
-	DeleteLayer(subParent1)
+	DeleteLayer(subParent1, false)
 	if IsLayerExists(subChild1) {
 		test.Errorf("Deleting the sub-parent layer did not delete the first sub-child layer as expected!")
 	}

@@ -1,4 +1,4 @@
-package memory
+package types
 
 import (
 	"github.com/stretchr/testify/assert"
@@ -8,7 +8,7 @@ import (
 func TestGetImageEntry(test *testing.T) {
 	firstImageEntry := NewImageEntry()
 	secondImageEntry := NewImageEntry()
-	layerEntry := NewLayerEntry("MyAlias", "MyParentAlias", 20,20)
+	layerEntry := NewLayerEntry("MyAlias", "MyParentAlias", 20, 20)
 	layerEntry.IsParent = false
 	layerEntry.ScreenXLocation = 1
 	layerEntry.ScreenYLocation = 2
@@ -17,7 +17,7 @@ func TestGetImageEntry(test *testing.T) {
 	layerEntry.ZOrder = 1
 	layerEntry.IsVisible = true
 	secondImageEntry.LayerEntry = layerEntry
-	assert.NotEqualf(test, secondImageEntry, firstImageEntry,"The first image entry is the same as the second, even though it should be different.")
+	assert.NotEqualf(test, secondImageEntry, firstImageEntry, "The first image entry is the same as the second, even though it should be different.")
 
 	firstImageEntry = NewImageEntry(&secondImageEntry)
 	assert.Equalf(test, secondImageEntry, firstImageEntry, "The first image entry is not the same as the second, even though it should be an identical clone.")

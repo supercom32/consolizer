@@ -1,15 +1,28 @@
 package memory
 
-import "fmt"
+import (
+	"fmt"
+	"github.com/supercom32/consolizer/types"
+	"sync"
+)
 
-var SelectorMemory map[string]map[string]*SelectorEntryType
-
-func InitializeSelectorMemory() {
-	SelectorMemory = make(map[string]map[string]*SelectorEntryType)
+type selectorMemoryType struct {
+	sync.Mutex
+	Entries map[string]map[string]*types.SelectorEntryType
 }
 
-func AddSelector(layerAlias string, selectorAlias string, styleEntry TuiStyleEntryType, selectionEntry SelectionEntryType, xLocation int, yLocation int, selectorHeight int, itemWidth int, numberOfColumns int, viewportPosition int, itemSelected int, isBorderDrawn bool) {
-	selectorEntry := NewSelectorEntry()
+var Selector selectorMemoryType
+
+func InitializeSelectorMemory() {
+	Selector.Entries = make(map[string]map[string]*types.SelectorEntryType)
+}
+
+func AddSelector(layerAlias string, selectorAlias string, styleEntry types.TuiStyleEntryType, selectionEntry types.SelectionEntryType, xLocation int, yLocation int, selectorHeight int, itemWidth int, numberOfColumns int, viewportPosition int, itemSelected int, isBorderDrawn bool) {
+	Selector.Lock()
+	defer func() {
+		Selector.Unlock()
+	}()
+	selectorEntry := types.NewSelectorEntry()
 	selectorEntry.StyleEntry = styleEntry
 	selectorEntry.SelectionEntry = selectionEntry
 	selectorEntry.XLocation = xLocation
@@ -21,26 +34,48 @@ func AddSelector(layerAlias string, selectorAlias string, styleEntry TuiStyleEnt
 	selectorEntry.ItemHighlighted = itemSelected
 	selectorEntry.IsBorderDrawn = isBorderDrawn
 	selectorEntry.IsVisible = true
-	if SelectorMemory[layerAlias] == nil {
-		SelectorMemory[layerAlias] = make(map[string]*SelectorEntryType)
+	if Selector.Entries[layerAlias] == nil {
+		Selector.Entries[layerAlias] = make(map[string]*types.SelectorEntryType)
 	}
-	SelectorMemory[layerAlias][selectorAlias] = &selectorEntry
+	Selector.Entries[layerAlias][selectorAlias] = &selectorEntry
 }
 
 func DeleteSelector(layerAlias string, selectorAlias string) {
-	delete(SelectorMemory[layerAlias], selectorAlias)
+	Selector.Lock()
+	defer func() {
+		Selector.Unlock()
+	}()
+	delete(Selector.Entries[layerAlias], selectorAlias)
+}
+
+func DeleteAllSelectorsFromLayer(layerAlias string) {
+	Selector.Lock()
+	defer func() {
+		Selector.Unlock()
+	}()
+	for entryToRemove := range Selector.Entries[layerAlias] {
+		delete(Selector.Entries[layerAlias], entryToRemove)
+	}
 }
 
 func IsSelectorExists(layerAlias string, selectorAlias string) bool {
-	if _, isExist := SelectorMemory[layerAlias][selectorAlias]; isExist {
+	Selector.Lock()
+	defer func() {
+		Selector.Unlock()
+	}()
+	if _, isExist := Selector.Entries[layerAlias][selectorAlias]; isExist {
 		return true
 	}
 	return false
 }
 
-func GetSelector(layerAlias string, selectorAlias string) *SelectorEntryType {
-	if !IsSelectorExists(layerAlias, selectorAlias) {
-		panic(fmt.Sprintf("The selector '%s' under layer '%s' could not be obtained since it does not exist!", selectorAlias,  layerAlias))
+func GetSelector(layerAlias string, selectorAlias string) *types.SelectorEntryType {
+	Selector.Lock()
+	defer func() {
+		Selector.Unlock()
+	}()
+	if _, isExist := Selector.Entries[layerAlias][selectorAlias]; !isExist {
+		panic(fmt.Sprintf("The selector '%s' under layer '%s' could not be obtained since it does not exist!", selectorAlias, layerAlias))
 	}
-	return SelectorMemory[layerAlias][selectorAlias]
+	return Selector.Entries[layerAlias][selectorAlias]
 }

@@ -1,4 +1,4 @@
-package memory
+package types
 
 import (
 	"encoding/json"
@@ -13,11 +13,12 @@ type AttributeEntryType struct {
 	IsReversed               bool
 	IsBlinking               bool
 	IsItalic                 bool
+	IsBackgroundTransparent  bool
 	ForegroundTransformValue float32
 	BackgroundTransformValue float32
 	CellUserId               int
-	CellControlId            int    // The unique ID of a control type
-	CellControlLocation      int    // The relative location of a cell from within a control
+	CellControlId            int // The unique ID of a control type
+	CellControlLocation      int // The relative location of a cell from within a control
 	CellControlAlias         string
 	CellType                 int    // The type of control a cell belongs to
 	CellUserAlias            string // The alias of the cell control.
@@ -25,38 +26,38 @@ type AttributeEntryType struct {
 
 func (shared AttributeEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
-		ForegroundColor constants.ColorType
-		BackgroundColor constants.ColorType
-		IsBold bool
-		IsUnderlined bool
-		IsReversed bool
-		IsBlinking bool
-		IsItalic bool
+		ForegroundColor          constants.ColorType
+		BackgroundColor          constants.ColorType
+		IsBold                   bool
+		IsUnderlined             bool
+		IsReversed               bool
+		IsBlinking               bool
+		IsItalic                 bool
 		ForegroundTransformValue float32
 		BackgroundTransformValue float32
-		CellUserAlias string
-		CellUserId int
-		CellControlAlias string
-		CellControlId int
-		CellControlLocation int
-		CellType int
+		CellUserAlias            string
+		CellUserId               int
+		CellControlAlias         string
+		CellControlId            int
+		CellControlLocation      int
+		CellType                 int
 	}{
-		ForegroundColor: shared.ForegroundColor,
-		BackgroundColor: shared.BackgroundColor,
-		IsBold: shared.IsBold,
-		IsUnderlined: shared.IsUnderlined,
-		IsReversed: shared.IsReversed,
-		IsBlinking: shared.IsBlinking,
-		IsItalic: shared.IsItalic,
+		ForegroundColor:          shared.ForegroundColor,
+		BackgroundColor:          shared.BackgroundColor,
+		IsBold:                   shared.IsBold,
+		IsUnderlined:             shared.IsUnderlined,
+		IsReversed:               shared.IsReversed,
+		IsBlinking:               shared.IsBlinking,
+		IsItalic:                 shared.IsItalic,
 		ForegroundTransformValue: shared.ForegroundTransformValue,
 		BackgroundTransformValue: shared.ForegroundTransformValue,
-		CellUserAlias: shared.CellUserAlias, // A string that represents some kind of string id.
-		CellUserId: shared.CellUserId, // An identifier for the instance of a cell type (Ie. button instance, etc).
-		CellControlAlias: shared.CellControlAlias,
-		CellControlId: shared.CellControlId,
-		CellControlLocation: shared.CellControlLocation,
+		CellUserAlias:            shared.CellUserAlias, // A string that represents some kind of string id.
+		CellUserId:               shared.CellUserId,    // An identifier for the instance of a cell type (Ie. button instance, etc).
+		CellControlAlias:         shared.CellControlAlias,
+		CellControlId:            shared.CellControlId,
+		CellControlLocation:      shared.CellControlLocation,
 		// Need an attribute for sub cell type.
-		CellType: shared.CellType,       // Type of control the cell belongs to
+		CellType: shared.CellType, // Type of control the cell belongs to
 
 	})
 	if err != nil {
@@ -83,6 +84,7 @@ func NewAttributeEntry(existingAttributeEntry ...*AttributeEntryType) AttributeE
 		attributeEntry.IsReversed = existingAttributeEntry[0].IsReversed
 		attributeEntry.IsBlinking = existingAttributeEntry[0].IsBlinking
 		attributeEntry.IsItalic = existingAttributeEntry[0].IsItalic
+		attributeEntry.IsBackgroundTransparent = existingAttributeEntry[0].IsBackgroundTransparent
 		attributeEntry.ForegroundTransformValue = existingAttributeEntry[0].ForegroundTransformValue
 		attributeEntry.BackgroundTransformValue = existingAttributeEntry[0].BackgroundTransformValue
 		attributeEntry.CellUserAlias = existingAttributeEntry[0].CellUserAlias

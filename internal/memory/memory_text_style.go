@@ -1,27 +1,48 @@
 package memory
 
-import "fmt"
+import (
+	"fmt"
+	"github.com/supercom32/consolizer/types"
+	"sync"
+)
 
-var TextStyleMemory map[string]*TextStyleEntryType
+type textStyleMemoryType struct {
+	sync.Mutex
+	Entries map[string]*types.TextCellStyleEntryType
+}
+
+var TextStyle textStyleMemoryType
 
 func InitializeTextStyleMemory() {
-	TextStyleMemory = make(map[string]*TextStyleEntryType)
+	TextStyle.Entries = make(map[string]*types.TextCellStyleEntryType)
 }
 
-func AddTextStyle(textStyleAlias string, attributeEntry TextStyleEntryType) {
-	TextStyleMemory[textStyleAlias] = &attributeEntry
+func AddTextStyle(textStyleAlias string, attributeEntry types.TextCellStyleEntryType) {
+	TextStyle.Lock()
+	defer func() {
+		TextStyle.Unlock()
+	}()
+	TextStyle.Entries[textStyleAlias] = &attributeEntry
 }
 
-func GetTextStyle(textStyleAlias string) *TextStyleEntryType {
-	if TextStyleMemory[textStyleAlias] == nil {
+func GetTextStyle(textStyleAlias string) *types.TextCellStyleEntryType {
+	TextStyle.Lock()
+	defer func() {
+		TextStyle.Unlock()
+	}()
+	if TextStyle.Entries[textStyleAlias] == nil {
 		panic(fmt.Sprintf("The requested text style with alias '%s' could not be returned since it does not exist.", textStyleAlias))
 	}
-	return TextStyleMemory[textStyleAlias]
+	return TextStyle.Entries[textStyleAlias]
 }
 
-func GetTextStyleAsAttributeEntry(textStyleAlias string) AttributeEntryType {
-	textStyleEntry := TextStyleMemory[textStyleAlias]
-	attributeEntry := NewAttributeEntry()
+func GetTextStyleAsAttributeEntry(textStyleAlias string) types.AttributeEntryType {
+	TextStyle.Lock()
+	defer func() {
+		TextStyle.Unlock()
+	}()
+	textStyleEntry := TextStyle.Entries[textStyleAlias]
+	attributeEntry := types.NewAttributeEntry()
 	attributeEntry.ForegroundColor = textStyleEntry.ForegroundColor
 	attributeEntry.BackgroundColor = textStyleEntry.BackgroundColor
 	attributeEntry.IsBlinking = textStyleEntry.IsBlinking
@@ -32,13 +53,21 @@ func GetTextStyleAsAttributeEntry(textStyleAlias string) AttributeEntryType {
 	return attributeEntry
 }
 
-// DeleteTextStyle asdasds
+// DeleteTextStyle
 func DeleteTextStyle(textStyleAlias string) {
-	delete(TextStyleMemory, textStyleAlias)
+	TextStyle.Lock()
+	defer func() {
+		TextStyle.Unlock()
+	}()
+	delete(TextStyle.Entries, textStyleAlias)
 }
 
 func IsTextStyleExists(textStyleAlias string) bool {
-	if _, isExist := TextFieldMemory[textStyleAlias]; isExist {
+	TextStyle.Lock()
+	defer func() {
+		TextStyle.Unlock()
+	}()
+	if _, isExist := TextStyle.Entries[textStyleAlias]; isExist {
 		return true
 	}
 	return false

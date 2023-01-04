@@ -1,4 +1,4 @@
-package memory
+package types
 
 type SelectionEntryType struct {
 	SelectionAlias []string

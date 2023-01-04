@@ -1,4 +1,4 @@
-package memory
+package types
 
 import (
 	"github.com/stretchr/testify/assert"
@@ -16,9 +16,9 @@ func TestLayerTypeCreation(test *testing.T) {
 	firstLayerEntry.CursorYLocation = 4
 	firstLayerEntry.ZOrder = 1
 	firstLayerEntry.IsVisible = true
-	secondLayerEntry := NewLayerEntry(layerAlias, parentAlias,20, 20)
-	assert.NotEqualf(test, secondLayerEntry, firstLayerEntry,"The first layer entry is the same as the second, even though it should be different.")
+	secondLayerEntry := NewLayerEntry(layerAlias, parentAlias, 20, 20)
+	assert.NotEqualf(test, secondLayerEntry, firstLayerEntry, "The first layer entry is the same as the second, even though it should be different.")
 
-	secondLayerEntry = NewLayerEntry(layerAlias, parentAlias,0, 0, &firstLayerEntry)
+	secondLayerEntry = NewLayerEntry(layerAlias, parentAlias, 0, 0, &firstLayerEntry)
 	assert.Equalf(test, secondLayerEntry, firstLayerEntry, "The first layer is not the same as the second, even though it should be an identical clone.")
 }

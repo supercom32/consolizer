@@ -1,4 +1,4 @@
-package memory
+package types
 
 import (
 	"encoding/json"
@@ -7,10 +7,11 @@ import (
 
 // func DrawButton(LayerAlias string, ButtonLabel string, StyleEntry TuiStyleEntryType, IsPressed bool, IsSelected bool, XLocation int, YLocation int, Width int, Height int) {
 type ButtonEntryType struct {
-	Mutex sync.Mutex
+	Mutex       sync.Mutex
 	StyleEntry  TuiStyleEntryType
 	ButtonAlias string
 	ButtonLabel string
+	IsEnabled   bool
 	IsPressed   bool
 	IsSelected  bool
 	XLocation   int
@@ -25,6 +26,7 @@ func (shared ButtonEntryType) MarshalJSON() ([]byte, error) {
 		StyleEntry  TuiStyleEntryType
 		ButtonAlias string
 		ButtonLabel string
+		IsEnabled   bool
 		IsPressed   bool
 		IsSelected  bool
 		XLocation   int
@@ -33,16 +35,17 @@ func (shared ButtonEntryType) MarshalJSON() ([]byte, error) {
 		Height      int
 		TabIndex    int
 	}{
-		StyleEntry: shared.StyleEntry,
+		StyleEntry:  shared.StyleEntry,
 		ButtonAlias: shared.ButtonAlias,
 		ButtonLabel: shared.ButtonLabel,
-		IsPressed: shared.IsPressed,
-		IsSelected: shared.IsSelected,
-		XLocation: shared.XLocation,
-		YLocation: shared.YLocation,
-		Width: shared.Width,
-		Height: shared.Height,
-		TabIndex: shared.TabIndex,
+		IsEnabled:   shared.IsEnabled,
+		IsPressed:   shared.IsPressed,
+		IsSelected:  shared.IsSelected,
+		XLocation:   shared.XLocation,
+		YLocation:   shared.YLocation,
+		Width:       shared.Width,
+		Height:      shared.Height,
+		TabIndex:    shared.TabIndex,
 	})
 	if err != nil {
 		return nil, err
@@ -64,6 +67,7 @@ func NewButtonEntry(existingButtonEntry ...*ButtonEntryType) ButtonEntryType {
 		buttonEntry.StyleEntry = NewTuiStyleEntry(&existingButtonEntry[0].StyleEntry)
 		buttonEntry.ButtonAlias = existingButtonEntry[0].ButtonAlias
 		buttonEntry.ButtonLabel = existingButtonEntry[0].ButtonLabel
+		buttonEntry.IsEnabled = existingButtonEntry[0].IsEnabled
 		buttonEntry.IsPressed = existingButtonEntry[0].IsPressed
 		buttonEntry.IsSelected = existingButtonEntry[0].IsSelected
 		buttonEntry.XLocation = existingButtonEntry[0].XLocation
@@ -79,6 +83,7 @@ func IsButtonEntryEqual(sourceButtonEntry *ButtonEntryType, targetButtonEntry *B
 	if sourceButtonEntry.StyleEntry == targetButtonEntry.StyleEntry &&
 		sourceButtonEntry.ButtonAlias == targetButtonEntry.ButtonAlias &&
 		sourceButtonEntry.ButtonLabel == targetButtonEntry.ButtonLabel &&
+		sourceButtonEntry.IsEnabled == targetButtonEntry.IsEnabled &&
 		sourceButtonEntry.IsPressed == targetButtonEntry.IsPressed &&
 		sourceButtonEntry.IsSelected == targetButtonEntry.IsSelected &&
 		sourceButtonEntry.XLocation == targetButtonEntry.XLocation &&

@@ -1,4 +1,4 @@
-package memory
+package types
 
 import (
 	"encoding/json"
@@ -16,12 +16,12 @@ func (shared CharacterEntryType) MarshalJSON() ([]byte, error) {
 		Character      rune
 		AttributeEntry AttributeEntryType
 		LayerAlias     string
-		ParentAlias	   string
+		ParentAlias    string
 	}{
-		Character: shared.Character,
+		Character:      shared.Character,
 		AttributeEntry: shared.AttributeEntry,
-		LayerAlias: shared.LayerAlias,
-		ParentAlias: shared.ParentAlias,
+		LayerAlias:     shared.LayerAlias,
+		ParentAlias:    shared.ParentAlias,
 	})
 	if err != nil {
 		return nil, err

@@ -21,10 +21,10 @@ const (
 	CharDiamond                    = '\u2666'
 	CharSpades                     = '\u2660'
 	CharDot                        = '\u2022'
-	CharTriangleUp				   = '\u25B4'
-	CharTriangleDown			   = '\u25BE'
-	CharTriangleLeft			   = '\u25C2'
-	CharTriangleRight			   = '\u25B8'
+	CharTriangleUp                 = '\u25B4'
+	CharTriangleDown               = '\u25BE'
+	CharTriangleLeft               = '\u25C2'
+	CharTriangleRight              = '\u25B8'
 	CharArrowUp                    = '\u2191'
 	CharArrowDown                  = '\u2193'
 	CharArrowLeft                  = '\u2190'
@@ -62,12 +62,12 @@ const (
 	CharDoubleLineTSingleDown      = '\u2564'
 	CharDoubleLineTSingleLeft      = '\u2562'
 	CharDoubleLineTSingleRight     = '\u255F'
-	CharBlockLowerHalf 			   = '\u2584'
-	CharBlockUpperHalf  		   = '\u2580'
-	CharCheckedBox = '\u2610'
-	CharUncheckedBox = '\u2611'
-	CharCheckedRadioButton = '\u25CB'
-	CharUncheckedRadioButton = '\u25C9'
+	CharBlockLowerHalf             = '\u2584'
+	CharBlockUpperHalf             = '\u2580'
+	CharCheckedBox                 = '\u2610'
+	CharUncheckedBox               = '\u2611'
+	CharCheckedRadioButton         = '\u25CB'
+	CharUncheckedRadioButton       = '\u25C9'
 )
 
 // Black
@@ -91,7 +91,7 @@ const (
 )
 
 var AnsiColorByIndex = map[int]ColorType{
-	ColorBlack:         ColorType(tcell.NewRGBColor(0,0,0)),
+	ColorBlack:         ColorType(tcell.NewRGBColor(0, 0, 0)),
 	ColorRed:           ColorType(tcell.GetColor("maroon")),
 	ColorGreen:         ColorType(tcell.GetColor("green")),
 	ColorYellow:        ColorType(tcell.GetColor("olive")),
@@ -108,6 +108,7 @@ var AnsiColorByIndex = map[int]ColorType{
 	ColorBrightCyan:    ColorType(tcell.GetColor("aqua")),
 	ColorBrightWhite:   ColorType(tcell.GetColor("white")),
 }
+
 const (
 	AnsiEsc = '\u001b'
 )
@@ -141,6 +142,8 @@ const CellTypeDropdown = 6
 const CellTypeCheckbox = 7
 const CellTypeTextbox = 8
 const CellTypeRadioButton = 9
+const CellTypeProgressBar = 10
+const CellTypeLabel = 11
 
 const CellControlIdUpScrollArrow = -1
 const CellControlIdDownScrollArrow = -2

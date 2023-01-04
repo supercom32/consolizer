@@ -1,39 +1,39 @@
-package memory
+package types
 
 import (
 	"encoding/json"
 )
 
 type CheckboxEntryType struct {
-	StyleEntry  TuiStyleEntryType
-	Label string
-	XLocation   int
-	YLocation   int
-	IsSelected  bool
-	IsEnabled bool
-	IsVisible bool
-	TabIndex    int
+	StyleEntry TuiStyleEntryType
+	Label      string
+	XLocation  int
+	YLocation  int
+	IsSelected bool
+	IsEnabled  bool
+	IsVisible  bool
+	TabIndex   int
 }
 
 func (shared CheckboxEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
-		StyleEntry  TuiStyleEntryType
-		Label string
-		XLocation   int
-		YLocation   int
-		IsSelected  bool
-		IsEnabled bool
-		IsVisible bool
-		TabIndex    int
+		StyleEntry TuiStyleEntryType
+		Label      string
+		XLocation  int
+		YLocation  int
+		IsSelected bool
+		IsEnabled  bool
+		IsVisible  bool
+		TabIndex   int
 	}{
 		StyleEntry: shared.StyleEntry,
-		Label: shared.Label,
-		XLocation: shared.XLocation,
-		YLocation: shared.YLocation,
+		Label:      shared.Label,
+		XLocation:  shared.XLocation,
+		YLocation:  shared.YLocation,
 		IsSelected: shared.IsSelected,
-		IsEnabled: shared.IsEnabled,
-		IsVisible: shared.IsVisible,
-		TabIndex: shared.TabIndex,
+		IsEnabled:  shared.IsEnabled,
+		IsVisible:  shared.IsVisible,
+		TabIndex:   shared.TabIndex,
 	})
 	if err != nil {
 		return nil, err
@@ -48,6 +48,7 @@ func (shared CheckboxEntryType) GetEntryAsJsonDump() string {
 	}
 	return string(j)
 }
+
 // ☐ ☑ U+2610, U+2611
 func NewCheckboxEntry(existingButtonEntry ...*CheckboxEntryType) CheckboxEntryType {
 	var checkboxEntry CheckboxEntryType

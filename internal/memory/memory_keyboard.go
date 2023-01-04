@@ -5,28 +5,32 @@ import (
 )
 
 type keyboardMemoryType struct {
-	keyboardMemory [][]rune
-	mutex          sync.Mutex
+	sync.Mutex
+	entries [][]rune
 }
 
 var KeyboardMemory keyboardMemoryType
 
 func (shared *keyboardMemoryType) AddKeystrokeToKeyboardBuffer(keystroke ...[]rune) {
-	shared.mutex.Lock()
+	shared.Lock()
+	defer func() {
+		shared.Unlock()
+	}()
 	for _, currentKeystroke := range keystroke {
-		shared.keyboardMemory = append(shared.keyboardMemory, currentKeystroke)
+		shared.entries = append(shared.entries, currentKeystroke)
 	}
-	shared.mutex.Unlock()
 }
 
 func (shared *keyboardMemoryType) GetKeystrokeFromKeyboardBuffer() []rune {
-	if shared.keyboardMemory == nil || len(shared.keyboardMemory) == 0 {
+	if shared.entries == nil || len(shared.entries) == 0 {
 		return nil
 	}
 	var keystroke []rune
-	shared.mutex.Lock()
-	keystroke = shared.keyboardMemory[0]
-	shared.keyboardMemory = shared.keyboardMemory[1:]
-	shared.mutex.Unlock()
+	shared.Lock()
+	defer func() {
+		shared.Unlock()
+	}()
+	keystroke = shared.entries[0]
+	shared.entries = shared.entries[1:]
 	return keystroke
 }

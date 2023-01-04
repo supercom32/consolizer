@@ -1,4 +1,4 @@
-package memory
+package types
 
 import (
 	"encoding/json"
@@ -15,8 +15,8 @@ type LayerEntryType struct {
 	CursorXLocation  int
 	CursorYLocation  int
 	ZOrder           int
-	IsTopmost		 bool
-	IsFocusable 	 bool
+	IsTopmost        bool
+	IsFocusable      bool
 	IsVisible        bool
 	LayerAlias       string
 	ParentAlias      string
@@ -34,7 +34,7 @@ func (shared LayerEntryType) MarshalJSON() ([]byte, error) {
 		CursorXLocation  int
 		CursorYLocation  int
 		ZOrder           int
-		IsTopmost		 bool
+		IsTopmost        bool
 		IsFocusable      bool
 		IsVisible        bool
 		LayerAlias       string
@@ -43,21 +43,21 @@ func (shared LayerEntryType) MarshalJSON() ([]byte, error) {
 		DefaultAttribute AttributeEntryType
 		CharacterMemory  [][]CharacterEntryType
 	}{
-		Width: shared.Width,
-		Height: shared.Height,
-		ScreenXLocation: shared.ScreenXLocation,
-		ScreenYLocation: shared.ScreenYLocation,
-		CursorXLocation: shared.CursorXLocation,
-		CursorYLocation: shared.CursorYLocation,
-		ZOrder: shared.ZOrder,
-		IsTopmost: shared.IsTopmost,
-		IsFocusable: shared.IsFocusable,
-		IsVisible: shared.IsVisible,
-		LayerAlias: shared.LayerAlias,
-		ParentAlias: shared.ParentAlias,
-		IsParent: shared.IsParent,
+		Width:            shared.Width,
+		Height:           shared.Height,
+		ScreenXLocation:  shared.ScreenXLocation,
+		ScreenYLocation:  shared.ScreenYLocation,
+		CursorXLocation:  shared.CursorXLocation,
+		CursorYLocation:  shared.CursorYLocation,
+		ZOrder:           shared.ZOrder,
+		IsTopmost:        shared.IsTopmost,
+		IsFocusable:      shared.IsFocusable,
+		IsVisible:        shared.IsVisible,
+		LayerAlias:       shared.LayerAlias,
+		ParentAlias:      shared.ParentAlias,
+		IsParent:         shared.IsParent,
 		DefaultAttribute: shared.DefaultAttribute,
-		CharacterMemory: shared.CharacterMemory,
+		CharacterMemory:  shared.CharacterMemory,
 	})
 	if err != nil {
 		return nil, err
@@ -102,14 +102,14 @@ func (shared LayerEntryType) GetBasicAnsiStringAsBase64() string {
 func (shared LayerEntryType) GetAnsiForegroundColorString(color constants.ColorType) string {
 	var ansiString string
 	redIndex, greenIndex, blueIndex := shared.GetRGBColorComponents(color)
-	ansiString = "\u001b[38;2;" + stringformat.GetIntAsString(redIndex) + ";" + stringformat.GetIntAsString(greenIndex) + ";" + stringformat.GetIntAsString(blueIndex)+"m"
+	ansiString = "\u001b[38;2;" + stringformat.GetIntAsString(redIndex) + ";" + stringformat.GetIntAsString(greenIndex) + ";" + stringformat.GetIntAsString(blueIndex) + "m"
 	return ansiString
 }
 
 func (shared LayerEntryType) GetAnsiBackgroundColorString(color constants.ColorType) string {
 	var ansiString string
 	redIndex, greenIndex, blueIndex := shared.GetRGBColorComponents(color)
-	ansiString = "\u001b[48;2;" + stringformat.GetIntAsString(redIndex) + ";" + stringformat.GetIntAsString(greenIndex) + ";" + stringformat.GetIntAsString(blueIndex)+"m"
+	ansiString = "\u001b[48;2;" + stringformat.GetIntAsString(redIndex) + ";" + stringformat.GetIntAsString(greenIndex) + ";" + stringformat.GetIntAsString(blueIndex) + "m"
 	return ansiString
 }
 

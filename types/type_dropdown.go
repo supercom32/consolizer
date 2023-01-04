@@ -1,43 +1,42 @@
-package memory
+package types
 
 import (
 	"encoding/json"
 )
 
 type DropdownEntryType struct {
-	StyleEntry TuiStyleEntryType
+	StyleEntry     TuiStyleEntryType
 	SelectionEntry SelectionEntryType
 	ScrollBarAlias string
-	SelectorAlias string
-	XLocation int
-	YLocation  int
-	ItemWidth        int
-	ItemSelected int
-	IsTrayOpen bool
+	SelectorAlias  string
+	XLocation      int
+	YLocation      int
+	ItemWidth      int
+	ItemSelected   int
+	IsTrayOpen     bool
 }
 
 func (shared DropdownEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
-
-		StyleEntry TuiStyleEntryType
+		StyleEntry     TuiStyleEntryType
 		SelectionEntry SelectionEntryType
 		ScrollBarAlias string
-		SelectorAlias string
-		XLocation int
-		YLocation int
-		ItemWidth int
-		ItemSelected int
-		IsTrayOpen bool
+		SelectorAlias  string
+		XLocation      int
+		YLocation      int
+		ItemWidth      int
+		ItemSelected   int
+		IsTrayOpen     bool
 	}{
-		StyleEntry: shared.StyleEntry,
+		StyleEntry:     shared.StyleEntry,
 		SelectionEntry: shared.SelectionEntry,
 		ScrollBarAlias: shared.ScrollBarAlias,
-		SelectorAlias: shared.SelectorAlias,
-		XLocation: shared.XLocation,
-		YLocation: shared.YLocation,
-		ItemWidth: shared.ItemWidth,
-		ItemSelected: shared.ItemSelected,
-		IsTrayOpen: shared.IsTrayOpen,
+		SelectorAlias:  shared.SelectorAlias,
+		XLocation:      shared.XLocation,
+		YLocation:      shared.YLocation,
+		ItemWidth:      shared.ItemWidth,
+		ItemSelected:   shared.ItemSelected,
+		IsTrayOpen:     shared.IsTrayOpen,
 	})
 	if err != nil {
 		return nil, err

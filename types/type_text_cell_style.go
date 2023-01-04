@@ -1,11 +1,11 @@
-package memory
+package types
 
 import (
 	"encoding/json"
 	"github.com/supercom32/consolizer/constants"
 )
 
-type TextStyleEntryType struct {
+type TextCellStyleEntryType struct {
 	ForegroundColor          constants.ColorType
 	BackgroundColor          constants.ColorType
 	IsBold                   bool
@@ -17,25 +17,25 @@ type TextStyleEntryType struct {
 	BackgroundTransformValue float32
 }
 
-func (shared TextStyleEntryType) MarshalJSON() ([]byte, error) {
+func (shared TextCellStyleEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
-		ForegroundColor constants.ColorType
-		BackgroundColor constants.ColorType
-		IsBold bool
-		IsUnderlined bool
-		IsReversed bool
-		IsBlinking bool
-		IsItalic bool
+		ForegroundColor          constants.ColorType
+		BackgroundColor          constants.ColorType
+		IsBold                   bool
+		IsUnderlined             bool
+		IsReversed               bool
+		IsBlinking               bool
+		IsItalic                 bool
 		ForegroundTransformValue float32
 		BackgroundTransformValue float32
 	}{
-		ForegroundColor: shared.ForegroundColor,
-		BackgroundColor: shared.BackgroundColor,
-		IsBold: shared.IsBold,
-		IsUnderlined: shared.IsUnderlined,
-		IsReversed: shared.IsReversed,
-		IsBlinking: shared.IsBlinking,
-		IsItalic: shared.IsItalic,
+		ForegroundColor:          shared.ForegroundColor,
+		BackgroundColor:          shared.BackgroundColor,
+		IsBold:                   shared.IsBold,
+		IsUnderlined:             shared.IsUnderlined,
+		IsReversed:               shared.IsReversed,
+		IsBlinking:               shared.IsBlinking,
+		IsItalic:                 shared.IsItalic,
 		ForegroundTransformValue: shared.ForegroundTransformValue,
 		BackgroundTransformValue: shared.ForegroundTransformValue,
 	})
@@ -45,7 +45,7 @@ func (shared TextStyleEntryType) MarshalJSON() ([]byte, error) {
 	return j, nil
 }
 
-func (shared TextStyleEntryType) GetEntryAsJsonDump() string {
+func (shared TextCellStyleEntryType) GetEntryAsJsonDump() string {
 	j, err := json.Marshal(shared)
 	if err != nil {
 		panic(err)
@@ -53,8 +53,8 @@ func (shared TextStyleEntryType) GetEntryAsJsonDump() string {
 	return string(j)
 }
 
-func NewTextStyleEntry(existingAttributeEntry ...*TextStyleEntryType) TextStyleEntryType {
-	var attributeEntry TextStyleEntryType
+func NewTextCellStyleEntry(existingAttributeEntry ...*TextCellStyleEntryType) TextCellStyleEntryType {
+	var attributeEntry TextCellStyleEntryType
 	if existingAttributeEntry != nil {
 		attributeEntry.ForegroundColor = existingAttributeEntry[0].ForegroundColor
 		attributeEntry.BackgroundColor = existingAttributeEntry[0].BackgroundColor

@@ -1,63 +1,87 @@
-package memory
+package types
 
 import (
 	"encoding/json"
 	"github.com/supercom32/consolizer/constants"
 )
 
-// TuiStyleEntryType adsas
+// TuiStyleEntryType
 type TuiStyleEntryType struct {
-	UpperLeftCorner              rune
-	UpperRightCorner             rune
-	HorizontalLine               rune
-	LeftSideTConnector           rune
-	RightSideTConnector          rune
-	UpSideTConnector             rune
-	DownSideTConnector           rune
-	VerticalLine                 rune
-	LowerRightCorner             rune
-	LowerLeftCorner              rune
-	CrossConnector               rune
-	DesktopPattern          rune
-	CheckboxForegroundColor   constants.ColorType
-	CheckboxBackgroundColor   constants.ColorType
-	CheckboxSelectedCharacter rune
+	// Character definitions.
+	UpperLeftCorner     rune
+	UpperRightCorner    rune
+	HorizontalLine      rune
+	LeftSideTConnector  rune
+	RightSideTConnector rune
+	UpSideTConnector    rune
+	DownSideTConnector  rune
+	VerticalLine        rune
+	LowerRightCorner    rune
+	LowerLeftCorner     rune
+	CrossConnector      rune
+	DesktopPattern      rune
+	// Label styles
+	LabelForegroundColor constants.ColorType
+	LabelBackgroundColor constants.ColorType
+	// Checkbox styles.
+	CheckboxForegroundColor     constants.ColorType
+	CheckboxBackgroundColor     constants.ColorType
+	CheckboxSelectedCharacter   rune
 	CheckboxUnselectedCharacter rune
-	RadioButtonForegroundColor constants.ColorType
-	RadioButtonBackgroundColor constants.ColorType
-	RadioButtonSelectedCharacter rune
+	// Radio Button styles.
+	RadioButtonForegroundColor     constants.ColorType
+	RadioButtonBackgroundColor     constants.ColorType
+	RadioButtonSelectedCharacter   rune
 	RadioButtonUnselectedCharacter rune
-	ScrollbarTrackPattern rune
-	ScrollbarHandle    rune
-	ScrollbarUpArrow   rune
-	ScrollbarDownArrow  rune
+	// Scrollbar styles.
+	ScrollbarTrackPattern    rune
+	ScrollbarHandle          rune
+	ScrollbarUpArrow         rune
+	ScrollbarDownArrow       rune
 	ScrollbarLeftArrow       rune
 	ScrollbarRightArrow      rune
 	ScrollbarForegroundColor constants.ColorType
-	ScrollbarBackgroundColor     constants.ColorType
-	ScrollbarHandleColor         constants.ColorType
-	ProgressBarBackgroundPattern rune
-	ProgressBarForegroundPattern rune
-	IsSquareFont                 bool
-	IsWindowHeaderDrawn          bool
-	IsWindowFooterDrawn          bool
-	TextForegroundColor          constants.ColorType
-	TextBackgroundColor          constants.ColorType
-	TextLabelColor				 constants.ColorType
-	TextInputForegroundColor     constants.ColorType
-	TextInputBackgroundColor constants.ColorType
-	TextboxForegroundColor constants.ColorType
-	TextboxBackgroundColor constants.ColorType
-	CursorForegroundColor    constants.ColorType
-	CursorBackgroundColor   constants.ColorType
+	ScrollbarBackgroundColor constants.ColorType
+	ScrollbarHandleColor     constants.ColorType
+	// Progress Bar style.
+	ProgressBarUnfilledPattern         rune
+	ProgressBarFilledPattern           rune
+	ProgressBarUnfilledForegroundColor constants.ColorType
+	ProgressBarUnfilledBackgroundColor constants.ColorType
+	ProgressBarFilledForegroundColor   constants.ColorType
+	ProgressBarFilledBackgroundColor   constants.ColorType
+	ProgressBarTextForegroundColor     constants.ColorType
+	ProgressBarTextBackgroundColor     constants.ColorType
+	// Random styles.
+	IsSquareFont        bool
+	IsWindowHeaderDrawn bool
+	IsWindowFooterDrawn bool
+	// For removal?
+	LineDrawingTextForegroundColor constants.ColorType
+	LineDrawingTextBackgroundColor constants.ColorType
+	LineDrawingTextLabelColor      constants.ColorType
+	//
+	TextFieldForegroundColor constants.ColorType
+	TextFieldBackgroundColor constants.ColorType
+	// CURRENTLY UNUSED.
+	TextFieldCursorForegroundColor constants.ColorType
+	TextFieldCursorBackgroundColor constants.ColorType
+	// Textbox styles.
+	TextboxForegroundColor       constants.ColorType
+	TextboxBackgroundColor       constants.ColorType
+	TextboxCursorForegroundColor constants.ColorType
+	TextboxCursorBackgroundColor constants.ColorType
+	// Selector styles.
 	SelectorForegroundColor  constants.ColorType
 	SelectorBackgroundColor  constants.ColorType
 	HighlightForegroundColor constants.ColorType
 	HighlightBackgroundColor constants.ColorType
+	// Button Styles
 	ButtonRaisedColor        constants.ColorType
 	ButtonForegroundColor    constants.ColorType
-	ButtonBackgroundColor constants.ColorType
-	SelectorTextAlignment int
+	ButtonBackgroundColor    constants.ColorType
+	ButtonLabelDisabledColor constants.ColorType
+	SelectorTextAlignment    int
 }
 
 func (shared TuiStyleEntryType) GetEntryAsJsonDump() string {
@@ -84,6 +108,8 @@ func NewTuiStyleEntry(existingStyleEntry ...*TuiStyleEntryType) TuiStyleEntryTyp
 		styleEntry.LowerLeftCorner = existingStyleEntry[0].LowerLeftCorner
 		styleEntry.CrossConnector = existingStyleEntry[0].CrossConnector
 		styleEntry.DesktopPattern = existingStyleEntry[0].DesktopPattern
+		styleEntry.LabelForegroundColor = existingStyleEntry[0].LabelForegroundColor
+		styleEntry.LabelBackgroundColor = existingStyleEntry[0].LabelBackgroundColor
 		styleEntry.CheckboxForegroundColor = existingStyleEntry[0].CheckboxForegroundColor
 		styleEntry.CheckboxBackgroundColor = existingStyleEntry[0].CheckboxBackgroundColor
 		styleEntry.CheckboxSelectedCharacter = existingStyleEntry[0].CheckboxSelectedCharacter
@@ -101,17 +127,25 @@ func NewTuiStyleEntry(existingStyleEntry ...*TuiStyleEntryType) TuiStyleEntryTyp
 		styleEntry.ScrollbarForegroundColor = existingStyleEntry[0].ScrollbarForegroundColor
 		styleEntry.ScrollbarBackgroundColor = existingStyleEntry[0].ScrollbarBackgroundColor
 		styleEntry.ScrollbarHandleColor = existingStyleEntry[0].ScrollbarHandleColor
-		styleEntry.ProgressBarBackgroundPattern = existingStyleEntry[0].ProgressBarBackgroundPattern
-		styleEntry.ProgressBarForegroundPattern = existingStyleEntry[0].ProgressBarForegroundPattern
-		styleEntry.TextForegroundColor = existingStyleEntry[0].TextForegroundColor
-		styleEntry.TextBackgroundColor = existingStyleEntry[0].TextBackgroundColor
-		styleEntry.TextLabelColor = existingStyleEntry[0].TextLabelColor
-		styleEntry.TextInputForegroundColor = existingStyleEntry[0].TextInputForegroundColor
-		styleEntry.TextInputBackgroundColor = existingStyleEntry[0].TextInputBackgroundColor
+		styleEntry.ProgressBarUnfilledPattern = existingStyleEntry[0].ProgressBarUnfilledPattern
+		styleEntry.ProgressBarFilledPattern = existingStyleEntry[0].ProgressBarFilledPattern
+		styleEntry.ProgressBarUnfilledForegroundColor = existingStyleEntry[0].ProgressBarUnfilledForegroundColor
+		styleEntry.ProgressBarUnfilledBackgroundColor = existingStyleEntry[0].ProgressBarUnfilledBackgroundColor
+		styleEntry.ProgressBarFilledForegroundColor = existingStyleEntry[0].ProgressBarFilledForegroundColor
+		styleEntry.ProgressBarFilledBackgroundColor = existingStyleEntry[0].ProgressBarFilledBackgroundColor
+		styleEntry.ProgressBarTextForegroundColor = existingStyleEntry[0].ProgressBarTextForegroundColor
+		styleEntry.ProgressBarTextBackgroundColor = existingStyleEntry[0].ProgressBarTextBackgroundColor
+		styleEntry.LineDrawingTextForegroundColor = existingStyleEntry[0].LineDrawingTextForegroundColor
+		styleEntry.LineDrawingTextBackgroundColor = existingStyleEntry[0].LineDrawingTextBackgroundColor
+		styleEntry.LineDrawingTextLabelColor = existingStyleEntry[0].LineDrawingTextLabelColor
+		styleEntry.TextFieldForegroundColor = existingStyleEntry[0].TextFieldForegroundColor
+		styleEntry.TextFieldBackgroundColor = existingStyleEntry[0].TextFieldBackgroundColor
+		styleEntry.TextFieldCursorForegroundColor = existingStyleEntry[0].TextFieldCursorForegroundColor
+		styleEntry.TextFieldCursorBackgroundColor = existingStyleEntry[0].TextFieldCursorBackgroundColor
 		styleEntry.TextboxForegroundColor = existingStyleEntry[0].TextboxForegroundColor
 		styleEntry.TextboxBackgroundColor = existingStyleEntry[0].TextboxBackgroundColor
-		styleEntry.CursorForegroundColor = existingStyleEntry[0].CursorForegroundColor
-		styleEntry.CursorBackgroundColor = existingStyleEntry[0].CursorBackgroundColor
+		styleEntry.TextboxCursorForegroundColor = existingStyleEntry[0].TextboxCursorForegroundColor
+		styleEntry.TextboxCursorBackgroundColor = existingStyleEntry[0].TextboxCursorBackgroundColor
 		styleEntry.SelectorForegroundColor = existingStyleEntry[0].SelectorForegroundColor
 		styleEntry.SelectorBackgroundColor = existingStyleEntry[0].SelectorBackgroundColor
 		styleEntry.HighlightForegroundColor = existingStyleEntry[0].HighlightForegroundColor
@@ -119,6 +153,7 @@ func NewTuiStyleEntry(existingStyleEntry ...*TuiStyleEntryType) TuiStyleEntryTyp
 		styleEntry.ButtonRaisedColor = existingStyleEntry[0].ButtonRaisedColor
 		styleEntry.ButtonForegroundColor = existingStyleEntry[0].ButtonForegroundColor
 		styleEntry.ButtonBackgroundColor = existingStyleEntry[0].ButtonBackgroundColor
+		styleEntry.ButtonLabelDisabledColor = existingStyleEntry[0].ButtonLabelDisabledColor
 		styleEntry.IsSquareFont = existingStyleEntry[0].IsSquareFont
 		styleEntry.IsWindowFooterDrawn = existingStyleEntry[0].IsWindowFooterDrawn
 		styleEntry.IsWindowHeaderDrawn = existingStyleEntry[0].IsWindowHeaderDrawn
@@ -142,13 +177,21 @@ func NewTuiStyleEntry(existingStyleEntry ...*TuiStyleEntryType) TuiStyleEntryTyp
 		styleEntry.ScrollbarDownArrow = constants.CharTriangleDown
 		styleEntry.ScrollbarLeftArrow = constants.CharTriangleLeft
 		styleEntry.ScrollbarRightArrow = constants.CharTriangleRight
-		styleEntry.ProgressBarBackgroundPattern = constants.CharBlockSparce
-		styleEntry.ProgressBarForegroundPattern = constants.CharBlockSolid
-		styleEntry.TextForegroundColor = constants.AnsiColorByIndex[15]
-		styleEntry.TextBackgroundColor = constants.AnsiColorByIndex[0]
-		styleEntry.TextLabelColor = constants.AnsiColorByIndex[15]
-		styleEntry.TextInputForegroundColor = constants.AnsiColorByIndex[15]
-		styleEntry.TextInputBackgroundColor = constants.AnsiColorByIndex[0]
+		styleEntry.LabelForegroundColor = constants.AnsiColorByIndex[15]
+		styleEntry.LabelBackgroundColor = constants.AnsiColorByIndex[0]
+		styleEntry.ProgressBarUnfilledPattern = constants.CharBlockSparce
+		styleEntry.ProgressBarFilledPattern = constants.CharBlockSolid
+		styleEntry.ProgressBarUnfilledForegroundColor = constants.AnsiColorByIndex[15]
+		styleEntry.ProgressBarUnfilledBackgroundColor = constants.AnsiColorByIndex[0]
+		styleEntry.ProgressBarFilledForegroundColor = constants.AnsiColorByIndex[3]
+		styleEntry.ProgressBarFilledBackgroundColor = constants.AnsiColorByIndex[3]
+		styleEntry.LineDrawingTextForegroundColor = constants.AnsiColorByIndex[15]
+		styleEntry.LineDrawingTextBackgroundColor = constants.AnsiColorByIndex[0]
+		styleEntry.LineDrawingTextLabelColor = constants.AnsiColorByIndex[15]
+		styleEntry.TextFieldForegroundColor = constants.AnsiColorByIndex[15]
+		styleEntry.TextFieldBackgroundColor = constants.AnsiColorByIndex[0]
+		styleEntry.TextFieldCursorForegroundColor = constants.AnsiColorByIndex[15]
+		styleEntry.TextFieldCursorBackgroundColor = constants.AnsiColorByIndex[0]
 		styleEntry.TextboxForegroundColor = constants.AnsiColorByIndex[15]
 		styleEntry.TextboxBackgroundColor = constants.AnsiColorByIndex[0]
 		styleEntry.CheckboxForegroundColor = constants.AnsiColorByIndex[15]
@@ -162,8 +205,8 @@ func NewTuiStyleEntry(existingStyleEntry ...*TuiStyleEntryType) TuiStyleEntryTyp
 		styleEntry.ScrollbarForegroundColor = constants.AnsiColorByIndex[15]
 		styleEntry.ScrollbarBackgroundColor = constants.AnsiColorByIndex[0]
 		styleEntry.ScrollbarHandleColor = constants.AnsiColorByIndex[15]
-		styleEntry.CursorForegroundColor = constants.AnsiColorByIndex[0]
-		styleEntry.CursorBackgroundColor = constants.AnsiColorByIndex[15]
+		styleEntry.TextboxCursorForegroundColor = constants.AnsiColorByIndex[0]
+		styleEntry.TextboxCursorBackgroundColor = constants.AnsiColorByIndex[15]
 		styleEntry.SelectorForegroundColor = constants.AnsiColorByIndex[15]
 		styleEntry.SelectorBackgroundColor = constants.AnsiColorByIndex[0]
 		styleEntry.HighlightForegroundColor = constants.AnsiColorByIndex[0]
@@ -171,6 +214,7 @@ func NewTuiStyleEntry(existingStyleEntry ...*TuiStyleEntryType) TuiStyleEntryTyp
 		styleEntry.ButtonRaisedColor = constants.AnsiColorByIndex[15]
 		styleEntry.ButtonForegroundColor = constants.AnsiColorByIndex[0]
 		styleEntry.ButtonBackgroundColor = constants.AnsiColorByIndex[7]
+		styleEntry.ButtonLabelDisabledColor = constants.AnsiColorByIndex[15]
 		styleEntry.IsSquareFont = false
 		styleEntry.IsWindowFooterDrawn = false
 		styleEntry.IsWindowHeaderDrawn = false

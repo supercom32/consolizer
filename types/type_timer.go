@@ -1,4 +1,4 @@
-package memory
+package types
 
 import (
 	"encoding/json"
@@ -13,12 +13,12 @@ type TimerEntryType struct {
 func (shared TimerEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
 		IsTimerEnabled bool
-		StartTime int64
-		TimerLength int64
+		StartTime      int64
+		TimerLength    int64
 	}{
 		IsTimerEnabled: shared.IsTimerEnabled,
-		StartTime: shared.StartTime,
-		TimerLength: shared.TimerLength,
+		StartTime:      shared.StartTime,
+		TimerLength:    shared.TimerLength,
 	})
 	if err != nil {
 		return nil, err

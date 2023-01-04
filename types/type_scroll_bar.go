@@ -1,4 +1,4 @@
-package memory
+package types
 
 import (
 	"encoding/json"
@@ -6,46 +6,46 @@ import (
 )
 
 type ScrollbarEntryType struct {
-	Mutex                   sync.Mutex
-	StyleEntry              TuiStyleEntryType
-	ScrollBarAlias          string
-	XLocation               int
-	YLocation               int
-	Length         int
-	MaxScrollValue int
-	ScrollValue    int
-	HandlePosition int
-	IsVisible bool
-	IsHorizontal            bool
-	IsEnabled bool
+	Mutex           sync.Mutex
+	StyleEntry      TuiStyleEntryType
+	ScrollBarAlias  string
+	XLocation       int
+	YLocation       int
+	Length          int
+	MaxScrollValue  int
+	ScrollValue     int
+	HandlePosition  int
+	IsVisible       bool
+	IsHorizontal    bool
+	IsEnabled       bool
 	ScrollIncrement int
 }
 
 func (shared ScrollbarEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
-		StyleEntry  TuiStyleEntryType
-		ScrollBarAlias string
-		XLocation   int
-		YLocation   int
-		Length      int
-		MaxScrollValue   int
-		ScrollValue int
-		ScrollPosition int
-		IsVisible bool
-		IsHorizontal bool
-		IsEnabled bool
+		StyleEntry      TuiStyleEntryType
+		ScrollBarAlias  string
+		XLocation       int
+		YLocation       int
+		Length          int
+		MaxScrollValue  int
+		ScrollValue     int
+		ScrollPosition  int
+		IsVisible       bool
+		IsHorizontal    bool
+		IsEnabled       bool
 		ScrollIncrement int
 	}{
-		StyleEntry: shared.StyleEntry,
-		ScrollBarAlias: shared.ScrollBarAlias,
-		XLocation: shared.XLocation,
-		YLocation: shared.YLocation,
-		Length: shared.Length,
-		MaxScrollValue: shared.MaxScrollValue,
-		ScrollPosition: shared.HandlePosition,
-		IsVisible: shared.IsVisible,
-		IsHorizontal: shared.IsHorizontal,
-		IsEnabled: shared.IsEnabled,
+		StyleEntry:      shared.StyleEntry,
+		ScrollBarAlias:  shared.ScrollBarAlias,
+		XLocation:       shared.XLocation,
+		YLocation:       shared.YLocation,
+		Length:          shared.Length,
+		MaxScrollValue:  shared.MaxScrollValue,
+		ScrollPosition:  shared.HandlePosition,
+		IsVisible:       shared.IsVisible,
+		IsHorizontal:    shared.IsHorizontal,
+		IsEnabled:       shared.IsEnabled,
 		ScrollIncrement: shared.ScrollIncrement,
 	})
 	if err != nil {

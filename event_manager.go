@@ -4,17 +4,18 @@ import (
 	"github.com/gdamore/tcell/v2"
 	"github.com/supercom32/consolizer/constants"
 	"github.com/supercom32/consolizer/internal/memory"
+	"github.com/supercom32/consolizer/types"
 	"strings"
 )
 
 type controlIdentifierType struct {
-	layerAlias string
+	layerAlias   string
 	controlAlias string
-	controlType int
+	controlType  int
 }
 
 type eventStateType struct {
-	stateId int
+	stateId                 int
 	currentlyFocusedControl controlIdentifierType
 	// This variable is used to keep track of items which were highlighted so that they can be
 	// un-highlighted later. Currently, only used by selectors.
@@ -24,10 +25,10 @@ type eventStateType struct {
 var eventStateMemory eventStateType
 
 /*
-updateEventQueues allows you to update all event queues so that information
+UpdateEventQueues allows you to update all event queues so that information
 such as mouse clicks, keystrokes, and other events are properly registered.
 */
-func updateEventQueues() {
+func UpdateEventQueues() {
 	event := commonResource.screen.PollEvent()
 	switch event := event.(type) {
 	case *tcell.EventResize:
@@ -43,7 +44,7 @@ func updateEventQueues() {
 		if scrollbar.updateKeyboardEventScrollbar(keystroke) {
 			isScreenUpdateRequired = true
 		}
-		if textField.updateKeyboardEventTextField(keystroke) {
+		if TextField.updateKeyboardEventTextField(keystroke) {
 			isScreenUpdateRequired = true
 		}
 		if textbox.updateKeyboardEventTextbox(keystroke) {
@@ -53,7 +54,7 @@ func updateEventQueues() {
 			isScreenUpdateRequired = true
 		}
 		if isScreenUpdateRequired == true {
-			UpdateDisplay()
+			UpdateDisplay(false)
 		}
 		memory.KeyboardMemory.AddKeystrokeToKeyboardBuffer(keystroke)
 
@@ -82,33 +83,54 @@ func updateEventQueues() {
 		if moveLayerIfRequired() {
 			isScreenUpdateRequired = true
 		}
-		if textField.updateMouseEventTextField() {
+		if TextField.updateMouseEventTextField() {
 			isScreenUpdateRequired = true
-		}
-		if checkbox.updateMouseEventCheckbox() {
-			isScreenUpdateRequired = true
-		}
-		if button.updateButtonStates(true) {
-			isScreenUpdateRequired = true
-		}
-		if scrollbar.updateMouseEventScrollbar() {
-			isScreenUpdateRequired =  true
 		}
 		if Selector.updateMouseEventSelector() {
-			isScreenUpdateRequired =  true
+			isScreenUpdateRequired = true
 		}
+
 		if textbox.updateMouseEventTextbox() {
-			isScreenUpdateRequired =  true
+			isScreenUpdateRequired = true
 		}
 		if radioButton.updateMouseEventRadioButton() {
 			isScreenUpdateRequired = true
 		}
 		// This is done last so that it can update itself if a Selector or scroll bar change was detected.
-		if dropdown.updateDropdownStateMouse() {
-			isScreenUpdateRequired =  true
+		if Dropdown.updateDropdownStateMouse() {
+			isScreenUpdateRequired = true
 		}
+		if Checkbox.updateMouseEventCheckbox() {
+			isScreenUpdateRequired = true
+		}
+		if Button.updateButtonStates(true) {
+			isScreenUpdateRequired = true
+		}
+		if scrollbar.updateMouseEventScrollbar() {
+			buttonHistory.layerAlias = ""
+			buttonHistory.buttonAlias = ""
+			isScreenUpdateRequired = true
+		}
+		// LogInfo("mouse scrollbar" + time.Now().String())
+		if Selector.updateMouseEventSelector() {
+			isScreenUpdateRequired = true
+		}
+		// LogInfo("mouse event selector" + time.Now().String())
+		if textbox.updateMouseEventTextbox() {
+			isScreenUpdateRequired = true
+		}
+		// LogInfo("mouse event textbox" + time.Now().String())
+		if radioButton.updateMouseEventRadioButton() {
+			isScreenUpdateRequired = true
+		}
+		// LogInfo("mouse event radio" + time.Now().String())
+		// This is done last so that it can update itself if a Selector or scroll bar change was detected.
+		if Dropdown.updateDropdownStateMouse() {
+			isScreenUpdateRequired = true
+		}
+		// LogInfo("mouse event dropdownb")
 		if isScreenUpdateRequired {
-			UpdateDisplay()
+			UpdateDisplay(false)
 		}
 	}
 }
@@ -152,7 +174,7 @@ func moveLayerIfRequired() bool {
 	previousMouseXLocation, previousMouseYLocation, previousButtonPressed, _ := memory.GetPreviousMouseStatus()
 	if buttonPressed != 0 {
 		characterEntry := getCellInformationUnderMouseCursor(mouseXLocation, mouseYLocation)
-		if previousButtonPressed != 0 && eventStateMemory.stateId == constants.EventStateDragAndDrop {
+		if previousButtonPressed != 0 && eventStateMemory.stateId == constants.EventStateDragAndDrop && isLayerExists(eventStateMemory.currentlyFocusedControl.layerAlias) {
 			xMove := mouseXLocation - previousMouseXLocation
 			yMove := mouseYLocation - previousMouseYLocation
 			MoveLayerByRelativeValue(eventStateMemory.currentlyFocusedControl.layerAlias, xMove, yMove)
@@ -180,6 +202,12 @@ func bringLayerToFrontIfRequired() {
 	if buttonPressed != 0 {
 		characterEntry := getCellInformationUnderMouseCursor(mouseXLocation, mouseYLocation)
 		if characterEntry.LayerAlias == "" {
+			return
+		}
+		buttonHistory.layerAlias = ""
+		buttonHistory.buttonAlias = ""
+		// Protect against layer deletions.
+		if !memory.IsLayerExists(characterEntry.LayerAlias) {
 			return
 		}
 		layerEntry := memory.GetLayer(characterEntry.LayerAlias)
@@ -218,7 +246,7 @@ func isInteractiveLayerOffscreen(layerAlias string) bool {
 		viewportWidth = parentEntry.Width
 		viewportHeight = parentEntry.Height
 	}
-	if !(layerEntry.ScreenXLocation < viewportWidth && layerEntry.ScreenXLocation + layerEntry.Width - 2 > 0) ||
+	if !(layerEntry.ScreenXLocation < viewportWidth && layerEntry.ScreenXLocation+layerEntry.Width-2 > 0) ||
 		!(layerEntry.ScreenYLocation >= 0 && layerEntry.ScreenYLocation < viewportHeight) {
 		return true
 	}
@@ -230,8 +258,8 @@ getButtonClickIdentifier allows you to obtain the layer alias and the buttonType
 alias for the text cell currently under the mouse cursor. This is useful
 for determining which buttonType the user has clicked (if any).
 */
-func getCellInformationUnderMouseCursor(mouseXLocation int, mouseYLocation int) memory.CharacterEntryType{
-	var characterEntry memory.CharacterEntryType
+func getCellInformationUnderMouseCursor(mouseXLocation int, mouseYLocation int) types.CharacterEntryType {
+	var characterEntry types.CharacterEntryType
 	layerEntry := commonResource.screenLayer
 	mouseYLocationOnLayer := mouseYLocation - layerEntry.ScreenYLocation
 	mouseXLocationOnLayer := mouseXLocation - layerEntry.ScreenXLocation

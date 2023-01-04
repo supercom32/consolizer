@@ -1,4 +1,4 @@
-package memory
+package types
 
 import (
 	"encoding/json"
@@ -15,7 +15,7 @@ func (shared ImageEntryType) MarshalJSON() ([]byte, error) {
 		ImageData  image.Image
 		LayerEntry LayerEntryType
 	}{
-		ImageData: shared.ImageData,
+		ImageData:  shared.ImageData,
 		LayerEntry: shared.LayerEntry,
 	})
 	if err != nil {
@@ -40,4 +40,3 @@ func NewImageEntry(existingImageEntry ...*ImageEntryType) ImageEntryType {
 	}
 	return imageEntry
 }
-

@@ -1,20 +1,20 @@
-package memory
+package types
 
 import (
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
-func TestAttributeTypeCreation(test *testing.T) {
-	firstAttributeEntry := NewAttributeEntry()
+func TestTextStyleTypeCreation(test *testing.T) {
+	firstAttributeEntry := NewTextCellStyleEntry()
 	firstAttributeEntry.ForegroundColor = 1234
 	firstAttributeEntry.BackgroundColor = 5678
 	firstAttributeEntry.IsBlinking = false
 	firstAttributeEntry.IsBold = true
 	firstAttributeEntry.IsReversed = false
 	firstAttributeEntry.IsUnderlined = true
-	secondAttributeEntry := NewAttributeEntry(&firstAttributeEntry)
-	assert.Equalf(test, secondAttributeEntry, firstAttributeEntry, "The first attribute entry is not the same as the second, even though it should be an identical clone.")
+	secondAttributeEntry := NewTextCellStyleEntry(&firstAttributeEntry)
+	assert.Equalf(test, secondAttributeEntry, firstAttributeEntry, "The first text style entry is not the same as the second, even though it should be an identical clone.")
 
 	firstAttributeEntry.ForegroundColor = 1234
 	firstAttributeEntry.BackgroundColor = 5678
@@ -22,5 +22,5 @@ func TestAttributeTypeCreation(test *testing.T) {
 	firstAttributeEntry.IsBold = false
 	firstAttributeEntry.IsReversed = true
 	firstAttributeEntry.IsUnderlined = false
-	assert.NotEqualf(test, secondAttributeEntry, firstAttributeEntry, "The second attribute entry should not be the same as a the first, as manipulating it should only effect itself.")
+	assert.NotEqualf(test, secondAttributeEntry, firstAttributeEntry, "The second text style entry should not be the same as a the first, as manipulating it should only effect itself.")
 }

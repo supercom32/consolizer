@@ -2,34 +2,53 @@ package memory
 
 import (
 	"fmt"
+	"github.com/supercom32/consolizer/types"
+	"sync"
 	"time"
 )
 
-var TimerMemory map[string]*TimerEntryType
+type timerMemoryType struct {
+	sync.Mutex
+	Entries map[string]*types.TimerEntryType
+}
+
+var Timer timerMemoryType
 
 func InitializeTimerMemory() {
-	TimerMemory = make(map[string]*TimerEntryType)
+	Timer.Entries = make(map[string]*types.TimerEntryType)
 }
 
 func AddTimer(timerAlias string, lengthOfTimerInMilliseconds int64, isTimerEnabled bool) {
-	timerEntry := NewTimerEntry()
+	Timer.Lock()
+	defer func() {
+		Timer.Unlock()
+	}()
+	timerEntry := types.NewTimerEntry()
 	timerEntry.IsTimerEnabled = isTimerEnabled
-	timerEntry.StartTime = GetCurrentTimeInMilliseconds()
+	timerEntry.StartTime = getCurrentTimeInMilliseconds()
 	timerEntry.TimerLength = lengthOfTimerInMilliseconds
-	TimerMemory[timerAlias] = &timerEntry
+	Timer.Entries[timerAlias] = &timerEntry
 }
 
-func GetTimer(timerAlias string) *TimerEntryType {
-	if TimerMemory[timerAlias] == nil {
+func GetTimer(timerAlias string) *types.TimerEntryType {
+	Timer.Lock()
+	defer func() {
+		Timer.Unlock()
+	}()
+	if Timer.Entries[timerAlias] == nil {
 		panic(fmt.Sprintf("The requested timer with alias '%s' could not be returned since it does not exist.", timerAlias))
 	}
-	return TimerMemory[timerAlias]
+	return Timer.Entries[timerAlias]
 }
 
 func DeleteTimer(timerAlias string) {
-	delete(TimerMemory, timerAlias)
+	Timer.Lock()
+	defer func() {
+		Timer.Unlock()
+	}()
+	delete(Timer.Entries, timerAlias)
 }
 
-func GetCurrentTimeInMilliseconds() int64 {
+func getCurrentTimeInMilliseconds() int64 {
 	return time.Now().UnixNano() / int64(time.Millisecond)
 }

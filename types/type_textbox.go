@@ -1,4 +1,4 @@
-package memory
+package types
 
 import (
 	"encoding/json"
@@ -6,55 +6,55 @@ import (
 
 type TextboxEntryType struct {
 	HorizontalScrollbarAlias string
-	VerticalScrollbarAlias string
-	StyleEntry  TuiStyleEntryType
-	TextData [][]rune
-	XLocation   int
-	YLocation   int
-	Width int
-	Height            int
-	ViewportXLocation int
-	ViewportYLocation int
-	CursorXLocation int
-	CursorYLocation int
-	IsEnabled         bool
-	IsVisible bool
-	IsBorderDrawn bool
+	VerticalScrollbarAlias   string
+	StyleEntry               TuiStyleEntryType
+	TextData                 [][]rune
+	XLocation                int
+	YLocation                int
+	Width                    int
+	Height                   int
+	ViewportXLocation        int
+	ViewportYLocation        int
+	CursorXLocation          int
+	CursorYLocation          int
+	IsEnabled                bool
+	IsVisible                bool
+	IsBorderDrawn            bool
 }
 
 func (shared TextboxEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
 		HorizontalScrollbarAlias string
-		VerticalScrollbarAlias string
-		StyleEntry TuiStyleEntryType
-		TextData   [][]rune
-		XLocation  int
-		YLocation   int
-		Width int
-		Height int
-		ViewportXLocation int
-		ViewportYLocation int
-		CursorXLocation int
-		CursorYLocation int
-		IsEnabled bool
-		IsVisible bool
-		IsBorderDrawn bool
+		VerticalScrollbarAlias   string
+		StyleEntry               TuiStyleEntryType
+		TextData                 [][]rune
+		XLocation                int
+		YLocation                int
+		Width                    int
+		Height                   int
+		ViewportXLocation        int
+		ViewportYLocation        int
+		CursorXLocation          int
+		CursorYLocation          int
+		IsEnabled                bool
+		IsVisible                bool
+		IsBorderDrawn            bool
 	}{
 		HorizontalScrollbarAlias: shared.HorizontalScrollbarAlias,
-		VerticalScrollbarAlias: shared.VerticalScrollbarAlias,
-		StyleEntry: shared.StyleEntry,
-		TextData:   shared.TextData,
-		XLocation:  shared.XLocation,
-		YLocation:  shared.YLocation,
-		Width: shared.Width,
-		Height: shared.Height,
-		ViewportXLocation: shared.ViewportXLocation,
-		ViewportYLocation: shared.ViewportYLocation,
-		CursorXLocation: shared.CursorXLocation,
-		CursorYLocation: shared.CursorYLocation,
-		IsEnabled:  shared.IsEnabled,
-		IsVisible:  shared.IsVisible,
-		IsBorderDrawn: shared.IsBorderDrawn,
+		VerticalScrollbarAlias:   shared.VerticalScrollbarAlias,
+		StyleEntry:               shared.StyleEntry,
+		TextData:                 shared.TextData,
+		XLocation:                shared.XLocation,
+		YLocation:                shared.YLocation,
+		Width:                    shared.Width,
+		Height:                   shared.Height,
+		ViewportXLocation:        shared.ViewportXLocation,
+		ViewportYLocation:        shared.ViewportYLocation,
+		CursorXLocation:          shared.CursorXLocation,
+		CursorYLocation:          shared.CursorYLocation,
+		IsEnabled:                shared.IsEnabled,
+		IsVisible:                shared.IsVisible,
+		IsBorderDrawn:            shared.IsBorderDrawn,
 	})
 	if err != nil {
 		return nil, err

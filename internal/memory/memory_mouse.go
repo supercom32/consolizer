@@ -5,7 +5,7 @@ import (
 )
 
 type mouseMemoryType struct {
-	mutex         sync.Mutex
+	sync.Mutex
 	xLocation     int
 	yLocation     int
 	buttonPressed uint
@@ -16,40 +16,56 @@ var MouseMemory mouseMemoryType
 var PreviousMouseMemory mouseMemoryType
 
 func ClearMouseMemory() {
-	MouseMemory.mutex.Lock()
+	MouseMemory.Lock()
+	defer func() {
+		MouseMemory.Unlock()
+	}()
 	MouseMemory.xLocation = -1
 	MouseMemory.yLocation = -1
 	MouseMemory.buttonPressed = 0
 	MouseMemory.wheelState = ""
-	MouseMemory.mutex.Unlock()
-	PreviousMouseMemory.mutex.Lock()
+	PreviousMouseMemory.Lock()
+	defer func() {
+		PreviousMouseMemory.Unlock()
+	}()
 	PreviousMouseMemory.xLocation = -1
 	PreviousMouseMemory.yLocation = -1
 	PreviousMouseMemory.buttonPressed = 0
 	PreviousMouseMemory.wheelState = ""
-	PreviousMouseMemory.mutex.Unlock()
 }
 
 func SetMouseStatus(xLocation int, yLocation int, buttonPressed uint, wheelState string) {
-	PreviousMouseMemory.mutex.Lock()
+	PreviousMouseMemory.Lock()
+	defer func() {
+		PreviousMouseMemory.Unlock()
+	}()
 	PreviousMouseMemory.xLocation = MouseMemory.xLocation
 	PreviousMouseMemory.yLocation = MouseMemory.yLocation
 	PreviousMouseMemory.buttonPressed = MouseMemory.buttonPressed
 	PreviousMouseMemory.wheelState = MouseMemory.wheelState
-	PreviousMouseMemory.mutex.Unlock()
-	MouseMemory.mutex.Lock()
+	MouseMemory.Lock()
+	defer func() {
+		MouseMemory.Unlock()
+	}()
 	MouseMemory.xLocation = xLocation
 	MouseMemory.yLocation = yLocation
 	MouseMemory.buttonPressed = buttonPressed
 	MouseMemory.wheelState = wheelState
-	MouseMemory.mutex.Unlock()
 }
 
 func GetMouseStatus() (int, int, uint, string) {
+	MouseMemory.Lock()
+	defer func() {
+		MouseMemory.Unlock()
+	}()
 	return MouseMemory.xLocation, MouseMemory.yLocation, MouseMemory.buttonPressed, MouseMemory.wheelState
 }
 
 func GetPreviousMouseStatus() (int, int, uint, string) {
+	MouseMemory.Lock()
+	defer func() {
+		MouseMemory.Unlock()
+	}()
 	return PreviousMouseMemory.xLocation, PreviousMouseMemory.yLocation, PreviousMouseMemory.buttonPressed, PreviousMouseMemory.wheelState
 }
 

@@ -21,13 +21,13 @@ func InitializeUnicodeWidthMemory() {
 	isUnicodeWide = make(map[int]bool)
 	setUnicodeRangeWidth('\u2500', '\u257F', false) // Box Drawing
 	setUnicodeRangeWidth('\u2580', '\u259F', false) // Block Elements
-	setUnicodeRangeWidth('\u2600', '\u26FF', true) // Misc Symbols
+	setUnicodeRangeWidth('\u2600', '\u26FF', true)  // Misc Symbols
 	setUnicodeGeometricShapeWidth()
 }
 
 func setUnicodeRangeWidth(startingIndex int, endingIndex int, isWide bool) {
 	offset := startingIndex
-	for currentIndex := 0; currentIndex < endingIndex - startingIndex; currentIndex++ {
+	for currentIndex := 0; currentIndex < endingIndex-startingIndex; currentIndex++ {
 		isUnicodeWide[offset+currentIndex] = isWide
 	}
 }
@@ -54,8 +54,9 @@ func IsRuneCharacterWide(character rune) bool {
 	if isUnicodeWide == nil {
 		InitializeUnicodeWidthMemory()
 	}
-	// If Asian font which is detected as wide, return true.
+
 	properties := width.LookupRune(character)
+	// If Asian font which is detected as wide, return true.
 	if properties.Kind() == width.EastAsianWide || properties.Kind() == width.EastAsianFullwidth {
 		return true
 	}
@@ -98,7 +99,6 @@ func GetFloatAsString(number interface{}) string {
 	numberAsFloat64 := recast.GetNumberAsFloat64(number)
 	return fmt.Sprintf("%g", numberAsFloat64)
 }
-
 
 func GetSubString(input string, start int, length int) string {
 	asRunes := []rune(input)
@@ -162,7 +162,7 @@ func GetMaxCharactersThatFitInStringSizeReverse(arrayOfRunes []rune, maxLengthOf
 	numberOfCharactersUsed := 0
 	formattedArray := []rune{}
 	for currentRuneIndex := range arrayOfRunes {
-		 currentRune := arrayOfRunes[len(arrayOfRunes) - 1 - currentRuneIndex]
+		currentRune := arrayOfRunes[len(arrayOfRunes)-1-currentRuneIndex]
 		if IsRuneCharacterWide(currentRune) {
 			numberOfCharactersUsed = numberOfCharactersUsed + 2
 			if numberOfCharactersUsed > maxLengthOfString {
@@ -189,7 +189,7 @@ func GetRuneArrayCopy(sourceRuneArray []rune) []rune {
 }
 
 func logInfo(info string) {
-	filesystem.AppendLineToFile("/tmp/debug.log", info + "\n", 0)
+	filesystem.AppendLineToFile("/tmp/debug.log", info+"\n", 0)
 }
 
 func GetFormattedString(stringToFormat string, lengthOfString int, position int) string {
@@ -209,9 +209,9 @@ func GetFormattedRuneArray(arrayOfRunes []rune, desiredLengthOfArray int, textAl
 
 	// If you're viewing the end of a long string (so you need padding) and some characters are wide,
 	// you need to add padding to compensate for the missing width.
-	//paddingSize = paddingSize + GetNumberOfWideCharacters(arrayOfRunes)
+	// paddingSize = paddingSize + GetNumberOfWideCharacters(arrayOfRunes)
 
-	//stringPaddingInRunes := GetRunesFromString(GetFilledString(paddingSize, " "))
+	// stringPaddingInRunes := GetRunesFromString(GetFilledString(paddingSize, " "))
 	fullStringPadding := GetFilledRuneArray(paddingSize, ' ')
 	halfStringPadding := GetFilledRuneArray(paddingSize/2, ' ')
 

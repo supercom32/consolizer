@@ -1,4 +1,4 @@
-package memory
+package types
 
 import (
 	"github.com/stretchr/testify/assert"
@@ -26,5 +26,5 @@ func TestCharacterTypeCreation(test *testing.T) {
 	secondCharacterObject.AttributeEntry.IsBold = false
 	secondCharacterObject.AttributeEntry.IsReversed = true
 	secondCharacterObject.AttributeEntry.IsUnderlined = false
-	assert.NotEqualf(test, secondCharacterObject, firstCharacterObject,"The second Character object should not be the same as the first, as manipulating it should only effect itself.")
+	assert.NotEqualf(test, secondCharacterObject, firstCharacterObject, "The second Character object should not be the same as the first, as manipulating it should only effect itself.")
 }

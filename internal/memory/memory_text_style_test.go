@@ -4,6 +4,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/supercom32/consolizer/constants"
 	"github.com/supercom32/consolizer/internal/recast"
+	"github.com/supercom32/consolizer/types"
 	"testing"
 )
 
@@ -13,7 +14,7 @@ func TestAddTextStyle(test *testing.T) {
 	expectedBackgroundColor := constants.AnsiColorByIndex[constants.ColorBrightGreen]
 	expectedIsBlinking := true
 	InitializeTextStyleMemory()
-	attributeEntry := NewTextStyleEntry()
+	attributeEntry := types.NewTextCellStyleEntry()
 	attributeEntry.ForegroundColor = expectedForegroundColor
 	attributeEntry.BackgroundColor = expectedBackgroundColor
 	attributeEntry.IsBlinking = expectedIsBlinking
@@ -30,12 +31,12 @@ func TestDeleteTextStyle(test *testing.T) {
 	expectedBackgroundColor := constants.AnsiColorByIndex[constants.ColorBrightGreen]
 	expectedIsBlinking := true
 	InitializeTextStyleMemory()
-	attributeEntry := NewTextStyleEntry()
+	attributeEntry := types.NewTextCellStyleEntry()
 	attributeEntry.ForegroundColor = expectedForegroundColor
 	attributeEntry.BackgroundColor = expectedBackgroundColor
 	attributeEntry.IsBlinking = expectedIsBlinking
 	AddTextStyle(expectedAlias, attributeEntry)
 	DeleteTextStyle(expectedAlias)
-	assert.Panics(test, func() {GetTextStyle("expectedAlias")}, "The created dialog attribute style did not match what was supposed to be created!")
-	//assert.Equalf(test, (*AttributeEntryType)(nil), TextStyleMemory[expectedAlias], "The created dialog attribute style did not match what was supposed to be created!")
+	assert.Panics(test, func() { GetTextStyle("expectedAlias") }, "The created dialog attribute style did not match what was supposed to be created!")
+	// assert.Equalf(test, (*AttributeEntryType)(nil), TextStyleMemory[expectedAlias], "The created dialog attribute style did not match what was supposed to be created!")
 }

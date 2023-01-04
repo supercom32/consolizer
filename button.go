@@ -4,6 +4,7 @@ import (
 	"github.com/supercom32/consolizer/constants"
 	"github.com/supercom32/consolizer/internal/memory"
 	"github.com/supercom32/consolizer/internal/stringformat"
+	"github.com/supercom32/consolizer/types"
 )
 
 type buttonHistoryType struct {
@@ -18,8 +19,9 @@ type ButtonInstanceType struct {
 	buttonAlias string
 }
 
-type buttonType struct {}
-var button buttonType
+type buttonType struct{}
+
+var Button buttonType
 
 /*
 IsButtonPressed allows you to detect if any text button was pressed or not. In
@@ -28,7 +30,14 @@ GetButtonPressed method.
 */
 func (shared *ButtonInstanceType) IsButtonPressed() bool {
 	if buttonHistory.layerAlias != "" && buttonHistory.buttonAlias != "" {
-		return true
+		if buttonHistory.layerAlias == shared.layerAlias && buttonHistory.buttonAlias == shared.buttonAlias {
+			for shared.IsButtonStatePressed() {
+			}
+
+			buttonHistory.layerAlias = ""
+			buttonHistory.buttonAlias = ""
+			return true
+		}
 	}
 	return false
 }
@@ -53,8 +62,16 @@ func (shared *ButtonInstanceType) GetButtonPressed() (string, string) {
 	return "", ""
 }
 
+func (shared *ButtonInstanceType) IsButtonStatePressed() bool {
+	buttonEntry := memory.GetButton(shared.layerAlias, shared.buttonAlias)
+	if buttonEntry.IsPressed == true {
+		return true
+	}
+	return false
+}
+
 /*
-AddButton allows you to add a button to a text layer. Once called, an instance of your control is
+Add allows you to add a button to a text layer. Once called, an instance of your control is
 returned which will allow you to read or manipulate the properties for it. The Style of the button
 will be determined by the style entry passed in. If you wish to remove a button from a text
 layer, simply call 'DeleteButton'. In addition, the following information should be noted:
@@ -73,8 +90,10 @@ then the width will automatically default to the width of your button label.
 - If the height of your button is less than 3 characters high, then the height
 will automatically default to the minimum of 3 characters.
 */
- func (shared *buttonType) AddButton(layerAlias string, buttonAlias string, buttonLabel string, styleEntry memory.TuiStyleEntryType, xLocation int, yLocation int, width int, height int) ButtonInstanceType {
+func (shared *buttonType) Add(layerAlias string, buttonAlias string, buttonLabel string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, height int, isEnabled bool) ButtonInstanceType {
 	memory.AddButton(layerAlias, buttonAlias, buttonLabel, styleEntry, xLocation, yLocation, width, height)
+	buttonEntry := memory.GetButton(layerAlias, buttonAlias)
+	buttonEntry.IsEnabled = isEnabled
 	var buttonInstance ButtonInstanceType
 	buttonInstance.layerAlias = layerAlias
 	buttonInstance.buttonAlias = buttonAlias
@@ -93,13 +112,20 @@ func (shared *buttonType) DeleteButton(layerAlias string, buttonAlias string) {
 }
 
 /*
+DeleteAllButtons allows you to delete all buttons on a given text layer.
+*/
+func (shared *buttonType) DeleteAllButtons(layerAlias string) {
+	memory.DeleteAllButtonsFromLayer(layerAlias)
+}
+
+/*
 drawButtonsOnLayer allows you to draw all buttons on a given text layer.
 */
-func (shared *buttonType) drawButtonsOnLayer(layerEntry memory.LayerEntryType) {
+func (shared *buttonType) drawButtonsOnLayer(layerEntry types.LayerEntryType) {
 	layerAlias := layerEntry.LayerAlias
-	for currentKey := range memory.ButtonMemory[layerAlias] {
-		buttonEntry := memory.GetButton(layerAlias, currentKey)
-		drawButton(&layerEntry, currentKey, buttonEntry.ButtonLabel, buttonEntry.StyleEntry, buttonEntry.IsPressed, buttonEntry.IsSelected, buttonEntry.XLocation, buttonEntry.YLocation, buttonEntry.Width, buttonEntry.Height)
+	for currentKey := range memory.Button.Entries[layerAlias] {
+		buttonEntry := memory.Button.Entries[layerAlias][currentKey]
+		drawButton(&layerEntry, currentKey, buttonEntry.ButtonLabel, buttonEntry.StyleEntry, buttonEntry.IsPressed, buttonEntry.IsSelected, buttonEntry.IsEnabled, buttonEntry.XLocation, buttonEntry.YLocation, buttonEntry.Width, buttonEntry.Height)
 	}
 }
 
@@ -116,9 +142,9 @@ the text layer data under it.
 - If the button to be drawn falls outside the range of the provided layer,
 then only the visible portion of the button will be drawn.
 */
-func drawButton(layerEntry *memory.LayerEntryType, buttonAlias string, buttonLabel string, styleEntry memory.TuiStyleEntryType, isPressed bool, isSelected bool, xLocation int, yLocation int, width int, height int) {
-	localStyleEntry := memory.NewTuiStyleEntry(&styleEntry)
-	attributeEntry := memory.NewAttributeEntry()
+func drawButton(layerEntry *types.LayerEntryType, buttonAlias string, buttonLabel string, styleEntry types.TuiStyleEntryType, isPressed bool, isSelected bool, isEnabled bool, xLocation int, yLocation int, width int, height int) {
+	localStyleEntry := types.NewTuiStyleEntry(&styleEntry)
+	attributeEntry := types.NewAttributeEntry()
 	attributeEntry.ForegroundColor = styleEntry.ButtonForegroundColor
 	attributeEntry.BackgroundColor = styleEntry.ButtonBackgroundColor
 	attributeEntry.CellType = constants.CellTypeButton
@@ -126,11 +152,11 @@ func drawButton(layerEntry *memory.LayerEntryType, buttonAlias string, buttonLab
 	if height < 3 {
 		height = 3
 	}
-	if width < len(buttonLabel) {
+	if width-2 <= len(buttonLabel) {
 		width = len(buttonLabel) + 2
 	}
-	localStyleEntry.TextForegroundColor = localStyleEntry.ButtonRaisedColor
-	localStyleEntry.TextBackgroundColor = localStyleEntry.ButtonBackgroundColor
+	localStyleEntry.LineDrawingTextForegroundColor = localStyleEntry.ButtonRaisedColor
+	localStyleEntry.LineDrawingTextBackgroundColor = localStyleEntry.ButtonBackgroundColor
 	fillArea(layerEntry, attributeEntry, " ", xLocation, yLocation, width, height, constants.NullCellControlLocation)
 	if isPressed {
 		drawFrame(layerEntry, localStyleEntry, attributeEntry, constants.FrameStyleSunken, xLocation, yLocation, width, height, false)
@@ -142,6 +168,9 @@ func drawButton(layerEntry *memory.LayerEntryType, buttonAlias string, buttonLab
 	arrayOfRunes := stringformat.GetRunesFromString(buttonLabel)
 	if isSelected {
 		attributeEntry.IsUnderlined = true
+	}
+	if !isEnabled {
+		attributeEntry.ForegroundColor = styleEntry.ButtonLabelDisabledColor
 	}
 	printLayer(layerEntry, attributeEntry, xLocation+centerXLocation, yLocation+centerYLocation, arrayOfRunes)
 }
@@ -175,10 +204,14 @@ func (shared *buttonType) updateButtonStateMouse() bool {
 	buttonAlias := characterEntry.AttributeEntry.CellControlAlias
 	// If not a button, reset all buttons if needed.
 	if characterEntry.AttributeEntry.CellType != constants.CellTypeButton {
-		for currentLayer, _ := range memory.ButtonMemory {
-			for currentButton, _ := range memory.ButtonMemory[currentLayer] {
+		for currentLayer, _ := range memory.Button.Entries {
+			for currentButton, _ := range memory.Button.Entries[currentLayer] {
+				// In case of delete race condition, we check this first.
+				if !memory.IsButtonExists(currentLayer, currentButton) {
+					continue
+				}
 				// If button not found, reset all buttons if necessary...
-				buttonEntry := memory.GetButton(currentLayer,currentButton)
+				buttonEntry := memory.GetButton(currentLayer, currentButton)
 				if buttonEntry.IsPressed == true {
 					buttonHistory.layerAlias = layerAlias
 					buttonHistory.buttonAlias = buttonAlias
@@ -191,9 +224,7 @@ func (shared *buttonType) updateButtonStateMouse() bool {
 		}
 		return isUpdateRequired
 	}
-	if buttonAlias != "" && buttonPressed == 0 {
-		// If button was found, but mouse is not being pressed, update button
-		// only if required.
+	if buttonAlias != "" && buttonPressed == 0 && memory.IsButtonExists(layerAlias, buttonAlias) {
 		buttonEntry := memory.GetButton(layerAlias, buttonAlias)
 		if buttonEntry.IsPressed == true {
 			buttonEntry.Mutex.Lock()
@@ -201,12 +232,14 @@ func (shared *buttonType) updateButtonStateMouse() bool {
 			buttonEntry.Mutex.Unlock()
 			isUpdateRequired = true
 		}
-	} else if buttonAlias != "" && buttonPressed != 0 {
+	} else if buttonAlias != "" && buttonPressed != 0 && memory.IsButtonExists(layerAlias, buttonAlias) {
 		// If button was found and mouse is being pressed, update button only
 		// if required.
 		buttonEntry := memory.GetButton(layerAlias, buttonAlias)
-		if  buttonEntry.IsPressed == false {
+		if buttonEntry.IsEnabled && buttonEntry.IsPressed == false {
 			buttonEntry.Mutex.Lock()
+			buttonHistory.layerAlias = layerAlias
+			buttonHistory.buttonAlias = buttonAlias
 			buttonEntry.IsPressed = true
 			buttonEntry.Mutex.Unlock()
 			setFocusedControl(layerAlias, buttonAlias, constants.CellTypeButton)

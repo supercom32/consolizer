@@ -3,15 +3,17 @@ package consolizer
 import (
 	"github.com/supercom32/consolizer/constants"
 	"github.com/supercom32/consolizer/internal/memory"
+	"github.com/supercom32/consolizer/types"
 	"sort"
 )
 
 type ScrollbarInstanceType struct {
-	layerAlias  string
+	layerAlias     string
 	scrollbarAlias string
 }
 
-type scrollbarType struct {}
+type scrollbarType struct{}
+
 var scrollbar scrollbarType
 
 /*
@@ -27,7 +29,7 @@ information should be noted:
 func (shared *ScrollbarInstanceType) setScrollValue(value int) {
 	// TODO: Add scroll value validation.
 	if memory.IsScrollbarExists(shared.layerAlias, shared.scrollbarAlias) {
-		scrollbarEntry := memory. GetScrollbar(shared.layerAlias, shared.scrollbarAlias)
+		scrollbarEntry := memory.GetScrollbar(shared.layerAlias, shared.scrollbarAlias)
 		scrollbarEntry.ScrollValue = value
 		scrollbar.computeScrollbarHandlePositionByScrollValue(shared.layerAlias, shared.scrollbarAlias)
 	}
@@ -51,14 +53,14 @@ The scrollbar value is automatically updated to match the location of the scroll
 */
 func (shared *ScrollbarInstanceType) setHandlePosition(positionIndex int) {
 	if memory.IsScrollbarExists(shared.layerAlias, shared.scrollbarAlias) {
-		scrollbarEntry := memory. GetScrollbar(shared.layerAlias, shared.scrollbarAlias)
+		scrollbarEntry := memory.GetScrollbar(shared.layerAlias, shared.scrollbarAlias)
 		scrollbarEntry.HandlePosition = positionIndex
 		scrollbar.computeScrollbarValueByHandlePosition(shared.layerAlias, shared.scrollbarAlias)
 	}
 }
 
 /*
-AddScrollbar allows you to add a scrollbar to a given text layer. Once called, an instance of your
+Add allows you to add a scrollbar to a given text layer. Once called, an instance of your
 control is returned which will allow you to read or manipulate the properties for it. The Style
 of the scrollbar will be determined by the style entry passed in. If you wish to remove a scrollbar
 from a text layer, simply call 'DeleteScrollbar'. In addition, the following information should be noted:
@@ -71,7 +73,7 @@ the text layer data under it.
 - If the scrollbar to be drawn falls outside the range of the provided layer,
 then only the visible portion of the scrollbar will be drawn.
 */
-func (shared *scrollbarType) AddScrollbar(layerAlias string, scrollbarAlias string, styleEntry memory.TuiStyleEntryType, xLocation int, yLocation int, length int, maxScrollValue int, scrollValue int, scrollIncrement int, isHorizontal bool) ScrollbarInstanceType {
+func (shared *scrollbarType) Add(layerAlias string, scrollbarAlias string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, length int, maxScrollValue int, scrollValue int, scrollIncrement int, isHorizontal bool) ScrollbarInstanceType {
 	// TODO: add validation and what happens if failed.
 	memory.AddScrollbar(layerAlias, scrollbarAlias, styleEntry, xLocation, yLocation, length, maxScrollValue, scrollValue, scrollIncrement, isHorizontal)
 	var ScrollbarInstance ScrollbarInstanceType
@@ -91,17 +93,21 @@ func (shared *scrollbarType) DeleteScrollbar(layerAlias string, scrollbarAlias s
 	memory.DeleteScrollbar(layerAlias, scrollbarAlias)
 }
 
+func (shared *scrollbarType) DeleteAllScrollbars(layerAlias string) {
+	memory.DeleteAllScrollbarsFromLayer(layerAlias)
+}
+
 /*
 drawScrollbarsOnLayer allows you to draw all scrollbars on a given text layer.
 */
-func (shared *scrollbarType) drawScrollbarsOnLayer(layerEntry memory.LayerEntryType) {
+func (shared *scrollbarType) drawScrollbarsOnLayer(layerEntry types.LayerEntryType) {
 	layerAlias := layerEntry.LayerAlias
 	keyList := make([]string, 0)
-	for currentKey := range memory.ScrollbarMemory[layerAlias] {
+	for currentKey := range memory.ScrollBar.Entries[layerAlias] {
 		keyList = append(keyList, currentKey)
 	}
 	sort.Strings(keyList)
-	for currentKey := range keyList{
+	for currentKey := range keyList {
 		scrollbarEntry := memory.GetScrollbar(layerAlias, keyList[currentKey])
 		if scrollbarEntry.IsVisible {
 			shared.drawScrollbar(&layerEntry, keyList[currentKey], scrollbarEntry.StyleEntry, scrollbarEntry.XLocation, scrollbarEntry.YLocation, scrollbarEntry.Length, scrollbarEntry.HandlePosition, scrollbarEntry.IsHorizontal)
@@ -122,39 +128,39 @@ the text layer data under it.
 - If the scrollbar to be drawn falls outside the range of the provided layer,
 then only the visible portion of the scrollbar will be drawn.
 */
-func (shared *scrollbarType) drawScrollbar(layerEntry *memory.LayerEntryType, scrollbarAlias string, styleEntry memory.TuiStyleEntryType, xLocation int, yLocation int, length int, handlePosition int, isHorizontal bool) {
-	attributeEntry := memory.NewAttributeEntry()
+func (shared *scrollbarType) drawScrollbar(layerEntry *types.LayerEntryType, scrollbarAlias string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, length int, handlePosition int, isHorizontal bool) {
+	attributeEntry := types.NewAttributeEntry()
 	attributeEntry.CellType = constants.CellTypeScrollbar
 	attributeEntry.CellControlAlias = scrollbarAlias
 	attributeEntry.ForegroundColor = styleEntry.ScrollbarForegroundColor
 	attributeEntry.BackgroundColor = styleEntry.ScrollbarBackgroundColor
 	scrollbarEntry := memory.GetScrollbar(layerEntry.LayerAlias, scrollbarAlias)
-	//numberOfScrollSegments := length - 2
-	//segmentPosition := math.RoundToEven(float64(currentValue) / float64(numberOfTicks) * float64(numberOfScrollSegments))
+	// numberOfScrollSegments := length - 2
+	// segmentPosition := math.RoundToEven(float64(currentValue) / float64(numberOfTicks) * float64(numberOfScrollSegments))
 	if isHorizontal {
-		for currentXLocation := 1; currentXLocation < length - 1; currentXLocation++ {
+		for currentXLocation := 1; currentXLocation < length-1; currentXLocation++ {
 			attributeEntry.CellControlId = currentXLocation - 1
-			printLayer(layerEntry, attributeEntry, xLocation + currentXLocation, yLocation, []rune{styleEntry.ScrollbarTrackPattern})
+			printLayer(layerEntry, attributeEntry, xLocation+currentXLocation, yLocation, []rune{styleEntry.ScrollbarTrackPattern})
 		}
 		attributeEntry.CellControlId = constants.CellControlIdUpScrollArrow
 		printLayer(layerEntry, attributeEntry, xLocation, yLocation, []rune{styleEntry.ScrollbarLeftArrow})
 		attributeEntry.CellControlId = constants.CellControlIdDownScrollArrow
-		printLayer(layerEntry, attributeEntry, xLocation + length - 1, yLocation, []rune{styleEntry.ScrollbarRightArrow})
+		printLayer(layerEntry, attributeEntry, xLocation+length-1, yLocation, []rune{styleEntry.ScrollbarRightArrow})
 		attributeEntry.ForegroundColor = styleEntry.ScrollbarHandleColor
 		attributeEntry.CellControlId = constants.CellControlIdScrollbarHandle
 		// Here we add 1 to the xLocation since handle bars cannot be drawn on scroll arrows.
 		if scrollbarEntry.IsEnabled {
-			printLayer(layerEntry, attributeEntry, xLocation + 1 + handlePosition, yLocation, []rune{styleEntry.ScrollbarHandle})
+			printLayer(layerEntry, attributeEntry, xLocation+1+handlePosition, yLocation, []rune{styleEntry.ScrollbarHandle})
 		}
 	} else {
-		for currentYLocation := 1; currentYLocation < length - 1; currentYLocation++ {
+		for currentYLocation := 1; currentYLocation < length-1; currentYLocation++ {
 			attributeEntry.CellControlId = currentYLocation - 1 // make all Ids 0 based.
-			printLayer(layerEntry, attributeEntry, xLocation, yLocation + currentYLocation, []rune{styleEntry.ScrollbarTrackPattern})
+			printLayer(layerEntry, attributeEntry, xLocation, yLocation+currentYLocation, []rune{styleEntry.ScrollbarTrackPattern})
 		}
 		attributeEntry.CellControlId = constants.CellControlIdUpScrollArrow
 		printLayer(layerEntry, attributeEntry, xLocation, yLocation, []rune{styleEntry.ScrollbarUpArrow})
 		attributeEntry.CellControlId = constants.CellControlIdDownScrollArrow
-		printLayer(layerEntry, attributeEntry, xLocation, yLocation + length - 1, []rune{styleEntry.ScrollbarDownArrow})
+		printLayer(layerEntry, attributeEntry, xLocation, yLocation+length-1, []rune{styleEntry.ScrollbarDownArrow})
 		attributeEntry.ForegroundColor = styleEntry.ScrollbarHandleColor
 		attributeEntry.CellControlId = constants.CellControlIdScrollbarHandle
 		if scrollbarEntry.IsEnabled {
@@ -175,7 +181,7 @@ func (shared *scrollbarType) computeScrollbarValueByHandlePosition(layerAlias st
 	}
 	// Make sure the handle position is valid first. We minus 3 to the length to account for the two arrows
 	// and the handle itself.
-	if scrollbarEntry.HandlePosition >= scrollbarEntry.Length - 3 {
+	if scrollbarEntry.HandlePosition >= scrollbarEntry.Length-3 {
 		scrollbarEntry.HandlePosition = scrollbarEntry.Length - 3
 	}
 	if scrollbarEntry.HandlePosition < 0 {
@@ -183,7 +189,7 @@ func (shared *scrollbarType) computeScrollbarValueByHandlePosition(layerAlias st
 	}
 	// If you scroll to the last square of a scroll bar, set value to max since that's what a user
 	// expects to happen.
-	if scrollbarEntry.HandlePosition == scrollbarEntry.Length - 3 {
+	if scrollbarEntry.HandlePosition == scrollbarEntry.Length-3 {
 		scrollbarEntry.ScrollValue = scrollbarEntry.MaxScrollValue
 		return
 	}
@@ -213,7 +219,7 @@ func (shared *scrollbarType) computeScrollbarHandlePositionByScrollValue(layerAl
 	if scrollbarEntry.MaxScrollValue != 0 {
 		percentScrolled = float64(scrollbarEntry.ScrollValue) / float64(scrollbarEntry.MaxScrollValue)
 	}
-	scrollbarEntry.HandlePosition = int(float64(scrollbarEntry.Length - 3) * percentScrolled)
+	scrollbarEntry.HandlePosition = int(float64(scrollbarEntry.Length-3) * percentScrolled)
 	// Protect in case drawing over the bar limit.
 	if scrollbarEntry.HandlePosition >= scrollbarEntry.Length {
 		scrollbarEntry.HandlePosition = scrollbarEntry.Length - 3
@@ -230,13 +236,13 @@ func (shared *scrollbarType) updateKeyboardEventScrollbar(keystroke []rune) bool
 	focusedLayerAlias := eventStateMemory.currentlyFocusedControl.layerAlias
 	focusedControlAlias := eventStateMemory.currentlyFocusedControl.controlAlias
 	focusedControlType := eventStateMemory.currentlyFocusedControl.controlType
-	if focusedControlType != constants.CellTypeScrollbar {
+	if focusedControlType != constants.CellTypeScrollbar || !memory.IsScrollbarExists(focusedLayerAlias, focusedControlAlias) {
 		return isScreenUpdateRequired
 	}
 	// Check for scrollbar input only if the scroll bar is not disabled (not null).
 	scrollbarEntry := memory.GetScrollbar(focusedLayerAlias, focusedControlAlias)
 	if scrollbarEntry.IsEnabled {
-		if keystrokeAsString == "up" || keystrokeAsString == "left"{
+		if keystrokeAsString == "up" || keystrokeAsString == "left" {
 			scrollbarEntry.ScrollValue = scrollbarEntry.ScrollValue - scrollbarEntry.ScrollIncrement
 			shared.computeScrollbarHandlePositionByScrollValue(focusedLayerAlias, focusedControlAlias)
 		}
@@ -264,6 +270,7 @@ func (shared *scrollbarType) updateMouseEventScrollbar() bool {
 	isScreenUpdateRequired := false
 	focusedLayerAlias := eventStateMemory.currentlyFocusedControl.layerAlias
 	focusedControlAlias := eventStateMemory.currentlyFocusedControl.controlAlias
+	focusedControlType := eventStateMemory.currentlyFocusedControl.controlType
 	mouseXLocation, mouseYLocation, buttonPressed, _ := memory.GetMouseStatus()
 	previousMouseXLocation, previousMouseYLocation, previousButtonPressed, _ := memory.GetPreviousMouseStatus()
 	if buttonPressed != 0 {
@@ -282,7 +289,7 @@ func (shared *scrollbarType) updateMouseEventScrollbar() bool {
 				} else if characterEntry.AttributeEntry.CellControlId == constants.CellControlIdDownScrollArrow {
 					// If you click on the down scroll bar buttonType.
 					scrollbarEntry.ScrollValue = scrollbarEntry.ScrollValue + scrollbarEntry.ScrollIncrement
-					shared.computeScrollbarHandlePositionByScrollValue( characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias)
+					shared.computeScrollbarHandlePositionByScrollValue(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias)
 				} else {
 					// If you click on the scroll bar area itself,  jump the scroll bar to it.
 					scrollbarEntry.HandlePosition = characterEntry.AttributeEntry.CellControlId
@@ -294,14 +301,16 @@ func (shared *scrollbarType) updateMouseEventScrollbar() bool {
 		} else if previousButtonPressed != 0 && eventStateMemory.stateId == constants.EventStateDragAndDropScrollbar {
 			xMove := mouseXLocation - previousMouseXLocation
 			yMove := mouseYLocation - previousMouseYLocation
-			scrollbarEntry := memory.GetScrollbar(focusedLayerAlias, focusedControlAlias)
-			if scrollbarEntry.IsHorizontal {
-				scrollbarEntry.HandlePosition = scrollbarEntry.HandlePosition + xMove
-			} else {
-				scrollbarEntry.HandlePosition = scrollbarEntry.HandlePosition + yMove
+			if focusedControlType == constants.CellTypeScrollbar {
+				scrollbarEntry := memory.GetScrollbar(focusedLayerAlias, focusedControlAlias)
+				if scrollbarEntry.IsHorizontal {
+					scrollbarEntry.HandlePosition = scrollbarEntry.HandlePosition + xMove
+				} else {
+					scrollbarEntry.HandlePosition = scrollbarEntry.HandlePosition + yMove
+				}
+				shared.computeScrollbarValueByHandlePosition(focusedLayerAlias, focusedControlAlias)
+				isScreenUpdateRequired = true
 			}
-			shared.computeScrollbarValueByHandlePosition(focusedLayerAlias, focusedControlAlias)
-			isScreenUpdateRequired = true
 		}
 	} else {
 		eventStateMemory.stateId = constants.EventStateNone

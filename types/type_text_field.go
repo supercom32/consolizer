@@ -1,44 +1,44 @@
-package memory
+package types
 
 import "encoding/json"
 
 type TextFieldEntryType struct {
-	StyleEntry TuiStyleEntryType
-	XLocation int
-	YLocation int
-	Width int
-	MaxLengthAllowed int
-	DefaultValue string
-	CursorPosition int
-	ViewportPosition int
+	StyleEntry          TuiStyleEntryType
+	XLocation           int
+	YLocation           int
+	Width               int
+	MaxLengthAllowed    int
+	DefaultValue        string
+	CursorPosition      int
+	ViewportPosition    int
 	IsPasswordProtected bool
-	CurrentValue []rune
+	CurrentValue        []rune
 }
 
 func (shared TextFieldEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
-		StyleEntry TuiStyleEntryType
-		XLocation int
-		YLocation int
-		Width int
-		MaxLengthAllowed int
+		StyleEntry          TuiStyleEntryType
+		XLocation           int
+		YLocation           int
+		Width               int
+		MaxLengthAllowed    int
 		IsPasswordProtected bool
-		CurrentValue []rune
-		DefaultValue string
-		StringPosition int
-		CursorPosition int
-		ViewportPosition int
+		CurrentValue        []rune
+		DefaultValue        string
+		StringPosition      int
+		CursorPosition      int
+		ViewportPosition    int
 	}{
-		StyleEntry: shared.StyleEntry,
-		XLocation: shared.XLocation,
-		YLocation: shared.YLocation,
-		Width: shared.Width,
-		MaxLengthAllowed: shared.MaxLengthAllowed,
+		StyleEntry:          shared.StyleEntry,
+		XLocation:           shared.XLocation,
+		YLocation:           shared.YLocation,
+		Width:               shared.Width,
+		MaxLengthAllowed:    shared.MaxLengthAllowed,
 		IsPasswordProtected: shared.IsPasswordProtected,
-		CurrentValue: shared.CurrentValue,
-		DefaultValue: shared.DefaultValue,
-		CursorPosition: shared.CursorPosition,
-		ViewportPosition: shared.ViewportPosition,
+		CurrentValue:        shared.CurrentValue,
+		DefaultValue:        shared.DefaultValue,
+		CursorPosition:      shared.CursorPosition,
+		ViewportPosition:    shared.ViewportPosition,
 	})
 	if err != nil {
 		return nil, err

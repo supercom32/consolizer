@@ -1,52 +1,52 @@
-package memory
+package types
 
 import (
 	"encoding/json"
 )
 
 type SelectorEntryType struct {
-	ScrollBarAlias string
-	StyleEntry TuiStyleEntryType
-	SelectionEntry SelectionEntryType
-	XLocation int
-	YLocation  int
-	SelectorHeight int
+	ScrollBarAlias   string
+	StyleEntry       TuiStyleEntryType
+	SelectionEntry   SelectionEntryType
+	XLocation        int
+	YLocation        int
+	SelectorHeight   int
 	ItemWidth        int
 	NumberOfColumns  int
 	ViewportPosition int
 	ItemHighlighted  int
-	ItemSelected int
-	IsVisible bool
-	IsBorderDrawn bool
+	ItemSelected     int
+	IsVisible        bool
+	IsBorderDrawn    bool
 }
 
 func (shared SelectorEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
-		ScrollBarAlias string
-		StyleEntry TuiStyleEntryType
-		SelectionEntry SelectionEntryType
-		XLocation int
-		YLocation int
-		ItemWidth int
-		NumberOfColumns int
+		ScrollBarAlias   string
+		StyleEntry       TuiStyleEntryType
+		SelectionEntry   SelectionEntryType
+		XLocation        int
+		YLocation        int
+		ItemWidth        int
+		NumberOfColumns  int
 		ViewportPosition int
-		ItemHighlighted int
-		ItemSelected int
-		IsVisible bool
-		IsBorderDrawn bool
+		ItemHighlighted  int
+		ItemSelected     int
+		IsVisible        bool
+		IsBorderDrawn    bool
 	}{
-		ScrollBarAlias: shared.ScrollBarAlias,
-		StyleEntry: shared.StyleEntry,
-		SelectionEntry: shared.SelectionEntry,
-		XLocation: shared.XLocation,
-		YLocation: shared.YLocation,
-		ItemWidth: shared.ItemWidth,
-		NumberOfColumns: shared.NumberOfColumns,
+		ScrollBarAlias:   shared.ScrollBarAlias,
+		StyleEntry:       shared.StyleEntry,
+		SelectionEntry:   shared.SelectionEntry,
+		XLocation:        shared.XLocation,
+		YLocation:        shared.YLocation,
+		ItemWidth:        shared.ItemWidth,
+		NumberOfColumns:  shared.NumberOfColumns,
 		ViewportPosition: shared.ViewportPosition,
-		ItemHighlighted: shared.ItemHighlighted,
-		ItemSelected: shared.ItemSelected,
-		IsVisible: shared.IsVisible,
-		IsBorderDrawn: shared.IsBorderDrawn,
+		ItemHighlighted:  shared.ItemHighlighted,
+		ItemSelected:     shared.ItemSelected,
+		IsVisible:        shared.IsVisible,
+		IsBorderDrawn:    shared.IsBorderDrawn,
 	})
 	if err != nil {
 		return nil, err

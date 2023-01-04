@@ -2,85 +2,150 @@ package memory
 
 import (
 	"fmt"
+	"github.com/supercom32/consolizer/types"
 	"sort"
+	"sync"
 )
 
 var screenWidth int
 var screenHeight int
-var ScreenMemory map[string]*LayerEntryType
+
+type screenMemoryType struct {
+	sync.Mutex
+	Entries map[string]*types.LayerEntryType
+}
+
+var Screen screenMemoryType
 
 func InitializeScreenMemory() {
-	ScreenMemory = make(map[string]*LayerEntryType)
+	Screen.Entries = make(map[string]*types.LayerEntryType)
 }
 
 func AddLayer(layerAlias string, xLocation int, yLocation int, width int, height int, zOrderPriority int, parentAlias string) {
+	Screen.Mutex.Lock()
+	defer func() {
+		Screen.Mutex.Unlock()
+	}()
 	if width <= 0 {
 		panic(fmt.Sprintf("The layer '%s' could not be created since a Width of '%d' was specified!", layerAlias, width))
 	}
 	if height <= 0 {
 		panic(fmt.Sprintf("The layer '%s' could not be created since a Length of '%d' was specified!", layerAlias, height))
 	}
-	layerEntry := NewLayerEntry(layerAlias, parentAlias, width, height)
+	layerEntry := types.NewLayerEntry(layerAlias, parentAlias, width, height)
 	layerEntry.LayerAlias = layerAlias
 	layerEntry.ScreenXLocation = xLocation
 	layerEntry.ScreenYLocation = yLocation
 	layerEntry.ZOrder = zOrderPriority
 	layerEntry.ParentAlias = parentAlias
 	if parentAlias != "" {
-		if IsLayerExists(parentAlias) {
-			parentEntry := GetLayer(parentAlias)
+		if _, isExist := Screen.Entries[parentAlias]; isExist {
+			parentEntry := Screen.Entries[parentAlias]
 			parentEntry.IsParent = true
 		} else {
 			panic(fmt.Sprintf("The layer '%s' could not be created since the parent alias '%s' does not exist!", layerAlias, parentAlias))
 		}
 
 	}
-	//consolizer.commonResource.layerAlias = layerAlias
-	ScreenMemory[layerAlias] = &layerEntry
+	// consolizer.commonResource.layerAlias = layerAlias
+	Screen.Entries[layerAlias] = &layerEntry
 }
 
-func GetLayer(layerAlias string) *LayerEntryType {
-	if !IsLayerExists(layerAlias) {
+func getLayer(layerAlias string) *types.LayerEntryType {
+	if _, isExist := Screen.Entries[layerAlias]; !isExist {
 		panic(fmt.Sprintf("The layer '%s' could not be obtained since it does not exist!", layerAlias))
 	}
-	return ScreenMemory[layerAlias]
+	return Screen.Entries[layerAlias]
 }
 
-func DeleteLayer(layerAlias string) {
-	if !IsLayerExists(layerAlias) {
-		return
+func GetLayer(layerAlias string) *types.LayerEntryType {
+	Screen.Mutex.Lock()
+	defer func() {
+		Screen.Mutex.Unlock()
+	}()
+	if _, isExist := Screen.Entries[layerAlias]; !isExist {
+		panic(fmt.Sprintf("The layer '%s' could not be obtained since it does not exist!", layerAlias))
 	}
-	layerEntry := GetLayer(layerAlias)
+	return Screen.Entries[layerAlias]
+}
+
+func GetNextLayer() string {
+	Screen.Mutex.Lock()
+	defer func() {
+		Screen.Mutex.Unlock()
+	}()
+	for _, currentEntry := range Screen.Entries {
+		return currentEntry.LayerAlias
+	}
+	return ""
+}
+
+func DeleteLayer(layerAlias string, noLocking bool) {
+	if !noLocking {
+		Screen.Mutex.Lock()
+		defer func() {
+			Screen.Mutex.Unlock()
+		}()
+	}
+	if _, isExist := Screen.Entries[layerAlias]; !isExist {
+		panic(fmt.Sprintf("The layer '%s' could not be deleted since it does not exist!", layerAlias))
+	}
+	layerEntry := Screen.Entries[layerAlias]
 	parentAlias := layerEntry.ParentAlias
 	isParent := layerEntry.IsParent
-	delete(ScreenMemory, layerAlias)
+
+	DeleteAllButtonsFromLayer(layerAlias)
+	DeleteAllCheckboxesFromLayer(layerAlias)
+	DeleteAllDropdownsFromLayer(layerAlias)
+	DeleteAllProgressBarsFromLayer(layerAlias)
+	DeleteAllRadioButtonsFromLayer(layerAlias)
+	DeleteAllScrollbarsFromLayer(layerAlias)
+	DeleteAllSelectorsFromLayer(layerAlias)
+	DeleteAllTextboxesFromLayer(layerAlias)
+	DeleteAllTextFieldsFromLayer(layerAlias)
+
+	delete(Screen.Entries, layerAlias)
 	if parentAlias != "" {
-		if IsLayerExists(parentAlias) && !IsAParent(parentAlias) {
-			layerEntry = GetLayer(parentAlias)
-			layerEntry.IsParent = false
+		if _, isExist := Screen.Entries[layerAlias]; isExist {
+			if !IsAParent(parentAlias) {
+				layerEntry = getLayer(parentAlias)
+				layerEntry.IsParent = false
+			}
 		}
 	}
 	if isParent {
-		DeleteAllChildrenOfParent(layerAlias)
+		deleteAllChildrenOfParent(layerAlias)
 	}
 }
 
-func DeleteAllChildrenOfParent(parentAlias string) {
-	for currentKey, currentValue := range ScreenMemory {
+func deleteAllChildrenOfParent(parentAlias string) {
+	for currentKey, currentValue := range Screen.Entries {
 		if currentValue.ParentAlias == parentAlias {
-			DeleteLayer(currentKey)
+			DeleteLayer(currentKey, true)
 		}
 	}
 }
 func IsLayerExists(layerAlias string) bool {
-	if _, isExist := ScreenMemory[layerAlias]; isExist {
+	Screen.Mutex.Lock()
+	defer func() {
+		Screen.Mutex.Unlock()
+	}()
+	if _, isExist := Screen.Entries[layerAlias]; isExist {
 		return true
 	}
 	return false
 }
+
+func isLayerExists(layerAlias string) bool {
+	if _, isExist := Screen.Entries[layerAlias]; isExist {
+		return true
+	}
+	return false
+}
+
 func IsAParent(parentAlias string) bool {
 	isParent := false
-	for _, currentValue := range ScreenMemory {
+	for _, currentValue := range Screen.Entries {
 		if currentValue.ParentAlias == parentAlias {
 			isParent = true
 		}
@@ -94,11 +159,14 @@ type layerAliasZOrderPair struct {
 }
 type LayerAliasZOrderPairList []layerAliasZOrderPair
 
-
 func GetSortedLayerMemoryAliasSlice() LayerAliasZOrderPairList {
-	pairList := make(LayerAliasZOrderPairList, len(ScreenMemory))
+	Screen.Mutex.Lock()
+	defer func() {
+		Screen.Mutex.Unlock()
+	}()
+	pairList := make(LayerAliasZOrderPairList, len(Screen.Entries))
 	currentEntry := 0
-	for currentKey, currentValue := range ScreenMemory {
+	for currentKey, currentValue := range Screen.Entries {
 		pairList[currentEntry].Key = currentKey
 		pairList[currentEntry].Value = currentValue.ZOrder
 		currentEntry++
@@ -109,9 +177,9 @@ func GetSortedLayerMemoryAliasSlice() LayerAliasZOrderPairList {
 	return pairList
 }
 
-func GetHighestZOrderNumber(parentAlias string) int {
+func getHighestZOrderNumber(parentAlias string) int {
 	highestZOrderNumber := 0
-	for _, currentValue := range ScreenMemory {
+	for _, currentValue := range Screen.Entries {
 		if currentValue.ParentAlias == parentAlias && currentValue.ZOrder > highestZOrderNumber {
 			highestZOrderNumber = currentValue.ZOrder
 		}
@@ -121,15 +189,15 @@ func GetHighestZOrderNumber(parentAlias string) int {
 
 func SetHighestZOrderNumber(layerAlias string, parentAlias string) {
 	if IsLayerExists(layerAlias) {
-		highestZOrderNumber := GetHighestZOrderNumber(parentAlias)
-		for _, currentValue := range ScreenMemory {
+		highestZOrderNumber := getHighestZOrderNumber(parentAlias)
+		for _, currentValue := range Screen.Entries {
 			if currentValue.ParentAlias == parentAlias && currentValue.ZOrder == highestZOrderNumber {
 				currentValue.ZOrder = highestZOrderNumber - 1
 				currentValue.IsTopmost = false
 			}
 		}
-		ScreenMemory[layerAlias].ZOrder = highestZOrderNumber
-		ScreenMemory[layerAlias].IsTopmost = true
+		Screen.Entries[layerAlias].ZOrder = highestZOrderNumber
+		Screen.Entries[layerAlias].IsTopmost = true
 
 	}
 }

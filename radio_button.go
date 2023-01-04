@@ -4,14 +4,15 @@ import (
 	"github.com/supercom32/consolizer/constants"
 	"github.com/supercom32/consolizer/internal/memory"
 	"github.com/supercom32/consolizer/internal/stringformat"
+	"github.com/supercom32/consolizer/types"
 )
 
 type RadioButtonInstanceType struct {
-	layerAlias  string
+	layerAlias       string
 	radioButtonAlias string
 }
 
-type radioButtonType struct {}
+type radioButtonType struct{}
 
 var radioButton radioButtonType
 
@@ -51,9 +52,8 @@ func (shared *RadioButtonInstanceType) SetIsVisible(isVisible bool) {
 	}
 }
 
-
 /*
-AddRadioButton allows you to add a radio button to a given text layer. Once called, an instance
+Add allows you to add a radio button to a given text layer. Once called, an instance
 of your control is returned which will allow you to read or manipulate the properties for it.
 The Style of the radio button will be determined by the style entry passed in. If you wish to
 remove a radio button from a text layer, simply call 'DeleteRadioButton'. In addition, the
@@ -73,7 +73,7 @@ button may be selected at any given time for a particular group.
 - If the radio button being created is marked as being selected, then any previously selected radio button
 with the same group ID becomes unselected.
 */
-func (shared *radioButtonType) AddRadioButton(layerAlias string, radioButtonAlias string, radioButtonLabel string, styleEntry memory.TuiStyleEntryType, xLocation int, yLocation int, groupId int, isSelected bool) RadioButtonInstanceType {
+func (shared *radioButtonType) Add(layerAlias string, radioButtonAlias string, radioButtonLabel string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, groupId int, isSelected bool) RadioButtonInstanceType {
 	memory.AddRadioButton(layerAlias, radioButtonAlias, radioButtonLabel, styleEntry, xLocation, yLocation, groupId, isSelected)
 	var radioButtonInstance RadioButtonInstanceType
 	radioButtonInstance.layerAlias = layerAlias
@@ -87,9 +87,9 @@ func (shared *radioButtonType) AddRadioButton(layerAlias string, radioButtonAlia
 /*
 drawRadioButtonsOnLayer allows you to draw all radio buttons on a given text layer.
 */
-func (shared *radioButtonType) drawRadioButtonsOnLayer(layerEntry memory.LayerEntryType) {
+func (shared *radioButtonType) drawRadioButtonsOnLayer(layerEntry types.LayerEntryType) {
 	layerAlias := layerEntry.LayerAlias
-	for currentKey := range memory.RadioButtonMemory[layerAlias] {
+	for currentKey := range memory.RadioButton.Entries[layerAlias] {
 		radioButtonEntry := memory.GetRadioButton(layerAlias, currentKey)
 		shared.drawRadioButton(&layerEntry, currentKey, radioButtonEntry.Label, radioButtonEntry.StyleEntry, radioButtonEntry.XLocation, radioButtonEntry.YLocation, radioButtonEntry.IsSelected, radioButtonEntry.IsEnabled)
 	}
@@ -108,9 +108,9 @@ the text layer data under it.
 - If the radio button to be drawn falls outside the range of the provided layer,
 then only the visible portion of the radio button will be drawn.
 */
-func (shared *radioButtonType) drawRadioButton (layerEntry *memory.LayerEntryType, radioButtonAlias string, radioButtonLabel string, styleEntry memory.TuiStyleEntryType, xLocation int, yLocation int, isSelected bool, isEnabled bool ) {
-	localStyleEntry := memory.NewTuiStyleEntry(&styleEntry)
-	attributeEntry := memory.NewAttributeEntry()
+func (shared *radioButtonType) drawRadioButton(layerEntry *types.LayerEntryType, radioButtonAlias string, radioButtonLabel string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, isSelected bool, isEnabled bool) {
+	localStyleEntry := types.NewTuiStyleEntry(&styleEntry)
+	attributeEntry := types.NewAttributeEntry()
 	attributeEntry.ForegroundColor = localStyleEntry.RadioButtonForegroundColor
 	attributeEntry.BackgroundColor = localStyleEntry.RadioButtonBackgroundColor
 	attributeEntry.CellType = constants.CellTypeRadioButton
@@ -127,7 +127,7 @@ func (shared *radioButtonType) drawRadioButton (layerEntry *memory.LayerEntryTyp
 		secondArrayOfRunes = []rune{localStyleEntry.RadioButtonUnselectedCharacter}
 		attributeEntry.CellControlId = constants.CellControlIdUnchecked
 	}
-	printLayer(layerEntry, attributeEntry, xLocation + numberOfSpacesUsed, yLocation, secondArrayOfRunes)
+	printLayer(layerEntry, attributeEntry, xLocation+numberOfSpacesUsed, yLocation, secondArrayOfRunes)
 }
 
 /*
@@ -139,6 +139,10 @@ will simply be ignored.
 */
 func (shared *radioButtonType) DeleteRadioButton(layerAlias string, radioButtonAlias string) {
 	memory.DeleteRadioButton(layerAlias, radioButtonAlias)
+}
+
+func (shared *radioButtonType) DeleteAllRadioButtons(layerAlias string) {
+	memory.DeleteAllRadioButtonsFromLayer(layerAlias)
 }
 
 /*
@@ -153,7 +157,7 @@ func (shared *radioButtonType) updateMouseEventRadioButton() bool {
 	controlAlias := characterEntry.AttributeEntry.CellControlAlias
 	if characterEntry.AttributeEntry.CellType == constants.CellTypeRadioButton && characterEntry.AttributeEntry.CellControlId != constants.NullCellId {
 		_, _, previousButtonPressed, _ := memory.GetPreviousMouseStatus()
-		if buttonPressed != 0 && previousButtonPressed == 0 {
+		if buttonPressed != 0 && previousButtonPressed == 0 && memory.IsRadioButtonExists(layerAlias, controlAlias) {
 			selectRadioButton(layerAlias, controlAlias)
 			isUpdateRequired = true
 			return isUpdateRequired
@@ -168,13 +172,13 @@ be selected at a time, any previously selected radio button becomes unselected.
 */
 func selectRadioButton(layerAlias string, radioButtonAlias string) {
 	radioButtonSelectedEntry := memory.GetRadioButton(layerAlias, radioButtonAlias)
-	for currentRadioButtonKey := range memory.RadioButtonMemory[layerAlias] {
+	for currentRadioButtonKey := range memory.RadioButton.Entries[layerAlias] {
 		currentRadioButtonEntry := memory.GetRadioButton(layerAlias, currentRadioButtonKey)
 		if currentRadioButtonKey == radioButtonAlias {
 			currentRadioButtonEntry.IsSelected = true
 		} else if currentRadioButtonEntry.GroupId == radioButtonSelectedEntry.GroupId {
 			if currentRadioButtonEntry.IsSelected == true {
-					currentRadioButtonEntry.IsSelected = false
+				currentRadioButtonEntry.IsSelected = false
 			}
 		}
 	}
@@ -187,7 +191,7 @@ The group ID used is automatically determined based on the radio button alias gi
 func getSelectedRadioButton(layerAlias string, radioButtonAlias string) string {
 	selectedItem := ""
 	radioButtonEntry := memory.GetRadioButton(layerAlias, radioButtonAlias)
-	for currentRadioButtonKey := range memory.RadioButtonMemory[layerAlias] {
+	for currentRadioButtonKey := range memory.RadioButton.Entries[layerAlias] {
 		currentRadioButtonEntry := memory.GetRadioButton(layerAlias, currentRadioButtonKey)
 		if currentRadioButtonEntry.GroupId == radioButtonEntry.GroupId {
 			if currentRadioButtonEntry.IsSelected {

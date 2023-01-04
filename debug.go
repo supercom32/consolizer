@@ -13,6 +13,12 @@ func dumpScreenComparisons(originalScreenAsBase64 string, expectedScreenAsBase64
 	os.WriteFile("/tmp/expected.txt", []byte(expectedScreen), 0644)
 }
 
-func logInfo(info string) {
-	filesystem.AppendLineToFile("/tmp/debug.log", info + "\n", 0)
+func LogInfo(info string) {
+	var stringToAppend string
+	// if len(parameters) != 0 {
+	//	stringToAppend = fmt.Sprintf(info, parameters...)
+	// } else {
+	stringToAppend = info
+	// }
+	filesystem.AppendLineToFile("/tmp/debug.log", stringToAppend+"\n", 0)
 }

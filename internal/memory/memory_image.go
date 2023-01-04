@@ -1,24 +1,45 @@
 package memory
 
-import "fmt"
+import (
+	"fmt"
+	"github.com/supercom32/consolizer/types"
+	"sync"
+)
 
-var ImageMemory map[string]*ImageEntryType
+type imageMemoryType struct {
+	sync.Mutex
+	Entries map[string]*types.ImageEntryType
+}
+
+var Image imageMemoryType
 
 func InitializeImageMemory() {
-	ImageMemory = make(map[string]*ImageEntryType)
+	Image.Entries = make(map[string]*types.ImageEntryType)
 }
 
-func AddImage(imageAlias string, imageEntry ImageEntryType) {
+func AddImage(imageAlias string, imageEntry types.ImageEntryType) {
+	Image.Lock()
+	defer func() {
+		Image.Unlock()
+	}()
 	// verify if any errors occurred?
-	ImageMemory[imageAlias] = &imageEntry
+	Image.Entries[imageAlias] = &imageEntry
 }
 
-func GetImage(imageAlias string) *ImageEntryType {
-	if ImageMemory[imageAlias] == nil {
+func GetImage(imageAlias string) *types.ImageEntryType {
+	Image.Lock()
+	defer func() {
+		Image.Unlock()
+	}()
+	if Image.Entries[imageAlias] == nil {
 		panic(fmt.Sprintf("The requested image with alias '%s' could not be returned since it does not exist.", imageAlias))
 	}
-	return ImageMemory[imageAlias]
+	return Image.Entries[imageAlias]
 }
 func DeleteImage(imageAlias string) {
-	delete(ImageMemory, imageAlias)
+	Image.Lock()
+	defer func() {
+		Image.Unlock()
+	}()
+	delete(Image.Entries, imageAlias)
 }

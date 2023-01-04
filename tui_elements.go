@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"github.com/gdamore/tcell/v2"
 	"github.com/supercom32/consolizer/constants"
-	"github.com/supercom32/consolizer/internal/memory"
 	"github.com/supercom32/consolizer/internal/stringformat"
+	"github.com/supercom32/consolizer/types"
 )
 
 /*
@@ -131,7 +131,7 @@ is. In addition, the following information should be noted:
 - If the rune specified could not be found in your TUI style entry, then '-1'
 will be returned instead.
 */
-func getConnectorIndexByCharacter(sourceCharacter rune, styleEntry memory.TuiStyleEntryType) int {
+func getConnectorIndexByCharacter(sourceCharacter rune, styleEntry types.TuiStyleEntryType) int {
 	connectorIndex := -1
 	if sourceCharacter == styleEntry.HorizontalLine {
 		connectorIndex = horizontalConnector
@@ -214,7 +214,7 @@ information should be noted:
 - If the connector described could not be found determined, then a NullRune
 will be returned instead.
 */
-func getConnectorCharacterByIndex(connectorIndex int, styleEntry memory.TuiStyleEntryType) rune {
+func getConnectorCharacterByIndex(connectorIndex int, styleEntry types.TuiStyleEntryType) rune {
 	characterToReturn := constants.NullRune
 	if connectorIndex == horizontalConnector {
 		characterToReturn = styleEntry.HorizontalLine
@@ -262,7 +262,7 @@ In addition, the following information should be noted:
 - If the two runes could not be combined together, then the source rune
 will be returned instead.
 */
-func getConnectorCharacter(sourceCharacter rune, targetCharacter rune, styleEntry memory.TuiStyleEntryType) rune {
+func getConnectorCharacter(sourceCharacter rune, targetCharacter rune, styleEntry types.TuiStyleEntryType) rune {
 	connectorCharacter := sourceCharacter
 	sourceCharacterIndex := getConnectorIndexByCharacter(sourceCharacter, styleEntry)
 	targetCharacterIndex := getConnectorIndexByCharacter(targetCharacter, styleEntry)
@@ -296,27 +296,12 @@ information should be noted:
 - If the the line to be drawn falls outside the area of the text layer
 specified, then only the visible portion of the line will be drawn.
 */
-func DrawVerticalLine(layerAlias string, styleEntry memory.TuiStyleEntryType, xLocation int, yLocation int, height int, isConnectorsDrawn bool) {
-	layerEntry := memory.GetLayer(layerAlias)
-	localAttributeEntry := memory.NewAttributeEntry()
-	drawVerticalLine(layerEntry, styleEntry, localAttributeEntry, xLocation, yLocation, height, isConnectorsDrawn)
-}
-
-/*
-DrawVerticalLine allows you to draw a vertical line on a text layer. This
-method also has the ability to draw connectors in case the line intersects
-with other lines that have already been drawn. In addition, the following
-information should be noted:
-
-- If the the line to be drawn falls outside the area of the text layer
-specified, then only the visible portion of the line will be drawn.
-*/
-func drawVerticalLine(layerEntry *memory.LayerEntryType, styleEntry memory.TuiStyleEntryType, attributeEntry memory.AttributeEntryType, xLocation int, yLocation int, height int, isConnectorsDrawn bool) {
-	localAttributeEntry := memory.NewAttributeEntry(&attributeEntry)
-	localAttributeEntry.ForegroundColor = styleEntry.TextForegroundColor
-	localAttributeEntry.BackgroundColor = styleEntry.TextBackgroundColor
+func drawVerticalLine(layerEntry *types.LayerEntryType, styleEntry types.TuiStyleEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, height int, isConnectorsDrawn bool) {
+	localAttributeEntry := types.NewAttributeEntry(&attributeEntry)
+	localAttributeEntry.ForegroundColor = styleEntry.LineDrawingTextForegroundColor
+	localAttributeEntry.BackgroundColor = styleEntry.LineDrawingTextBackgroundColor
 	for currentRow := 0; currentRow < height; currentRow++ {
-		if yLocation + currentRow >= 0 && xLocation >= 0 && yLocation+currentRow < layerEntry.Height && xLocation < layerEntry.Width {
+		if yLocation+currentRow >= 0 && xLocation >= 0 && yLocation+currentRow < layerEntry.Height && xLocation < layerEntry.Width {
 			characterToDraw := constants.NullRune
 			if isConnectorsDrawn && currentRow == 0 {
 				characterToDraw = styleEntry.DownSideTConnector
@@ -345,25 +330,10 @@ information should be noted:
 - If the the line to be drawn falls outside the area of the text layer
 specified, then only the visible portion of the line will be drawn.
 */
-func DrawHorizontalLine(layerAlias string, styleEntry memory.TuiStyleEntryType, xLocation int, yLocation int, width int, isConnectorsDrawn bool) {
-	layerEntry := memory.GetLayer(layerAlias)
-	localAttributeEntry := memory.NewAttributeEntry()
-	drawHorizontalLine(layerEntry, styleEntry, localAttributeEntry, xLocation, yLocation, width, isConnectorsDrawn)
-}
-
-/*
-DrawHorizontalLine allows you to draw a horizontal line on a text layer. This
-method also has the ability to draw connectors in case the line intersects
-with other lines that have already been drawn. In addition, the following
-information should be noted:
-
-- If the the line to be drawn falls outside the area of the text layer
-specified, then only the visible portion of the line will be drawn.
-*/
-func drawHorizontalLine(layerEntry *memory.LayerEntryType, styleEntry memory.TuiStyleEntryType, attributeEntry memory.AttributeEntryType, xLocation int, yLocation int, width int, isConnectorsDrawn bool) {
-	localAttributeEntry := memory.NewAttributeEntry(&attributeEntry)
-	localAttributeEntry.ForegroundColor = styleEntry.TextForegroundColor
-	localAttributeEntry.BackgroundColor = styleEntry.TextBackgroundColor
+func drawHorizontalLine(layerEntry *types.LayerEntryType, styleEntry types.TuiStyleEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, width int, isConnectorsDrawn bool) {
+	localAttributeEntry := types.NewAttributeEntry(&attributeEntry)
+	localAttributeEntry.ForegroundColor = styleEntry.LineDrawingTextForegroundColor
+	localAttributeEntry.BackgroundColor = styleEntry.LineDrawingTextBackgroundColor
 	for currentCharacter := 0; currentCharacter < width; currentCharacter++ {
 		if yLocation < layerEntry.Height && xLocation+currentCharacter < layerEntry.Width {
 			if yLocation < 0 || xLocation+currentCharacter < 0 || yLocation > layerEntry.Height || xLocation+currentCharacter > layerEntry.Width {
@@ -401,27 +371,8 @@ interact with the layer being drawn on. For example, when enabled if the user
 drags the window title bar, the whole layer will move to simulate movement of
 the window itself.
 */
-func DrawBorder(layerAlias string, styleEntry memory.TuiStyleEntryType, xLocation int, yLocation int, width int, height int, isInteractive bool) {
-	layerEntry := memory.GetLayer(layerAlias)
-	localAttributeEntry := memory.NewAttributeEntry()
-	drawBorder(layerEntry, styleEntry, localAttributeEntry, xLocation, yLocation, width, height, isInteractive)
-}
-
-/*
-DrawBorder allows you to draw a border on a given text layer. Borders differ
-from frames since they are flat shaded and do not have a raised or sunken
-look to them. In addition, the following information should be noted:
-
-- If the border to be drawn falls outside the range of the specified layer,
-then only the visible portion of the border will be drawn.
-
-- The 'isInteractive' option allows you to specify if the window should
-interact with the layer being drawn on. For example, when enabled if the user
-drags the window title bar, the whole layer will move to simulate movement of
-the window itself.
-*/
-func drawBorder(layerEntry *memory.LayerEntryType, styleEntry memory.TuiStyleEntryType, attributeEntry memory.AttributeEntryType, xLocation int, yLocation int, width int, height int, isInteractive bool) {
-	localAttributeEntry := memory.NewAttributeEntry(&attributeEntry)
+func drawBorder(layerEntry *types.LayerEntryType, styleEntry types.TuiStyleEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, width int, height int, isInteractive bool) {
+	localAttributeEntry := types.NewAttributeEntry(&attributeEntry)
 	drawFrame(layerEntry, styleEntry, localAttributeEntry, constants.FrameStyleNormal, xLocation, yLocation, width, height, isInteractive)
 }
 
@@ -434,52 +385,15 @@ with a border of a frame.
 specified layer, then only the visible portion of the border will be
 drawn.
 */
-func DrawFrameLabel(layerAlias string, styleEntry memory.TuiStyleEntryType, label string, xLocation int, yLocation int) {
-	layerEntry := memory.GetLayer(layerAlias)
-	drawFrameLabel(layerEntry, styleEntry, label, xLocation, yLocation)
-}
-
-/*
-DrawFrameLabel allows you to draw a label for a frame. The label will
-be automatically enclosed by the characters "[" and "]" to blend in
-with a border of a frame.
-
-- If the frame label to be drawn falls outside the range of the
-specified layer, then only the visible portion of the border will be
-drawn.
-*/
-func drawFrameLabel(layerEntry *memory.LayerEntryType, styleEntry memory.TuiStyleEntryType, label string, xLocation int, yLocation int) {
-	attributeEntry := memory.NewAttributeEntry()
-	attributeEntry.ForegroundColor= styleEntry.TextForegroundColor
-	attributeEntry.BackgroundColor= styleEntry.TextBackgroundColor
+func drawFrameLabel(layerEntry *types.LayerEntryType, styleEntry types.TuiStyleEntryType, label string, xLocation int, yLocation int) {
+	attributeEntry := types.NewAttributeEntry()
+	attributeEntry.ForegroundColor = styleEntry.LineDrawingTextForegroundColor
+	attributeEntry.BackgroundColor = styleEntry.LineDrawingTextBackgroundColor
 	printLayer(layerEntry, attributeEntry, xLocation, yLocation, []rune("[ "))
-	printLayer(layerEntry, attributeEntry, xLocation + 2 + len(label), yLocation, []rune(" ]"))
-	attributeEntry.ForegroundColor = styleEntry.TextLabelColor
-	attributeEntry.BackgroundColor = styleEntry.TextBackgroundColor
-	printLayer(layerEntry, attributeEntry, xLocation + 2, yLocation, []rune(label))
-}
-
-/*
-DrawFrame allows you to draw a frame on a given text layer. Frames differ
-from borders since borders are flat shaded and do not have a raised or
-sunken look to them. In addition, the following information should be noted:
-
-- If the frame to be drawn falls outside the range of the specified layer,
-then only the visible portion of the frame will be drawn.
-
-- The 'isInteractive' option allows you to specify if the window should
-interact with the layer being drawn on. For example, when enabled if the user
-drags the window title bar, the whole layer will move to simulate movement of
-the window itself.
-*/
-func DrawFrame(layerAlias string, styleEntry memory.TuiStyleEntryType, isRaised bool, xLocation int, yLocation int, width int, height int, isInteractive bool) {
-	layerEntry := memory.GetLayer(layerAlias)
-	localAttributeEntry := memory.NewAttributeEntry()
-	if isRaised {
-		drawFrame(layerEntry, styleEntry, localAttributeEntry, constants.FrameStyleRaised, xLocation, yLocation, width, height, isInteractive)
-	} else {
-		drawFrame(layerEntry, styleEntry, localAttributeEntry, constants.FrameStyleSunken, xLocation, yLocation, width, height, isInteractive)
-	}
+	printLayer(layerEntry, attributeEntry, xLocation+2+len(label), yLocation, []rune(" ]"))
+	attributeEntry.ForegroundColor = styleEntry.LineDrawingTextLabelColor
+	attributeEntry.BackgroundColor = styleEntry.LineDrawingTextBackgroundColor
+	printLayer(layerEntry, attributeEntry, xLocation+2, yLocation, []rune(label))
 }
 
 /*
@@ -495,15 +409,15 @@ interact with the layer being drawn on. For example, when enabled if the user
 drags the window title bar, the whole layer will move to simulate movement of
 the window itself.
 */
-func drawFrame(layerEntry *memory.LayerEntryType, styleEntry memory.TuiStyleEntryType, attributeEntry memory.AttributeEntryType, frameStyle int, xLocation int, yLocation int, width int, height int, isInteractive bool) {
-	localAttributeEntry := memory.NewAttributeEntry(&attributeEntry)
-	localAttributeEntry.ForegroundColor = styleEntry.TextForegroundColor
-	localAttributeEntry.BackgroundColor = styleEntry.TextBackgroundColor
+func drawFrame(layerEntry *types.LayerEntryType, styleEntry types.TuiStyleEntryType, attributeEntry types.AttributeEntryType, frameStyle int, xLocation int, yLocation int, width int, height int, isInteractive bool) {
+	localAttributeEntry := types.NewAttributeEntry(&attributeEntry)
+	localAttributeEntry.ForegroundColor = styleEntry.LineDrawingTextForegroundColor
+	localAttributeEntry.BackgroundColor = styleEntry.LineDrawingTextBackgroundColor
 	for currentRow := 0; currentRow < height; currentRow++ {
 		for currentCharacter := 0; currentCharacter < width; currentCharacter++ {
 			if yLocation+currentRow >= 0 || xLocation+currentCharacter >= 0 ||
 				yLocation+currentRow < layerEntry.Height && xLocation+currentCharacter < layerEntry.Width {
-				currentAttributeEntry := memory.NewAttributeEntry(&localAttributeEntry)
+				currentAttributeEntry := types.NewAttributeEntry(&localAttributeEntry)
 				characterToDraw := constants.NullRune
 				if currentRow == 0 {
 					if isInteractive {
@@ -573,25 +487,6 @@ func drawFrame(layerEntry *memory.LayerEntryType, styleEntry memory.TuiStyleEntr
 }
 
 /*
-DrawWindow allows you to draw a window on a given text layer. Windows differ
-from borders since the entire area the window surrounds gets filled with
-a solid background color. In addition, the following information should be noted:
-
-- If the window to be drawn falls outside the range of the specified layer,
-then only the visible portion of the window will be drawn.
-
-- The 'isInteractive' option allows you to specify if the window should
-interact with the layer being drawn on. For example, when enabled if the user
-drags the window title bar, the whole layer will move to simulate movement of
-the window itself.
-*/
-func DrawWindow(layerAlias string, styleEntry memory.TuiStyleEntryType, xLocation int, yLocation int, width int, height int, isInteractive bool) {
-	layerEntry := memory.GetLayer(layerAlias)
-	localAttributeEntry := memory.NewAttributeEntry()
-	drawWindow(layerEntry, styleEntry, localAttributeEntry, xLocation, yLocation, width, height, isInteractive)
-}
-
-/*
 drawWindow allows you to draw a window on a given text layer. Windows differ
 from borders since the entire area the window surrounds gets filled with
 a solid background color. In addition, the following information should be noted:
@@ -604,10 +499,10 @@ interact with the layer being drawn on. For example, when enabled if the user
 drags the window title bar, the whole layer will move to simulate movement of
 the window itself.
 */
-func drawWindow(layerEntry *memory.LayerEntryType, styleEntry memory.TuiStyleEntryType, attributeEntry memory.AttributeEntryType, xLocation int, yLocation int, width int, height int, isInteractive bool) {
-	localAttributeEntry := memory.NewAttributeEntry(&attributeEntry)
-	localAttributeEntry.ForegroundColor = styleEntry.TextForegroundColor
-	localAttributeEntry.BackgroundColor = styleEntry.TextBackgroundColor
+func drawWindow(layerEntry *types.LayerEntryType, styleEntry types.TuiStyleEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, width int, height int, isInteractive bool) {
+	localAttributeEntry := types.NewAttributeEntry(&attributeEntry)
+	localAttributeEntry.ForegroundColor = styleEntry.LineDrawingTextForegroundColor
+	localAttributeEntry.BackgroundColor = styleEntry.LineDrawingTextBackgroundColor
 	if styleEntry.IsSquareFont {
 		drawShadow(layerEntry, localAttributeEntry, xLocation+1, yLocation+1, width, height, 0.5)
 	} else {
@@ -624,45 +519,17 @@ func drawWindow(layerEntry *memory.LayerEntryType, styleEntry memory.TuiStyleEnt
 }
 
 /*
-DrawShadow allows you to draw shadows on a given text layer. Shadows are simply
-transparent areas which darken whatever text layers are underneath it by a
-specified degree. In addition, the following information should be noted:
-
-- The alpha value can range from 0.0 (no shadow) to 1.0 (totally black).
-*/
-func DrawShadow(layerAlias string, xLocation int, yLocation int, width int, height int, alphaValue float32) {
-	layerEntry := memory.GetLayer(layerAlias)
-	localAttributeEntry := memory.NewAttributeEntry()
-	drawShadow(layerEntry, localAttributeEntry, xLocation, yLocation, width, height, alphaValue)
-}
-
-/*
 drawShadow allows you to draw shadows on a given text layer. Shadows are simply
 transparent areas which darken whatever text layers are underneath it by a
 specified degree. In addition, the following information should be noted:
 
 - The alpha value can range from 0.0 (no shadow) to 1.0 (totally black).
 */
-func drawShadow(layerEntry *memory.LayerEntryType, attributeEntry memory.AttributeEntryType, xLocation int, yLocation int, width int, height int, alphaValue float32) {
-	localAttributeEntry := memory.NewAttributeEntry(&attributeEntry)
+func drawShadow(layerEntry *types.LayerEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, width int, height int, alphaValue float32) {
+	localAttributeEntry := types.NewAttributeEntry(&attributeEntry)
 	localAttributeEntry.ForegroundTransformValue = alphaValue
 	localAttributeEntry.BackgroundTransformValue = alphaValue
 	fillArea(layerEntry, localAttributeEntry, "", xLocation, yLocation, width, height, constants.NullCellControlLocation)
-}
-
-/*
-FillArea allows you to fill an area of a given text layer with characters of
-your choice. If you wish to fill the area with repeating text, simply provide
-the string you wish to repeat. In addition, the following information should be
-noted:
-
-- If the area to fill falls outside the range of the specified layer, then only
-the visible portion of the fill will be drawn.
- */
-func FillArea(layerAlias string, fillCharacters string, xLocation int, yLocation int, width int, height int) {
-	layerEntry := memory.GetLayer(layerAlias)
-	attributeEntry := layerEntry.DefaultAttribute
-	fillArea(layerEntry, attributeEntry, fillCharacters, xLocation, yLocation, width, height, constants.NullCellControlLocation)
 }
 
 /*
@@ -674,14 +541,14 @@ noted:
 - If the area to fill falls outside the range of the specified layer, then only
 the visible portion of the fill will be drawn.
 */
-func fillArea(layerEntry *memory.LayerEntryType, attributeEntry memory.AttributeEntryType, fillCharacters string, xLocation int, yLocation int, width int, height int, startingControlLocation int) {
+func fillArea(layerEntry *types.LayerEntryType, attributeEntry types.AttributeEntryType, fillCharacters string, xLocation int, yLocation int, width int, height int, startingControlLocation int) {
 	currentFillCharacterIndex := 0
 	arrayOfRunes := stringformat.GetRunesFromString(fillCharacters)
 	for currentRow := 0; currentRow < height; currentRow++ {
 		// We make the cell location equal to the current location being printed.
 		attributeEntry.CellControlLocation = startingControlLocation + currentRow
 		for currentCharacter := 0; currentCharacter < width; currentCharacter++ {
-			if yLocation >=0 && yLocation < layerEntry.Height && xLocation+currentCharacter >= 0 && xLocation+currentCharacter < layerEntry.Width {
+			if yLocation >= 0 && yLocation < layerEntry.Height && xLocation+currentCharacter >= 0 && xLocation+currentCharacter < layerEntry.Width {
 				if len(arrayOfRunes) == 0 {
 					printLayer(layerEntry, attributeEntry, xLocation+currentCharacter, yLocation+currentRow, []rune{0})
 				} else {
@@ -701,49 +568,27 @@ func fillArea(layerEntry *memory.LayerEntryType, attributeEntry memory.Attribute
 }
 
 /*
-FillLayer allows you to fill an entire layer with characters of your choice.
-If you wish to fill the layer with repeating text, simply provide the string
-you wish to repeat.
-*/
-func FillLayer(layerAlias string, fillCharacters string) {
-	layerEntry := memory.GetLayer(layerAlias)
-	attributeEntry := layerEntry.DefaultAttribute
-	fillLayer(layerEntry, attributeEntry, fillCharacters)
-}
-
-/*
 fillLayer allows you to fill an entire layer with characters of your choice.
 If you wish to fill the layer with repeating text, simply provide the string
 you wish to repeat.
 */
-func fillLayer(layerEntry *memory.LayerEntryType, attributeEntry memory.AttributeEntryType, fillCharacters string) {
+func fillLayer(layerEntry *types.LayerEntryType, attributeEntry types.AttributeEntryType, fillCharacters string) {
 	fillArea(layerEntry, attributeEntry, fillCharacters, 0, 0, layerEntry.Width, layerEntry.Height, constants.NullCellControlLocation)
 }
 
 /*
-DrawBar allows you to draw a horizontal bar on a given text layer row. This is
-useful for drawing application headers or status bar footers.
-*/
-func DrawBar(layerAlias string, xLocation int, yLocation int, barLength int, fillCharacters string) {
-	layerEntry := memory.GetLayer(layerAlias)
-	attributeEntry := layerEntry.DefaultAttribute
-	fillArea(layerEntry, attributeEntry, fillCharacters, xLocation, yLocation, barLength, 1, constants.NullCellControlLocation)
-}
-
-/*
 fillLayer allows you to fill an entire layer with characters of your choice.
 If you wish to fill the layer with repeating text, simply provide the string
 you wish to repeat.
 */
-func GetDarkenedCharacterEntry(characterEntry *memory.CharacterEntryType, alphaValue float32) memory.CharacterEntryType {
-	var newCharacterEntry = memory.NewCharacterEntry(characterEntry)
+func GetDarkenedCharacterEntry(characterEntry *types.CharacterEntryType, alphaValue float32) types.CharacterEntryType {
+	var newCharacterEntry = types.NewCharacterEntry(characterEntry)
 	foregroundColor := newCharacterEntry.AttributeEntry.ForegroundColor
 	backgroundColor := newCharacterEntry.AttributeEntry.BackgroundColor
 	newCharacterEntry.AttributeEntry.ForegroundColor = GetDarkenedColor(foregroundColor, alphaValue)
 	newCharacterEntry.AttributeEntry.BackgroundColor = GetDarkenedColor(backgroundColor, alphaValue)
 	return newCharacterEntry
 }
-
 
 /*
 GetDarkenedColor allows you to obtain a color that has been darkened

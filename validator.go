@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/supercom32/consolizer/constants"
 	"github.com/supercom32/consolizer/internal/memory"
+	"github.com/supercom32/consolizer/types"
 )
 
 func validateTextFieldWidth(width int) {
@@ -17,12 +18,12 @@ func validateLayerLocationByLayerAlias(layerAlias string, xLocation int, yLocati
 	layerEntry := memory.GetLayer(layerAlias)
 	validateLayerLocationByLayerEntry(layerEntry, xLocation, yLocation)
 }
-func validateSelectionEntry(selectionEntry memory.SelectionEntryType) {
+func validateSelectionEntry(selectionEntry types.SelectionEntryType) {
 	if len(selectionEntry.SelectionValue) == 0 {
 		safeSttyPanic(fmt.Sprintf("The selection entry passed was empty."))
 	}
 }
-func validateLayerLocationByLayerEntry(layerEntry *memory.LayerEntryType, xLocation int, yLocation int) {
+func validateLayerLocationByLayerEntry(layerEntry *types.LayerEntryType, xLocation int, yLocation int) {
 	if xLocation < 0 || yLocation < 0 ||
 		xLocation >= layerEntry.Width || yLocation >= layerEntry.Height {
 		safeSttyPanic(fmt.Sprintf("The specified location (%d, %d) is out of bounds for layer with a size of (%d, %d).", xLocation, yLocation, layerEntry.Width, layerEntry.Height))
@@ -48,14 +49,14 @@ func validateTextStyleExists(textStyleAlias string) {
 	}
 }
 
-func validateLayerNotDefault(layerAlias string) {
-	if layerAlias == commonResource.layerAlias {
-		safeSttyPanic(fmt.Sprintf("The text layer '%s' could not be deleted since it is the default text layer!", layerAlias))
+func validateDefaultLayerIsNotEmpty() {
+	if commonResource.layerAlias == "" {
+		safeSttyPanic(fmt.Sprintf("The action could not be completed since no default text layer exists!"))
 	}
 }
 
 func validateTerminalWidthAndHeight(width int, height int) {
-	if width <=0 || height <= 0 {
+	if width <= 0 || height <= 0 {
 		safeSttyPanic(fmt.Sprintf("The specified terminal width and height of '%d, %d' is invalid!", width, height))
 	}
 }
@@ -68,16 +69,15 @@ func validateLayer(layerAlias string) {
 
 func validatorTextField(layerAlias string, textFieldAlias string) {
 	if !(memory.IsTextFieldExists(layerAlias, textFieldAlias)) {
-		safeSttyPanic(fmt.Sprintf("The text field '%s' under layer '%s' could not be obtained since it does not exist!", textFieldAlias,  layerAlias))
+		safeSttyPanic(fmt.Sprintf("The text field '%s' under layer '%s' could not be obtained since it does not exist!", textFieldAlias, layerAlias))
 	}
 }
 
 func validatorMenu(layerAlias string, menuAlias string) {
 	if !(memory.IsSelectorExists(layerAlias, menuAlias)) {
-		safeSttyPanic(fmt.Sprintf("The menu '%s' under layer '%s' could not be obtained since it does not exist!", menuAlias,  layerAlias))
+		safeSttyPanic(fmt.Sprintf("The menu '%s' under layer '%s' could not be obtained since it does not exist!", menuAlias, layerAlias))
 	}
 }
-
 
 func safeSttyPanic(panicMessage string) {
 	RestoreTerminalSettings()

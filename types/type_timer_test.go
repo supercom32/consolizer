@@ -1,8 +1,8 @@
-package memory
+package types
 
 import (
-	"github.com/supercom32/consolizer/internal/recast"
 	"github.com/stretchr/testify/assert"
+	"github.com/supercom32/consolizer/internal/recast"
 	"testing"
 )
 
@@ -20,6 +20,5 @@ func TestGetTimerEntry(test *testing.T) {
 	firstTimerEntry = NewTimerEntry(&secondTimerEntry)
 	obtainedResult = recast.GetArrayOfInterfaces(firstTimerEntry)
 	assert.Equalf(test, expectedResult, obtainedResult, "The first image entry is not the same as the second, even though it should be an identical clone.")
-
 
 }

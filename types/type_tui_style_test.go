@@ -1,9 +1,9 @@
-package memory
+package types
 
 import (
-	"github.com/supercom32/consolizer/internal/recast"
 	"github.com/stretchr/testify/assert"
 	"github.com/supercom32/consolizer/constants"
+	"github.com/supercom32/consolizer/internal/recast"
 	"testing"
 )
 
@@ -21,14 +21,14 @@ func TestStyleTypeCreation(test *testing.T) {
 	firstStyleEntry.LowerLeftCorner = 'i'
 	firstStyleEntry.CrossConnector = 'j'
 	firstStyleEntry.DesktopPattern = 'k'
-	firstStyleEntry.ProgressBarBackgroundPattern = 'l'
-	firstStyleEntry.ProgressBarForegroundPattern = 'm'
-	firstStyleEntry.TextForegroundColor = constants.AnsiColorByIndex[1]
-	firstStyleEntry.TextBackgroundColor = constants.AnsiColorByIndex[2]
-	firstStyleEntry.TextInputForegroundColor = constants.AnsiColorByIndex[3]
-	firstStyleEntry.TextInputBackgroundColor = constants.AnsiColorByIndex[4]
-	firstStyleEntry.CursorForegroundColor = constants.AnsiColorByIndex[5]
-	firstStyleEntry.CursorBackgroundColor = constants.AnsiColorByIndex[6]
+	firstStyleEntry.ProgressBarUnfilledPattern = 'l'
+	firstStyleEntry.ProgressBarFilledPattern = 'm'
+	firstStyleEntry.LineDrawingTextForegroundColor = constants.AnsiColorByIndex[1]
+	firstStyleEntry.LineDrawingTextBackgroundColor = constants.AnsiColorByIndex[2]
+	firstStyleEntry.TextFieldForegroundColor = constants.AnsiColorByIndex[3]
+	firstStyleEntry.TextFieldBackgroundColor = constants.AnsiColorByIndex[4]
+	firstStyleEntry.TextboxCursorForegroundColor = constants.AnsiColorByIndex[5]
+	firstStyleEntry.TextboxCursorBackgroundColor = constants.AnsiColorByIndex[6]
 	firstStyleEntry.SelectorForegroundColor = constants.AnsiColorByIndex[7]
 	firstStyleEntry.SelectorBackgroundColor = constants.AnsiColorByIndex[8]
 	firstStyleEntry.HighlightForegroundColor = constants.AnsiColorByIndex[9]
@@ -43,7 +43,7 @@ func TestStyleTypeCreation(test *testing.T) {
 	secondStyleEntry := NewTuiStyleEntry()
 	firstResult := recast.GetArrayOfInterfaces(firstStyleEntry)
 	secondResult := recast.GetArrayOfInterfaces(secondStyleEntry)
-	assert.NotEqualf(test, secondResult, firstResult,"The first style entry is the same as the second, even though it should be different.")
+	assert.NotEqualf(test, secondResult, firstResult, "The first style entry is the same as the second, even though it should be different.")
 
 	secondStyleEntry = NewTuiStyleEntry(&firstStyleEntry)
 	secondResult = recast.GetArrayOfInterfaces(secondStyleEntry)

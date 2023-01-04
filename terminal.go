@@ -7,23 +7,26 @@ import (
 	"github.com/supercom32/consolizer/internal/math"
 	"github.com/supercom32/consolizer/internal/memory"
 	"github.com/supercom32/consolizer/internal/stringformat"
+	"github.com/supercom32/consolizer/types"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 )
 
 /*
 defaultValueType is a structure that holds common information about the
 current terminal session that needs to be shared.
- */
+*/
 type defaultValueType struct {
 	screen         tcell.Screen
 	layerAlias     string // What happens when last layer is deleted? This needs to be updated.
 	terminalWidth  int
 	terminalHeight int
-	screenLayer    memory.LayerEntryType
+	screenLayer    types.LayerEntryType
 	debugDirectory string
 	isDebugEnabled bool
+	displayUpdate  sync.Mutex
 }
 
 /*
@@ -31,6 +34,10 @@ commonResource is a variable used to hold shared data that is accessed
 by this package.
 */
 var commonResource defaultValueType
+
+func Test() {
+
+}
 
 /*
 InitializeTerminal allows you to initialize consolizer for the first time.
@@ -55,6 +62,8 @@ func InitializeTerminal(width int, height int) {
 	memory.InitializeCheckboxMemory()
 	memory.InitializeTextboxMemory()
 	memory.InitializeRadioButtonMemory()
+	memory.InitializeProgressBarMemory()
+	memory.InitializeLabelMemory()
 	var detectedWidth int
 	var detectedHeight int
 	if !commonResource.isDebugEnabled {
@@ -94,7 +103,7 @@ monitoring continues.
 */
 func setupEventUpdater() {
 	for {
-		updateEventQueues()
+		UpdateEventQueues()
 	}
 }
 
@@ -106,7 +115,7 @@ killed.
 */
 func setupCloseHandler() {
 	channel := make(chan os.Signal)
-	signal.Notify(channel, os.Interrupt, syscall.SIGTERM, syscall.SIGKILL, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGHUP)
+	signal.Notify(channel, syscall.SIGTERM, syscall.SIGKILL, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGHUP)
 	go func() {
 		<-channel
 		commonResource.screen.Fini()
@@ -168,85 +177,9 @@ he is working on. For example:
 	// PrintLayer anymore. Instead, we can use the shorter method Print.
 	consolizer.Print("Hello World")
 */
-func Layer(layerAlias string) {
-	validateLayer(layerAlias)
-	commonResource.layerAlias = layerAlias
-}
-
-/*
-AddLayer allows you to add a text layer to the current terminal display. You
-can add as many layers as you wish to suite your applications needs. Text
-layers are useful for setting up windows, modal dialogs, viewports, game
-foregrounds and backgrounds, and even effects like parallax scrolling. In
-addition, the following information should be noted:
-
-- If you specify location for your layer that is outside the visible
-terminal display, then only the visible portion of your text layer will be
-rendered. Likewise, if your text layer is larger than the visible area of your
-terminal display, then only the visible portion of it will be displayed.
-
-- If you pass in a zero or negative value for ether width or height a panic
-will be generated to fail as fast as possible.
-
-- The z order priority controls which text layer should be drawn first and
-which text layer should be drawn last. Layers that have a higher priority
-will be drawn on top of layers that have a lower priority. In the event
-that two layers have the same priority, they will be drawn in random order.
-This is to ensure that programmers do not attempt to rely on any specific
-behavior that might be a coincidental side effect.
-
-- The parent alias specifies which text layer is the parent of the one being
-created. Having a parent layer means that the child layer will only render
-on the parent and not the main terminal. This allows you to have text layers
-within text layers that can be moved or manipulated relative to the parent.
-If you pass in a value of "" for the parent alias, then no parent is used
-and the layer is rendered directly to the terminal display. This feature
-is useful for creating 'Window' effects where content is contained within
-something else.
-
-- When adding a new text layer, it will become the default
-working text layer automatically. If you wish to set another text layer
-as your default, use 'Layer' to explicitly set it.
-*/
-func AddLayer(layerAlias string, xLocation int, yLocation int, width int, height int, zOrderPriority int, parentAlias string) {
-	validateTerminalWidthAndHeight(width, height)
-	memory.AddLayer(layerAlias, xLocation, yLocation, width, height, zOrderPriority, parentAlias)
-	commonResource.layerAlias = layerAlias
-}
-
-/*
-DeleteLayer allows you to remove a text layer. If you wish to reuse a text
-layer for a future purpose, you may also consider making the layer invisible
-instead of deleting it. In addition, the following information should be noted:
-
-- When a text layer is deleted, all child text layers are recursively deleted
-as well.
-
-- If any dynamically drawn TUI controls reference the deleted layer, they will
-still be present. However, because the layer they were created for no longer
-exists, they will never be rendered. Consider removing any TUI controls before
-deleting the layer they reference. If you delete a layer that is referenced
-by dynamic TUI controls, creating a new layer with the same layer alias will
-allow them to be rendered again.
-
-- If you attempt to delete a text layer which is currently set as your default
-text layer, then a panic will be generated in order to fail as fast as
-possible.
-
-- If you attempt to delete a text layer that does not exist, then the operation
-will be ignored.
-*/
-func DeleteLayer(layerAlias string) {
-	validateLayer(layerAlias)
-	validateLayerNotDefault(layerAlias)
-	memory.DeleteLayer(layerAlias)
-}
-
-/*
-DeleteAllLayers allows you to remove all layers from memory.
-*/
-func DeleteAllLayers() {
-	memory.InitializeScreenMemory()
+func Layer(layerInstance LayerInstanceType) {
+	validateLayer(layerInstance.layerAlias)
+	commonResource.layerAlias = layerInstance.layerAlias
 }
 
 /*
@@ -261,7 +194,7 @@ calling 'consolizer.NewTextStyle()'. This entry type contains all the
 options available for your text style and can be configured easily
 by setting each attribute accordingly.
 */
-func AddTextStyle(textStyleAlias string, textStyleEntry memory.TextStyleEntryType) {
+func AddTextStyle(textStyleAlias string, textStyleEntry types.TextCellStyleEntryType) {
 	memory.AddTextStyle(textStyleAlias, textStyleEntry)
 }
 
@@ -291,8 +224,8 @@ For example:
 	// Add a new text style called "RedColor".
 	consolizer.AddTextStyle("RedColor", myTextStyleEntry)
 */
-func NewTextStyle() memory.TextStyleEntryType {
-	return memory.NewTextStyleEntry()
+func NewTextStyle() types.TextCellStyleEntryType {
+	return types.NewTextCellStyleEntry()
 }
 
 /*
@@ -312,8 +245,8 @@ occur. For example:
 	// with a width and height of 10x10 characters.
 	consolizer.DrawWindow("ForegroundLayer", myTuiStyleEntry, 0, 0, 10, 10)
 */
-func NewTuiStyleEntry() memory.TuiStyleEntryType {
-	return memory.NewTuiStyleEntry()
+func NewTuiStyleEntry() types.TuiStyleEntryType {
+	return types.NewTuiStyleEntry()
 }
 
 /*
@@ -334,8 +267,8 @@ options you want to make available for a given menu prompt. For example:
 	// with a menu width and height of 15x15 characters.
 	selectionMade := consolizer.GetSelectionFromVerticalMenu ("ForegroundLayer", tuiStyleEntry, selectionEntry, 0, 0, 15, 15)
 */
-func NewSelectionEntry() memory.SelectionEntryType {
-	return memory.NewSelectionEntry()
+func NewSelectionEntry() types.SelectionEntryType {
+	return types.NewSelectionEntry()
 }
 
 /*
@@ -358,8 +291,8 @@ In addition, the following information should be noted:
 asset list to be shared by multiple methods that load different kinds of
 assets.
 */
-func NewAssetList() memory.AssetListType {
-	return memory.NewAssetList()
+func NewAssetList() types.AssetListType {
+	return types.NewAssetList()
 }
 
 /*
@@ -395,7 +328,7 @@ func SetZOrder(zOrder int) {
 }
 
 /*
-SetAlpha allows you to set the alpha value for a given text layer. This lets
+SetLayerAlpha allows you to set the alpha value for a given text layer. This lets
 you perform pseudo transparencies by making the layer foreground and background
 colors blend with the layers underneath it to the degree specified. In
 addition, the following information should be noted:
@@ -408,12 +341,19 @@ you want to over amplify or under amplify the color transparency effect.
 example, if you specified 200%), then the color will simply bottom or max
 out at RGB(0, 0, 0) or RGB(255, 255, 255) respectively.
 */
-// TODO: Make this SetLayerAlpha and create SetAlpha for default layer
-func SetAlpha(layerAlias string, alphaValue float32) {
+func SetLayerAlpha(layerInstance LayerInstanceType, alphaValue float32) {
+	setLayerAlpha(layerInstance.layerAlias, alphaValue)
+}
+
+func setLayerAlpha(layerAlias string, alphaValue float32) {
 	validateLayer(layerAlias)
 	layerEntry := memory.GetLayer(layerAlias)
 	layerEntry.DefaultAttribute.ForegroundTransformValue = alphaValue
 	layerEntry.DefaultAttribute.BackgroundTransformValue = alphaValue
+}
+
+func SetLayer(alphaValue float32) {
+	setLayerAlpha(commonResource.layerAlias, alphaValue)
 }
 
 /*
@@ -450,6 +390,7 @@ for a text layer that is not currently set as your default, use 'ColorLayer'
 instead.
 */
 func Color(foregroundColorIndex int, backgroundColorIndex int) {
+	validateDefaultLayerIsNotEmpty()
 	ColorLayer(commonResource.layerAlias, foregroundColorIndex, backgroundColorIndex)
 }
 
@@ -459,7 +400,7 @@ printing with. The color index specified corresponds to the 16 color ANSI
 standard, where color 0 is Black and 15 is Bright White. If you do not wish
 to specify a text layer, you can use the method 'Color' which will simply
 change the color for the default text layer previously set.
- */
+*/
 func ColorLayer(layerAlias string, foregroundColorIndex int, backgroundColorIndex int) {
 	validateLayer(layerAlias)
 	validateColorIndex(foregroundColorIndex)
@@ -474,8 +415,9 @@ ColorRGB allows you to set default colors on your text layer for printing with.
 This method allows you to specify colors using RGB color index values within
 the range of 0 to 255. If you wish to change colors settings for a text layer
 that is not currently set as your default, use 'ColorLayerRGB' instead.
- */
+*/
 func ColorRGB(foregroundRedIndex int32, foregroundGreenIndex int32, foregroundBlueIndex int32, backgroundRedIndex int32, backgroundGreenIndex int32, backgroundBlueIndex int32) {
+	validateDefaultLayerIsNotEmpty()
 	ColorLayerRGB(commonResource.layerAlias, foregroundRedIndex, foregroundGreenIndex, foregroundBlueIndex, backgroundRedIndex, backgroundGreenIndex, backgroundBlueIndex)
 }
 
@@ -489,59 +431,28 @@ color for the default text layer previously set.
 func ColorLayerRGB(layerAlias string, foregroundRed int32, foregroundGreen int32, foregroundBlue int32, backgroundRed int32, backgroundGreen int32, backgroundBlue int32) {
 	foregroundColor := GetRGBColor(foregroundRed, foregroundGreen, foregroundBlue)
 	backgroundColor := GetRGBColor(backgroundRed, backgroundGreen, backgroundBlue)
-	colorLayer24Bit(layerAlias, foregroundColor, backgroundColor)
+	ColorLayer24Bit(layerAlias, foregroundColor, backgroundColor)
 }
 
 /*
-colorLayer24Bit allows you to color a layer using a 24-bit color expressed as
+Color24Bit allows you to color a layer using a 24-bit color expressed as
+an int32. This is useful for when you have colors which are already defined.
+*/
+
+func Color24Bit(foregroundColor constants.ColorType, backgroundColor constants.ColorType) {
+	ColorLayer24Bit(commonResource.layerAlias, foregroundColor, backgroundColor)
+}
+
+/*
+ColorLayer24Bit allows you to color a layer using a 24-bit color expressed as
 an int32. This is useful for internal methods that already have a 24-bit color
 and do not require to compute it again.
 */
-func colorLayer24Bit(layerAlias string, foregroundColor constants.ColorType, backgroundColor constants.ColorType) {
+func ColorLayer24Bit(layerAlias string, foregroundColor constants.ColorType, backgroundColor constants.ColorType) {
 	validateLayer(layerAlias)
 	layerEntry := memory.GetLayer(layerAlias)
 	layerEntry.DefaultAttribute.ForegroundColor = foregroundColor
 	layerEntry.DefaultAttribute.BackgroundColor = backgroundColor
-}
-
-/*
-MoveLayerByAbsoluteValue allows you to move a text layer by an absolute value.
-This is useful if you know exactly what position you wish to move your text
-layer to. In addition, the following information should be noted:
-
-- If you move your layer outside the visible terminal display, only the visible
-display area will be rendered. Likewise, if your text layer is a child of
-a parent layer, then only the visible display area will be rendered on the
-parent.
-*/
-func MoveLayerByAbsoluteValue(layerAlias string, xLocation int, yLocation int) {
-	validateLayer(layerAlias)
-	layerEntry := memory.GetLayer(layerAlias)
-	layerEntry.ScreenXLocation = xLocation
-	layerEntry.ScreenYLocation = yLocation
-}
-
-/*
-MoveLayerByRelativeValue allows you to move a text layer by a relative value.
-This is useful for windows, foregrounds, backgrounds, or any kind of
-animations or movement you may wish to do in increments. For example:
-
-	// Move the text layer with the alias "ForegroundLayer" one character to
-	// the left and two characters down from its current location.
-	consolizer.MoveLayerByRelativeValue("ForegroundLayer", -1, 2)
-
-In addition, the following information should be noted:
-
-- If you move your layer outside the visible terminal display, only the visible
-display area will be rendered. Likewise, if your text layer is a child of
-a parent layer, then only the visible display area will be rendered on the
-parent.
-*/
-func MoveLayerByRelativeValue(layerAlias string, xLocation int, yLocation int) {
-	validateLayer(layerAlias)
-	layerEntry := memory.GetLayer(layerAlias)
-	layerEntry.ScreenXLocation += xLocation
-	layerEntry.ScreenYLocation += yLocation
 }
 
 /*
@@ -570,7 +481,9 @@ example:
 	consolizer.Locate(14, 14)
 */
 func Locate(xLocation int, yLocation int) {
-	LocateLayer(commonResource.layerAlias, xLocation, yLocation)
+	validateDefaultLayerIsNotEmpty()
+	layerInstance := LayerInstanceType{layerAlias: commonResource.layerAlias}
+	LocateLayer(layerInstance, xLocation, yLocation)
 }
 
 /*
@@ -596,9 +509,9 @@ example:
 	// Move our cursor location to the bottom right corner of our text layer.
 	consolizer.LocateLayer(14, 14)
 */
-func LocateLayer(layerAlias string, xLocation int, yLocation int) {
-	validateLayer(layerAlias)
-	layerEntry := memory.GetLayer(layerAlias)
+func LocateLayer(layerInstance LayerInstanceType, xLocation int, yLocation int) {
+	validateLayer(layerInstance.layerAlias)
+	layerEntry := memory.GetLayer(layerInstance.layerAlias)
 	validateLayerLocationByLayerEntry(layerEntry, xLocation, yLocation)
 	layerEntry.CursorXLocation = xLocation
 	layerEntry.CursorYLocation = yLocation
@@ -620,7 +533,9 @@ then only the visible portion of your string will be printed.
 all remaining characters will be discarded and printing will stop.
 */
 func Print(textToPrint string) {
-	PrintLayer(commonResource.layerAlias, textToPrint)
+	validateDefaultLayerIsNotEmpty()
+	layerInstance := LayerInstanceType{layerAlias: commonResource.layerAlias}
+	PrintLayer(layerInstance, textToPrint)
 }
 
 /*
@@ -639,8 +554,8 @@ then only the visible portion of your string will be printed.
 - If printing has not yet finished and there are no available lines left, then
 all remaining characters will be discarded and printing will stop.
 */
-func PrintLayer(layerAlias string, textToPrint string) {
-	layerEntry := memory.GetLayer(layerAlias)
+func PrintLayer(layerInstance LayerInstanceType, textToPrint string) {
+	layerEntry := memory.GetLayer(layerInstance.layerAlias)
 	if layerEntry.CursorYLocation >= layerEntry.Height {
 		layerEntry.CursorYLocation = layerEntry.Height - 1
 		layerEntry.CharacterMemory = scrollCharacterMemory(layerEntry)
@@ -660,7 +575,7 @@ the following information should be noted:
 - If the location to print falls outside the range of the text layer,
 then only the visible portion of your text will be printed.
 */
-func printLayer(layerEntry *memory.LayerEntryType, attributeEntry memory.AttributeEntryType, xLocation int, yLocation int, textToPrint []rune) int {
+func printLayer(layerEntry *types.LayerEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, textToPrint []rune) int {
 	layerWidth := layerEntry.Width
 	layerHeight := layerEntry.Height
 	cursorXLocation := xLocation
@@ -668,16 +583,20 @@ func printLayer(layerEntry *memory.LayerEntryType, attributeEntry memory.Attribu
 	characterMemory := layerEntry.CharacterMemory
 	for _, currentCharacter := range textToPrint {
 		if cursorXLocation >= 0 && cursorXLocation < layerWidth && cursorYLocation >= 0 && cursorYLocation < layerHeight {
-			characterMemory[cursorYLocation][cursorXLocation].AttributeEntry = memory.NewAttributeEntry(&attributeEntry)
+			originalBackgroundColor := characterMemory[cursorYLocation][cursorXLocation].AttributeEntry.BackgroundColor
+			characterMemory[cursorYLocation][cursorXLocation].AttributeEntry = types.NewAttributeEntry(&attributeEntry)
 			characterMemory[cursorYLocation][cursorXLocation].Character = currentCharacter
-		}
-		if stringformat.IsRuneCharacterWide(currentCharacter) {
-			cursorXLocation++
-			if cursorXLocation >= layerWidth {
-				return cursorXLocation - xLocation
+			if stringformat.IsRuneCharacterWide(currentCharacter) {
+				cursorXLocation++
+				if cursorXLocation >= layerWidth {
+					return cursorXLocation - xLocation
+				}
+				characterMemory[cursorYLocation][cursorXLocation].AttributeEntry = types.NewAttributeEntry(&attributeEntry)
+				characterMemory[cursorYLocation][cursorXLocation].Character = ' '
 			}
-			characterMemory[cursorYLocation][cursorXLocation].AttributeEntry = memory.NewAttributeEntry(&attributeEntry)
-			characterMemory[cursorYLocation][cursorXLocation].Character = ' '
+			if characterMemory[cursorYLocation][cursorXLocation].AttributeEntry.IsBackgroundTransparent {
+				characterMemory[cursorYLocation][cursorXLocation].AttributeEntry.BackgroundColor = originalBackgroundColor
+			}
 		}
 		cursorXLocation++
 		if cursorXLocation >= layerWidth {
@@ -693,6 +612,7 @@ wish to clear a text layer that is not currently set as the default, use
 'ClearLayer' instead.
 */
 func Clear() {
+	validateDefaultLayerIsNotEmpty()
 	ClearLayer(commonResource.layerAlias)
 }
 
@@ -711,9 +631,9 @@ func ClearLayer(layerAlias string) {
 clearLayer allows you to empty the specified text layer of all its contents.
 This is useful for internal methods that want to clear a text layer directly.
 */
-func clearLayer(layerEntry *memory.LayerEntryType) {
+func clearLayer(layerEntry *types.LayerEntryType) {
 	zOrder := layerEntry.ZOrder
-	*layerEntry = memory.NewLayerEntry(layerEntry.LayerAlias, layerEntry.ParentAlias, layerEntry.Width, layerEntry.Height)
+	*layerEntry = types.NewLayerEntry(layerEntry.LayerAlias, layerEntry.ParentAlias, layerEntry.Width, layerEntry.Height)
 	layerEntry.ZOrder = zOrder
 }
 
@@ -729,14 +649,14 @@ row. This means that the first row is discarded and all subsequent rows are
 moved up by one position. The new row created at the bottom of the text layer
 will be filled with spaces (" ") colored with the layers default attributes.
 */
-func scrollCharacterMemory(layerEntry *memory.LayerEntryType) [][]memory.CharacterEntryType {
+func scrollCharacterMemory(layerEntry *types.LayerEntryType) [][]types.CharacterEntryType {
 	layerWidth := layerEntry.Width
 	characterMemory := layerEntry.CharacterMemory
 	characterMemory = characterMemory[1:]
-	characterObjectArray := make([]memory.CharacterEntryType, layerWidth)
+	characterObjectArray := make([]types.CharacterEntryType, layerWidth)
 	for currentCharacterCell := 0; currentCharacterCell < layerWidth; currentCharacterCell++ {
-		characterEntry := memory.NewCharacterEntry()
-		characterEntry.AttributeEntry = memory.NewAttributeEntry(&layerEntry.DefaultAttribute)
+		characterEntry := types.NewCharacterEntry()
+		characterEntry.AttributeEntry = types.NewAttributeEntry(&layerEntry.DefaultAttribute)
 		characterEntry.Character = ' '
 		characterObjectArray[currentCharacterCell] = characterEntry
 	}
@@ -753,8 +673,8 @@ noted:
 - If the location specified is outside the valid range of the text layer, then
 a panic will be thrown to fail as fast as possible.
 */
-func getRuneOnLayer(layerEntry *memory.LayerEntryType, xLocation int, yLocation int) rune {
-	//validateLayerLocationByLayerEntry(layerEntry, xLocation, yLocation)
+func getRuneOnLayer(layerEntry *types.LayerEntryType, xLocation int, yLocation int) rune {
+	// validateLayerLocationByLayerEntry(layerEntry, xLocation, yLocation)
 	// We don't do validation here because if we draw outside the layer intentionally, we don't want to panic.
 	// For example, if rendering a control that pops off-screen.
 	if xLocation < 0 || yLocation < 0 ||
@@ -778,7 +698,7 @@ from the top-most visible text cell.
 - The cell ID returned will only reflect what is currently being displayed
 on the terminal display. If you wish for any new changes to take effect,
 call 'UpdateDisplay' to refresh the visible display area first.
- */
+*/
 func GetCellIdUnderMouseLocation() int {
 	mouseXLocation, mouseYLocation, _, _ := memory.GetMouseStatus()
 	return getCellIdByLayerEntry(&commonResource.screenLayer, mouseXLocation, mouseYLocation)
@@ -802,7 +722,7 @@ by layer entry. In addition, the following information should be noted:
 - If the location specified is outside the valid range of the text layer, then
 a value of '-1' is returned instead.
 */
-func getCellIdByLayerEntry(layerEntry *memory.LayerEntryType, xLocation int, yLocation int) int {
+func getCellIdByLayerEntry(layerEntry *types.LayerEntryType, xLocation int, yLocation int) int {
 	returnValue := -1
 	if xLocation < 0 || xLocation >= layerEntry.Width || yLocation < 0 || yLocation >= layerEntry.Height {
 		return returnValue
@@ -825,12 +745,20 @@ your current changes. In addition, the following information should be noted:
 This is to ensure that programmers do not attempt to rely on any specific
 behavior that might be a coincidental side effect.
 */
-func UpdateDisplay() {
+func UpdateDisplay(isRefreshForced bool) {
+	commonResource.displayUpdate.Lock()
+	defer func() {
+		commonResource.displayUpdate.Unlock()
+	}()
 	sortedLayerAliasSlice := memory.GetSortedLayerMemoryAliasSlice()
-	baseLayerEntry := memory.NewLayerEntry("", "", commonResource.terminalWidth, commonResource.terminalHeight)
+	baseLayerEntry := types.NewLayerEntry("", "", commonResource.terminalWidth, commonResource.terminalHeight)
 	baseLayerEntry = renderLayers(&baseLayerEntry, sortedLayerAliasSlice)
-	DrawLayerToScreen(&baseLayerEntry, false)
+	DrawLayerToScreen(&baseLayerEntry, isRefreshForced)
 	commonResource.screenLayer = baseLayerEntry
+}
+
+func RefreshDisplay() {
+	commonResource.screen.Sync()
 }
 
 /*
@@ -854,13 +782,16 @@ overlaid on the final (terminal ready) text layer. Buttons and other special
 TUI controls are also dynamically rendered at this time so that the original
 text layer data underneath them is preserved.
 */
-func renderLayers(rootLayerEntry *memory.LayerEntryType, sortedLayerAliasSlice memory.LayerAliasZOrderPairList) memory.LayerEntryType {
-	baseLayerEntry := memory.NewLayerEntry("","",0,0, rootLayerEntry)
+func renderLayers(rootLayerEntry *types.LayerEntryType, sortedLayerAliasSlice memory.LayerAliasZOrderPairList) types.LayerEntryType {
+	baseLayerEntry := types.NewLayerEntry("", "", 0, 0, rootLayerEntry)
 	for currentListIndex := 0; currentListIndex < len(sortedLayerAliasSlice); currentListIndex++ {
-		currentLayerEntry := memory.NewLayerEntry("","",0, 0, memory.GetLayer(sortedLayerAliasSlice[currentListIndex].Key))
+		if !memory.IsLayerExists(sortedLayerAliasSlice[currentListIndex].Key) {
+			continue
+		}
+		currentLayerEntry := types.NewLayerEntry("", "", 0, 0, memory.GetLayer(sortedLayerAliasSlice[currentListIndex].Key))
 		if currentLayerEntry.IsVisible {
 			renderControls(currentLayerEntry)
-			if currentLayerEntry.IsParent && (currentLayerEntry.LayerAlias != baseLayerEntry.LayerAlias && currentLayerEntry.ParentAlias == baseLayerEntry.LayerAlias){
+			if currentLayerEntry.IsParent && (currentLayerEntry.LayerAlias != baseLayerEntry.LayerAlias && currentLayerEntry.ParentAlias == baseLayerEntry.LayerAlias) {
 				renderedLayer := renderLayers(&currentLayerEntry, sortedLayerAliasSlice)
 				overlayLayers(&renderedLayer, &baseLayerEntry)
 			} else {
@@ -873,17 +804,19 @@ func renderLayers(rootLayerEntry *memory.LayerEntryType, sortedLayerAliasSlice m
 	return baseLayerEntry
 }
 
-func renderControls(currentLayerEntry memory.LayerEntryType) {
+func renderControls(currentLayerEntry types.LayerEntryType) {
 	// Order matters as complex controls need to be drawn first above basic controls (so that any
 	// pop up controls appear over complex controls).
-	button.drawButtonsOnLayer(currentLayerEntry)
-	textField.drawTextFieldOnLayer(currentLayerEntry)
-	checkbox.drawCheckboxesOnLayer(currentLayerEntry)
-	dropdown.drawDropdownsOnLayer(currentLayerEntry)
+	Button.drawButtonsOnLayer(currentLayerEntry)
+	TextField.drawTextFieldOnLayer(currentLayerEntry)
+	Checkbox.drawCheckboxesOnLayer(currentLayerEntry)
+	Dropdown.drawDropdownsOnLayer(currentLayerEntry)
 	Selector.drawSelectorsOnLayer(currentLayerEntry)
 	scrollbar.drawScrollbarsOnLayer(currentLayerEntry)
 	textbox.drawTextboxesOnLayer(currentLayerEntry)
 	radioButton.drawRadioButtonsOnLayer(currentLayerEntry)
+	ProgressBar.drawProgressBarsOnLayer(currentLayerEntry)
+	Label.drawLabelsOnLayer(currentLayerEntry)
 }
 
 /*
@@ -891,7 +824,7 @@ overlayLayersByLayerAlias allows you to overlay a text layer by its layer
 alias. This is useful when you do not have actual layer data and only
 know the alias of the layer you wish to overlay.
 */
-func overlayLayersByLayerAlias(sourceLayerAlias string, targetLayerEntry *memory.LayerEntryType) {
+func overlayLayersByLayerAlias(sourceLayerAlias string, targetLayerEntry *types.LayerEntryType) {
 	validateLayer(sourceLayerAlias)
 	layerEntry := memory.GetLayer(sourceLayerAlias)
 	overlayLayers(layerEntry, targetLayerEntry)
@@ -914,7 +847,7 @@ transparent.
 then it will be drawn as a shadow with the color and intensity matching
 the rune underneath it.
 */
-func overlayLayers(sourceLayerEntry *memory.LayerEntryType, targetLayerEntry *memory.LayerEntryType) {
+func overlayLayers(sourceLayerEntry *types.LayerEntryType, targetLayerEntry *types.LayerEntryType) {
 	sourceCharacterMemory := sourceLayerEntry.CharacterMemory
 	targetCharacterMemory := targetLayerEntry.CharacterMemory
 	sourceWidthToCopy := sourceLayerEntry.Width
@@ -987,10 +920,10 @@ func overlayLayers(sourceLayerEntry *memory.LayerEntryType, targetLayerEntry *me
 				targetCharacterEntry.AttributeEntry = targetAttributeEntry
 				targetCharacterMemory[currentRow+startingTargetYLocation][currentColumn+startingTargetXLocation] = *targetCharacterEntry
 			} else {
-				targetCharacterEntry.AttributeEntry = memory.NewAttributeEntry(&sourceAttributeEntry)
+				targetCharacterEntry.AttributeEntry = types.NewAttributeEntry(&sourceAttributeEntry)
 				targetCharacterEntry.Character = sourceCharacterEntry.Character
 				targetCharacterEntry.LayerAlias = sourceCharacterEntry.LayerAlias
-				// If there is no local color transforming being done on cells
+				// If there is no local.com color transforming being done on cells
 				if sourceAttributeEntry.ForegroundTransformValue != 1 || sourceAttributeEntry.BackgroundTransformValue != 1 {
 					if sourceAttributeEntry.ForegroundTransformValue < 1 {
 						targetCharacterEntry.AttributeEntry.ForegroundColor = GetTransitionedColor(targetAttributeEntry.ForegroundColor, sourceAttributeEntry.ForegroundColor, sourceAttributeEntry.ForegroundTransformValue)
@@ -1016,7 +949,7 @@ DrawLayerToScreen allows you to render a text layer to the visible terminal
 screen. If debug is enabled, this method does nothing since the terminal
 is virtual.
 */
-func DrawLayerToScreen(layerEntry *memory.LayerEntryType, isForcedRefreshRequired bool) {
+func DrawLayerToScreen(layerEntry *types.LayerEntryType, isForcedRefreshRequired bool) {
 	if !commonResource.isDebugEnabled {
 		width := layerEntry.Width
 		height := layerEntry.Height
@@ -1034,6 +967,9 @@ func DrawLayerToScreen(layerEntry *memory.LayerEntryType, isForcedRefreshRequire
 				r2 := []rune("")
 				commonResource.screen.SetContent(currentCharacter, currentRow, character, r2, style)
 			}
+		}
+		if isForcedRefreshRequired {
+			commonResource.screen.Sync()
 		}
 		commonResource.screen.Show()
 	}

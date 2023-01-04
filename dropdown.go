@@ -4,21 +4,28 @@ import (
 	"github.com/supercom32/consolizer/constants"
 	"github.com/supercom32/consolizer/internal/memory"
 	"github.com/supercom32/consolizer/internal/stringformat"
+	"github.com/supercom32/consolizer/types"
 )
 
 type DropdownInstanceType struct {
-	layerAlias  string
+	layerAlias    string
 	dropdownAlias string
 }
 
-type dropdownType struct {}
-var dropdown dropdownType
+type dropdownType struct{}
+
+var Dropdown dropdownType
+
+func (shared *DropdownInstanceType) GetValue() string {
+	dropdownEntry := memory.GetDropdown(shared.layerAlias, shared.dropdownAlias)
+	return dropdownEntry.SelectionEntry.SelectionValue[dropdownEntry.ItemSelected]
+}
 
 /*
-AddDropdown allows you to add a dropdown to a given text layer. Once called, an instance of
+Add allows you to add a Dropdown to a given text layer. Once called, an instance of
 your control is returned which will allow you to read or manipulate the properties for it.
-The Style of the dropdown will be determined by the style entry passed in. If you wish to
-remove a dropdown from a text layer, simply call 'DeleteDropdown'. In addition, the
+The Style of the Dropdown will be determined by the style entry passed in. If you wish to
+remove a Dropdown from a text layer, simply call 'DeleteDropdown'. In addition, the
 following information should be noted:
 
 - Dropdowns are not drawn physically to the text layer provided. Instead,
@@ -26,13 +33,13 @@ they are rendered to the terminal at the same time when the text layer is
 rendered. This allows you to create dropdowns without actually overwriting
 the text layer data under it.
 
-- If the dropdown to be drawn falls outside the range of the provided layer,
-then only the visible portion of the checkbox will be drawn.
+- If the Dropdown to be drawn falls outside the range of the provided layer,
+then only the visible portion of the Checkbox will be drawn.
 
 - If the number of selections available is smaller or equal to the Selector height,
 then no scrollbars will be drawn.
 */
-func (shared *dropdownType) AddDropdown(layerAlias string, dropdownAlias string, styleEntry memory.TuiStyleEntryType, selectionEntry memory.SelectionEntryType, xLocation int, yLocation int, selectorHeight int, itemWidth int, defaultItemSelected int) DropdownInstanceType {
+func (shared *dropdownType) Add(layerAlias string, dropdownAlias string, styleEntry types.TuiStyleEntryType, selectionEntry types.SelectionEntryType, xLocation int, yLocation int, selectorHeight int, itemWidth int, defaultItemSelected int) DropdownInstanceType {
 	// TODO: Add validation to the default item selected.
 	memory.AddDropdown(layerAlias, dropdownAlias, styleEntry, selectionEntry, xLocation, yLocation, itemWidth, defaultItemSelected)
 	dropdownEntry := memory.GetDropdown(layerAlias, dropdownAlias)
@@ -46,7 +53,7 @@ func (shared *dropdownType) AddDropdown(layerAlias string, dropdownAlias string,
 	}
 	dropdownEntry.SelectorAlias = stringformat.GetLastSortedUUID()
 	// Here we add +1 to x and y to account for borders around the selection.
-	Selector.Add(layerAlias, dropdownEntry.SelectorAlias, styleEntry, selectionEntry, xLocation + 1, yLocation + 1, selectorHeight, selectorWidth, 1, 0, 0, true)
+	Selector.Add(layerAlias, dropdownEntry.SelectorAlias, styleEntry, selectionEntry, xLocation+1, yLocation+1, selectorHeight, selectorWidth, 1, 0, 0, true)
 	selectorEntry := memory.GetSelector(layerAlias, dropdownEntry.SelectorAlias)
 	selectorEntry.IsVisible = false
 	dropdownEntry.ScrollBarAlias = selectorEntry.ScrollBarAlias
@@ -61,19 +68,27 @@ func (shared *dropdownType) AddDropdown(layerAlias string, dropdownAlias string,
 	return dropdownInstance
 }
 
+func (shared *dropdownType) DeleteDropdown(layerAlias string, dropdownAlias string) {
+	memory.DeleteDropdown(layerAlias, dropdownAlias)
+}
+
+func (shared *dropdownType) DeleteAllDropdowns(layerAlias string) {
+	memory.DeleteAllDropdownsFromLayer(layerAlias)
+}
+
 /*
 drawDropdownsOnLayer allows you to draw all dropdowns on a given text layer.
 */
-func (shared *dropdownType) drawDropdownsOnLayer(layerEntry memory.LayerEntryType) {
+func (shared *dropdownType) drawDropdownsOnLayer(layerEntry types.LayerEntryType) {
 	layerAlias := layerEntry.LayerAlias
-	for currentKey := range memory.DropdownMemory[layerAlias] {
+	for currentKey := range memory.Dropdown.Entries[layerAlias] {
 		shared.drawDropdown(&layerEntry, currentKey)
 	}
 }
 
 /*
-drawDropdown allows you to draw A dropdown on a given text layer. The
-Style of the dropdown will be determined by the style entry passed in. In
+drawDropdown allows you to draw A Dropdown on a given text layer. The
+Style of the Dropdown will be determined by the style entry passed in. In
 addition, the following information should be noted:
 
 - dropdowns are not drawn physically to the text layer provided. Instead,
@@ -81,27 +96,27 @@ they are rendered to the terminal at the same time when the text layer is
 rendered. This allows you to create dropdowns without actually overwriting
 the text layer data under it.
 
-- If the dropdown to be drawn falls outside the range of the provided layer,
-then only the visible portion of the dropdown will be drawn.
+- If the Dropdown to be drawn falls outside the range of the provided layer,
+then only the visible portion of the Dropdown will be drawn.
 */
-func (shared *dropdownType) drawDropdown(layerEntry *memory.LayerEntryType, dropdownAlias string) {
+func (shared *dropdownType) drawDropdown(layerEntry *types.LayerEntryType, dropdownAlias string) {
 	layerAlias := layerEntry.LayerAlias
 	dropdownEntry := memory.GetDropdown(layerAlias, dropdownAlias)
-	localStyleEntry := memory.NewTuiStyleEntry(&dropdownEntry.StyleEntry)
-	attributeEntry := memory.NewAttributeEntry()
+	localStyleEntry := types.NewTuiStyleEntry(&dropdownEntry.StyleEntry)
+	attributeEntry := types.NewAttributeEntry()
 	attributeEntry.ForegroundColor = localStyleEntry.SelectorForegroundColor
 	attributeEntry.BackgroundColor = localStyleEntry.SelectorBackgroundColor
 	attributeEntry.CellType = constants.CellTypeDropdown
 	attributeEntry.CellControlAlias = dropdownAlias
 	itemSelected := dropdownEntry.SelectionEntry.SelectionValue[dropdownEntry.ItemSelected]
-	// We add +2 to account for the dropdown border window which will appear. Otherwise, the item name
-	// will appear 2 characters smaller than the popup dropdown window.
-	formattedItemName := stringformat.GetFormattedString(itemSelected, dropdownEntry.ItemWidth + 2, localStyleEntry.SelectorTextAlignment)
+	// We add +2 to account for the Dropdown border window which will appear. Otherwise, the item name
+	// will appear 2 characters smaller than the popup Dropdown window.
+	formattedItemName := stringformat.GetFormattedString(itemSelected, dropdownEntry.ItemWidth+2, localStyleEntry.SelectorTextAlignment)
 	arrayOfRunes := stringformat.GetRunesFromString(formattedItemName)
 	printLayer(layerEntry, attributeEntry, dropdownEntry.XLocation, dropdownEntry.YLocation, arrayOfRunes)
 	attributeEntry.ForegroundColor = localStyleEntry.SelectorBackgroundColor
 	attributeEntry.BackgroundColor = localStyleEntry.SelectorForegroundColor
-	printLayer(layerEntry, attributeEntry, dropdownEntry.XLocation + len(arrayOfRunes), dropdownEntry.YLocation, []rune{constants.CharTriangleDown})
+	printLayer(layerEntry, attributeEntry, dropdownEntry.XLocation+len(arrayOfRunes), dropdownEntry.YLocation, []rune{constants.CharTriangleDown})
 }
 
 /*
@@ -115,12 +130,15 @@ func (shared *dropdownType) updateDropdownStateMouse() bool {
 	layerAlias := characterEntry.LayerAlias
 	cellControlAlias := characterEntry.AttributeEntry.CellControlAlias
 	// If a buttonType is pressed AND (you are in a drag and drop event OR the cell type is scroll bar), then
-	// sync all dropdown selectors with their appropriate scroll bars. If the control under focus
-	// matches a control that belongs to a dropdown list, then stop processing (Do not attempt to close dropdown).
+	// sync all Dropdown selectors with their appropriate scroll bars. If the control under focus
+	// matches a control that belongs to a Dropdown list, then stop processing (Do not attempt to close Dropdown).
 	if buttonPressed != 0 && (eventStateMemory.stateId == constants.EventStateDragAndDropScrollbar ||
 		characterEntry.AttributeEntry.CellType == constants.CellTypeScrollbar) {
 		isMatchFound := false
-		for currentKey := range memory.DropdownMemory[layerAlias] {
+		for currentKey := range memory.Dropdown.Entries[layerAlias] {
+			if !memory.IsDropdownExists(layerAlias, currentKey) {
+				continue
+			}
 			dropdownEntry := memory.GetDropdown(layerAlias, currentKey)
 			selectorEntry := memory.GetSelector(layerAlias, dropdownEntry.SelectorAlias)
 			scrollBarEntry := memory.GetScrollbar(layerAlias, dropdownEntry.ScrollBarAlias)
@@ -130,15 +148,16 @@ func (shared *dropdownType) updateDropdownStateMouse() bool {
 			}
 			if isControlCurrentlyFocused(layerAlias, dropdownEntry.ScrollBarAlias, constants.CellTypeScrollbar) {
 				isMatchFound = true
-				break; // If the current scrollbar being dragged and dropped matches, don't process more dropdowns.
+				break // If the current scrollbar being dragged and dropped matches, don't process more dropdowns.
 			}
 		}
 		if isMatchFound {
 			return isUpdateRequired
 		}
 	}
-	// If our dropdown alias is not empty, then open our dropdown.
-	if buttonPressed != 0 && cellControlAlias != "" && characterEntry.AttributeEntry.CellType == constants.CellTypeDropdown {
+	// If our Dropdown alias is not empty, then open our Dropdown.
+	if buttonPressed != 0 && cellControlAlias != "" && characterEntry.AttributeEntry.CellType == constants.CellTypeDropdown &&
+		memory.IsDropdownExists(layerAlias, cellControlAlias) {
 		shared.closeAllOpenDropdowns(layerAlias)
 		dropdownEntry := memory.GetDropdown(layerAlias, cellControlAlias)
 		dropdownEntry.IsTrayOpen = true
@@ -163,7 +182,10 @@ func (shared *dropdownType) updateDropdownStateMouse() bool {
 closeAllOpenDropdowns allows you to close all dropdowns for a given layer alias.
 */
 func (shared *dropdownType) closeAllOpenDropdowns(layerAlias string) {
-	for currentKey := range memory.DropdownMemory[layerAlias] {
+	for currentKey := range memory.Dropdown.Entries[layerAlias] {
+		if !memory.IsDropdownExists(layerAlias, currentKey) {
+			continue
+		}
 		dropdownEntry := memory.GetDropdown(layerAlias, currentKey)
 		if dropdownEntry.IsTrayOpen == true {
 			selectorEntry := memory.GetSelector(layerAlias, dropdownEntry.SelectorAlias)

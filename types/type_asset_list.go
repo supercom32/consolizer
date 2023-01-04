@@ -1,21 +1,21 @@
-package memory
+package types
 
 type ImageListEntryType struct {
-	FileName string
+	FileName  string
 	FileAlias string
 }
 
 type PreloadedImageListEntryType struct {
-	FileName string
-	FileAlias string
-	WidthInCharacters int
+	FileName           string
+	FileAlias          string
+	WidthInCharacters  int
 	HeightInCharacters int
-	BlurSigma float64
+	BlurSigma          float64
 }
 
 type AssetListType struct {
 	PreloadedImageList []PreloadedImageListEntryType
-	ImageList []ImageListEntryType
+	ImageList          []ImageListEntryType
 }
 
 func NewAssetList() AssetListType {

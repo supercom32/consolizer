@@ -1,8 +1,8 @@
 package memory
 
 import (
-	"github.com/supercom32/consolizer/internal/recast"
 	"github.com/stretchr/testify/assert"
+	"github.com/supercom32/consolizer/internal/recast"
 	"testing"
 )
 
@@ -10,7 +10,7 @@ func TestAddTimer(test *testing.T) {
 	timerAlias := "timerAlias1"
 	InitializeTimerMemory()
 	AddTimer(timerAlias, 1000, true)
-	obtainedResult := recast.GetArrayOfInterfaces(TimerMemory[timerAlias].TimerLength, TimerMemory[timerAlias].IsTimerEnabled)
+	obtainedResult := recast.GetArrayOfInterfaces(Timer.Entries[timerAlias].TimerLength, Timer.Entries[timerAlias].IsTimerEnabled)
 	expectedResult := recast.GetArrayOfInterfaces(int64(1000), true)
 	assert.Equalf(test, expectedResult, obtainedResult, "The added timer values do not match what was expected.")
 }
@@ -31,7 +31,7 @@ func TestDeleteTimer(test *testing.T) {
 	InitializeTimerMemory()
 	AddTimer(timerAlias, 1234, true)
 	DeleteTimer(timerAlias)
-	obtainedResult := len(TimerMemory)
+	obtainedResult := len(Timer.Entries)
 	expectedResult := 0
 	assert.Equalf(test, expectedResult, obtainedResult, "The number of remaining timers does not match what was expected.")
 }
