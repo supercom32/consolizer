@@ -17,7 +17,7 @@ func InitializeTextFieldMemory() {
 	TextField.Entries = make(map[string]map[string]*types.TextFieldEntryType)
 }
 
-func AddTextField(layerAlias string, textFieldAlias string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, maxLengthAllowed int, IsPasswordProtected bool, defaultValue string) {
+func AddTextField(layerAlias string, textFieldAlias string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, maxLengthAllowed int, IsPasswordProtected bool, defaultValue string, isEnabled bool) {
 	TextField.Lock()
 	defer func() {
 		TextField.Unlock()
@@ -31,6 +31,7 @@ func AddTextField(layerAlias string, textFieldAlias string, styleEntry types.Tui
 	textFieldEntry.IsPasswordProtected = IsPasswordProtected
 	textFieldEntry.CurrentValue = []rune(defaultValue)
 	textFieldEntry.DefaultValue = defaultValue
+	textFieldEntry.IsEnabled = isEnabled
 	if TextField.Entries[layerAlias] == nil {
 		TextField.Entries[layerAlias] = make(map[string]*types.TextFieldEntryType)
 	}

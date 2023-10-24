@@ -21,6 +21,11 @@ func (shared *DropdownInstanceType) GetValue() string {
 	return dropdownEntry.SelectionEntry.SelectionValue[dropdownEntry.ItemSelected]
 }
 
+func (shared *DropdownInstanceType) GetAlias() string {
+	dropdownEntry := memory.GetDropdown(shared.layerAlias, shared.dropdownAlias)
+	return dropdownEntry.SelectionEntry.SelectionAlias[dropdownEntry.ItemSelected]
+}
+
 /*
 Add allows you to add a Dropdown to a given text layer. Once called, an instance of
 your control is returned which will allow you to read or manipulate the properties for it.

@@ -13,6 +13,7 @@ type TextFieldEntryType struct {
 	ViewportPosition    int
 	IsPasswordProtected bool
 	CurrentValue        []rune
+	IsEnabled           bool
 }
 
 func (shared TextFieldEntryType) MarshalJSON() ([]byte, error) {
@@ -28,6 +29,7 @@ func (shared TextFieldEntryType) MarshalJSON() ([]byte, error) {
 		StringPosition      int
 		CursorPosition      int
 		ViewportPosition    int
+		IsEnabled           bool
 	}{
 		StyleEntry:          shared.StyleEntry,
 		XLocation:           shared.XLocation,
@@ -39,6 +41,7 @@ func (shared TextFieldEntryType) MarshalJSON() ([]byte, error) {
 		DefaultValue:        shared.DefaultValue,
 		CursorPosition:      shared.CursorPosition,
 		ViewportPosition:    shared.ViewportPosition,
+		IsEnabled:           shared.IsEnabled,
 	})
 	if err != nil {
 		return nil, err
@@ -65,6 +68,7 @@ func NewTextFieldEntry(existingTextFieldEntry ...*TextFieldEntryType) TextFieldE
 		textFieldEntry.CurrentValue = existingTextFieldEntry[0].CurrentValue
 		textFieldEntry.DefaultValue = existingTextFieldEntry[0].DefaultValue
 		textFieldEntry.CursorPosition = existingTextFieldEntry[0].CursorPosition
+		textFieldEntry.IsEnabled = existingTextFieldEntry[0].IsEnabled
 	}
 	textFieldEntry.CurrentValue = []rune{' '}
 	return textFieldEntry

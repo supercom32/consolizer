@@ -5,7 +5,7 @@ import (
 	"github.com/supercom32/consolizer/internal/memory"
 	"github.com/supercom32/consolizer/internal/stringformat"
 	"github.com/supercom32/consolizer/types"
-	"github.com/u2takey/go-utils/strings"
+	"strings"
 )
 
 type LabelInstanceType struct {
@@ -62,8 +62,10 @@ func drawLabel(layerEntry *types.LayerEntryType, labelAlias string, labelValue s
 	attributeEntry.BackgroundColor = styleEntry.LabelBackgroundColor
 	attributeEntry.CellType = constants.CellTypeLabel
 	attributeEntry.CellControlAlias = labelAlias
+	emptyString := strings.Repeat(" ", width)
+	printLayer(layerEntry, attributeEntry, xLocation, yLocation, stringformat.GetRunesFromString(emptyString))
 	if len(labelValue) > width {
-		labelValue = strings.ShortenString(labelValue, width-3)
+		labelValue = string([]rune(labelValue)[:width-3])
 		labelValue = labelValue + "..."
 	}
 	arrayOfRunes := stringformat.GetRunesFromString(labelValue)

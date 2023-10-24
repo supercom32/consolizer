@@ -553,7 +553,7 @@ func fillArea(layerEntry *types.LayerEntryType, attributeEntry types.AttributeEn
 					printLayer(layerEntry, attributeEntry, xLocation+currentCharacter, yLocation+currentRow, []rune{0})
 				} else {
 					printLayer(layerEntry, attributeEntry, xLocation+currentCharacter, yLocation+currentRow, []rune{arrayOfRunes[currentFillCharacterIndex]})
-					// Double Width characters advance by 2 spaces. But what happens to characters between? Get lost?
+					// Double HotspotWidth characters advance by 2 spaces. But what happens to characters between? Get lost?
 					if stringformat.IsRuneCharacterWide(arrayOfRunes[currentFillCharacterIndex]) {
 						currentCharacter++
 					}

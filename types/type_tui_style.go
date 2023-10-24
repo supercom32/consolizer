@@ -82,6 +82,12 @@ type TuiStyleEntryType struct {
 	ButtonBackgroundColor    constants.ColorType
 	ButtonLabelDisabledColor constants.ColorType
 	SelectorTextAlignment    int
+	// Tooltip styles.
+	TooltipForegroundColor     constants.ColorType
+	TooltipBackgroundColor     constants.ColorType
+	TooltipTextForegroundColor constants.ColorType
+	TooltipTextBackgroundColor constants.ColorType
+	TooltipDrawWindow          bool
 }
 
 func (shared TuiStyleEntryType) GetEntryAsJsonDump() string {
@@ -158,6 +164,10 @@ func NewTuiStyleEntry(existingStyleEntry ...*TuiStyleEntryType) TuiStyleEntryTyp
 		styleEntry.IsWindowFooterDrawn = existingStyleEntry[0].IsWindowFooterDrawn
 		styleEntry.IsWindowHeaderDrawn = existingStyleEntry[0].IsWindowHeaderDrawn
 		styleEntry.SelectorTextAlignment = existingStyleEntry[0].SelectorTextAlignment
+		styleEntry.TooltipForegroundColor = existingStyleEntry[0].TooltipForegroundColor
+		styleEntry.TooltipBackgroundColor = existingStyleEntry[0].TooltipBackgroundColor
+		styleEntry.TooltipTextForegroundColor = existingStyleEntry[0].TooltipTextForegroundColor
+		styleEntry.TooltipTextBackgroundColor = existingStyleEntry[0].TooltipTextBackgroundColor
 	} else {
 		styleEntry.UpperLeftCorner = constants.CharULCorner
 		styleEntry.UpperRightCorner = constants.CharURCorner
@@ -219,6 +229,10 @@ func NewTuiStyleEntry(existingStyleEntry ...*TuiStyleEntryType) TuiStyleEntryTyp
 		styleEntry.IsWindowFooterDrawn = false
 		styleEntry.IsWindowHeaderDrawn = false
 		styleEntry.SelectorTextAlignment = constants.AlignmentLeft
+		styleEntry.TooltipForegroundColor = constants.AnsiColorByIndex[15]
+		styleEntry.TooltipBackgroundColor = constants.AnsiColorByIndex[0]
+		styleEntry.TooltipTextForegroundColor = constants.AnsiColorByIndex[15]
+		styleEntry.TooltipTextBackgroundColor = constants.AnsiColorByIndex[0]
 	}
 	return styleEntry
 }

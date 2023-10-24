@@ -1,6 +1,7 @@
 package consolizer
 
 import (
+	"fmt"
 	"github.com/supercom32/consolizer/constants"
 	"github.com/supercom32/consolizer/internal/memory"
 	"github.com/supercom32/consolizer/internal/stringformat"
@@ -44,6 +45,12 @@ func (shared *ProgressBarInstanceType) IncrementProgressBarValue() {
 	if progressBarEntry.Value > progressBarEntry.MaxValue {
 		progressBarEntry.Value = progressBarEntry.MaxValue
 	}
+}
+
+func (shared *ProgressBarInstanceType) GetProgressBarValueAsString() string {
+	progressBarEntry := memory.GetProgressBar(shared.layerAlias, shared.progressBarAlias)
+	valueAsString := fmt.Sprintf("(%d/%d)", progressBarEntry.Value, progressBarEntry.MaxValue)
+	return valueAsString
 }
 
 func (shared *progressBarType) Add(layerAlias string, progressBarAlias string, progressBarLabel string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, height int, value int, maxValue int, isBackgroundTransparent bool) ProgressBarInstanceType {

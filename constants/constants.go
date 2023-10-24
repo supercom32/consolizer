@@ -4,6 +4,34 @@ import (
 	"github.com/gdamore/tcell/v2"
 )
 
+type ImageStyle int
+
+const (
+	ImageStyleHighColor ImageStyle = iota
+	ImageStyleBrailleBasic
+	ImageStyleBraille2x2BayerMatrix
+	ImageStyleBraille4x4BayerMatrix
+	ImageStyleBraille8x8BayerMatrix
+	ImageStyleBrailleErrorDiffusion
+)
+
+type EffectStyle int
+
+const (
+	EffectNone EffectStyle = iota
+	EffectSinWave
+	EffectConcentricCircles
+	EffectFlagWave
+	EffectBlinds
+	EffectHorizontalWeaveTransition
+	EffectVerticalWeaveTransition
+	EffectForwardDiagonalWeaveTransition
+	EffectBackwardDiagonalWeaveTransition
+	EffectCounterClockwiseSwirlTransition
+	EffectClockwiseSwirlTransition
+	EffectGrowingCircleTransition
+)
+
 type ColorType uint64
 
 // Constants
@@ -144,6 +172,7 @@ const CellTypeTextbox = 8
 const CellTypeRadioButton = 9
 const CellTypeProgressBar = 10
 const CellTypeLabel = 11
+const CellTypeTooltip = 12
 
 const CellControlIdUpScrollArrow = -1
 const CellControlIdDownScrollArrow = -2

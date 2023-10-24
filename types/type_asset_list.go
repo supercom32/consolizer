@@ -23,17 +23,17 @@ func NewAssetList() AssetListType {
 	return assetList
 }
 
-func (shared *AssetListType) AddImage(fileName string, fileAlias string) {
+func (shared *AssetListType) AddImage(fileName string) {
 	var newImageListEntryType ImageListEntryType
 	newImageListEntryType.FileName = fileName
-	newImageListEntryType.FileAlias = fileAlias
+	newImageListEntryType.FileAlias = fileName
 	shared.ImageList = append(shared.ImageList, newImageListEntryType)
 }
 
-func (shared *AssetListType) AddPreloadedImage(fileName string, fileAlias string, widthInCharacters int, heightInCharacters int, blurSigma float64) {
+func (shared *AssetListType) AddPreloadedImage(fileName string, widthInCharacters int, heightInCharacters int, blurSigma float64) {
 	var preloadedImageListEntryType PreloadedImageListEntryType
 	preloadedImageListEntryType.FileName = fileName
-	preloadedImageListEntryType.FileAlias = fileAlias
+	preloadedImageListEntryType.FileAlias = fileName
 	preloadedImageListEntryType.WidthInCharacters = widthInCharacters
 	preloadedImageListEntryType.HeightInCharacters = heightInCharacters
 	preloadedImageListEntryType.BlurSigma = blurSigma

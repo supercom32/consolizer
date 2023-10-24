@@ -66,10 +66,10 @@ the value specified.
 field, then the entire text field will shift to ensure the cursor is always
 visible.
 */
-func (shared *textFieldType) Add(layerAlias string, textFieldAlias string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, maxLengthAllowed int, IsPasswordProtected bool, defaultValue string) textFieldInstanceType {
+func (shared *textFieldType) Add(layerAlias string, textFieldAlias string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, maxLengthAllowed int, IsPasswordProtected bool, defaultValue string, isEnabled bool) textFieldInstanceType {
 	validateLayerLocationByLayerAlias(layerAlias, xLocation, yLocation)
 	validateTextFieldWidth(width)
-	memory.AddTextField(layerAlias, textFieldAlias, styleEntry, xLocation, yLocation, width, maxLengthAllowed, IsPasswordProtected, defaultValue+" ")
+	memory.AddTextField(layerAlias, textFieldAlias, styleEntry, xLocation, yLocation, width, maxLengthAllowed, IsPasswordProtected, defaultValue+" ", isEnabled)
 	var textFieldInstance textFieldInstanceType
 	textFieldInstance.layerAlias = layerAlias
 	textFieldInstance.textFieldAlias = textFieldAlias
@@ -110,7 +110,7 @@ noted:
 - If the location specified for the input string falls outside the range of
 the text layer, then only the visible portion will be displayed.
 
-- Width indicates how large the visible area of your input string should be.
+- HotspotWidth indicates how large the visible area of your input string should be.
 
 - String position indicates the location in your string where printing should
 start. If the remainder of your string is too long for the specified width,
@@ -259,6 +259,9 @@ func (shared *textFieldType) updateKeyboardEventTextField(keystroke []rune) bool
 		return false
 	}
 	textFieldEntry := memory.GetTextField(focusedLayerAlias, focusedControlAlias)
+	if !textFieldEntry.IsEnabled {
+		return false
+	}
 	if len(keystroke) == 1 { // If a regular char is entered.
 		if len(textFieldEntry.CurrentValue) < textFieldEntry.MaxLengthAllowed {
 			// LogInfo(fmt.Sprintf("cur: %d view: %d", textFieldEntry.CursorPosition, textFieldEntry.ViewportPosition))
@@ -319,6 +322,9 @@ func (shared *textFieldType) updateMouseEventTextField() bool {
 		characterEntry = getCellInformationUnderMouseCursor(mouseXLocation, mouseYLocation)
 		if characterEntry.AttributeEntry.CellType == constants.CellTypeTextField && memory.IsTextFieldExists(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias) {
 			textFieldEntry := memory.GetTextField(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias)
+			if !textFieldEntry.IsEnabled {
+				return isScreenUpdateRequired
+			}
 			textFieldEntry.CursorPosition = characterEntry.AttributeEntry.CellControlId
 			// LogInfo(strconv.Itoa(textFieldEntry.CursorPosition))
 			shared.updateTextFieldCursor(textFieldEntry)

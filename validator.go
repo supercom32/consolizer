@@ -50,7 +50,7 @@ func validateTextStyleExists(textStyleAlias string) {
 }
 
 func validateDefaultLayerIsNotEmpty() {
-	if commonResource.layerAlias == "" {
+	if commonResource.layerInstance.layerAlias == "" {
 		safeSttyPanic(fmt.Sprintf("The action could not be completed since no default text layer exists!"))
 	}
 }

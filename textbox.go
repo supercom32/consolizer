@@ -341,13 +341,13 @@ func (shared *textboxType) drawTextbox(layerEntry *types.LayerEntryType, textbox
 				// If scrolled too far left (negative value) then show blanks. Note: This case should never happen really.
 				arrayOfRunes = []rune{}
 			}
-			// arrayOfRunes = stringformat.GetFormattedRuneArray(arrayOfRunes, t.Width, constants.AlignmentLeft)
+			// arrayOfRunes = stringformat.GetFormattedRuneArray(arrayOfRunes, t.HotspotWidth, constants.AlignmentLeft)
 			arrayOfRunes = stringformat.GetMaxCharactersThatFitInStringSize(arrayOfRunes, t.Width)
 			shared.printControlText(layerEntry, textboxAlias, t.StyleEntry, attributeEntry, t.XLocation, t.YLocation+currentLine, arrayOfRunes, t.ViewportYLocation+currentLine, t.ViewportXLocation, t.CursorXLocation, t.CursorYLocation)
 		} else {
 			// If scrolled too far down and there are no more rows to print, just show blanks.
 			// If scrolled too far up and there are no rows to print, just print blanks. Note: This case should never happen really.
-			// arrayOfRunes = stringformat.GetFormattedRuneArray([]rune{}, t.Width, constants.AlignmentLeft)
+			// arrayOfRunes = stringformat.GetFormattedRuneArray([]rune{}, t.HotspotWidth, constants.AlignmentLeft)
 			shared.printControlText(layerEntry, textboxAlias, t.StyleEntry, attributeEntry, t.XLocation, t.YLocation+currentLine, arrayOfRunes, t.ViewportYLocation+currentLine, t.ViewportXLocation, t.CursorXLocation, t.CursorYLocation)
 		}
 	}

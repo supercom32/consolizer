@@ -18,9 +18,9 @@ func InitializeLabelMemory() {
 }
 
 func AddLabel(layerAlias string, labelAlias string, labelValue string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int) {
-	ProgressBar.Lock()
+	Label.Lock()
 	defer func() {
-		ProgressBar.Unlock()
+		Label.Unlock()
 	}()
 	labelEntry := types.NewLabelEntry()
 	labelEntry.StyleEntry = styleEntry

@@ -27,7 +27,7 @@ func AddLayer(layerAlias string, xLocation int, yLocation int, width int, height
 		Screen.Mutex.Unlock()
 	}()
 	if width <= 0 {
-		panic(fmt.Sprintf("The layer '%s' could not be created since a Width of '%d' was specified!", layerAlias, width))
+		panic(fmt.Sprintf("The layer '%s' could not be created since a HotspotWidth of '%d' was specified!", layerAlias, width))
 	}
 	if height <= 0 {
 		panic(fmt.Sprintf("The layer '%s' could not be created since a Length of '%d' was specified!", layerAlias, height))
@@ -69,7 +69,7 @@ func GetLayer(layerAlias string) *types.LayerEntryType {
 	return Screen.Entries[layerAlias]
 }
 
-func GetNextLayer() string {
+func GetNextLayerAlias() string {
 	Screen.Mutex.Lock()
 	defer func() {
 		Screen.Mutex.Unlock()

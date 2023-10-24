@@ -32,7 +32,7 @@ func GetImage(imageAlias string) *types.ImageEntryType {
 		Image.Unlock()
 	}()
 	if Image.Entries[imageAlias] == nil {
-		panic(fmt.Sprintf("The requested image with alias '%s' could not be returned since it does not exist.", imageAlias))
+		panic(fmt.Sprintf("The requested Image with alias '%s' could not be returned since it does not exist.", imageAlias))
 	}
 	return Image.Entries[imageAlias]
 }
@@ -42,4 +42,14 @@ func DeleteImage(imageAlias string) {
 		Image.Unlock()
 	}()
 	delete(Image.Entries, imageAlias)
+}
+func IsImageExists(imageAlias string) bool {
+	Image.Lock()
+	defer func() {
+		Image.Unlock()
+	}()
+	if Image.Entries[imageAlias] == nil {
+		return false
+	}
+	return true
 }

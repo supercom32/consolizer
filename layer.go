@@ -10,11 +10,36 @@ import (
 type LayerInstanceType struct {
 	layerAlias  string
 	parentAlias string
+	LayerWidth  int
+	LayerHeight int
 }
 
 func getUUID() string {
 	id := uuid.New()
 	return id.String()
+}
+
+func (shared LayerInstanceType) DrawImage(fileName string, drawingStyle types.ImageStyleEntryType, xLocation int, yLocation int, widthInCharacters int, heightInCharacters int, blurSigma float64) error {
+	var err error
+	if !memory.IsImageExists(fileName) {
+		err = LoadImage(fileName)
+		if err != nil {
+			return err
+		}
+		defer func() {
+			UnloadImage(fileName)
+		}()
+	}
+	DrawImageToLayer(shared.layerAlias, fileName, drawingStyle, xLocation, yLocation, widthInCharacters, heightInCharacters, blurSigma)
+	return err
+}
+
+func (shared LayerInstanceType) DrawComposedImage(imageComposeEntry *ImageComposerEntryType, drawingStyle types.ImageStyleEntryType, xLocation int, yLocation int, widthInCharacters int, heightInCharacters int) error {
+	var err error
+	baseImage := imageComposeEntry.RenderImage()
+	imageLayer := getImageLayerAsBraille(baseImage, drawingStyle, widthInCharacters, heightInCharacters, 0)
+	drawImageToLayer(shared.layerAlias, imageLayer, xLocation, yLocation)
+	return err
 }
 
 func (shared LayerInstanceType) AddButton(buttonLabel string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, height int, isEnabled bool) ButtonInstanceType {
@@ -23,10 +48,10 @@ func (shared LayerInstanceType) AddButton(buttonLabel string, styleEntry types.T
 	return buttonInstance
 }
 
-func (shared LayerInstanceType) AddCheckbox(checkboxLabel string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, isSelected bool) CheckboxInstanceType {
+func (shared LayerInstanceType) AddCheckbox(checkboxLabel string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, isSelected bool, isEnabled bool) CheckboxInstanceType {
 	checkboxAlias := getUUID()
-	buttonInstance := Checkbox.Add(shared.layerAlias, checkboxAlias, checkboxLabel, styleEntry, xLocation, yLocation, isSelected)
-	return buttonInstance
+	checkboxInstance := Checkbox.Add(shared.layerAlias, checkboxAlias, checkboxLabel, styleEntry, xLocation, yLocation, isSelected, isEnabled)
+	return checkboxInstance
 }
 
 func (shared LayerInstanceType) AddDropdown(styleEntry types.TuiStyleEntryType, selectionEntry types.SelectionEntryType, xLocation int, yLocation int, selectorHeight int, itemWidth int, defaultItemSelected int) DropdownInstanceType {
@@ -65,9 +90,9 @@ func (shared LayerInstanceType) AddSelector(styleEntry types.TuiStyleEntryType, 
 	return selectorInstance
 }
 
-func (shared LayerInstanceType) AddTextField(styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, maxLengthAllowed int, isPasswordProtected bool, defaultValue string) textFieldInstanceType {
+func (shared LayerInstanceType) AddTextField(styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, maxLengthAllowed int, isPasswordProtected bool, defaultValue string, isEnabled bool) textFieldInstanceType {
 	textFieldAlias := getUUID()
-	textFieldInstance := TextField.Add(shared.layerAlias, textFieldAlias, styleEntry, xLocation, yLocation, width, maxLengthAllowed, isPasswordProtected, defaultValue)
+	textFieldInstance := TextField.Add(shared.layerAlias, textFieldAlias, styleEntry, xLocation, yLocation, width, maxLengthAllowed, isPasswordProtected, defaultValue, isEnabled)
 	return textFieldInstance
 }
 
@@ -75,6 +100,12 @@ func (shared LayerInstanceType) AddTextbox(styleEntry types.TuiStyleEntryType, x
 	textBoxAlias := getUUID()
 	textBoxInstance := textbox.AddTextbox(shared.layerAlias, textBoxAlias, styleEntry, xLocation, yLocation, width, height, isBorderDrawn)
 	return textBoxInstance
+}
+
+func (shared LayerInstanceType) AddTooltip(tooltipValue string, styleEntry types.TuiStyleEntryType, hotspotXLocation int, hotspotYLocation int, hotspotWidth int, hotspotHeight int, tooltipXLocation int, tooltipYLocation int, tooltipWidth int, tooltipHeight int, isLocationAbsolute bool, isBorderDrawn bool) TooltipInstanceType {
+	tooltipAlias := getUUID()
+	tooltipInstance := Tooltip.Add(shared.layerAlias, tooltipAlias, tooltipValue, styleEntry, hotspotXLocation, hotspotYLocation, hotspotWidth, hotspotHeight, tooltipXLocation, tooltipYLocation, tooltipWidth, tooltipHeight, isLocationAbsolute, isBorderDrawn)
+	return tooltipInstance
 }
 
 /*
@@ -296,9 +327,10 @@ will be ignored.
 func (shared LayerInstanceType) DeleteLayer() {
 	validateLayer(shared.layerAlias)
 	memory.DeleteLayer(shared.layerAlias, false)
-	if commonResource.layerAlias == shared.layerAlias {
-		nextLayer := memory.GetNextLayer()
-		commonResource.layerAlias = nextLayer
+	if commonResource.layerInstance.layerAlias == shared.layerAlias {
+		nextLayerAlias := memory.GetNextLayerAlias()
+		nextLayerInstance := memory.GetLayer(nextLayerAlias)
+		commonResource.layerInstance = LayerInstanceType{layerAlias: nextLayerAlias, parentAlias: nextLayerInstance.ParentAlias, LayerWidth: nextLayerInstance.Width, LayerHeight: nextLayerInstance.Height}
 	}
 	shared.layerAlias = ""
 }
@@ -353,13 +385,16 @@ as your default, use 'Layer' to explicitly set it.
 func AddLayer(xLocation int, yLocation int, width int, height int, zOrderPriority int, parentLayerInstance *LayerInstanceType) LayerInstanceType {
 	layerAlias := getUUID()
 	validateTerminalWidthAndHeight(width, height)
-	commonResource.layerAlias = layerAlias
 	if parentLayerInstance == nil {
 		memory.AddLayer(layerAlias, xLocation, yLocation, width, height, zOrderPriority, "")
-		return LayerInstanceType{layerAlias: layerAlias, parentAlias: ""}
+		layerInstance := LayerInstanceType{layerAlias: layerAlias, parentAlias: "", LayerWidth: width, LayerHeight: height}
+		commonResource.layerInstance = layerInstance
+		return layerInstance
 	} else {
 		memory.AddLayer(layerAlias, xLocation, yLocation, width, height, zOrderPriority, parentLayerInstance.layerAlias)
-		return LayerInstanceType{layerAlias: layerAlias, parentAlias: parentLayerInstance.layerAlias}
+		layerInstance := LayerInstanceType{layerAlias: layerAlias, parentAlias: "", LayerWidth: width, LayerHeight: height}
+		commonResource.layerInstance = layerInstance
+		return layerInstance
 	}
 }
 
@@ -428,9 +463,24 @@ will be ignored.
 func deleteLayer(layerAlias string) {
 	validateLayer(layerAlias)
 	memory.DeleteLayer(layerAlias, false)
-	if commonResource.layerAlias == layerAlias {
-		nextLayer := memory.GetNextLayer()
-		commonResource.layerAlias = nextLayer
+	if commonResource.layerInstance.layerAlias == layerAlias {
+		nextLayerAlias := memory.GetNextLayerAlias()
+		// If last entry and no more layers, just return. Do not set anything.
+		if nextLayerAlias == "" {
+			commonResource.layerInstance = LayerInstanceType{layerAlias: "", parentAlias: "", LayerWidth: 0, LayerHeight: 0}
+			return
+		}
+		nextLayerInstance := memory.GetLayer(nextLayerAlias)
+		commonResource.layerInstance = LayerInstanceType{layerAlias: nextLayerAlias, parentAlias: nextLayerInstance.ParentAlias, LayerWidth: nextLayerInstance.Width, LayerHeight: nextLayerInstance.Height}
+	}
+}
+
+func DeleteLayer(layerInstance LayerInstanceType) {
+	memory.DeleteLayer(layerInstance.layerAlias, false)
+	if commonResource.layerInstance.layerAlias == layerInstance.layerAlias {
+		nextLayerAlias := memory.GetNextLayerAlias()
+		nextLayerInstance := memory.GetLayer(nextLayerAlias)
+		commonResource.layerInstance = LayerInstanceType{layerAlias: nextLayerAlias, parentAlias: nextLayerInstance.ParentAlias, LayerWidth: nextLayerInstance.Width, LayerHeight: nextLayerInstance.Height}
 	}
 }
 

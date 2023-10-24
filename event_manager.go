@@ -18,7 +18,7 @@ type eventStateType struct {
 	stateId                 int
 	currentlyFocusedControl controlIdentifierType
 	// This variable is used to keep track of items which were highlighted so that they can be
-	// un-highlighted later. Currently, only used by selectors.
+	// un-highlighted later. Currently, only used by selectors and tooltips
 	previouslyHighlightedControl controlIdentifierType
 }
 
@@ -83,13 +83,15 @@ func UpdateEventQueues() {
 		if moveLayerIfRequired() {
 			isScreenUpdateRequired = true
 		}
+		if Tooltip.updateMouseEventTooltip() {
+			isScreenUpdateRequired = true
+		}
 		if TextField.updateMouseEventTextField() {
 			isScreenUpdateRequired = true
 		}
 		if Selector.updateMouseEventSelector() {
 			isScreenUpdateRequired = true
 		}
-
 		if textbox.updateMouseEventTextbox() {
 			isScreenUpdateRequired = true
 		}

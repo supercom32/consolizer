@@ -21,7 +21,7 @@ func InitializeCheckboxMemory() {
 	Checkbox.Entries = make(map[string]map[string]*types.CheckboxEntryType)
 }
 
-func AddCheckbox(layerAlias string, checkboxAlias string, checkboxLabel string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, isSelected bool) {
+func AddCheckbox(layerAlias string, checkboxAlias string, checkboxLabel string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, isSelected bool, isEnabled bool) {
 	Checkbox.Lock()
 	defer func() {
 		Checkbox.Unlock()
@@ -32,6 +32,7 @@ func AddCheckbox(layerAlias string, checkboxAlias string, checkboxLabel string, 
 	checkboxEntry.XLocation = xLocation
 	checkboxEntry.YLocation = yLocation
 	checkboxEntry.IsSelected = isSelected
+	checkboxEntry.IsEnabled = isEnabled
 	if Checkbox.Entries[layerAlias] == nil {
 		Checkbox.Entries[layerAlias] = make(map[string]*types.CheckboxEntryType)
 	}

@@ -10,8 +10,16 @@ import (
 	"github.com/supercom32/consolizer/types"
 	"os"
 	"os/signal"
+	"runtime"
 	"sync"
 	"syscall"
+)
+
+const (
+	OS_WINDOWS = 1
+	OS_LINUX   = 2
+	OS_MAC     = 3
+	OS_OTHER   = 4
 )
 
 /*
@@ -19,14 +27,15 @@ defaultValueType is a structure that holds common information about the
 current terminal session that needs to be shared.
 */
 type defaultValueType struct {
-	screen         tcell.Screen
-	layerAlias     string // What happens when last layer is deleted? This needs to be updated.
-	terminalWidth  int
-	terminalHeight int
-	screenLayer    types.LayerEntryType
-	debugDirectory string
-	isDebugEnabled bool
-	displayUpdate  sync.Mutex
+	screen               tcell.Screen
+	layerInstance        LayerInstanceType // What happens when last layer is deleted? This needs to be updated.
+	terminalWidth        int
+	terminalHeight       int
+	screenLayer          types.LayerEntryType
+	debugDirectory       string
+	isDebugEnabled       bool
+	displayUpdate        sync.Mutex
+	updateDisplayChannel chan bool
 }
 
 /*
@@ -64,6 +73,7 @@ func InitializeTerminal(width int, height int) {
 	memory.InitializeRadioButtonMemory()
 	memory.InitializeProgressBarMemory()
 	memory.InitializeLabelMemory()
+	memory.InitializeTooltipMemory()
 	var detectedWidth int
 	var detectedHeight int
 	if !commonResource.isDebugEnabled {
@@ -78,6 +88,7 @@ func InitializeTerminal(width int, height int) {
 		}
 		commonResource.screen = screen
 		commonResource.screen.EnableMouse()
+		commonResource.updateDisplayChannel = make(chan bool)
 		setupCloseHandler()
 		go setupEventUpdater()
 		detectedWidth, detectedHeight = GetTerminalSize()
@@ -103,7 +114,12 @@ monitoring continues.
 */
 func setupEventUpdater() {
 	for {
-		UpdateEventQueues()
+		select {
+		case <-commonResource.updateDisplayChannel:
+			return
+		default:
+			UpdateEventQueues()
+		}
 	}
 }
 
@@ -131,10 +147,35 @@ is finished using consolizer so that the users terminal environment is not
 left in a bad state.
 */
 func RestoreTerminalSettings() {
+
+	commonResource.updateDisplayChannel <- true
+	DeleteAllLayers()
 	if commonResource.screen == nil {
 		return
 	}
+	commonResource.screen.DisableMouse()
+	commonResource.screen.Clear()
+	commonResource.screen.Sync()
+	commonResource.screen.Suspend()
 	commonResource.screen.Fini()
+	if getOsType() == OS_WINDOWS {
+		fmt.Println("")
+	}
+}
+
+func getOsType() int {
+	os := runtime.GOOS
+	switch os {
+	case "windows":
+		return OS_WINDOWS
+	case "darwin":
+		return OS_MAC
+	case "linux":
+		return OS_LINUX
+	default:
+		return OS_WINDOWS
+	}
+	return 0
 }
 
 /*
@@ -179,7 +220,7 @@ he is working on. For example:
 */
 func Layer(layerInstance LayerInstanceType) {
 	validateLayer(layerInstance.layerAlias)
-	commonResource.layerAlias = layerInstance.layerAlias
+	commonResource.layerInstance = layerInstance
 }
 
 /*
@@ -226,6 +267,10 @@ For example:
 */
 func NewTextStyle() types.TextCellStyleEntryType {
 	return types.NewTextCellStyleEntry()
+}
+
+func NewImageStyle() types.ImageStyleEntryType {
+	return types.NewImageStyleEntry()
 }
 
 /*
@@ -306,9 +351,8 @@ that two layers have the same priority, they will be drawn in random order.
 This is to ensure that programmers do not attempt to rely on any specific
 behavior that might be a coincidental side effect.
 */
-func SetLayerZOrder(layerAlias string, zOrder int) {
-	validateLayer(layerAlias)
-	layerEntry := memory.GetLayer(layerAlias)
+func SetLayerZOrder(layerInstance LayerInstanceType, zOrder int) {
+	layerEntry := memory.GetLayer(layerInstance.layerAlias)
 	layerEntry.ZOrder = zOrder
 }
 
@@ -324,7 +368,7 @@ This is to ensure that programmers do not attempt to rely on any specific
 behavior that might be a coincidental side effect.
 */
 func SetZOrder(zOrder int) {
-	SetLayerZOrder(commonResource.layerAlias, zOrder)
+	SetLayerZOrder(commonResource.layerInstance, zOrder)
 }
 
 /*
@@ -342,18 +386,17 @@ example, if you specified 200%), then the color will simply bottom or max
 out at RGB(0, 0, 0) or RGB(255, 255, 255) respectively.
 */
 func SetLayerAlpha(layerInstance LayerInstanceType, alphaValue float32) {
-	setLayerAlpha(layerInstance.layerAlias, alphaValue)
+	setLayerAlpha(layerInstance, alphaValue)
 }
 
-func setLayerAlpha(layerAlias string, alphaValue float32) {
-	validateLayer(layerAlias)
-	layerEntry := memory.GetLayer(layerAlias)
+func setLayerAlpha(layerInstance LayerInstanceType, alphaValue float32) {
+	layerEntry := memory.GetLayer(layerInstance.layerAlias)
 	layerEntry.DefaultAttribute.ForegroundTransformValue = alphaValue
 	layerEntry.DefaultAttribute.BackgroundTransformValue = alphaValue
 }
 
 func SetLayer(alphaValue float32) {
-	setLayerAlpha(commonResource.layerAlias, alphaValue)
+	setLayerAlpha(commonResource.layerInstance, alphaValue)
 }
 
 /*
@@ -391,7 +434,7 @@ instead.
 */
 func Color(foregroundColorIndex int, backgroundColorIndex int) {
 	validateDefaultLayerIsNotEmpty()
-	ColorLayer(commonResource.layerAlias, foregroundColorIndex, backgroundColorIndex)
+	ColorLayer(commonResource.layerInstance, foregroundColorIndex, backgroundColorIndex)
 }
 
 /*
@@ -401,11 +444,10 @@ standard, where color 0 is Black and 15 is Bright White. If you do not wish
 to specify a text layer, you can use the method 'Color' which will simply
 change the color for the default text layer previously set.
 */
-func ColorLayer(layerAlias string, foregroundColorIndex int, backgroundColorIndex int) {
-	validateLayer(layerAlias)
+func ColorLayer(layerInstance LayerInstanceType, foregroundColorIndex int, backgroundColorIndex int) {
 	validateColorIndex(foregroundColorIndex)
 	validateColorIndex(backgroundColorIndex)
-	layerEntry := memory.GetLayer(layerAlias)
+	layerEntry := memory.GetLayer(layerInstance.layerAlias)
 	layerEntry.DefaultAttribute.ForegroundColor = constants.AnsiColorByIndex[foregroundColorIndex]
 	layerEntry.DefaultAttribute.BackgroundColor = constants.AnsiColorByIndex[backgroundColorIndex]
 }
@@ -418,7 +460,7 @@ that is not currently set as your default, use 'ColorLayerRGB' instead.
 */
 func ColorRGB(foregroundRedIndex int32, foregroundGreenIndex int32, foregroundBlueIndex int32, backgroundRedIndex int32, backgroundGreenIndex int32, backgroundBlueIndex int32) {
 	validateDefaultLayerIsNotEmpty()
-	ColorLayerRGB(commonResource.layerAlias, foregroundRedIndex, foregroundGreenIndex, foregroundBlueIndex, backgroundRedIndex, backgroundGreenIndex, backgroundBlueIndex)
+	ColorLayerRGB(commonResource.layerInstance, foregroundRedIndex, foregroundGreenIndex, foregroundBlueIndex, backgroundRedIndex, backgroundGreenIndex, backgroundBlueIndex)
 }
 
 /*
@@ -428,10 +470,10 @@ index values within the range of 0 to 255. If you do not wish to specify a
 text layer, you can use the method 'ColorRGB' which will simply change the
 color for the default text layer previously set.
 */
-func ColorLayerRGB(layerAlias string, foregroundRed int32, foregroundGreen int32, foregroundBlue int32, backgroundRed int32, backgroundGreen int32, backgroundBlue int32) {
+func ColorLayerRGB(layerInstance LayerInstanceType, foregroundRed int32, foregroundGreen int32, foregroundBlue int32, backgroundRed int32, backgroundGreen int32, backgroundBlue int32) {
 	foregroundColor := GetRGBColor(foregroundRed, foregroundGreen, foregroundBlue)
 	backgroundColor := GetRGBColor(backgroundRed, backgroundGreen, backgroundBlue)
-	ColorLayer24Bit(layerAlias, foregroundColor, backgroundColor)
+	ColorLayer24Bit(layerInstance, foregroundColor, backgroundColor)
 }
 
 /*
@@ -440,7 +482,7 @@ an int32. This is useful for when you have colors which are already defined.
 */
 
 func Color24Bit(foregroundColor constants.ColorType, backgroundColor constants.ColorType) {
-	ColorLayer24Bit(commonResource.layerAlias, foregroundColor, backgroundColor)
+	ColorLayer24Bit(commonResource.layerInstance, foregroundColor, backgroundColor)
 }
 
 /*
@@ -448,9 +490,8 @@ ColorLayer24Bit allows you to color a layer using a 24-bit color expressed as
 an int32. This is useful for internal methods that already have a 24-bit color
 and do not require to compute it again.
 */
-func ColorLayer24Bit(layerAlias string, foregroundColor constants.ColorType, backgroundColor constants.ColorType) {
-	validateLayer(layerAlias)
-	layerEntry := memory.GetLayer(layerAlias)
+func ColorLayer24Bit(layerInstance LayerInstanceType, foregroundColor constants.ColorType, backgroundColor constants.ColorType) {
+	layerEntry := memory.GetLayer(layerInstance.layerAlias)
 	layerEntry.DefaultAttribute.ForegroundColor = foregroundColor
 	layerEntry.DefaultAttribute.BackgroundColor = backgroundColor
 }
@@ -482,8 +523,7 @@ example:
 */
 func Locate(xLocation int, yLocation int) {
 	validateDefaultLayerIsNotEmpty()
-	layerInstance := LayerInstanceType{layerAlias: commonResource.layerAlias}
-	LocateLayer(layerInstance, xLocation, yLocation)
+	LocateLayer(commonResource.layerInstance, xLocation, yLocation)
 }
 
 /*
@@ -534,8 +574,7 @@ all remaining characters will be discarded and printing will stop.
 */
 func Print(textToPrint string) {
 	validateDefaultLayerIsNotEmpty()
-	layerInstance := LayerInstanceType{layerAlias: commonResource.layerAlias}
-	PrintLayer(layerInstance, textToPrint)
+	PrintLayer(commonResource.layerInstance, textToPrint)
 }
 
 /*
@@ -613,7 +652,7 @@ wish to clear a text layer that is not currently set as the default, use
 */
 func Clear() {
 	validateDefaultLayerIsNotEmpty()
-	ClearLayer(commonResource.layerAlias)
+	ClearLayer(commonResource.layerInstance)
 }
 
 /*
@@ -621,9 +660,8 @@ ClearLayer allows you to empty the specified text layer of all its contents. If 
 do not wish to specify a text layer, you can use the method 'Clear' which will
 simply clear the default text layer previously set.
 */
-func ClearLayer(layerAlias string) {
-	validateLayer(layerAlias)
-	layerEntry := memory.GetLayer(layerAlias)
+func ClearLayer(layerInstance LayerInstanceType) {
+	layerEntry := memory.GetLayer(layerInstance.layerAlias)
 	clearLayer(layerEntry)
 }
 
@@ -817,6 +855,7 @@ func renderControls(currentLayerEntry types.LayerEntryType) {
 	radioButton.drawRadioButtonsOnLayer(currentLayerEntry)
 	ProgressBar.drawProgressBarsOnLayer(currentLayerEntry)
 	Label.drawLabelsOnLayer(currentLayerEntry)
+	Tooltip.drawTooltipsOnLayer(currentLayerEntry)
 }
 
 /*
@@ -852,7 +891,7 @@ func overlayLayers(sourceLayerEntry *types.LayerEntryType, targetLayerEntry *typ
 	targetCharacterMemory := targetLayerEntry.CharacterMemory
 	sourceWidthToCopy := sourceLayerEntry.Width
 	sourceHeightToCopy := sourceLayerEntry.Height
-	// Calculate how much of the source Width to copy.
+	// Calculate how much of the source HotspotWidth to copy.
 	sourceWidthToCopy = sourceLayerEntry.Width - int(math.GetAbsoluteValueAsFloat64(sourceLayerEntry.ScreenXLocation))
 	if sourceLayerEntry.ScreenXLocation < 0 {
 		if sourceWidthToCopy > targetLayerEntry.Width {
@@ -918,12 +957,17 @@ func overlayLayers(sourceLayerEntry *types.LayerEntryType, targetLayerEntry *typ
 					targetAttributeEntry.BackgroundColor = GetTransitionedColor(targetAttributeEntry.BackgroundColor, GetRGBColor(0, 0, 0), sourceAttributeEntry.BackgroundTransformValue)
 				}
 				targetCharacterEntry.AttributeEntry = targetAttributeEntry
+				// Here if we detect that our transparent rune is a tooltip, we propagate it to the cell underneath it.
+				if sourceCharacterEntry.AttributeEntry.CellType == constants.CellTypeTooltip {
+					targetCharacterEntry.AttributeEntry.CellType = constants.CellTypeTooltip
+					targetCharacterEntry.AttributeEntry.CellControlAlias = sourceCharacterEntry.AttributeEntry.CellControlAlias
+				}
 				targetCharacterMemory[currentRow+startingTargetYLocation][currentColumn+startingTargetXLocation] = *targetCharacterEntry
 			} else {
 				targetCharacterEntry.AttributeEntry = types.NewAttributeEntry(&sourceAttributeEntry)
 				targetCharacterEntry.Character = sourceCharacterEntry.Character
 				targetCharacterEntry.LayerAlias = sourceCharacterEntry.LayerAlias
-				// If there is no local.com color transforming being done on cells
+				// If there is no local color transforming being done on cells
 				if sourceAttributeEntry.ForegroundTransformValue != 1 || sourceAttributeEntry.BackgroundTransformValue != 1 {
 					if sourceAttributeEntry.ForegroundTransformValue < 1 {
 						targetCharacterEntry.AttributeEntry.ForegroundColor = GetTransitionedColor(targetAttributeEntry.ForegroundColor, sourceAttributeEntry.ForegroundColor, sourceAttributeEntry.ForegroundTransformValue)

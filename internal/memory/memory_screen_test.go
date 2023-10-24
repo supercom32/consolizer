@@ -71,7 +71,7 @@ func TestScreenLayerInvalidWidth(test *testing.T) {
 	layerParentAlias := ""
 	defer func() {
 		if r := recover(); r == nil {
-			test.Errorf("Creating a layer with an invalid Width should have thrown a panic!")
+			test.Errorf("Creating a layer with an invalid HotspotWidth should have thrown a panic!")
 		}
 	}()
 	InitializeScreenMemory()

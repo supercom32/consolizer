@@ -1,0 +1,38 @@
+- Shorten method names to just "Add" instead of "AddScrollbars"
+- Add a method for writing centered text.
+
+- Make all panics that occur in memory package call validator method
+- Make delete all functionality for controls.
+- Add labels
+- Add keyboard controls? Or let the user do it?
+- Add set focused method
+
+- Convert complex objects to pass in object entry instead of paramters to draw them
+- Use shorthand for complex object names when dealing with multiple properties.
+- Make control values passed in safe.
+- Make "Get" memory calls pass a reference so we can use it directly.
+- make scroll bar height equal to actual height and not scroll bar middle part.
+- Protect selector height which is smaller than scroll bar physical size.
+- Selector which uses uneven item lengths should not have scroll bars displayed.
+
+- Clearly define when events are started and stopped. Ie. Do not stop an ongoing event unless it is yours.
+- Modify print to not return number of characters printed.
+- Create method to calculate number of spaces a string of text would take.
+- Fix unit tests for string formatting.
+
+- Add comments to all methods
+- Add methods for manupulating all control properties.
+- add validators to protect all methods.
+- add wide switch for printing.
+- dropdown scrollbars controlled by keyboard do not update dropdown selectors.
+    - Reason is because dropdowns do not have keyboard handler to update.
+- Once you have unit tests in place, modify the textbox code so that inserting text does not need external coordinates.
+    - deleteCharacterUsingRelativeCoordinates as well!
+textbox issues
+    - long line with chinese and english randomly sprinked causes cursor to go off screen when pushing right sometimes depending on length.
+    - When new chinese character scrolls off english, the cursor position blanks out until a full character can be displayed.
+    - rename textbox to textBox
+
+textbox test cases:
+    - check if clicking dead Y zone jumps forward to end of Y string that is off textbox view. (Longer than view)
+    - Check if clicking dead y zone jumps back to end of y string that is off text view. (Shorter than another longer string)

@@ -158,7 +158,7 @@ func testCheckboxes() {
 	Print("Enable ☑ Enable ○ ● (U+25CB, U+25CF) ▾☒♪")
 	styleEntry := types.NewTuiStyleEntry()
 	styleEntry.SelectorTextAlignment = 0
-	layer1.AddCheckbox("Enable 文字 Feature", styleEntry, 2, 2, true)
+	layer1.AddCheckbox("Enable 文字 Feature", styleEntry, 2, 2, true, true)
 	for {
 		UpdateDisplay(false)
 		key := string(Inkey())
@@ -320,14 +320,14 @@ func testTextField() {
 	layer1.FillLayer("#")
 	layer2.FillLayer("@")
 	styleEntry := types.NewTuiStyleEntry()
-	textFieldInstance := layer1.AddTextField(styleEntry, 0, 3, 10, 60, true, "Alex Chang is the man")
+	textFieldInstance := layer1.AddTextField(styleEntry, 0, 3, 10, 60, true, "Alex Chang is the man", true)
 	// Drag a scroll bar, move out of the scroll bar, moving on another control should not crash.
-	layer1.AddTextField(styleEntry, 0, 7, 50, 60, false, "यह व्यवस्था की परीक्षा है")
-	layer1.AddTextField(styleEntry, 0, 9, 50, 60, false, "Zhè shì duì wǒ de yìngyòng chéngxù de cèshì")
+	layer1.AddTextField(styleEntry, 0, 7, 50, 60, false, "यह व्यवस्था की परीक्षा है", true)
+	layer1.AddTextField(styleEntry, 0, 9, 50, 60, false, "Zhè shì duì wǒ de yìngyòng chéngxù de cèshì", true)
 
 	LocateLayer(layer1, 3, 20)
 	PrintLayer(layer1, textFieldInstance.GetValue())
-	layer1.AddTextField(styleEntry, 0, 5, 15, 30, false, "Test 李克强宣布中国今年经济增长的目 acbc1")
+	layer1.AddTextField(styleEntry, 0, 5, 15, 30, false, "Test 李克强宣布中国今年经济增长的目 acbc1", true)
 	layer1.AddScrollbar(styleEntry, 0, 8, 10, 10, 0, 1, false)
 	for {
 		mouseXLocation, mouseYLocation, _, _ := memory.GetMouseStatus()

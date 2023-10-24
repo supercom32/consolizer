@@ -45,8 +45,8 @@ the text layer data under it.
 - If the Checkbox to be drawn falls outside the range of the provided layer,
 then only the visible portion of the Checkbox will be drawn.
 */
-func (shared *checkboxType) Add(layerAlias string, checkboxAlias string, checkboxLabel string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, isSelected bool) CheckboxInstanceType {
-	memory.AddCheckbox(layerAlias, checkboxAlias, checkboxLabel, styleEntry, xLocation, yLocation, isSelected)
+func (shared *checkboxType) Add(layerAlias string, checkboxAlias string, checkboxLabel string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, isSelected bool, isEnabled bool) CheckboxInstanceType {
+	memory.AddCheckbox(layerAlias, checkboxAlias, checkboxLabel, styleEntry, xLocation, yLocation, isSelected, isEnabled)
 	var checkboxInstance CheckboxInstanceType
 	checkboxInstance.layerAlias = layerAlias
 	checkboxInstance.checkboxAlias = checkboxAlias
@@ -133,6 +133,9 @@ func (shared *checkboxType) updateMouseEventCheckbox() bool {
 			eventStateMemory.currentlyFocusedControl.controlAlias = controlAlias
 			eventStateMemory.currentlyFocusedControl.controlType = constants.CellTypeCheckbox
 			checkboxEntry := memory.GetCheckbox(layerAlias, controlAlias)
+			if !checkboxEntry.IsEnabled {
+				return isUpdateRequired
+			}
 			if checkboxEntry.IsSelected {
 				checkboxEntry.IsSelected = false
 			} else {

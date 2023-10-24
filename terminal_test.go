@@ -31,15 +31,15 @@ func TestTerminalDefaultLayer(test *testing.T) {
 	commonResource.isDebugEnabled = true
 	InitializeTerminal(20, 20)
 	layer1 := AddLayer(0, 0, 20, 20, 1, nil)
-	assert.Equalf(test, layer1.layerAlias, commonResource.layerAlias, "When creating a new layer, the default layer was not updated correctly!")
+	assert.Equalf(test, layer1.layerAlias, commonResource.layerInstance, "When creating a new layer, the default layer was not updated correctly!")
 	layer2 := AddLayer(0, 0, 20, 20, 2, nil)
-	assert.Equalf(test, layer2.layerAlias, commonResource.layerAlias, "When creating a new layer, the default layer was not updated correctly!")
+	assert.Equalf(test, layer2.layerAlias, commonResource.layerInstance, "When creating a new layer, the default layer was not updated correctly!")
 	layer3 := AddLayer(0, 0, 20, 20, 3, nil)
-	assert.Equalf(test, layer3.layerAlias, commonResource.layerAlias, "When creating a new layer, the default layer was not updated correctly!")
+	assert.Equalf(test, layer3.layerAlias, commonResource.layerInstance, "When creating a new layer, the default layer was not updated correctly!")
 	Layer(layer1)
-	assert.Equalf(test, layer1.layerAlias, commonResource.layerAlias, "When creating a new layer, the default layer was not updated correctly!")
+	assert.Equalf(test, layer1.layerAlias, commonResource.layerInstance, "When creating a new layer, the default layer was not updated correctly!")
 	Layer(layer2)
-	assert.Equalf(test, layer2.layerAlias, commonResource.layerAlias, "When creating a new layer, the default layer was not updated correctly!")
+	assert.Equalf(test, layer2.layerAlias, commonResource.layerInstance, "When creating a new layer, the default layer was not updated correctly!")
 }
 
 func TestTerminalSetAlpha(test *testing.T) {
