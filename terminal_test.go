@@ -31,15 +31,15 @@ func TestTerminalDefaultLayer(test *testing.T) {
 	commonResource.isDebugEnabled = true
 	InitializeTerminal(20, 20)
 	layer1 := AddLayer(0, 0, 20, 20, 1, nil)
-	assert.Equalf(test, layer1.layerAlias, commonResource.layerInstance, "When creating a new layer, the default layer was not updated correctly!")
+	assert.Equalf(test, layer1.layerAlias, commonResource.layerInstance.layerAlias, "When creating a new layer, the default layer was not updated correctly!")
 	layer2 := AddLayer(0, 0, 20, 20, 2, nil)
-	assert.Equalf(test, layer2.layerAlias, commonResource.layerInstance, "When creating a new layer, the default layer was not updated correctly!")
+	assert.Equalf(test, layer2.layerAlias, commonResource.layerInstance.layerAlias, "When creating a new layer, the default layer was not updated correctly!")
 	layer3 := AddLayer(0, 0, 20, 20, 3, nil)
-	assert.Equalf(test, layer3.layerAlias, commonResource.layerInstance, "When creating a new layer, the default layer was not updated correctly!")
+	assert.Equalf(test, layer3.layerAlias, commonResource.layerInstance.layerAlias, "When creating a new layer, the default layer was not updated correctly!")
 	Layer(layer1)
-	assert.Equalf(test, layer1.layerAlias, commonResource.layerInstance, "When creating a new layer, the default layer was not updated correctly!")
+	assert.Equalf(test, layer1.layerAlias, commonResource.layerInstance.layerAlias, "When creating a new layer, the default layer was not updated correctly!")
 	Layer(layer2)
-	assert.Equalf(test, layer2.layerAlias, commonResource.layerInstance, "When creating a new layer, the default layer was not updated correctly!")
+	assert.Equalf(test, layer2.layerAlias, commonResource.layerInstance.layerAlias, "When creating a new layer, the default layer was not updated correctly!")
 }
 
 func TestTerminalSetAlpha(test *testing.T) {
@@ -382,9 +382,10 @@ func TestDeleteLayer(test *testing.T) {
 
 func TestNewAssetList(test *testing.T) {
 	imageFileList := NewAssetList()
-	imageFileList.AddPreloadedImage("fileName1", "fileAlias1", 10, 11, 0.6)
+	imageStyle := NewImageStyle()
+	imageFileList.AddPreloadedImage("fileName1", imageStyle, 10, 11, 0.6)
 	obtainedValue := recast.GetArrayOfInterfaces(imageFileList.PreloadedImageList[0].FileName, imageFileList.PreloadedImageList[0].FileAlias, imageFileList.PreloadedImageList[0].WidthInCharacters, imageFileList.PreloadedImageList[0].HeightInCharacters, imageFileList.PreloadedImageList[0].BlurSigma)
-	expectedValue := recast.GetArrayOfInterfaces("fileName1", "fileAlias1", 10, 11, 0.6)
+	expectedValue := recast.GetArrayOfInterfaces("fileName1", "fileName1", 10, 11, 0.6)
 	assert.Equalf(test, expectedValue, obtainedValue, "The file entry obtained does not match what was set!")
 	imageFileList.Clear()
 	obtainedValue = recast.GetArrayOfInterfaces(len(imageFileList.PreloadedImageList))

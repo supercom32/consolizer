@@ -3,6 +3,7 @@ package types
 import (
 	"encoding/json"
 	"sync"
+	"time"
 )
 
 // func DrawButton(LayerAlias string, Value string, StyleEntry TuiStyleEntryType, IsPressed bool, IsSelected bool, HotspotXLocation int, HotspotYLocation int, HotspotWidth int, Height int) {
@@ -22,6 +23,10 @@ type TooltipEntryType struct {
 	IsLocationAbsolute bool
 	IsBorderDrawn      bool
 	IsDrawn            bool
+	HoverDisplayDelay  int
+	HoverStartTime     time.Time
+	HoverXLocation     int
+	HoverYLocation     int
 }
 
 func (shared TooltipEntryType) MarshalJSON() ([]byte, error) {
@@ -40,6 +45,10 @@ func (shared TooltipEntryType) MarshalJSON() ([]byte, error) {
 		IsLocationAbsolute bool
 		IsBorderDrawn      bool
 		IsDrawn            bool
+		HoverTime          int
+		HoverStartTime     time.Time
+		HoverXLocation     int
+		HoverYLocation     int
 	}{
 		StyleEntry:         shared.StyleEntry,
 		LabelAlias:         shared.Alias,
@@ -55,6 +64,10 @@ func (shared TooltipEntryType) MarshalJSON() ([]byte, error) {
 		IsLocationAbsolute: shared.IsLocationAbsolute,
 		IsBorderDrawn:      shared.IsBorderDrawn,
 		IsDrawn:            shared.IsDrawn,
+		HoverTime:          shared.HoverDisplayDelay,
+		HoverStartTime:     shared.HoverStartTime,
+		HoverXLocation:     shared.HoverXLocation,
+		HoverYLocation:     shared.HoverYLocation,
 	})
 	if err != nil {
 		return nil, err
@@ -86,6 +99,8 @@ func NewTooltipEntry(existingButtonEntry ...*TooltipEntryType) TooltipEntryType 
 		tooltipEntry.TooltipHeight = existingButtonEntry[0].TooltipHeight
 		tooltipEntry.IsLocationAbsolute = existingButtonEntry[0].IsLocationAbsolute
 		tooltipEntry.IsBorderDrawn = existingButtonEntry[0].IsBorderDrawn
+		tooltipEntry.HoverDisplayDelay = existingButtonEntry[0].HoverDisplayDelay
+		tooltipEntry.HoverStartTime = existingButtonEntry[0].HoverStartTime
 	}
 	return tooltipEntry
 }
@@ -101,7 +116,9 @@ func IsTooltipEntryEqual(sourceTooltipEntry *TooltipEntryType, targetTooltipEntr
 		sourceTooltipEntry.TooltipYLocation == targetTooltipEntry.TooltipYLocation &&
 		sourceTooltipEntry.TooltipWidth == targetTooltipEntry.TooltipWidth &&
 		sourceTooltipEntry.IsBorderDrawn == targetTooltipEntry.IsBorderDrawn &&
-		sourceTooltipEntry.IsLocationAbsolute == targetTooltipEntry.IsLocationAbsolute {
+		sourceTooltipEntry.IsLocationAbsolute == targetTooltipEntry.IsLocationAbsolute &&
+		sourceTooltipEntry.HoverDisplayDelay == targetTooltipEntry.HoverDisplayDelay &&
+		sourceTooltipEntry.HoverStartTime == targetTooltipEntry.HoverStartTime {
 		return true
 	}
 	return false

@@ -8,11 +8,17 @@ type ImageStyle int
 
 const (
 	ImageStyleHighColor ImageStyle = iota
-	ImageStyleBrailleBasic
-	ImageStyleBraille2x2BayerMatrix
-	ImageStyleBraille4x4BayerMatrix
-	ImageStyleBraille8x8BayerMatrix
-	ImageStyleBrailleErrorDiffusion
+	ImageStyleBraille
+)
+
+type DitheringStyle int
+
+const (
+	DitheringStyleBasic = iota
+	DitheringStyle2x2BayerMatrix
+	DitheringStyle4x4BayerMatrix
+	DitheringStyle8x8BayerMatrix
+	DitheringStyleErrorDiffusion
 )
 
 type EffectStyle int
@@ -30,6 +36,8 @@ const (
 	EffectCounterClockwiseSwirlTransition
 	EffectClockwiseSwirlTransition
 	EffectGrowingCircleTransition
+	EffectVerticalCurtainTransition
+	EffectHorizontalCurtainTransition
 )
 
 type ColorType uint64

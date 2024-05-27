@@ -8,9 +8,9 @@ import (
 
 func TestAddImage(test *testing.T) {
 	assetList := NewAssetList()
-	assetList.AddImage("fileName1", "fileAlias1")
+	assetList.AddImage("fileName1")
 	obtainedValue := recast.GetArrayOfInterfaces(assetList.ImageList[0].FileName, assetList.ImageList[0].FileAlias)
-	expectedValue := recast.GetArrayOfInterfaces("fileName1", "fileAlias1")
+	expectedValue := recast.GetArrayOfInterfaces("fileName1", "fileName1")
 	assert.Equalf(test, expectedValue, obtainedValue, "The file entry obtained does not match what was set!")
 	assetList.Clear()
 	obtainedValue = recast.GetArrayOfInterfaces(len(assetList.ImageList))
@@ -19,10 +19,11 @@ func TestAddImage(test *testing.T) {
 }
 
 func TestAddPreloadedImage(test *testing.T) {
+	imageStyle := NewImageStyleEntry()
 	assetList := NewAssetList()
-	assetList.AddPreloadedImage("fileName1", "fileAlias1", 10, 11, 0.6)
+	assetList.AddPreloadedImage("fileName1", imageStyle, 10, 11, 0.6)
 	obtainedValue := recast.GetArrayOfInterfaces(assetList.PreloadedImageList[0].FileName, assetList.PreloadedImageList[0].FileAlias, assetList.PreloadedImageList[0].WidthInCharacters, assetList.PreloadedImageList[0].HeightInCharacters, assetList.PreloadedImageList[0].BlurSigma)
-	expectedValue := recast.GetArrayOfInterfaces("fileName1", "fileAlias1", 10, 11, 0.6)
+	expectedValue := recast.GetArrayOfInterfaces("fileName1", "fileName1", 10, 11, 0.6)
 	assert.Equalf(test, expectedValue, obtainedValue, "The file entry obtained does not match what was set!")
 	assetList.Clear()
 	obtainedValue = recast.GetArrayOfInterfaces(len(assetList.PreloadedImageList))

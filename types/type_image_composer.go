@@ -27,6 +27,8 @@ type ImageStyleEntryType struct {
 	DrawingStyle         constants.ImageStyle
 	IsHistogramEqualized bool
 	IsGrayscale          bool
+	DitheringStyle       constants.DitheringStyle
+	DitheringIntensity   float64
 }
 
 func NewImageStyleEntry(existingImageStyleEntry ...*ImageStyleEntryType) ImageStyleEntryType {
@@ -34,7 +36,10 @@ func NewImageStyleEntry(existingImageStyleEntry ...*ImageStyleEntryType) ImageSt
 	if existingImageStyleEntry != nil {
 		imageStyleEntry.DrawingStyle = existingImageStyleEntry[0].DrawingStyle
 		imageStyleEntry.IsHistogramEqualized = existingImageStyleEntry[0].IsHistogramEqualized
+		imageStyleEntry.IsGrayscale = existingImageStyleEntry[0].IsGrayscale
+		imageStyleEntry.DitheringIntensity = existingImageStyleEntry[0].DitheringIntensity
 	}
+	imageStyleEntry.DitheringIntensity = 1 // We set it to 1, which is no change.
 	return imageStyleEntry
 }
 

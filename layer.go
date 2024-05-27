@@ -34,10 +34,15 @@ func (shared LayerInstanceType) DrawImage(fileName string, drawingStyle types.Im
 	return err
 }
 
-func (shared LayerInstanceType) DrawComposedImage(imageComposeEntry *ImageComposerEntryType, drawingStyle types.ImageStyleEntryType, xLocation int, yLocation int, widthInCharacters int, heightInCharacters int) error {
+func (shared LayerInstanceType) DrawComposedImage(imageComposeEntry ImageComposerEntryType, drawingStyle types.ImageStyleEntryType, xLocation int, yLocation int, widthInCharacters int, heightInCharacters int) error {
 	var err error
+	var imageLayer types.LayerEntryType
 	baseImage := imageComposeEntry.RenderImage()
-	imageLayer := getImageLayerAsBraille(baseImage, drawingStyle, widthInCharacters, heightInCharacters, 0)
+	if drawingStyle.DrawingStyle == constants.ImageStyleHighColor {
+		imageLayer = getImageLayerAsHighColor(baseImage, drawingStyle, widthInCharacters, heightInCharacters, 0)
+	} else {
+		imageLayer = getImageLayerAsBraille(baseImage, drawingStyle, widthInCharacters, heightInCharacters, 0)
+	}
 	drawImageToLayer(shared.layerAlias, imageLayer, xLocation, yLocation)
 	return err
 }
@@ -102,9 +107,9 @@ func (shared LayerInstanceType) AddTextbox(styleEntry types.TuiStyleEntryType, x
 	return textBoxInstance
 }
 
-func (shared LayerInstanceType) AddTooltip(tooltipValue string, styleEntry types.TuiStyleEntryType, hotspotXLocation int, hotspotYLocation int, hotspotWidth int, hotspotHeight int, tooltipXLocation int, tooltipYLocation int, tooltipWidth int, tooltipHeight int, isLocationAbsolute bool, isBorderDrawn bool) TooltipInstanceType {
+func (shared LayerInstanceType) AddTooltip(tooltipValue string, styleEntry types.TuiStyleEntryType, hotspotXLocation int, hotspotYLocation int, hotspotWidth int, hotspotHeight int, tooltipXLocation int, tooltipYLocation int, tooltipWidth int, tooltipHeight int, isLocationAbsolute bool, isBorderDrawn bool, hoverTime int) TooltipInstanceType {
 	tooltipAlias := getUUID()
-	tooltipInstance := Tooltip.Add(shared.layerAlias, tooltipAlias, tooltipValue, styleEntry, hotspotXLocation, hotspotYLocation, hotspotWidth, hotspotHeight, tooltipXLocation, tooltipYLocation, tooltipWidth, tooltipHeight, isLocationAbsolute, isBorderDrawn)
+	tooltipInstance := Tooltip.Add(shared.layerAlias, tooltipAlias, tooltipValue, styleEntry, hotspotXLocation, hotspotYLocation, hotspotWidth, hotspotHeight, tooltipXLocation, tooltipYLocation, tooltipWidth, tooltipHeight, isLocationAbsolute, isBorderDrawn, hoverTime)
 	return tooltipInstance
 }
 

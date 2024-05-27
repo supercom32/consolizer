@@ -74,6 +74,8 @@ func InitializeTerminal(width int, height int) {
 	memory.InitializeProgressBarMemory()
 	memory.InitializeLabelMemory()
 	memory.InitializeTooltipMemory()
+	// Set the mouse location off screen so it won't trigger events at 0,0 which the user never moved to.
+	memory.SetMouseStatus(-1, -1, 0, "")
 	var detectedWidth int
 	var detectedHeight int
 	if !commonResource.isDebugEnabled {
@@ -91,6 +93,7 @@ func InitializeTerminal(width int, height int) {
 		commonResource.updateDisplayChannel = make(chan bool)
 		setupCloseHandler()
 		go setupEventUpdater()
+		go setupPeriodicEventUpdater()
 		detectedWidth, detectedHeight = GetTerminalSize()
 	}
 	if width == 0 {
@@ -105,6 +108,12 @@ func InitializeTerminal(width int, height int) {
 	}
 	commonResource.debugDirectory = "/tmp/"
 	validateTerminalWidthAndHeight(commonResource.terminalWidth, commonResource.terminalHeight)
+}
+
+func setupPeriodicEventUpdater() {
+	for {
+		UpdatePeriodicEvents()
+	}
 }
 
 /*
@@ -147,7 +156,6 @@ is finished using consolizer so that the users terminal environment is not
 left in a bad state.
 */
 func RestoreTerminalSettings() {
-
 	commonResource.updateDisplayChannel <- true
 	DeleteAllLayers()
 	if commonResource.screen == nil {
@@ -645,6 +653,63 @@ func printLayer(layerEntry *types.LayerEntryType, attributeEntry types.Attribute
 	return cursorXLocation - xLocation
 }
 
+func printLayerWithWordWrap(layerEntry *types.LayerEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, width int, textToPrint []rune) int {
+	layerWidth := layerEntry.Width
+	layerHeight := layerEntry.Height
+	cursorXLocation := xLocation
+	cursorYLocation := yLocation
+	characterMemory := layerEntry.CharacterMemory
+	for currentCharacterIndex, currentCharacter := range textToPrint {
+		if currentCharacter == ' ' {
+			// Check if the word fits within the remaining space on the current line.
+			wordWidth := calculateWordWidth(textToPrint, currentCharacterIndex)
+			if cursorXLocation+wordWidth >= xLocation+width {
+				// Word doesn't fit, move to the next line.
+				cursorXLocation = xLocation
+				cursorYLocation++
+			}
+		}
+		if currentCharacter == ' ' && cursorXLocation == xLocation {
+			// Skip the first blank space at the start of a line if one exists.
+			continue
+		}
+		if cursorXLocation >= 0 && cursorXLocation < layerWidth && cursorYLocation >= 0 && cursorYLocation < layerHeight {
+			originalBackgroundColor := characterMemory[cursorYLocation][cursorXLocation].AttributeEntry.BackgroundColor
+			characterMemory[cursorYLocation][cursorXLocation].AttributeEntry = types.NewAttributeEntry(&attributeEntry)
+			characterMemory[cursorYLocation][cursorXLocation].Character = currentCharacter
+			if stringformat.IsRuneCharacterWide(currentCharacter) {
+				cursorXLocation++
+				if cursorXLocation >= layerWidth {
+					continue
+				}
+				characterMemory[cursorYLocation][cursorXLocation].AttributeEntry = types.NewAttributeEntry(&attributeEntry)
+				characterMemory[cursorYLocation][cursorXLocation].Character = ' '
+			}
+			if characterMemory[cursorYLocation][cursorXLocation].AttributeEntry.IsBackgroundTransparent {
+				characterMemory[cursorYLocation][cursorXLocation].AttributeEntry.BackgroundColor = originalBackgroundColor
+			}
+		}
+		cursorXLocation++
+		if cursorXLocation >= layerWidth {
+			continue
+		}
+	}
+	return cursorXLocation - xLocation
+}
+
+func calculateWordWidth(textToPrint []rune, start int) int {
+	// Calculate the width of a word from the given position. The first position is
+	// always assumed to be ' ' and is skipped.
+	wordWidth := 0
+	for i := start + 1; i < len(textToPrint); i++ {
+		if textToPrint[i] == ' ' {
+			break
+		}
+		wordWidth++
+	}
+	return wordWidth
+}
+
 /*
 Clear allows you to empty the default text layer of all its contents. If you
 wish to clear a text layer that is not currently set as the default, use
@@ -670,9 +735,7 @@ clearLayer allows you to empty the specified text layer of all its contents.
 This is useful for internal methods that want to clear a text layer directly.
 */
 func clearLayer(layerEntry *types.LayerEntryType) {
-	zOrder := layerEntry.ZOrder
-	*layerEntry = types.NewLayerEntry(layerEntry.LayerAlias, layerEntry.ParentAlias, layerEntry.Width, layerEntry.Height)
-	layerEntry.ZOrder = zOrder
+	types.InitializeCharacterMemory(layerEntry)
 }
 
 func GetCharacterOnScreen(xLocation int, yLocation int) rune {
@@ -842,9 +905,12 @@ func renderLayers(rootLayerEntry *types.LayerEntryType, sortedLayerAliasSlice me
 	return baseLayerEntry
 }
 
+/*
+renderControls allows you to draw various control elements on the specified layer.
+The order of drawing matters, as complex controls are drawn first above basic controls
+to ensure that any pop-up controls appear over complex controls.
+*/
 func renderControls(currentLayerEntry types.LayerEntryType) {
-	// Order matters as complex controls need to be drawn first above basic controls (so that any
-	// pop up controls appear over complex controls).
 	Button.drawButtonsOnLayer(currentLayerEntry)
 	TextField.drawTextFieldOnLayer(currentLayerEntry)
 	Checkbox.drawCheckboxesOnLayer(currentLayerEntry)
@@ -891,7 +957,7 @@ func overlayLayers(sourceLayerEntry *types.LayerEntryType, targetLayerEntry *typ
 	targetCharacterMemory := targetLayerEntry.CharacterMemory
 	sourceWidthToCopy := sourceLayerEntry.Width
 	sourceHeightToCopy := sourceLayerEntry.Height
-	// Calculate how much of the source HotspotWidth to copy.
+	// Calculate how much of the source Width to copy.
 	sourceWidthToCopy = sourceLayerEntry.Width - int(math.GetAbsoluteValueAsFloat64(sourceLayerEntry.ScreenXLocation))
 	if sourceLayerEntry.ScreenXLocation < 0 {
 		if sourceWidthToCopy > targetLayerEntry.Width {
@@ -946,8 +1012,7 @@ func overlayLayers(sourceLayerEntry *types.LayerEntryType, targetLayerEntry *typ
 			targetCharacterEntry := &targetCharacterMemory[currentRow+startingTargetYLocation][currentColumn+startingTargetXLocation]
 			sourceAttributeEntry := sourceCharacterEntry.AttributeEntry
 			targetAttributeEntry := targetCharacterEntry.AttributeEntry
-			targetCharacterEntry.LayerAlias = sourceCharacterEntry.LayerAlias
-			targetCharacterEntry.ParentAlias = sourceCharacterEntry.ParentAlias
+
 			// Handle transformations
 			if sourceCharacterEntry.Character == constants.NullRune {
 				if sourceAttributeEntry.ForegroundTransformValue < 1 {
@@ -961,12 +1026,19 @@ func overlayLayers(sourceLayerEntry *types.LayerEntryType, targetLayerEntry *typ
 				if sourceCharacterEntry.AttributeEntry.CellType == constants.CellTypeTooltip {
 					targetCharacterEntry.AttributeEntry.CellType = constants.CellTypeTooltip
 					targetCharacterEntry.AttributeEntry.CellControlAlias = sourceCharacterEntry.AttributeEntry.CellControlAlias
+					targetCharacterEntry.LayerAlias = sourceCharacterEntry.LayerAlias
 				}
 				targetCharacterMemory[currentRow+startingTargetYLocation][currentColumn+startingTargetXLocation] = *targetCharacterEntry
 			} else {
+				// If your copying a composed image, don't clobber the target layer alias
+				if sourceCharacterEntry.LayerAlias != "" {
+					targetCharacterEntry.LayerAlias = sourceCharacterEntry.LayerAlias
+				}
+				if sourceCharacterEntry.ParentAlias != "" {
+					targetCharacterEntry.ParentAlias = sourceCharacterEntry.ParentAlias
+				}
 				targetCharacterEntry.AttributeEntry = types.NewAttributeEntry(&sourceAttributeEntry)
 				targetCharacterEntry.Character = sourceCharacterEntry.Character
-				targetCharacterEntry.LayerAlias = sourceCharacterEntry.LayerAlias
 				// If there is no local color transforming being done on cells
 				if sourceAttributeEntry.ForegroundTransformValue != 1 || sourceAttributeEntry.BackgroundTransformValue != 1 {
 					if sourceAttributeEntry.ForegroundTransformValue < 1 {
