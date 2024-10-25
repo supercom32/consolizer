@@ -17,7 +17,7 @@ func InitializeTooltipMemory() {
 	Tooltip.Entries = make(map[string]map[string]*types.TooltipEntryType)
 }
 
-func AddTooltip(layerAlias string, tooltipAlias string, tooltipValue string, styleEntry types.TuiStyleEntryType, hotspotXLocation int, hotspotYLocation int, hotspotWidth int, hotspotHeight int, tooltipXLocation int, tooltipYLocation int, tooltipWidth int, tooltipHeight int, isLocationAbsolute bool, isBorderDrawn bool) {
+func AddTooltip(layerAlias string, tooltipAlias string, tooltipValue string, styleEntry types.TuiStyleEntryType, hotspotXLocation int, hotspotYLocation int, hotspotWidth int, hotspotHeight int, tooltipXLocation int, tooltipYLocation int, tooltipWidth int, tooltipHeight int, isLocationAbsolute bool, isBorderDrawn bool, hoverTime int) {
 	Tooltip.Lock()
 	defer func() {
 		Tooltip.Unlock()
@@ -36,6 +36,7 @@ func AddTooltip(layerAlias string, tooltipAlias string, tooltipValue string, sty
 	tooltipEntry.TooltipHeight = tooltipHeight
 	tooltipEntry.IsLocationAbsolute = isLocationAbsolute
 	tooltipEntry.IsBorderDrawn = isBorderDrawn
+	tooltipEntry.HoverDisplayDelay = hoverTime
 	if Tooltip.Entries[layerAlias] == nil {
 		Tooltip.Entries[layerAlias] = make(map[string]*types.TooltipEntryType)
 	}

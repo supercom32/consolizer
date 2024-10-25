@@ -8,6 +8,7 @@ type ImageListEntryType struct {
 type PreloadedImageListEntryType struct {
 	FileName           string
 	FileAlias          string
+	ImageStyle         ImageStyleEntryType
 	WidthInCharacters  int
 	HeightInCharacters int
 	BlurSigma          float64
@@ -30,13 +31,14 @@ func (shared *AssetListType) AddImage(fileName string) {
 	shared.ImageList = append(shared.ImageList, newImageListEntryType)
 }
 
-func (shared *AssetListType) AddPreloadedImage(fileName string, widthInCharacters int, heightInCharacters int, blurSigma float64) {
+func (shared *AssetListType) AddPreloadedImage(fileName string, imageStyle ImageStyleEntryType, widthInCharacters int, heightInCharacters int, blurSigma float64) {
 	var preloadedImageListEntryType PreloadedImageListEntryType
 	preloadedImageListEntryType.FileName = fileName
 	preloadedImageListEntryType.FileAlias = fileName
 	preloadedImageListEntryType.WidthInCharacters = widthInCharacters
 	preloadedImageListEntryType.HeightInCharacters = heightInCharacters
 	preloadedImageListEntryType.BlurSigma = blurSigma
+	preloadedImageListEntryType.ImageStyle = imageStyle
 	shared.PreloadedImageList = append(shared.PreloadedImageList, preloadedImageListEntryType)
 }
 

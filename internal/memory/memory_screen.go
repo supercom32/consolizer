@@ -103,10 +103,9 @@ func DeleteLayer(layerAlias string, noLocking bool) {
 	DeleteAllSelectorsFromLayer(layerAlias)
 	DeleteAllTextboxesFromLayer(layerAlias)
 	DeleteAllTextFieldsFromLayer(layerAlias)
-
 	delete(Screen.Entries, layerAlias)
 	if parentAlias != "" {
-		if _, isExist := Screen.Entries[layerAlias]; isExist {
+		if _, isExist := Screen.Entries[parentAlias]; isExist {
 			if !IsAParent(parentAlias) {
 				layerEntry = getLayer(parentAlias)
 				layerEntry.IsParent = false

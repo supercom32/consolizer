@@ -252,6 +252,7 @@ then only the visible portion of the text box will be drawn.
 func (shared *textboxType) AddTextbox(layerAlias string, textboxAlias string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, height int, isBorderDrawn bool) TextboxInstanceType {
 	memory.AddTextbox(layerAlias, textboxAlias, styleEntry, xLocation, yLocation, width, height, isBorderDrawn)
 	textboxEntry := memory.GetTextbox(layerAlias, textboxAlias)
+	textboxEntry.TextData = append(textboxEntry.TextData, stringformat.GetRunesFromString(" "))
 	textboxEntry.HorizontalScrollbarAlias = stringformat.GetLastSortedUUID()
 	textboxEntry.VerticalScrollbarAlias = stringformat.GetLastSortedUUID()
 	hScrollbarWidth := width
@@ -270,6 +271,7 @@ func (shared *textboxType) AddTextbox(layerAlias string, textboxAlias string, st
 	}
 	memory.AddScrollbar(layerAlias, textboxEntry.HorizontalScrollbarAlias, styleEntry, hScrollbarXLocation, hScrollbarYLocation, hScrollbarWidth, 0, 0, 1, true)
 	memory.AddScrollbar(layerAlias, textboxEntry.VerticalScrollbarAlias, styleEntry, vScrollbarXLocation, vScrollbarYLocation, vScrollbarHeight, 0, 0, 1, false)
+	shared.setTextboxMaxScrollBarValues(layerAlias, textboxAlias)
 	var textboxInstance TextboxInstanceType
 	textboxInstance.layerAlias = layerAlias
 	textboxInstance.textboxAlias = textboxAlias
@@ -341,13 +343,13 @@ func (shared *textboxType) drawTextbox(layerEntry *types.LayerEntryType, textbox
 				// If scrolled too far left (negative value) then show blanks. Note: This case should never happen really.
 				arrayOfRunes = []rune{}
 			}
-			// arrayOfRunes = stringformat.GetFormattedRuneArray(arrayOfRunes, t.HotspotWidth, constants.AlignmentLeft)
+			// arrayOfRunes = stringformat.GetFormattedRuneArray(arrayOfRunes, t.Width, constants.AlignmentLeft)
 			arrayOfRunes = stringformat.GetMaxCharactersThatFitInStringSize(arrayOfRunes, t.Width)
 			shared.printControlText(layerEntry, textboxAlias, t.StyleEntry, attributeEntry, t.XLocation, t.YLocation+currentLine, arrayOfRunes, t.ViewportYLocation+currentLine, t.ViewportXLocation, t.CursorXLocation, t.CursorYLocation)
 		} else {
 			// If scrolled too far down and there are no more rows to print, just show blanks.
 			// If scrolled too far up and there are no rows to print, just print blanks. Note: This case should never happen really.
-			// arrayOfRunes = stringformat.GetFormattedRuneArray([]rune{}, t.HotspotWidth, constants.AlignmentLeft)
+			// arrayOfRunes = stringformat.GetFormattedRuneArray([]rune{}, t.Width, constants.AlignmentLeft)
 			shared.printControlText(layerEntry, textboxAlias, t.StyleEntry, attributeEntry, t.XLocation, t.YLocation+currentLine, arrayOfRunes, t.ViewportYLocation+currentLine, t.ViewportXLocation, t.CursorXLocation, t.CursorYLocation)
 		}
 	}
@@ -460,11 +462,23 @@ func (shared *textboxType) updateViewport(textboxEntry *types.TextboxEntryType) 
 	}
 }
 
+func (shared *textboxType) UpdateKeyboardEventTextboxWithString(keystroke string) {
+	for _, currentCharacter := range keystroke {
+		shared.UpdateKeyboardEventTextbox([]rune{currentCharacter})
+	}
+}
+
+func (shared *textboxType) UpdateKeyboardEventTextboxWithCommands(keystroke ...string) {
+	for _, currentCommand := range keystroke {
+		shared.UpdateKeyboardEventTextbox([]rune(currentCommand))
+	}
+}
+
 /*
-updateKeyboardEventTextbox allows you to update the state of all text boxes according to the current keystroke event.
+UpdateKeyboardEventTextbox allows you to update the state of all text boxes according to the current keystroke event.
 In the event that a screen update is required this method returns true.
 */
-func (shared *textboxType) updateKeyboardEventTextbox(keystroke []rune) bool {
+func (shared *textboxType) UpdateKeyboardEventTextbox(keystroke []rune) bool {
 	keystrokeAsString := string(keystroke)
 	isScreenUpdateRequired := true
 	focusedLayerAlias := eventStateMemory.currentlyFocusedControl.layerAlias
@@ -591,6 +605,7 @@ func (shared *textboxType) updateMouseEventTextbox() bool {
 		shared.updateScrollbarBasedOnTextboxViewport(layerAlias, characterEntry.AttributeEntry.CellControlAlias)
 		setFocusedControl(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias, characterEntry.AttributeEntry.CellType)
 		isUpdateRequired = true
+		return isUpdateRequired
 	}
 	// If you are dragging and dropping, then update the scroll bars as needed.
 	if buttonPressed != 0 && (eventStateMemory.stateId == constants.EventStateDragAndDropScrollbar ||

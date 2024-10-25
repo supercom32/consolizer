@@ -6,6 +6,7 @@ import (
 	"github.com/supercom32/consolizer/internal/memory"
 	"github.com/supercom32/consolizer/types"
 	"strings"
+	"time"
 )
 
 type controlIdentifierType struct {
@@ -23,6 +24,21 @@ type eventStateType struct {
 }
 
 var eventStateMemory eventStateType
+var eventIntervalTime time.Time
+
+func UpdatePeriodicEvents() {
+	elapsedTime := time.Since(eventIntervalTime)
+	if elapsedTime >= 500*time.Millisecond {
+		eventIntervalTime = time.Now()
+		isScreenUpdateRequired := false
+		if Tooltip.updateMouseEventTooltip() {
+			isScreenUpdateRequired = true
+		}
+		if isScreenUpdateRequired == true {
+			UpdateDisplay(false)
+		}
+	}
+}
 
 /*
 UpdateEventQueues allows you to update all event queues so that information
@@ -47,7 +63,7 @@ func UpdateEventQueues() {
 		if TextField.updateKeyboardEventTextField(keystroke) {
 			isScreenUpdateRequired = true
 		}
-		if textbox.updateKeyboardEventTextbox(keystroke) {
+		if textbox.UpdateKeyboardEventTextbox(keystroke) {
 			isScreenUpdateRequired = true
 		}
 		if Selector.updateKeyboardEventSelector(keystroke) {

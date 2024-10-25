@@ -567,6 +567,18 @@ func fillArea(layerEntry *types.LayerEntryType, attributeEntry types.AttributeEn
 	}
 }
 
+func fillAreaWithControlAlias(layerEntry *types.LayerEntryType, cellType int, cellControlAlias string, xLocation int, yLocation int, width int, height int, startingControlLocation int) {
+	characterMemory := layerEntry.CharacterMemory
+	for currentRow := 0; currentRow < height; currentRow++ {
+		for currentColumn := 0; currentColumn < width; currentColumn++ {
+			if yLocation >= 0 && yLocation < layerEntry.Height && xLocation+currentColumn >= 0 && xLocation+currentColumn < layerEntry.Width {
+				characterMemory[currentRow][currentColumn].AttributeEntry.CellType = cellType
+				characterMemory[currentRow][currentColumn].AttributeEntry.CellControlAlias = cellControlAlias
+			}
+		}
+	}
+}
+
 /*
 fillLayer allows you to fill an entire layer with characters of your choice.
 If you wish to fill the layer with repeating text, simply provide the string

@@ -18,11 +18,11 @@ func TestMainStub(test *testing.T) {
 	// testDropdown()
 	// testScrollBars()
 	// testSelector()
-	// testTextField()
-	testProgressBar()
+	testTextField()
+	//testProgressBar()
 	// testWindowMovement()
 	// testButtonPressAction()
-	RestoreTerminalSettings()
+	//RestoreTerminalSettings()
 }
 func testProgressBar() {
 	commonResource.isDebugEnabled = false

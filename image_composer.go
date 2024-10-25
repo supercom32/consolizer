@@ -30,8 +30,8 @@ func (shared *ImageComposerEntryType) New() ImageComposerEntryType {
 	return newImageComposer
 }
 
-func (shared *ImageComposerEntryType) Add(imageAlias string, xLocation int, yLocation int, width int, height int, imageStyle types.ImageStyleEntryType, effectStyle constants.EffectStyle, effectStep float64, zOrder int, alphaValue float32) *types.ImageComposerImageEntryType {
-
+// Specifying 0 widht and height means use native image size
+func (shared *ImageComposerEntryType) Add(fileName string, xLocation int, yLocation int, width int, height int, imageStyle types.ImageStyleEntryType, effectStyle constants.EffectStyle, effectStep float64, zOrder int, alphaValue float32) *types.ImageComposerImageEntryType {
 	imageComposerImage := types.NewImageComposerImageEntry()
 	imageComposerImage.ZOrder = zOrder
 	imageComposerImage.XLocation = xLocation
@@ -43,13 +43,13 @@ func (shared *ImageComposerEntryType) Add(imageAlias string, xLocation int, yLoc
 	imageComposerImage.EffectStep = effectStep
 	imageComposerImage.IsVisible = true
 	imageComposerImage.AlphaValue = alphaValue
-	imageEntry, err := getImage(imageAlias)
+	imageEntry, err := getImage(fileName)
 	if err != nil {
 		// Here we perform this action anyway to trigger a panic, so we don't need to duplicate the panic code.
-		memory.GetImage(imageAlias)
+		memory.GetImage(fileName)
 	}
 	imageComposerImage.ImageData = imageEntry.ImageData
-	shared.images[imageAlias] = &imageComposerImage
+	shared.images[fileName] = &imageComposerImage
 	return &imageComposerImage
 }
 
@@ -103,6 +103,10 @@ func getTransformedImage(sourceImageData image.Image, imageComposerImageEntry ty
 		transformedImage = applyCounterClockwiseSwirlEffect(sourceImageData, int(imageComposerImageEntry.EffectStep))
 	} else if imageComposerImageEntry.EffectStyle == constants.EffectClockwiseSwirlTransition {
 		transformedImage = applyClockwiseSwirlEffect(sourceImageData, int(imageComposerImageEntry.EffectStep))
+	} else if imageComposerImageEntry.EffectStyle == constants.EffectVerticalCurtainTransition {
+		transformedImage = applyVerticalCurtainEffect(sourceImageData, int(imageComposerImageEntry.EffectStep))
+	} else if imageComposerImageEntry.EffectStyle == constants.EffectHorizontalCurtainTransition {
+		transformedImage = applyHorizontalCurtainEffect(sourceImageData, int(imageComposerImageEntry.EffectStep))
 	} else {
 		transformedImage = sourceImageData
 	}
@@ -196,24 +200,26 @@ func ConvertImageToGrayscale(inputImage image.Image) *image.Gray {
 func getBrailleImageData(inputImage image.Image, imageStyle types.ImageStyleEntryType) [][]types.CharacterEntryType {
 	var monochromeImage image.Image
 	var grayscaleImage *image.Gray
-	grayscaleImage = ConvertImageToGrayscale(inputImage)
+	contrastAdjustedImage := inputImage
+	if imageStyle.DitheringIntensity != 1 {
+		contrastAdjustedImage = adjustContrast(contrastAdjustedImage, imageStyle.DitheringIntensity)
+	}
+	grayscaleImage = ConvertImageToGrayscale(contrastAdjustedImage)
 	if imageStyle.IsHistogramEqualized {
 		monochromeImage = HistogramEqualization(grayscaleImage)
 	}
-	if imageStyle.DrawingStyle == constants.ImageStyleBraille2x2BayerMatrix {
-		monochromeImage = FloydSteinbergDithering2x2(inputImage)
-	}
-	if imageStyle.DrawingStyle == constants.ImageStyleBraille4x4BayerMatrix {
-		monochromeImage = FloydSteinbergDithering4x4(inputImage)
-	}
-	if imageStyle.DrawingStyle == constants.ImageStyleBraille8x8BayerMatrix {
-		monochromeImage = FloydSteinbergDithering8x8(inputImage)
-	}
-	if imageStyle.DrawingStyle == constants.ImageStyleBrailleBasic {
+	if imageStyle.DitheringStyle == constants.DitheringStyle2x2BayerMatrix {
+		monochromeImage = FloydSteinbergDithering2x2(contrastAdjustedImage)
+	} else if imageStyle.DitheringStyle == constants.DitheringStyle4x4BayerMatrix {
+		monochromeImage = FloydSteinbergDithering4x4(contrastAdjustedImage)
+	} else if imageStyle.DitheringStyle == constants.DitheringStyle8x8BayerMatrix {
+		monochromeImage = FloydSteinbergDithering8x8(contrastAdjustedImage)
+	} else if imageStyle.DitheringStyle == constants.DitheringStyleBasic {
 		monochromeImage = FloydSteinbergDitheringBasic(grayscaleImage)
-	}
-	if imageStyle.DrawingStyle == constants.ImageStyleBrailleErrorDiffusion {
+	} else if imageStyle.DitheringStyle == constants.DitheringStyleErrorDiffusion {
 		monochromeImage = FloydSteinbergDitheringErrorDiffusion(grayscaleImage)
+	} else {
+		monochromeImage = FloydSteinbergDithering4x4(contrastAdjustedImage)
 	}
 	/*contextForImage := gg.NewContextForImage(monochromeImage)
 	if err := contextForImage.SavePNG("dithered_output.png"); err != nil {
@@ -264,6 +270,42 @@ func getBrailleImageData(inputImage image.Image, imageStyle types.ImageStyleEntr
 		}
 	}
 	return result
+}
+
+func adjustContrast(inputImage image.Image, contrastFactor float64) image.Image {
+	bounds := inputImage.Bounds()
+	width, height := bounds.Dx(), bounds.Dy()
+
+	// Create a new RGBA image to store the modified image.
+	outputImage := image.NewRGBA(bounds)
+
+	for y := 0; y < height; y++ {
+		for x := 0; x < width; x++ {
+			originalColor := inputImage.At(x, y)
+			r, g, b, a := originalColor.RGBA()
+
+			// Adjust contrast by scaling pixel values based on contrastFactor
+			newR := uint8(clampColorValue(float64(r>>8) * contrastFactor))
+			newG := uint8(clampColorValue(float64(g>>8) * contrastFactor))
+			newB := uint8(clampColorValue(float64(b>>8) * contrastFactor))
+
+			// Create a new color with the adjusted intensity values
+			newColor := color.RGBA{newR, newG, newB, uint8(a >> 8)}
+			outputImage.Set(x, y, newColor)
+		}
+	}
+
+	return outputImage
+}
+
+func clampColorValue(value float64) float64 {
+	if value < 0 {
+		return 0
+	}
+	if value > 255 {
+		return 255
+	}
+	return value
 }
 
 // ==========================================================================================================
@@ -797,6 +839,63 @@ func applyGrowingCircleEffect(inputImage image.Image, step int) image.Image {
 				// If outside the circle, get the color from the original image.
 				color := inputImage.At(x, y)
 				resultImage.Set(x, y, color)
+			}
+		}
+	}
+
+	return resultImage
+}
+
+func applyVerticalCurtainEffect(inputImage image.Image, step int) image.Image {
+	bounds := inputImage.Bounds()
+	width, height := bounds.Max.X, bounds.Max.Y
+
+	resultImage := image.NewRGBA(bounds)
+
+	// Calculate the position of the transition center (midpoint).
+	transitionCenterX := width / 2
+
+	for y := 0; y < height; y++ {
+		for x := 0; x < width; x++ {
+			// Calculate the distance from the transition center.
+			dx := math.Abs(float64(x - transitionCenterX))
+
+			// Check if the distance is less than the step value (width of the transition).
+			if dx < float64(step) {
+				// If within the transition, get the color from the original image.
+				color := inputImage.At(x, y)
+				resultImage.Set(x, y, color)
+			} else {
+				// If outside the transition, set the pixel in the result image to be transparent.
+				resultImage.Set(x, y, color.RGBA{0, 0, 0, 0})
+			}
+		}
+	}
+
+	return resultImage
+}
+
+func applyHorizontalCurtainEffect(inputImage image.Image, step int) image.Image {
+	bounds := inputImage.Bounds()
+	width, height := bounds.Max.X, bounds.Max.Y
+
+	resultImage := image.NewRGBA(bounds)
+
+	// Calculate the position of the transition center (midpoint).
+	transitionCenterY := height / 2
+	for y := 0; y < height; y++ {
+		for x := 0; x < width; x++ {
+			// Calculate the distance from the transition center along the y-axis.
+			dy := float64(y - transitionCenterY)
+
+			// Check if the absolute distance is less than or equal to the step value.
+			if math.Abs(dy) <= float64(step) {
+				// If within the transition, get the color from the original image.
+				color := inputImage.At(x, y)
+				resultImage.Set(x, y, color)
+			} else {
+				// If outside the transition, set the pixel in the result image to be transparent.
+				resultImage.Set(x, y, color.RGBA{0, 0, 0, 0})
 			}
 		}
 	}

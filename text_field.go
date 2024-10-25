@@ -144,7 +144,7 @@ func (shared *textFieldType) drawInputString(layerEntry *types.LayerEntryType, s
 		attributeEntry.CellControlId = stringPosition + currentRuneIndex
 		if textFieldEntry.IsPasswordProtected {
 			// If the field is password protected, then do not print the terminating ' ' character with an *.
-			if xLocation+xLocationOffset == len(textFieldEntry.CurrentValue)-1 {
+			if xLocationOffset == len(textFieldEntry.CurrentValue)-1 {
 				printLayer(layerEntry, attributeEntry, xLocation+xLocationOffset, yLocation, []rune{' '})
 			} else {
 				printLayer(layerEntry, attributeEntry, xLocation+xLocationOffset, yLocation, []rune{'*'})
@@ -238,7 +238,7 @@ updateTextFieldCursor allows you to update a text field cursors location to ensu
 */
 func (shared *textFieldType) updateTextFieldCursor(textFieldEntry *types.TextFieldEntryType) {
 	if textFieldEntry.CursorPosition == constants.NullCellControlId || textFieldEntry.CursorPosition >= len(textFieldEntry.CurrentValue) {
-		textFieldEntry.CursorPosition = len(textFieldEntry.CurrentValue) - 1 // used to be -1 here.
+		textFieldEntry.CursorPosition = len(textFieldEntry.CurrentValue) - 1
 	}
 	if textFieldEntry.CursorPosition < 0 {
 		textFieldEntry.CursorPosition = 0
@@ -263,7 +263,9 @@ func (shared *textFieldType) updateKeyboardEventTextField(keystroke []rune) bool
 		return false
 	}
 	if len(keystroke) == 1 { // If a regular char is entered.
-		if len(textFieldEntry.CurrentValue) < textFieldEntry.MaxLengthAllowed {
+		// Here we check if the character limit is under the max length allowed. We plus 1 because we need to account
+		// for the cursor at the end of a string as well.
+		if len(textFieldEntry.CurrentValue) < textFieldEntry.MaxLengthAllowed+1 {
 			// LogInfo(fmt.Sprintf("cur: %d view: %d", textFieldEntry.CursorPosition, textFieldEntry.ViewportPosition))
 			shared.insertCharacterAtPosition(textFieldEntry, keystroke[0])
 			textFieldEntry.CursorPosition++
@@ -333,4 +335,16 @@ func (shared *textFieldType) updateMouseEventTextField() bool {
 		}
 	}
 	return isScreenUpdateRequired
+}
+
+func (shared *textFieldType) updateKeyboardEventTextboxWithString(keystroke string) {
+	for _, currentCharacter := range keystroke {
+		shared.updateKeyboardEventTextField([]rune{currentCharacter})
+	}
+}
+
+func (shared *textFieldType) updateKeyboardEventTextboxWithCommands(keystroke ...string) {
+	for _, currentCommand := range keystroke {
+		shared.updateKeyboardEventTextField([]rune(currentCommand))
+	}
 }

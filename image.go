@@ -77,7 +77,7 @@ func LoadImagesInBulk(assetList types.AssetListType) error {
 		}
 	}
 	for _, currentAsset := range assetList.PreloadedImageList {
-		err = LoadPreRenderedImage(currentAsset.FileName, currentAsset.FileAlias, currentAsset.WidthInCharacters, currentAsset.HeightInCharacters, currentAsset.BlurSigma)
+		err = LoadPreRenderedImage(currentAsset.FileName, currentAsset.FileAlias, currentAsset.ImageStyle, currentAsset.WidthInCharacters, currentAsset.HeightInCharacters, currentAsset.BlurSigma)
 		if err != nil {
 			return err
 		}
@@ -116,12 +116,12 @@ resized. This allows you to soften your image before it is rendered in ansi
 so that hard edges are removed. A value of 0.0 means no blurring will occur,
 with higher values increasing the blur factor.
 */
-func LoadPreRenderedImage(imageFile string, imageAlias string, widthInCharacters int, heightInCharacters int, blurSigma float64) error {
+func LoadPreRenderedImage(imageFile string, imageAlias string, imageStyle types.ImageStyleEntryType, widthInCharacters int, heightInCharacters int, blurSigma float64) error {
 	imageEntry, err := getImageEntryFromFileSystem(imageFile)
 	if err != nil {
 		return err
 	}
-	imageEntry.LayerEntry = getImageLayerAsHighColor(imageEntry.ImageData, widthInCharacters, heightInCharacters, blurSigma)
+	imageEntry.LayerEntry = getImageLayerAsHighColor(imageEntry.ImageData, imageStyle, widthInCharacters, heightInCharacters, blurSigma)
 	imageEntry.ImageData = nil
 	memory.AddImage(imageAlias, imageEntry)
 	return err
@@ -181,13 +181,13 @@ resized. This allows you to soften your image before it is rendered in ansi
 so that hard edges are removed. A value of 0.0 means no blurring will occur,
 with higher values increasing the blur factor.
 */
-func LoadPreRenderedBase64Image(imageDataAsBase64 string, imageAlias string, widthInCharacters int, heightInCharacters int, blurSigma float64) error {
+func LoadPreRenderedBase64Image(imageDataAsBase64 string, imageAlias string, imageStyle types.ImageStyleEntryType, widthInCharacters int, heightInCharacters int, blurSigma float64) error {
 	imageEntry := types.NewImageEntry()
 	imageData, err := getImageFromBase64String(imageDataAsBase64)
 	if err != nil {
 		return err
 	}
-	imageEntry.LayerEntry = getImageLayerAsHighColor(imageData, widthInCharacters, heightInCharacters, blurSigma)
+	imageEntry.LayerEntry = getImageLayerAsHighColor(imageData, imageStyle, widthInCharacters, heightInCharacters, blurSigma)
 	memory.AddImage(imageAlias, imageEntry)
 	return err
 }
@@ -252,7 +252,7 @@ resized. This allows you to soften your image before it is rendered in ansi
 so that hard edges are removed. A value of 0.0 means no blurring will occur,
 with higher values increasing the blur factor.
 */
-func getImageLayerAsHighColor(sourceImageData image.Image, widthInCharacters int, heightInCharacters int, blurSigma float64) types.LayerEntryType {
+func getImageLayerAsHighColor(sourceImageData image.Image, imageStyle types.ImageStyleEntryType, widthInCharacters int, heightInCharacters int, blurSigma float64) types.LayerEntryType {
 	if widthInCharacters <= 0 && heightInCharacters <= 0 {
 		panic(fmt.Sprintf("The specified width and height of %dx%d for your image is not valid.", widthInCharacters, heightInCharacters))
 	}
@@ -267,6 +267,9 @@ func getImageLayerAsHighColor(sourceImageData image.Image, widthInCharacters int
 	processedImageData := resizeImage(sourceImageData, uint(calculatedPixelWidth), uint(calculatedPixelHeight))
 	if blurSigma > 0 {
 		processedImageData = imaging.Blur(processedImageData, blurSigma)
+	}
+	if imageStyle.IsGrayscale {
+		processedImageData = ConvertImageToGrayscale(processedImageData)
 	}
 	calculatedCharacterWidth := calculatedPixelWidth
 	calculatedCharacterHeight := calculatedPixelHeight / 2
@@ -347,7 +350,7 @@ func DrawImageToLayer(layerAlias string, imageAlias string, imageStyle types.Ima
 func getImageLayer(sourceImageData image.Image, imageStyle types.ImageStyleEntryType, widthInCharacters int, heightInCharacters int, blurSigma float64) types.LayerEntryType {
 	imageLayer := types.NewLayerEntry("", "", widthInCharacters, heightInCharacters)
 	if imageStyle.DrawingStyle == constants.ImageStyleHighColor {
-		imageLayer = getImageLayerAsHighColor(sourceImageData, widthInCharacters, heightInCharacters, blurSigma)
+		imageLayer = getImageLayerAsHighColor(sourceImageData, imageStyle, widthInCharacters, heightInCharacters, blurSigma)
 	} else {
 		imageLayer = getImageLayerAsBraille(sourceImageData, imageStyle, widthInCharacters, heightInCharacters, blurSigma)
 	}

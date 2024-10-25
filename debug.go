@@ -1,6 +1,7 @@
 package consolizer
 
 import (
+	"fmt"
 	"github.com/supercom32/consolizer/internal/stringformat"
 	"github.com/supercom32/filesystem"
 	"os"
@@ -13,12 +14,12 @@ func dumpScreenComparisons(originalScreenAsBase64 string, expectedScreenAsBase64
 	os.WriteFile("/tmp/expected.txt", []byte(expectedScreen), 0644)
 }
 
-func LogInfo(info string) {
+func LogInfo(info string, parameters ...any) {
 	var stringToAppend string
 	// if len(parameters) != 0 {
 	//	stringToAppend = fmt.Sprintf(info, parameters...)
 	// } else {
-	stringToAppend = info
+	stringToAppend = fmt.Sprintf(info, parameters...)
 	// }
 	filesystem.AppendLineToFile("/tmp/debug.log", stringToAppend+"\n", 0)
 }

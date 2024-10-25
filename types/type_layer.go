@@ -5,6 +5,7 @@ import (
 	"github.com/gdamore/tcell/v2"
 	"github.com/supercom32/consolizer/constants"
 	"github.com/supercom32/consolizer/internal/stringformat"
+	"github.com/supercom32/filesystem"
 )
 
 type LayerEntryType struct {
@@ -96,7 +97,20 @@ func (shared LayerEntryType) GetBasicAnsiString() string {
 
 func (shared LayerEntryType) GetBasicAnsiStringAsBase64() string {
 	ansiString := shared.GetBasicAnsiString()
-	return stringformat.GetStringAsBase64((ansiString))
+	err := filesystem.WriteBytesToFile("/tmp/output.ans", []byte(ansiString), 0)
+	if err != nil {
+		panic(err)
+	}
+	return stringformat.GetStringAsBase64(ansiString)
+}
+
+func (shared LayerEntryType) GetBasicAnsiStringAsBase642() string {
+	ansiString := shared.GetBasicAnsiString()
+	err := filesystem.WriteBytesToFile("/tmp/output.ans", []byte(ansiString), 0)
+	if err != nil {
+		panic(err)
+	}
+	return stringformat.GetStringAsBase64(ansiString)
 }
 
 func (shared LayerEntryType) GetAnsiForegroundColorString(color constants.ColorType) string {
@@ -186,4 +200,18 @@ func NewLayerEntry(layerAlias string, parentAlias string, width int, height int,
 		}
 	}
 	return layerEntry
+}
+
+func InitializeCharacterMemory(layerEntry *LayerEntryType) {
+	// This is used exclusively for clearing layer data.
+	layerEntry.CharacterMemory = [][]CharacterEntryType{}
+	for currentRow := 0; currentRow < layerEntry.Height; currentRow++ {
+		var characterObjectArray = make([]CharacterEntryType, layerEntry.Width)
+		for currentCharacter := 0; currentCharacter < layerEntry.Width; currentCharacter++ {
+			characterObjectArray[currentCharacter] = NewCharacterEntry()
+			characterObjectArray[currentCharacter].LayerAlias = layerEntry.LayerAlias
+			characterObjectArray[currentCharacter].ParentAlias = layerEntry.ParentAlias
+		}
+		layerEntry.CharacterMemory = append(layerEntry.CharacterMemory, characterObjectArray)
+	}
 }
