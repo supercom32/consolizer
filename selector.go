@@ -17,6 +17,13 @@ type selectorType struct{}
 
 var Selector selectorType
 
+func (shared *selectorInstanceType) Delete() *selectorInstanceType {
+	if memory.IsSelectorExists(shared.layerAlias, shared.selectorAlias) {
+		memory.DeleteSelector(shared.layerAlias, shared.selectorAlias)
+	}
+	return nil
+}
+
 /*
 GetSelected allows you to retrieve the currently selected item. If the Selector instance
 no longer exists, then an empty result is always returned.

@@ -22,6 +22,13 @@ func (shared *LabelInstanceType) SetLabelValue(value string) {
 	labelEntry.Value = value
 }
 
+func (shared *LabelInstanceType) Delete() *LabelInstanceType {
+	if memory.IsLabelExists(shared.layerAlias, shared.labelAlias) {
+		memory.DeleteLabel(shared.layerAlias, shared.labelAlias)
+	}
+	return nil
+}
+
 func (shared *labelType) Add(layerAlias string, labelAlias string, labelValue string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int) LabelInstanceType {
 	memory.AddLabel(layerAlias, labelAlias, labelValue, styleEntry, xLocation, yLocation, width)
 	var labelInstance LabelInstanceType
@@ -30,13 +37,6 @@ func (shared *labelType) Add(layerAlias string, labelAlias string, labelValue st
 	return labelInstance
 }
 
-/*
-DeleteButton allows you to remove a button from a text layer. In addition,
-the following information should be noted:
-
-- If you attempt to delete a button which does not exist, then the request
-will simply be ignored.
-*/
 func (shared *labelType) DeleteLabel(layerAlias string, labelAlias string) {
 	memory.DeleteLabel(layerAlias, labelAlias)
 }

@@ -17,6 +17,22 @@ type textFieldType struct{}
 
 var TextField textFieldType
 
+func (shared *textFieldInstanceType) GetFocus() string {
+	if memory.IsTextFieldExists(shared.layerAlias, shared.textFieldAlias) {
+		validatorTextField(shared.layerAlias, shared.textFieldAlias)
+		memory.GetTextField(shared.layerAlias, shared.textFieldAlias)
+		setFocusedControl(shared.layerAlias, shared.textFieldAlias, constants.CellTypeTextField)
+	}
+	return ""
+}
+
+func (shared *textFieldInstanceType) Delete() string {
+	if memory.IsTextFieldExists(shared.layerAlias, shared.textFieldAlias) {
+		memory.DeleteTextField(shared.layerAlias, shared.textFieldAlias)
+	}
+	return ""
+}
+
 /*
 GetValue allows you to get the current value of your text field with.
 */

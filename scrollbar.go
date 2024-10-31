@@ -16,6 +16,13 @@ type scrollbarType struct{}
 
 var scrollbar scrollbarType
 
+func (shared *ScrollbarInstanceType) Delete() *ScrollbarInstanceType {
+	if memory.IsScrollbarExists(shared.layerAlias, shared.scrollbarAlias) {
+		memory.DeleteScrollbar(shared.layerAlias, shared.scrollbarAlias)
+	}
+	return nil
+}
+
 /*
 setScrollValue allows you set the current scroll value of a scroll bar.  In addition, the following
 information should be noted:

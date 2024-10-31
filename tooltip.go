@@ -17,6 +17,13 @@ type tooltipType struct{}
 
 var Tooltip tooltipType
 
+func (shared *TooltipInstanceType) Delete() string {
+	if memory.IsTooltipExists(shared.layerAlias, shared.tooltipAlias) {
+		memory.DeleteTooltip(shared.layerAlias, shared.tooltipAlias)
+	}
+	return ""
+}
+
 /*
 SetTooltipValue allows you to set the value of the tooltip associated with the TooltipInstanceType.
 This function updates the value of the tooltip label identified by the layerAlias and tooltipAlias fields.

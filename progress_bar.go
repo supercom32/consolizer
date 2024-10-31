@@ -18,6 +18,13 @@ type progressBarType struct{}
 
 var ProgressBar progressBarType
 
+func (shared *ProgressBarInstanceType) Delete() *ProgressBarInstanceType {
+	if memory.IsProgressBarExists(shared.layerAlias, shared.progressBarAlias) {
+		memory.DeleteProgressBar(shared.layerAlias, shared.progressBarAlias)
+	}
+	return nil
+}
+
 func (shared *ProgressBarInstanceType) SetProgressBarValue(value int) {
 	progressBarEntry := memory.GetProgressBar(shared.layerAlias, shared.progressBarAlias)
 	if value <= progressBarEntry.MaxValue {
@@ -47,10 +54,19 @@ func (shared *ProgressBarInstanceType) IncrementProgressBarValue() {
 	}
 }
 
-func (shared *ProgressBarInstanceType) GetProgressBarValueAsString() string {
+func (shared *ProgressBarInstanceType) GetProgressBarValueAsRatio() string {
 	progressBarEntry := memory.GetProgressBar(shared.layerAlias, shared.progressBarAlias)
-	valueAsString := fmt.Sprintf("(%d/%d)", progressBarEntry.Value, progressBarEntry.MaxValue)
+	valueAsString := fmt.Sprintf("%d/%d", progressBarEntry.Value, progressBarEntry.MaxValue)
 	return valueAsString
+}
+
+func (shared *ProgressBarInstanceType) GetProgressBarValueAsPercent() string {
+	var returnValue int
+	progressBarEntry := memory.GetProgressBar(shared.layerAlias, shared.progressBarAlias)
+	if progressBarEntry.MaxValue > 0 {
+		returnValue = (progressBarEntry.Value * 100) / progressBarEntry.MaxValue
+	}
+	return fmt.Sprintf("%d", returnValue)
 }
 
 func (shared *progressBarType) Add(layerAlias string, progressBarAlias string, progressBarLabel string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, height int, value int, maxValue int, isBackgroundTransparent bool) ProgressBarInstanceType {

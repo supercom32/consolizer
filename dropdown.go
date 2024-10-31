@@ -16,6 +16,13 @@ type dropdownType struct{}
 
 var Dropdown dropdownType
 
+func (shared *DropdownInstanceType) Delete() *DropdownInstanceType {
+	if memory.IsDropdownExists(shared.layerAlias, shared.dropdownAlias) {
+		memory.DeleteDropdown(shared.layerAlias, shared.dropdownAlias)
+	}
+	return nil
+}
+
 func (shared *DropdownInstanceType) GetValue() string {
 	dropdownEntry := memory.GetDropdown(shared.layerAlias, shared.dropdownAlias)
 	return dropdownEntry.SelectionEntry.SelectionValue[dropdownEntry.ItemSelected]

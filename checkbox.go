@@ -16,6 +16,13 @@ type checkboxType struct{}
 
 var Checkbox checkboxType
 
+func (shared *CheckboxInstanceType) Delete() *CheckboxInstanceType {
+	if memory.IsCheckboxExists(shared.layerAlias, shared.checkboxAlias) {
+		memory.DeleteCheckbox(shared.layerAlias, shared.checkboxAlias)
+	}
+	return nil
+}
+
 /*
 IsCheckboxSelected allows you to detect if the given Checkbox is selected or not. If the Checkbox instance
 no longer exists, then a result of false is always returned.

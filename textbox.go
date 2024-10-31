@@ -18,6 +18,13 @@ type textboxType struct{}
 
 var textbox textboxType
 
+func (shared *TextboxInstanceType) Delete() string {
+	if memory.IsTextboxExists(shared.layerAlias, shared.textboxAlias) {
+		memory.DeleteTextbox(shared.layerAlias, shared.textboxAlias)
+	}
+	return ""
+}
+
 /*
 setText allows you to set the text for a textbox. If the textbox instance
 no longer exists, then no operation takes place. In addition, the following

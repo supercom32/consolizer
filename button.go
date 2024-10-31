@@ -23,6 +23,13 @@ type buttonType struct{}
 
 var Button buttonType
 
+func (shared *ButtonInstanceType) Delete() *ButtonInstanceType {
+	if memory.IsButtonExists(shared.layerAlias, shared.buttonAlias) {
+		memory.DeleteButton(shared.layerAlias, shared.buttonAlias)
+	}
+	return nil
+}
+
 /*
 IsButtonPressed allows you to detect if any text button was pressed or not. In
 order to obtain the button pressed and to clear this state, you must call the

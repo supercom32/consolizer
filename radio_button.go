@@ -16,6 +16,13 @@ type radioButtonType struct{}
 
 var radioButton radioButtonType
 
+func (shared *RadioButtonInstanceType) Delete() *RadioButtonInstanceType {
+	if memory.IsRadioButtonExists(shared.layerAlias, shared.radioButtonAlias) {
+		memory.DeleteRadioButton(shared.layerAlias, shared.radioButtonAlias)
+	}
+	return nil
+}
+
 /*
 IsRadioButtonSelected allows you to detect if the given radio button is selected or not. If the radio button instance
 no longer exists, then a result of false is always returned.
