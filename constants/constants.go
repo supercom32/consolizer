@@ -44,6 +44,10 @@ type ColorType uint64
 
 // Constants
 const (
+	CharRoundedULCorner            = '\u256D'
+	CharRoundedURCorner            = '\u256E'
+	CharRoundedLLCorner            = '\u2570'
+	CharRoundedLRCorner            = '\u256F'
 	CharULCorner                   = '\u250C'
 	CharURCorner                   = '\u2510'
 	CharLLCorner                   = '\u2514'

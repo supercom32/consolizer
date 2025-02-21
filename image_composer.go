@@ -67,7 +67,7 @@ func (shared *ImageComposerEntryType) RenderImage() image.Image {
 			height := imageBounds.Max.Y
 			transformedImageData := getTransformedImage(imageEntry.ImageData, *imageEntry)
 			if imageEntry.Width > 0 && imageEntry.Height > 0 {
-				transformedImageData = resizeImage(transformedImageData, uint(imageEntry.Width), uint(imageEntry.Height))
+				transformedImageData = resizeImage(transformedImageData, uint(imageEntry.Width), uint(imageEntry.Height), imageEntry.ImageStyle.IsWidthAspectRatioPreserved, imageEntry.ImageStyle.IsHeightAspectRatioPreserved)
 			}
 			if baseImage != nil {
 				baseImage = OverlayImageWithAlpha(transformedImageData, 0, 0, width, height, baseImage, imageEntry.XLocation, imageEntry.YLocation, imageEntry.AlphaValue)
@@ -172,7 +172,7 @@ func getImageLayerAsBraille(sourceImageData image.Image, imageStyle types.ImageS
 	if heightInCharacters == 0 {
 		calculatedPixelHeight = (widthInCharacters * 2 * sourceImageData.Bounds().Max.Y) / sourceImageData.Bounds().Max.X
 	}
-	processedImageData := resizeImage(sourceImageData, uint(calculatedPixelWidth), uint(calculatedPixelHeight))
+	processedImageData := resizeImage(sourceImageData, uint(calculatedPixelWidth), uint(calculatedPixelHeight), imageStyle.IsWidthAspectRatioPreserved, imageStyle.IsHeightAspectRatioPreserved)
 	if blurSigma > 0 {
 		processedImageData = imaging.Blur(processedImageData, blurSigma)
 	}

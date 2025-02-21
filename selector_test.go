@@ -16,7 +16,7 @@ func TestSelectorRandomSelection(test *testing.T) {
 	// If a selector is empty, then you need to do somethingt to handle it. Also, this hangs if run via a test because
 	// terminating consolizer causes it to wait for events channel to finish when not even launched.
 	selectorFieldInstance := layer1.AddSelector(styleEntry, selectionEntry, 2, 2, 4, 25, 1, 0, 1, true)
-	setFocusedControl(layer1.layerAlias, selectorFieldInstance.selectorAlias, constants.CellTypeTextField)
+	setFocusedControl(layer1.layerAlias, selectorFieldInstance.controlAlias, constants.CellTypeTextField)
 	UpdateDisplay(false)
 	layerEntry := commonResource.screenLayer
 	obtainedValue := layerEntry.GetBasicAnsiStringAsBase64()
@@ -38,7 +38,7 @@ func TestSelectorLongList(test *testing.T) {
 	// If a selector is empty, then you need to do somethingt to handle it. Also, this hangs if run via a test because
 	// terminating consolizer causes it to wait for events channel to finish when not even launched.
 	selectorFieldInstance := layer1.AddSelector(styleEntry, selectionEntry, 2, 2, 4, 25, 1, 0, 0, true)
-	setFocusedControl(layer1.layerAlias, selectorFieldInstance.selectorAlias, constants.CellTypeTextField)
+	setFocusedControl(layer1.layerAlias, selectorFieldInstance.controlAlias, constants.CellTypeTextField)
 	UpdateDisplay(false)
 	layerEntry := commonResource.screenLayer
 	obtainedValue := layerEntry.GetBasicAnsiStringAsBase64()

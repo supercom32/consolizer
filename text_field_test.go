@@ -9,7 +9,7 @@ import (
 func TestTextFieldDefaultText(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 20, 10, false, "default", true)
-	setFocusedControl(layer1.layerAlias, textFieldInstance.textFieldAlias, constants.CellTypeTextField)
+	setFocusedControl(layer1.layerAlias, textFieldInstance.controlAlias, constants.CellTypeTextField)
 	UpdateDisplay(false)
 	layerEntry := commonResource.screenLayer
 	obtainedValue := layerEntry.GetBasicAnsiStringAsBase64()
@@ -20,7 +20,7 @@ func TestTextFieldDefaultText(test *testing.T) {
 func TestTextFieldPasswordText(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 20, 10, true, "default", true)
-	setFocusedControl(layer1.layerAlias, textFieldInstance.textFieldAlias, constants.CellTypeTextField)
+	setFocusedControl(layer1.layerAlias, textFieldInstance.controlAlias, constants.CellTypeTextField)
 	UpdateDisplay(false)
 	layerEntry := commonResource.screenLayer
 	obtainedValue := layerEntry.GetBasicAnsiStringAsBase64()
@@ -31,7 +31,7 @@ func TestTextFieldPasswordText(test *testing.T) {
 func TestTextFieldLongText(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 20, 10, false, "this is a long string of text which i know is long.", true)
-	setFocusedControl(layer1.layerAlias, textFieldInstance.textFieldAlias, constants.CellTypeTextField)
+	setFocusedControl(layer1.layerAlias, textFieldInstance.controlAlias, constants.CellTypeTextField)
 	TextField.updateKeyboardEventTextField([]rune("end"))
 	UpdateDisplay(false)
 	layerEntry := commonResource.screenLayer
@@ -43,7 +43,7 @@ func TestTextFieldLongText(test *testing.T) {
 func TestTextFieldLongTypedText(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 20, 30, false, "", true)
-	setFocusedControl(layer1.layerAlias, textFieldInstance.textFieldAlias, constants.CellTypeTextField)
+	setFocusedControl(layer1.layerAlias, textFieldInstance.controlAlias, constants.CellTypeTextField)
 	TextField.updateKeyboardEventTextboxWithString("abcdefghijklmnopqrstuvwxyz")
 	UpdateDisplay(false)
 	layerEntry := commonResource.screenLayer
@@ -55,7 +55,7 @@ func TestTextFieldLongTypedText(test *testing.T) {
 func TestTextFieldHomeKey(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 20, 30, false, "", true)
-	setFocusedControl(layer1.layerAlias, textFieldInstance.textFieldAlias, constants.CellTypeTextField)
+	setFocusedControl(layer1.layerAlias, textFieldInstance.controlAlias, constants.CellTypeTextField)
 	TextField.updateKeyboardEventTextboxWithString("abcdefghijklmnopqrstuvwxyz")
 	TextField.updateKeyboardEventTextField([]rune("home"))
 	UpdateDisplay(false)
@@ -68,7 +68,7 @@ func TestTextFieldHomeKey(test *testing.T) {
 func TestTextFieldInsert(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 20, 50, false, "", true)
-	setFocusedControl(layer1.layerAlias, textFieldInstance.textFieldAlias, constants.CellTypeTextField)
+	setFocusedControl(layer1.layerAlias, textFieldInstance.controlAlias, constants.CellTypeTextField)
 	TextField.updateKeyboardEventTextboxWithString("abcdefghijklmnopqrstuvwxyz")
 	TextField.updateKeyboardEventTextField([]rune("home"))
 	TextField.updateKeyboardEventTextboxWithCommands("right", "right", "right", "right", "right")
@@ -83,7 +83,7 @@ func TestTextFieldInsert(test *testing.T) {
 func TestTextFieldBackspace(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 20, 90, false, "", true)
-	setFocusedControl(layer1.layerAlias, textFieldInstance.textFieldAlias, constants.CellTypeTextField)
+	setFocusedControl(layer1.layerAlias, textFieldInstance.controlAlias, constants.CellTypeTextField)
 	TextField.updateKeyboardEventTextboxWithString("abcdefghijklmnopqrstuvwxyz")
 	TextField.updateKeyboardEventTextField([]rune("home"))
 	TextField.updateKeyboardEventTextboxWithCommands("right", "right", "right", "right", "right", "backspace", "backspace", "backspace", "backspace")
@@ -97,7 +97,7 @@ func TestTextFieldBackspace(test *testing.T) {
 func TestTextFieldDelete(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 20, 90, false, "", true)
-	setFocusedControl(layer1.layerAlias, textFieldInstance.textFieldAlias, constants.CellTypeTextField)
+	setFocusedControl(layer1.layerAlias, textFieldInstance.controlAlias, constants.CellTypeTextField)
 	TextField.updateKeyboardEventTextboxWithString("abcdefghijklmnopqrstuvwxyz")
 	TextField.updateKeyboardEventTextField([]rune("home"))
 	TextField.updateKeyboardEventTextboxWithCommands("right", "right", "right", "right", "right", "delete", "delete", "delete", "delete")
@@ -111,7 +111,7 @@ func TestTextFieldDelete(test *testing.T) {
 func TestTextFieldDeleteAtEnd(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 20, 90, false, "", true)
-	setFocusedControl(layer1.layerAlias, textFieldInstance.textFieldAlias, constants.CellTypeTextField)
+	setFocusedControl(layer1.layerAlias, textFieldInstance.controlAlias, constants.CellTypeTextField)
 	TextField.updateKeyboardEventTextboxWithString("abcdefghijklmnopqrstuvwxyz")
 	TextField.updateKeyboardEventTextField([]rune("end"))
 	TextField.updateKeyboardEventTextboxWithCommands("left", "left", "left", "left", "delete", "delete", "delete", "delete", "delete", "delete")
@@ -125,7 +125,7 @@ func TestTextFieldDeleteAtEnd(test *testing.T) {
 func TestTextFieldMaxFieldLimit(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 20, 10, false, "", true)
-	setFocusedControl(layer1.layerAlias, textFieldInstance.textFieldAlias, constants.CellTypeTextField)
+	setFocusedControl(layer1.layerAlias, textFieldInstance.controlAlias, constants.CellTypeTextField)
 	TextField.updateKeyboardEventTextboxWithString("abcdefghijklmnopqrstuvwxyz")
 	UpdateDisplay(false)
 	layerEntry := commonResource.screenLayer
@@ -137,7 +137,7 @@ func TestTextFieldMaxFieldLimit(test *testing.T) {
 func TestTextFieldBackspaceStop(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 20, 70, false, "", true)
-	setFocusedControl(layer1.layerAlias, textFieldInstance.textFieldAlias, constants.CellTypeTextField)
+	setFocusedControl(layer1.layerAlias, textFieldInstance.controlAlias, constants.CellTypeTextField)
 	TextField.updateKeyboardEventTextboxWithString("abcdefghijklmnopqrstuvwxyz")
 	TextField.updateKeyboardEventTextField([]rune("home"))
 	TextField.updateKeyboardEventTextboxWithCommands("right", "right", "right", "right", "backspace", "backspace", "backspace", "backspace", "backspace", "backspace")

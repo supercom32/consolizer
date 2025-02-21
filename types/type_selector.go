@@ -5,6 +5,7 @@ import (
 )
 
 type SelectorEntryType struct {
+	SelectorAlias    string
 	ScrollBarAlias   string
 	StyleEntry       TuiStyleEntryType
 	SelectionEntry   SelectionEntryType
@@ -22,6 +23,7 @@ type SelectorEntryType struct {
 
 func (shared SelectorEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
+		SelectorAlias    string
 		ScrollBarAlias   string
 		StyleEntry       TuiStyleEntryType
 		SelectionEntry   SelectionEntryType
@@ -35,6 +37,7 @@ func (shared SelectorEntryType) MarshalJSON() ([]byte, error) {
 		IsVisible        bool
 		IsBorderDrawn    bool
 	}{
+		SelectorAlias:    shared.SelectorAlias,
 		ScrollBarAlias:   shared.ScrollBarAlias,
 		StyleEntry:       shared.StyleEntry,
 		SelectionEntry:   shared.SelectionEntry,
@@ -65,6 +68,7 @@ func (shared SelectorEntryType) GetEntryAsJsonDump() string {
 func NewSelectorEntry(existingSelectorEntry ...*SelectorEntryType) SelectorEntryType {
 	var selectorEntry SelectorEntryType
 	if existingSelectorEntry != nil {
+		selectorEntry.SelectorAlias = existingSelectorEntry[0].SelectorAlias
 		selectorEntry.ScrollBarAlias = existingSelectorEntry[0].ScrollBarAlias
 		selectorEntry.StyleEntry = existingSelectorEntry[0].StyleEntry
 		selectorEntry.SelectionEntry = existingSelectorEntry[0].SelectionEntry

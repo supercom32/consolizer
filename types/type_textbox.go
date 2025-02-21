@@ -5,6 +5,7 @@ import (
 )
 
 type TextboxEntryType struct {
+	Alias                    string
 	HorizontalScrollbarAlias string
 	VerticalScrollbarAlias   string
 	StyleEntry               TuiStyleEntryType
@@ -24,6 +25,7 @@ type TextboxEntryType struct {
 
 func (shared TextboxEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
+		Alias                    string
 		HorizontalScrollbarAlias string
 		VerticalScrollbarAlias   string
 		StyleEntry               TuiStyleEntryType
@@ -40,6 +42,7 @@ func (shared TextboxEntryType) MarshalJSON() ([]byte, error) {
 		IsVisible                bool
 		IsBorderDrawn            bool
 	}{
+		Alias:                    shared.Alias,
 		HorizontalScrollbarAlias: shared.HorizontalScrollbarAlias,
 		VerticalScrollbarAlias:   shared.VerticalScrollbarAlias,
 		StyleEntry:               shared.StyleEntry,
@@ -73,6 +76,7 @@ func (shared TextboxEntryType) GetEntryAsJsonDump() string {
 func NewTexboxEntry(existingTextboxEntry ...*TextboxEntryType) TextboxEntryType {
 	var textboxEntry TextboxEntryType
 	if existingTextboxEntry != nil {
+		textboxEntry.Alias = existingTextboxEntry[0].Alias
 		textboxEntry.HorizontalScrollbarAlias = existingTextboxEntry[0].HorizontalScrollbarAlias
 		textboxEntry.VerticalScrollbarAlias = existingTextboxEntry[0].VerticalScrollbarAlias
 		textboxEntry.StyleEntry = NewTuiStyleEntry(&existingTextboxEntry[0].StyleEntry)

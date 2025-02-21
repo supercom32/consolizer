@@ -8,17 +8,21 @@ import (
 )
 
 type RadioButtonInstanceType struct {
-	layerAlias       string
-	radioButtonAlias string
+	layerAlias   string
+	controlAlias string
 }
 
 type radioButtonType struct{}
 
 var radioButton radioButtonType
 
+func (shared *RadioButtonInstanceType) AddToTabIndex() {
+	addTabIndex(shared.layerAlias, shared.controlAlias, constants.CellTypeRadioButton)
+}
+
 func (shared *RadioButtonInstanceType) Delete() *RadioButtonInstanceType {
-	if memory.IsRadioButtonExists(shared.layerAlias, shared.radioButtonAlias) {
-		memory.DeleteRadioButton(shared.layerAlias, shared.radioButtonAlias)
+	if memory.IsRadioButtonExists(shared.layerAlias, shared.controlAlias) {
+		memory.DeleteRadioButton(shared.layerAlias, shared.controlAlias)
 	}
 	return nil
 }
@@ -28,9 +32,9 @@ IsRadioButtonSelected allows you to detect if the given radio button is selected
 no longer exists, then a result of false is always returned.
 */
 func (shared *RadioButtonInstanceType) IsRadioButtonSelected() bool {
-	if memory.IsRadioButtonExists(shared.layerAlias, shared.radioButtonAlias) {
-		selectedRadioButton := getSelectedRadioButton(shared.layerAlias, shared.radioButtonAlias)
-		if selectedRadioButton == shared.radioButtonAlias {
+	if memory.IsRadioButtonExists(shared.layerAlias, shared.controlAlias) {
+		selectedRadioButton := getSelectedRadioButton(shared.layerAlias, shared.controlAlias)
+		if selectedRadioButton == shared.controlAlias {
 			return true
 		}
 	}
@@ -42,8 +46,8 @@ GetSelectedRadioButton allows you to retrieve the radio button currently selecte
 no longer exists, then a result of false is always returned.
 */
 func (shared *RadioButtonInstanceType) GetSelectedRadioButton() string {
-	if memory.IsRadioButtonExists(shared.layerAlias, shared.radioButtonAlias) {
-		return getSelectedRadioButton(shared.layerAlias, shared.radioButtonAlias)
+	if memory.IsRadioButtonExists(shared.layerAlias, shared.controlAlias) {
+		return getSelectedRadioButton(shared.layerAlias, shared.controlAlias)
 	}
 	return ""
 }
@@ -53,8 +57,8 @@ SetIsVisible allows you to change if a radio button currently visible or not. If
 no longer exists, then nothing is done.
 */
 func (shared *RadioButtonInstanceType) SetIsVisible(isVisible bool) {
-	if memory.IsRadioButtonExists(shared.layerAlias, shared.radioButtonAlias) {
-		radioButtonEntry := memory.GetRadioButton(shared.layerAlias, shared.radioButtonAlias)
+	if memory.IsRadioButtonExists(shared.layerAlias, shared.controlAlias) {
+		radioButtonEntry := memory.GetRadioButton(shared.layerAlias, shared.controlAlias)
 		radioButtonEntry.IsVisible = isVisible
 	}
 }
@@ -84,7 +88,7 @@ func (shared *radioButtonType) Add(layerAlias string, radioButtonAlias string, r
 	memory.AddRadioButton(layerAlias, radioButtonAlias, radioButtonLabel, styleEntry, xLocation, yLocation, groupId, isSelected)
 	var radioButtonInstance RadioButtonInstanceType
 	radioButtonInstance.layerAlias = layerAlias
-	radioButtonInstance.radioButtonAlias = radioButtonAlias
+	radioButtonInstance.controlAlias = radioButtonAlias
 	if isSelected {
 		selectRadioButton(layerAlias, radioButtonAlias)
 	}
@@ -96,9 +100,9 @@ drawRadioButtonsOnLayer allows you to draw all radio buttons on a given text lay
 */
 func (shared *radioButtonType) drawRadioButtonsOnLayer(layerEntry types.LayerEntryType) {
 	layerAlias := layerEntry.LayerAlias
-	for currentKey := range memory.RadioButton.Entries[layerAlias] {
-		radioButtonEntry := memory.GetRadioButton(layerAlias, currentKey)
-		shared.drawRadioButton(&layerEntry, currentKey, radioButtonEntry.Label, radioButtonEntry.StyleEntry, radioButtonEntry.XLocation, radioButtonEntry.YLocation, radioButtonEntry.IsSelected, radioButtonEntry.IsEnabled)
+	for _, currentRadioButtonEntry := range memory.RadioButtons.GetAllEntries(layerAlias) {
+		radioButtonEntry := currentRadioButtonEntry
+		shared.drawRadioButton(&layerEntry, radioButtonEntry.Alias, radioButtonEntry.Label, radioButtonEntry.StyleEntry, radioButtonEntry.XLocation, radioButtonEntry.YLocation, radioButtonEntry.IsSelected, radioButtonEntry.IsEnabled)
 	}
 }
 
@@ -179,9 +183,8 @@ be selected at a time, any previously selected radio button becomes unselected.
 */
 func selectRadioButton(layerAlias string, radioButtonAlias string) {
 	radioButtonSelectedEntry := memory.GetRadioButton(layerAlias, radioButtonAlias)
-	for currentRadioButtonKey := range memory.RadioButton.Entries[layerAlias] {
-		currentRadioButtonEntry := memory.GetRadioButton(layerAlias, currentRadioButtonKey)
-		if currentRadioButtonKey == radioButtonAlias {
+	for _, currentRadioButtonEntry := range memory.RadioButtons.GetAllEntries(layerAlias) {
+		if currentRadioButtonEntry.Alias == radioButtonAlias {
 			currentRadioButtonEntry.IsSelected = true
 		} else if currentRadioButtonEntry.GroupId == radioButtonSelectedEntry.GroupId {
 			if currentRadioButtonEntry.IsSelected == true {
@@ -198,11 +201,10 @@ The group ID used is automatically determined based on the radio button alias gi
 func getSelectedRadioButton(layerAlias string, radioButtonAlias string) string {
 	selectedItem := ""
 	radioButtonEntry := memory.GetRadioButton(layerAlias, radioButtonAlias)
-	for currentRadioButtonKey := range memory.RadioButton.Entries[layerAlias] {
-		currentRadioButtonEntry := memory.GetRadioButton(layerAlias, currentRadioButtonKey)
+	for _, currentRadioButtonEntry := range memory.RadioButtons.GetAllEntries(layerAlias) {
 		if currentRadioButtonEntry.GroupId == radioButtonEntry.GroupId {
 			if currentRadioButtonEntry.IsSelected {
-				return currentRadioButtonKey
+				return currentRadioButtonEntry.Alias
 			}
 		}
 	}

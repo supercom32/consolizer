@@ -10,16 +10,20 @@ import (
 
 type TooltipInstanceType struct {
 	layerAlias   string
-	tooltipAlias string
+	controlAlias string
 }
 
 type tooltipType struct{}
 
 var Tooltip tooltipType
 
+func (shared *TooltipInstanceType) AddToTabIndex() {
+	addTabIndex(shared.layerAlias, shared.controlAlias, constants.CellTypeTooltip)
+}
+
 func (shared *TooltipInstanceType) Delete() string {
-	if memory.IsTooltipExists(shared.layerAlias, shared.tooltipAlias) {
-		memory.DeleteTooltip(shared.layerAlias, shared.tooltipAlias)
+	if memory.IsTooltipExists(shared.layerAlias, shared.controlAlias) {
+		memory.DeleteTooltip(shared.layerAlias, shared.controlAlias)
 	}
 	return ""
 }
@@ -29,7 +33,7 @@ SetTooltipValue allows you to set the value of the tooltip associated with the T
 This function updates the value of the tooltip label identified by the layerAlias and tooltipAlias fields.
 */
 func (shared *TooltipInstanceType) SetTooltipValue(value string) {
-	labelEntry := memory.GetLabel(shared.layerAlias, shared.tooltipAlias)
+	labelEntry := memory.GetLabel(shared.layerAlias, shared.controlAlias)
 	labelEntry.Value = value
 }
 
@@ -37,7 +41,7 @@ func (shared *tooltipType) Add(layerAlias string, tooltipAlias string, tooltipVa
 	memory.AddTooltip(layerAlias, tooltipAlias, tooltipValue, styleEntry, hotspotXLocation, hotspotYLocation, hotspotWidth, hotspotHeight, tooltipXLocation, tooltipYLocation, tooltipWidth, tooltipHeight, isLocationAbsolute, isBorderDrawn, hoverTime)
 	var tooltipInstance TooltipInstanceType
 	tooltipInstance.layerAlias = layerAlias
-	tooltipInstance.tooltipAlias = tooltipAlias
+	tooltipInstance.controlAlias = tooltipAlias
 	return tooltipInstance
 }
 
@@ -61,8 +65,8 @@ drawButtonsOnLayer allows you to draw all buttons on a given text layer.
 */
 func (shared *tooltipType) drawTooltipsOnLayer(layerEntry types.LayerEntryType) {
 	layerAlias := layerEntry.LayerAlias
-	for currentKey := range memory.Tooltip.Entries[layerAlias] {
-		tooltipEntry := memory.GetTooltip(layerAlias, currentKey)
+	for _, currentTooltipEntry := range memory.Tooltips.GetAllEntries(layerAlias) {
+		tooltipEntry := currentTooltipEntry
 		shared.drawTooltip(&layerEntry, tooltipEntry)
 	}
 }
@@ -127,11 +131,9 @@ func (shared *tooltipType) updateMouseEventTooltip() bool {
 		}
 	} else {
 		if eventStateMemory.previouslyHighlightedControl.controlType == constants.CellTypeTooltip {
-			for currentLayer, _ := range memory.Tooltip.Entries {
-				for _, currentTooltipEntry := range memory.Tooltip.Entries[currentLayer] {
-					currentTooltipEntry.IsDrawn = false
-					currentTooltipEntry.HoverStartTime = time.Time{}
-				}
+			for _, currentTooltipEntry := range memory.Tooltips.GetAllEntriesOverall() {
+				currentTooltipEntry.IsDrawn = false
+				currentTooltipEntry.HoverStartTime = time.Time{}
 			}
 			setPreviouslyHighlightedControl("", "", constants.NullControlType)
 			isScreenUpdateRequired = true

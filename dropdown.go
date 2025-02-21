@@ -8,8 +8,8 @@ import (
 )
 
 type DropdownInstanceType struct {
-	layerAlias    string
-	dropdownAlias string
+	layerAlias   string
+	controlAlias string
 }
 
 type dropdownType struct{}
@@ -17,19 +17,23 @@ type dropdownType struct{}
 var Dropdown dropdownType
 
 func (shared *DropdownInstanceType) Delete() *DropdownInstanceType {
-	if memory.IsDropdownExists(shared.layerAlias, shared.dropdownAlias) {
-		memory.DeleteDropdown(shared.layerAlias, shared.dropdownAlias)
+	if memory.IsDropdownExists(shared.layerAlias, shared.controlAlias) {
+		memory.DeleteDropdown(shared.layerAlias, shared.controlAlias)
 	}
 	return nil
 }
 
+func (shared *DropdownInstanceType) AddToTabIndex() {
+	addTabIndex(shared.layerAlias, shared.controlAlias, constants.CellTypeDropdown)
+}
+
 func (shared *DropdownInstanceType) GetValue() string {
-	dropdownEntry := memory.GetDropdown(shared.layerAlias, shared.dropdownAlias)
+	dropdownEntry := memory.GetDropdown(shared.layerAlias, shared.controlAlias)
 	return dropdownEntry.SelectionEntry.SelectionValue[dropdownEntry.ItemSelected]
 }
 
 func (shared *DropdownInstanceType) GetAlias() string {
-	dropdownEntry := memory.GetDropdown(shared.layerAlias, shared.dropdownAlias)
+	dropdownEntry := memory.GetDropdown(shared.layerAlias, shared.controlAlias)
 	return dropdownEntry.SelectionEntry.SelectionAlias[dropdownEntry.ItemSelected]
 }
 
@@ -76,7 +80,7 @@ func (shared *dropdownType) Add(layerAlias string, dropdownAlias string, styleEn
 	}
 	var dropdownInstance DropdownInstanceType
 	dropdownInstance.layerAlias = layerAlias
-	dropdownInstance.dropdownAlias = dropdownAlias
+	dropdownInstance.controlAlias = dropdownAlias
 	return dropdownInstance
 }
 
@@ -93,8 +97,8 @@ drawDropdownsOnLayer allows you to draw all dropdowns on a given text layer.
 */
 func (shared *dropdownType) drawDropdownsOnLayer(layerEntry types.LayerEntryType) {
 	layerAlias := layerEntry.LayerAlias
-	for currentKey := range memory.Dropdown.Entries[layerAlias] {
-		shared.drawDropdown(&layerEntry, currentKey)
+	for _, currentDropdownEntry := range memory.Dropdowns.GetAllEntries(layerAlias) {
+		shared.drawDropdown(&layerEntry, currentDropdownEntry.Alias)
 	}
 }
 
@@ -147,11 +151,8 @@ func (shared *dropdownType) updateDropdownStateMouse() bool {
 	if buttonPressed != 0 && (eventStateMemory.stateId == constants.EventStateDragAndDropScrollbar ||
 		characterEntry.AttributeEntry.CellType == constants.CellTypeScrollbar) {
 		isMatchFound := false
-		for currentKey := range memory.Dropdown.Entries[layerAlias] {
-			if !memory.IsDropdownExists(layerAlias, currentKey) {
-				continue
-			}
-			dropdownEntry := memory.GetDropdown(layerAlias, currentKey)
+		for _, currentDropdownEntry := range memory.Dropdowns.GetAllEntries(layerAlias) {
+			dropdownEntry := currentDropdownEntry
 			selectorEntry := memory.GetSelector(layerAlias, dropdownEntry.SelectorAlias)
 			scrollBarEntry := memory.GetScrollbar(layerAlias, dropdownEntry.ScrollBarAlias)
 			if selectorEntry.ViewportPosition != scrollBarEntry.ScrollValue {
@@ -194,11 +195,8 @@ func (shared *dropdownType) updateDropdownStateMouse() bool {
 closeAllOpenDropdowns allows you to close all dropdowns for a given layer alias.
 */
 func (shared *dropdownType) closeAllOpenDropdowns(layerAlias string) {
-	for currentKey := range memory.Dropdown.Entries[layerAlias] {
-		if !memory.IsDropdownExists(layerAlias, currentKey) {
-			continue
-		}
-		dropdownEntry := memory.GetDropdown(layerAlias, currentKey)
+	for _, currentDropdownEntry := range memory.Dropdowns.GetAllEntries(layerAlias) {
+		dropdownEntry := currentDropdownEntry
 		if dropdownEntry.IsTrayOpen == true {
 			selectorEntry := memory.GetSelector(layerAlias, dropdownEntry.SelectorAlias)
 			selectorEntry.IsVisible = false

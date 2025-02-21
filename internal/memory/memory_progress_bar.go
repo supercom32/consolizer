@@ -3,29 +3,15 @@ package memory
 import (
 	"fmt"
 	"github.com/supercom32/consolizer/types"
-	"sync"
 )
 
-type progressBarMemoryType struct {
-	sync.Mutex
-	Entries map[string]map[string]*types.ProgressBarEntryType
-}
+var ProgressBars = NewControlMemoryManager[*types.ProgressBarEntryType]()
 
-var ProgressBar progressBarMemoryType
-
-func InitializeProgressBarMemory() {
-	ProgressBar.Entries = make(map[string]map[string]*types.ProgressBarEntryType)
-}
-
-func AddProgressBar(layerAlias string, buttonAlias string, buttonLabel string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, height int, value int, maxValue int, isBackgroundTransparent bool) {
-	ProgressBar.Lock()
-	defer func() {
-		ProgressBar.Unlock()
-	}()
+func AddProgressBar(layerAlias string, progressBarAlias string, progressBarLabel string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, height int, value int, maxValue int, isBackgroundTransparent bool) {
 	progressBarEntry := types.NewProgressBarEntry()
 	progressBarEntry.StyleEntry = styleEntry
-	progressBarEntry.Alias = buttonAlias
-	progressBarEntry.Label = buttonLabel
+	progressBarEntry.Alias = progressBarAlias
+	progressBarEntry.Label = progressBarLabel
 	progressBarEntry.Value = value
 	progressBarEntry.MaxValue = maxValue
 	progressBarEntry.IsBackgroundTransparent = isBackgroundTransparent
@@ -33,48 +19,36 @@ func AddProgressBar(layerAlias string, buttonAlias string, buttonLabel string, s
 	progressBarEntry.YLocation = yLocation
 	progressBarEntry.Width = width
 	progressBarEntry.Height = height
-	if ProgressBar.Entries[layerAlias] == nil {
-		ProgressBar.Entries[layerAlias] = make(map[string]*types.ProgressBarEntryType)
-	}
-	ProgressBar.Entries[layerAlias][buttonAlias] = &progressBarEntry
+
+	// Use the ControlMemoryManager to add the progress bar entry
+	ProgressBars.Add(layerAlias, progressBarAlias, &progressBarEntry)
 }
 
-func GetProgressBar(layerAlias string, buttonAlias string) *types.ProgressBarEntryType {
-	ProgressBar.Lock()
-	defer func() {
-		ProgressBar.Unlock()
-	}()
-	if ProgressBar.Entries[layerAlias][buttonAlias] == nil {
-		panic(fmt.Sprintf("The requested button with alias '%s' on layer '%s' could not be returned since it does not exist.", buttonAlias, layerAlias))
+func GetProgressBar(layerAlias string, progressBarAlias string) *types.ProgressBarEntryType {
+	// Get the progress bar entry using ControlMemoryManager
+	progressBarEntry := ProgressBars.Get(layerAlias, progressBarAlias)
+	if progressBarEntry == nil {
+		panic(fmt.Sprintf("The requested progress bar with alias '%s' on layer '%s' could not be returned since it does not exist.", progressBarAlias, layerAlias))
 	}
-	return ProgressBar.Entries[layerAlias][buttonAlias]
+	return progressBarEntry
 }
 
-func IsProgressBarExists(layerAlias string, buttonAlias string) bool {
-	ProgressBar.Lock()
-	defer func() {
-		ProgressBar.Unlock()
-	}()
-	if ProgressBar.Entries[layerAlias][buttonAlias] == nil {
-		return false
-	}
-	return true
+func IsProgressBarExists(layerAlias string, progressBarAlias string) bool {
+	// Use ControlMemoryManager to check if the progress bar exists
+	return ProgressBars.Get(layerAlias, progressBarAlias) != nil
 }
 
-func DeleteProgressBar(layerAlias string, buttonAlias string) {
-	ProgressBar.Lock()
-	defer func() {
-		ProgressBar.Unlock()
-	}()
-	delete(ProgressBar.Entries[layerAlias], buttonAlias)
+func DeleteProgressBar(layerAlias string, progressBarAlias string) {
+	// Use ControlMemoryManager to remove the progress bar entry
+	ProgressBars.Remove(layerAlias, progressBarAlias)
 }
 
 func DeleteAllProgressBarsFromLayer(layerAlias string) {
-	ProgressBar.Lock()
-	defer func() {
-		ProgressBar.Unlock()
-	}()
-	for entryToRemove := range ProgressBar.Entries[layerAlias] {
-		delete(ProgressBar.Entries[layerAlias], entryToRemove)
+	// Get all progress bar entries from the layer
+	progressBars := ProgressBars.GetAllEntries(layerAlias)
+
+	// Loop through all entries and delete them
+	for _, progressBar := range progressBars {
+		ProgressBars.Remove(layerAlias, progressBar.Alias) // Assuming progressBar.Alias is used as the alias
 	}
 }

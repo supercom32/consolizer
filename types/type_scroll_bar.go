@@ -21,6 +21,9 @@ type ScrollbarEntryType struct {
 	ScrollIncrement int
 }
 
+func (shared ScrollbarEntryType) GetAlias() string {
+	return shared.ScrollBarAlias
+}
 func (shared ScrollbarEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
 		StyleEntry      TuiStyleEntryType
@@ -62,9 +65,14 @@ func (shared ScrollbarEntryType) GetEntryAsJsonDump() string {
 	return string(j)
 }
 
+func GetScrollBarAlias(entry *ScrollbarEntryType) string {
+	return entry.ScrollBarAlias
+}
+
 func NewScrollbarEntry(existingScrollbarEntry ...*ScrollbarEntryType) ScrollbarEntryType {
 	var scrollbarEntry ScrollbarEntryType
 	if existingScrollbarEntry != nil {
+		scrollbarEntry.ScrollBarAlias = existingScrollbarEntry[0].ScrollBarAlias
 		scrollbarEntry.StyleEntry = NewTuiStyleEntry(&existingScrollbarEntry[0].StyleEntry)
 		scrollbarEntry.XLocation = existingScrollbarEntry[0].XLocation
 		scrollbarEntry.YLocation = existingScrollbarEntry[0].YLocation

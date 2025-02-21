@@ -9,7 +9,7 @@ import (
 func TestTextboxMultiline(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	textboxInstance := layer1.AddTextbox(styleEntry, 2, 2, 20, 4, false)
-	setFocusedControl(layer1.layerAlias, textboxInstance.textboxAlias, constants.CellTypeTextbox)
+	setFocusedControl(layer1.layerAlias, textboxInstance.controlAlias, constants.CellTypeTextbox)
 	textbox.UpdateKeyboardEventTextboxWithString("abcdefghijklmnop")
 	textbox.UpdateKeyboardEventTextbox([]rune("enter"))
 	textbox.UpdateKeyboardEventTextboxWithString("abcdefghijklmnop")
@@ -26,7 +26,7 @@ func TestTextboxMultiline(test *testing.T) {
 func TestTextboxLongLine(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	textboxInstance := layer1.AddTextbox(styleEntry, 2, 2, 20, 4, false)
-	setFocusedControl(layer1.layerAlias, textboxInstance.textboxAlias, constants.CellTypeTextbox)
+	setFocusedControl(layer1.layerAlias, textboxInstance.controlAlias, constants.CellTypeTextbox)
 	textbox.UpdateKeyboardEventTextboxWithString("abcdefghijklmnop")
 	textbox.UpdateKeyboardEventTextbox([]rune("enter"))
 	textbox.UpdateKeyboardEventTextboxWithString("abcdefghijklmnopqrstuvwxyz")
@@ -43,7 +43,7 @@ func TestTextboxLongLine(test *testing.T) {
 func TestTextboxTallLine(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	textboxInstance := layer1.AddTextbox(styleEntry, 2, 2, 20, 4, false)
-	setFocusedControl(layer1.layerAlias, textboxInstance.textboxAlias, constants.CellTypeTextbox)
+	setFocusedControl(layer1.layerAlias, textboxInstance.controlAlias, constants.CellTypeTextbox)
 	textbox.UpdateKeyboardEventTextboxWithString("abcdefghijklmnop")
 	textbox.UpdateKeyboardEventTextbox([]rune("enter"))
 	textbox.UpdateKeyboardEventTextboxWithString("abcdefghijklmnop")
@@ -63,7 +63,7 @@ func TestTextboxTallLine(test *testing.T) {
 func TestTextboxLongAndTall(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	textboxInstance := layer1.AddTextbox(styleEntry, 2, 2, 20, 4, false)
-	setFocusedControl(layer1.layerAlias, textboxInstance.textboxAlias, constants.CellTypeTextbox)
+	setFocusedControl(layer1.layerAlias, textboxInstance.controlAlias, constants.CellTypeTextbox)
 	textbox.UpdateKeyboardEventTextboxWithString("abcdefghijklmnop")
 	textbox.UpdateKeyboardEventTextbox([]rune("enter"))
 	textbox.UpdateKeyboardEventTextboxWithString("abcdefghijklmnopqrstuvwxyz")
@@ -83,7 +83,7 @@ func TestTextboxLongAndTall(test *testing.T) {
 func TestTextboxLineBreak(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	textboxInstance := layer1.AddTextbox(styleEntry, 2, 2, 20, 4, false)
-	setFocusedControl(layer1.layerAlias, textboxInstance.textboxAlias, constants.CellTypeTextbox)
+	setFocusedControl(layer1.layerAlias, textboxInstance.controlAlias, constants.CellTypeTextbox)
 	textbox.UpdateKeyboardEventTextboxWithString("abcdefghijklmnop")
 	textbox.UpdateKeyboardEventTextbox([]rune("enter"))
 	textbox.UpdateKeyboardEventTextboxWithString("abcdefghijklmnopqrstuvwxyz")
@@ -105,7 +105,7 @@ func TestTextboxLineBreak(test *testing.T) {
 func TestTextboxDeleting(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	textboxInstance := layer1.AddTextbox(styleEntry, 2, 2, 20, 4, false)
-	setFocusedControl(layer1.layerAlias, textboxInstance.textboxAlias, constants.CellTypeTextbox)
+	setFocusedControl(layer1.layerAlias, textboxInstance.controlAlias, constants.CellTypeTextbox)
 	textbox.UpdateKeyboardEventTextboxWithString("abcdefghijklmnop")
 	textbox.UpdateKeyboardEventTextbox([]rune("enter"))
 	textbox.UpdateKeyboardEventTextboxWithString("abcdefghijklmnopqrstuvwxyz")
@@ -122,7 +122,7 @@ func TestTextboxDeleting(test *testing.T) {
 func TestTextboxHome(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	textboxInstance := layer1.AddTextbox(styleEntry, 2, 2, 20, 4, false)
-	setFocusedControl(layer1.layerAlias, textboxInstance.textboxAlias, constants.CellTypeTextbox)
+	setFocusedControl(layer1.layerAlias, textboxInstance.controlAlias, constants.CellTypeTextbox)
 	textbox.UpdateKeyboardEventTextboxWithString("abcdefghijklmnop")
 	textbox.UpdateKeyboardEventTextbox([]rune("enter"))
 	textbox.UpdateKeyboardEventTextboxWithString("abcdefghijklmnopqrstuvwxyz")

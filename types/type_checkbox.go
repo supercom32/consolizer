@@ -5,6 +5,7 @@ import (
 )
 
 type CheckboxEntryType struct {
+	Alias      string
 	StyleEntry TuiStyleEntryType
 	Label      string
 	XLocation  int
@@ -18,6 +19,7 @@ type CheckboxEntryType struct {
 func (shared CheckboxEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
 		StyleEntry TuiStyleEntryType
+		Alias      string
 		Label      string
 		XLocation  int
 		YLocation  int
@@ -67,6 +69,7 @@ func NewCheckboxEntry(existingButtonEntry ...*CheckboxEntryType) CheckboxEntryTy
 
 func IsCheckboxEqual(sourceCheckboxEntry *CheckboxEntryType, targetCheckboxEntry *CheckboxEntryType) bool {
 	if sourceCheckboxEntry.StyleEntry == targetCheckboxEntry.StyleEntry &&
+		sourceCheckboxEntry.Alias == targetCheckboxEntry.Alias &&
 		sourceCheckboxEntry.Label == targetCheckboxEntry.Label &&
 		sourceCheckboxEntry.XLocation == targetCheckboxEntry.XLocation &&
 		sourceCheckboxEntry.YLocation == targetCheckboxEntry.YLocation &&

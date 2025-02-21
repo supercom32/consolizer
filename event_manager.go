@@ -21,6 +21,8 @@ type eventStateType struct {
 	// This variable is used to keep track of items which were highlighted so that they can be
 	// un-highlighted later. Currently, only used by selectors and tooltips
 	previouslyHighlightedControl controlIdentifierType
+	tabIndexMemory               []controlIdentifierType
+	currentTabIndex              int
 }
 
 var eventStateMemory eventStateType
@@ -56,6 +58,11 @@ func UpdateEventQueues() {
 			keystroke = []rune{event.Rune()}
 		} else {
 			keystroke = []rune(strings.ToLower(event.Name()))
+		}
+		if string(keystroke) == "tab" {
+			nextTabIndex()
+			keystroke = nil
+			isScreenUpdateRequired = true
 		}
 		if scrollbar.updateKeyboardEventScrollbar(keystroke) {
 			isScreenUpdateRequired = true
@@ -151,6 +158,23 @@ func UpdateEventQueues() {
 			UpdateDisplay(false)
 		}
 	}
+}
+
+func ClearTabIndex() {
+	eventStateMemory.tabIndexMemory = nil
+}
+
+func addTabIndex(layerAlias string, controlAlias string, controlType int) {
+	controlEntry := controlIdentifierType{layerAlias: layerAlias, controlAlias: controlAlias, controlType: controlType}
+	eventStateMemory.tabIndexMemory = append(eventStateMemory.tabIndexMemory, controlEntry)
+}
+
+func nextTabIndex() {
+	eventStateMemory.currentTabIndex++
+	if eventStateMemory.currentTabIndex >= len(eventStateMemory.tabIndexMemory) {
+		eventStateMemory.currentTabIndex = 0
+	}
+	eventStateMemory.currentlyFocusedControl = eventStateMemory.tabIndexMemory[eventStateMemory.currentTabIndex]
 }
 
 func setFocusedControl(layerAlias string, controlAlias string, controlType int) {

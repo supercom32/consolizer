@@ -3,6 +3,7 @@ package types
 import "encoding/json"
 
 type TextFieldEntryType struct {
+	Alias               string
 	StyleEntry          TuiStyleEntryType
 	XLocation           int
 	YLocation           int
@@ -18,6 +19,7 @@ type TextFieldEntryType struct {
 
 func (shared TextFieldEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
+		Alias               string
 		StyleEntry          TuiStyleEntryType
 		XLocation           int
 		YLocation           int
@@ -31,6 +33,7 @@ func (shared TextFieldEntryType) MarshalJSON() ([]byte, error) {
 		ViewportPosition    int
 		IsEnabled           bool
 	}{
+		Alias:               shared.Alias,
 		StyleEntry:          shared.StyleEntry,
 		XLocation:           shared.XLocation,
 		YLocation:           shared.YLocation,

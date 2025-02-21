@@ -5,6 +5,7 @@ import (
 )
 
 type DropdownEntryType struct {
+	Alias          string
 	StyleEntry     TuiStyleEntryType
 	SelectionEntry SelectionEntryType
 	ScrollBarAlias string
@@ -18,6 +19,7 @@ type DropdownEntryType struct {
 
 func (shared DropdownEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
+		Alias          string
 		StyleEntry     TuiStyleEntryType
 		SelectionEntry SelectionEntryType
 		ScrollBarAlias string
@@ -28,6 +30,7 @@ func (shared DropdownEntryType) MarshalJSON() ([]byte, error) {
 		ItemSelected   int
 		IsTrayOpen     bool
 	}{
+		Alias:          shared.Alias,
 		StyleEntry:     shared.StyleEntry,
 		SelectionEntry: shared.SelectionEntry,
 		ScrollBarAlias: shared.ScrollBarAlias,

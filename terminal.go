@@ -60,20 +60,8 @@ will be generated to fail as fast as possible.
 */
 func InitializeTerminal(width int, height int) {
 	memory.InitializeScreenMemory()
-	memory.InitializeTextFieldMemory()
-	memory.InitializeButtonMemory()
 	memory.InitializeImageMemory()
-	memory.InitializeTextStyleMemory()
 	memory.InitializeTimerMemory()
-	memory.InitializeSelectorMemory()
-	memory.InitializeScrollbarMemory()
-	memory.InitializeDropdownMemory()
-	memory.InitializeCheckboxMemory()
-	memory.InitializeTextboxMemory()
-	memory.InitializeRadioButtonMemory()
-	memory.InitializeProgressBarMemory()
-	memory.InitializeLabelMemory()
-	memory.InitializeTooltipMemory()
 	// Set the mouse location off screen so it won't trigger events at 0,0 which the user never moved to.
 	memory.SetMouseStatus(-1, -1, 0, "")
 	var detectedWidth int
@@ -879,7 +867,7 @@ a lower z order priority are rendered first.
 - Any text layer which is marked as not visible will be ignored.
 
 - All rendering occurs on a temporary text layer until it is ready to be
-overlaid on the final (terminal ready) text layer. Buttons and other special
+overlaid on the final (terminal ready) text layer. Button and other special
 TUI controls are also dynamically rendered at this time so that the original
 text layer data underneath them is preserved.
 */

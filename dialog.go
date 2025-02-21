@@ -52,10 +52,11 @@ func printDialog(layerEntry *types.LayerEntryType, attributeEntry types.Attribut
 			}
 		}
 		if isPrintDelaySkipped == false {
-			SleepInMilliseconds(uint(printDelayInMilliseconds))
-			UpdateDisplay(false)
+			if printDelayInMilliseconds != 0 {
+				SleepInMilliseconds(uint(printDelayInMilliseconds))
+				UpdateDisplay(false)
+			}
 		}
-
 	}
 	UpdateDisplay(false)
 }
