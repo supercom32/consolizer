@@ -2,59 +2,43 @@ package types
 
 import (
 	"encoding/json"
+	"reflect"
 )
 
 type TextboxEntryType struct {
+	BaseControlType
 	HorizontalScrollbarAlias string
 	VerticalScrollbarAlias   string
-	StyleEntry               TuiStyleEntryType
 	TextData                 [][]rune
-	XLocation                int
-	YLocation                int
-	Width                    int
-	Height                   int
 	ViewportXLocation        int
 	ViewportYLocation        int
 	CursorXLocation          int
 	CursorYLocation          int
-	IsEnabled                bool
-	IsVisible                bool
-	IsBorderDrawn            bool
+}
+
+func (shared TextboxEntryType) GetAlias() string {
+	return shared.Alias
 }
 
 func (shared TextboxEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
+		BaseControlType
 		HorizontalScrollbarAlias string
 		VerticalScrollbarAlias   string
-		StyleEntry               TuiStyleEntryType
 		TextData                 [][]rune
-		XLocation                int
-		YLocation                int
-		Width                    int
-		Height                   int
-		ViewportXLocation        int
-		ViewportYLocation        int
-		CursorXLocation          int
-		CursorYLocation          int
-		IsEnabled                bool
-		IsVisible                bool
-		IsBorderDrawn            bool
+		ViewportX                int
+		ViewportY                int
+		CursorX                  int
+		CursorY                  int
 	}{
+		BaseControlType:          shared.BaseControlType,
 		HorizontalScrollbarAlias: shared.HorizontalScrollbarAlias,
 		VerticalScrollbarAlias:   shared.VerticalScrollbarAlias,
-		StyleEntry:               shared.StyleEntry,
 		TextData:                 shared.TextData,
-		XLocation:                shared.XLocation,
-		YLocation:                shared.YLocation,
-		Width:                    shared.Width,
-		Height:                   shared.Height,
-		ViewportXLocation:        shared.ViewportXLocation,
-		ViewportYLocation:        shared.ViewportYLocation,
-		CursorXLocation:          shared.CursorXLocation,
-		CursorYLocation:          shared.CursorYLocation,
-		IsEnabled:                shared.IsEnabled,
-		IsVisible:                shared.IsVisible,
-		IsBorderDrawn:            shared.IsBorderDrawn,
+		ViewportX:                shared.ViewportXLocation,
+		ViewportY:                shared.ViewportYLocation,
+		CursorX:                  shared.CursorXLocation,
+		CursorY:                  shared.CursorYLocation,
 	})
 	if err != nil {
 		return nil, err
@@ -72,36 +56,33 @@ func (shared TextboxEntryType) GetEntryAsJsonDump() string {
 
 func NewTexboxEntry(existingTextboxEntry ...*TextboxEntryType) TextboxEntryType {
 	var textboxEntry TextboxEntryType
+	textboxEntry.BaseControlType = NewBaseControl()
+
 	if existingTextboxEntry != nil {
+		textboxEntry.BaseControlType = existingTextboxEntry[0].BaseControlType
 		textboxEntry.HorizontalScrollbarAlias = existingTextboxEntry[0].HorizontalScrollbarAlias
-		textboxEntry.VerticalScrollbarAlias = existingTextboxEntry[0].VerticalScrollbarAlias
-		textboxEntry.StyleEntry = NewTuiStyleEntry(&existingTextboxEntry[0].StyleEntry)
 		textboxEntry.TextData = existingTextboxEntry[0].TextData
-		textboxEntry.XLocation = existingTextboxEntry[0].XLocation
-		textboxEntry.YLocation = existingTextboxEntry[0].YLocation
-		textboxEntry.Width = existingTextboxEntry[0].Width
-		textboxEntry.Height = existingTextboxEntry[0].Height
 		textboxEntry.ViewportXLocation = existingTextboxEntry[0].ViewportXLocation
 		textboxEntry.ViewportYLocation = existingTextboxEntry[0].ViewportYLocation
 		textboxEntry.CursorXLocation = existingTextboxEntry[0].CursorXLocation
 		textboxEntry.CursorYLocation = existingTextboxEntry[0].CursorYLocation
-		textboxEntry.IsEnabled = existingTextboxEntry[0].IsEnabled
-		textboxEntry.IsVisible = existingTextboxEntry[0].IsVisible
-		textboxEntry.IsBorderDrawn = existingTextboxEntry[0].IsBorderDrawn
 	}
 	return textboxEntry
 }
 
-func IsTexboxEqual(sourceTextboxEntry *TextboxEntryType, targetTextboxEntry *TextboxEntryType) bool {
-	if sourceTextboxEntry.StyleEntry == targetTextboxEntry.StyleEntry &&
-		sourceTextboxEntry.XLocation == targetTextboxEntry.XLocation &&
-		sourceTextboxEntry.YLocation == targetTextboxEntry.YLocation &&
-		sourceTextboxEntry.Width == targetTextboxEntry.Width &&
-		sourceTextboxEntry.Height == targetTextboxEntry.Height &&
-		sourceTextboxEntry.IsEnabled == targetTextboxEntry.IsEnabled &&
-		sourceTextboxEntry.IsVisible == targetTextboxEntry.IsVisible &&
-		sourceTextboxEntry.IsBorderDrawn == targetTextboxEntry.IsBorderDrawn {
+func IsTextboxEntryEqual(sourceTextboxEntry *TextboxEntryType, targetTextboxEntry *TextboxEntryType) bool {
+	if sourceTextboxEntry.BaseControlType == targetTextboxEntry.BaseControlType &&
+		sourceTextboxEntry.HorizontalScrollbarAlias == targetTextboxEntry.HorizontalScrollbarAlias &&
+		reflect.DeepEqual(sourceTextboxEntry.TextData, targetTextboxEntry.TextData) &&
+		sourceTextboxEntry.ViewportXLocation == targetTextboxEntry.ViewportXLocation &&
+		sourceTextboxEntry.ViewportYLocation == targetTextboxEntry.ViewportYLocation &&
+		sourceTextboxEntry.CursorXLocation == targetTextboxEntry.CursorXLocation &&
+		sourceTextboxEntry.CursorYLocation == targetTextboxEntry.CursorYLocation {
 		return true
 	}
 	return false
+}
+
+func GetTextboxAlias(entry *TextboxEntryType) string {
+	return entry.Alias
 }

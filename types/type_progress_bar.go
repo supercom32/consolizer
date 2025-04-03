@@ -2,50 +2,43 @@ package types
 
 import (
 	"encoding/json"
-	"sync"
 )
 
 // func DrawButton(LayerAlias string, Label string, StyleEntry TuiStyleEntryType, IsPressed bool, IsSelected bool, XLocation int, YLocation int, Width int, Height int) {
 type ProgressBarEntryType struct {
-	Mutex                   sync.Mutex
-	StyleEntry              TuiStyleEntryType
-	Alias                   string
+	BaseControlType
 	Label                   string
 	Value                   int
 	MaxValue                int
 	IsBackgroundTransparent bool
-	XLocation               int
-	YLocation               int
-	Width                   int
-	Height                  int
-	TabIndex                int
+	Length                  int
+	CurrentValue            int
+	IsHorizontal            bool
+}
+
+func (shared ProgressBarEntryType) GetAlias() string {
+	return shared.Alias
 }
 
 func (shared ProgressBarEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
-		StyleEntry              TuiStyleEntryType
-		Alias                   string
+		BaseControlType
 		Label                   string
 		Value                   int
 		MaxValue                int
 		IsBackgroundTransparent bool
-		XLocation               int
-		YLocation               int
-		Width                   int
-		Height                  int
-		TabIndex                int
+		Length                  int
+		CurrentValue            int
+		IsHorizontal            bool
 	}{
-		StyleEntry:              shared.StyleEntry,
-		Alias:                   shared.Alias,
+		BaseControlType:         shared.BaseControlType,
 		Label:                   shared.Label,
 		Value:                   shared.Value,
 		MaxValue:                shared.MaxValue,
 		IsBackgroundTransparent: shared.IsBackgroundTransparent,
-		XLocation:               shared.XLocation,
-		YLocation:               shared.YLocation,
-		Width:                   shared.Width,
-		Height:                  shared.Height,
-		TabIndex:                shared.TabIndex,
+		Length:                  shared.Length,
+		CurrentValue:            shared.CurrentValue,
+		IsHorizontal:            shared.IsHorizontal,
 	})
 	if err != nil {
 		return nil, err
@@ -64,34 +57,32 @@ func (shared ProgressBarEntryType) GetEntryAsJsonDump() string {
 func NewProgressBarEntry(ExistingProgressBarEntry ...*ProgressBarEntryType) ProgressBarEntryType {
 	var progressBarEntry ProgressBarEntryType
 	if ExistingProgressBarEntry != nil {
-		progressBarEntry.StyleEntry = NewTuiStyleEntry(&ExistingProgressBarEntry[0].StyleEntry)
-		progressBarEntry.Alias = ExistingProgressBarEntry[0].Alias
+		progressBarEntry.BaseControlType = ExistingProgressBarEntry[0].BaseControlType
 		progressBarEntry.Label = ExistingProgressBarEntry[0].Label
 		progressBarEntry.Value = ExistingProgressBarEntry[0].Value
 		progressBarEntry.MaxValue = ExistingProgressBarEntry[0].MaxValue
 		progressBarEntry.IsBackgroundTransparent = ExistingProgressBarEntry[0].IsBackgroundTransparent
-		progressBarEntry.XLocation = ExistingProgressBarEntry[0].XLocation
-		progressBarEntry.YLocation = ExistingProgressBarEntry[0].YLocation
-		progressBarEntry.Width = ExistingProgressBarEntry[0].Width
-		progressBarEntry.Height = ExistingProgressBarEntry[0].Height
-		progressBarEntry.TabIndex = ExistingProgressBarEntry[0].TabIndex
+		progressBarEntry.Length = ExistingProgressBarEntry[0].Length
+		progressBarEntry.CurrentValue = ExistingProgressBarEntry[0].CurrentValue
+		progressBarEntry.IsHorizontal = ExistingProgressBarEntry[0].IsHorizontal
 	}
 	return progressBarEntry
 }
 
 func IsProgressBarEntryEqual(sourceProgressBarEntry *ProgressBarEntryType, targetProgressBarEntry *ProgressBarEntryType) bool {
-	if sourceProgressBarEntry.StyleEntry == targetProgressBarEntry.StyleEntry &&
-		sourceProgressBarEntry.Alias == targetProgressBarEntry.Alias &&
+	if sourceProgressBarEntry.BaseControlType == targetProgressBarEntry.BaseControlType &&
 		sourceProgressBarEntry.Label == targetProgressBarEntry.Label &&
 		sourceProgressBarEntry.Value == targetProgressBarEntry.Value &&
 		sourceProgressBarEntry.MaxValue == targetProgressBarEntry.MaxValue &&
 		sourceProgressBarEntry.IsBackgroundTransparent == targetProgressBarEntry.IsBackgroundTransparent &&
-		sourceProgressBarEntry.XLocation == targetProgressBarEntry.XLocation &&
-		sourceProgressBarEntry.YLocation == targetProgressBarEntry.YLocation &&
-		sourceProgressBarEntry.Width == targetProgressBarEntry.Width &&
-		sourceProgressBarEntry.Height == targetProgressBarEntry.Height &&
-		sourceProgressBarEntry.TabIndex == targetProgressBarEntry.TabIndex {
+		sourceProgressBarEntry.Length == targetProgressBarEntry.Length &&
+		sourceProgressBarEntry.CurrentValue == targetProgressBarEntry.CurrentValue &&
+		sourceProgressBarEntry.IsHorizontal == targetProgressBarEntry.IsHorizontal {
 		return true
 	}
 	return false
+}
+
+func GetProgressBarAlias(entry *ProgressBarEntryType) string {
+	return entry.Alias
 }

@@ -6,13 +6,14 @@ import (
 	"fmt"
 	"github.com/disintegration/imaging"
 	"github.com/nfnt/resize"
-	"github.com/supercom32/consolizer/constants"
-	"github.com/supercom32/consolizer/internal/memory"
-	"github.com/supercom32/consolizer/types"
 	"image"
 	"image/color"
+	"image/draw"
 	"image/png"
 	"strings"
+	"supercom32.net/consolizer/constants"
+	"supercom32.net/consolizer/internal/memory"
+	"supercom32.net/consolizer/types"
 )
 
 /*
@@ -221,9 +222,33 @@ func getImageFromBase64String(imageAsBase64 string) (image.Image, error) {
 /*
 resizeImage allows you to resize an image.
 */
-func resizeImage(imageData image.Image, width uint, height uint) image.Image {
-	return resize.Resize(width, height, imageData, resize.Lanczos3)
-	// return resize.Resize(width, height, imageData, resize.NearestNeighbor)
+func resizeImage(imageData image.Image, targetWidth, targetHeight uint, isWidthAspectRatioPreserved bool, isHeightAspectRatioPreserved bool) image.Image {
+	if !isWidthAspectRatioPreserved && !isHeightAspectRatioPreserved {
+		return resize.Resize(targetWidth, targetHeight, imageData, resize.Lanczos3)
+	}
+	originalBounds := imageData.Bounds()
+	originalWidth := originalBounds.Dx()
+	originalHeight := originalBounds.Dy()
+	scaleWidth := float64(targetWidth) / float64(originalWidth)
+	scaleHeight := float64(targetHeight) / float64(originalHeight)
+	var scale float64
+	switch {
+	case isWidthAspectRatioPreserved && !isHeightAspectRatioPreserved:
+		scale = scaleWidth
+	case isHeightAspectRatioPreserved && !isWidthAspectRatioPreserved:
+		scale = scaleHeight
+	default:
+		scale = scaleWidth
+		if scaleHeight < scaleWidth {
+			scale = scaleHeight
+		}
+	}
+	newWidth := uint(float64(originalWidth) * scale)
+	newHeight := uint(float64(originalHeight) * scale)
+	resizedImage := resize.Resize(newWidth, newHeight, imageData, resize.Lanczos3)
+	outputImage := image.NewRGBA(image.Rect(0, 0, int(targetWidth), int(targetHeight)))
+	draw.Draw(outputImage, image.Rect(0, 0, int(newWidth), int(newHeight)), resizedImage, image.Point{}, draw.Over)
+	return outputImage
 }
 
 /*
@@ -264,7 +289,7 @@ func getImageLayerAsHighColor(sourceImageData image.Image, imageStyle types.Imag
 	if heightInCharacters == 0 {
 		calculatedPixelHeight = (widthInCharacters * sourceImageData.Bounds().Max.Y) / sourceImageData.Bounds().Max.X
 	}
-	processedImageData := resizeImage(sourceImageData, uint(calculatedPixelWidth), uint(calculatedPixelHeight))
+	processedImageData := resizeImage(sourceImageData, uint(calculatedPixelWidth), uint(calculatedPixelHeight), imageStyle.IsWidthAspectRatioPreserved, imageStyle.IsHeightAspectRatioPreserved)
 	if blurSigma > 0 {
 		processedImageData = imaging.Blur(processedImageData, blurSigma)
 	}
@@ -279,15 +304,35 @@ func getImageLayerAsHighColor(sourceImageData image.Image, imageStyle types.Imag
 		for currentXLocation := 0; currentXLocation < calculatedCharacterWidth; currentXLocation++ {
 			currentCharacter := layerEntry.CharacterMemory[currentYLocation][currentXLocation]
 			currentCharacter.Character = constants.CharBlockUpperHalf
-			upperPixel := processedImageData.At(currentXLocation, currentImageYLocation)
-			redColorIndex, greenColorIndex, blueColorIndex, firstAlphaIndex := get8BitColorComponents(upperPixel)
+			var upperPixel color.Color
+			var redColorIndex int32
+			var greenColorIndex int32
+			var blueColorIndex int32
+			imageBounds := processedImageData.Bounds()
+			if currentXLocation < imageBounds.Min.X || currentXLocation >= imageBounds.Max.X ||
+				currentImageYLocation < imageBounds.Min.Y || currentImageYLocation >= imageBounds.Max.Y {
+				// Out of bounds, treat as transparent
+				currentCharacter.Character = constants.NullRune
+			} else {
+				// In bounds, get the actual pixel color
+				upperPixel = processedImageData.At(currentXLocation, currentImageYLocation)
+				redColorIndex, greenColorIndex, blueColorIndex, _ = get8BitColorComponents(upperPixel)
+			}
 			currentCharacter.AttributeEntry.ForegroundColor = GetRGBColor(int32(redColorIndex), int32(greenColorIndex), int32(blueColorIndex))
 			if currentImageYLocation < calculatedCharacterHeight*2 {
-				lowerPixel := processedImageData.At(currentXLocation, currentImageYLocation+1)
-				redColorIndex, greenColorIndex, blueColorIndex, secondAlphaIndex := get8BitColorComponents(lowerPixel)
-				currentCharacter.AttributeEntry.BackgroundColor = GetRGBColor(int32(redColorIndex), int32(greenColorIndex), int32(blueColorIndex))
-				if firstAlphaIndex <= 150 || secondAlphaIndex <= 150 {
-					currentCharacter.Character = constants.NullRune
+				// Check for null parts of an image.
+				if currentXLocation < imageBounds.Min.X || currentXLocation >= imageBounds.Max.X ||
+					currentImageYLocation+1 < imageBounds.Min.Y || currentImageYLocation+1 >= imageBounds.Max.Y {
+					// Out of bounds, treat as transparent
+					currentCharacter.Character = constants.NullRune // For now we blank upper square since black bar may be less desierable.
+					// lowerPixel := processedImageData.At(currentXLocation, currentImageYLocation+1)
+					// redColorIndex, greenColorIndex, blueColorIndex, _ := get8BitColorComponents(lowerPixel)
+					// currentCharacter.AttributeEntry.BackgroundColor = GetRGBColor(0, 0, 0)
+				} else {
+					// In bounds, get the actual pixel color
+					lowerPixel := processedImageData.At(currentXLocation, currentImageYLocation+1)
+					redColorIndex, greenColorIndex, blueColorIndex, _ := get8BitColorComponents(lowerPixel)
+					currentCharacter.AttributeEntry.BackgroundColor = GetRGBColor(int32(redColorIndex), int32(greenColorIndex), int32(blueColorIndex))
 				}
 			}
 			layerEntry.CharacterMemory[currentYLocation][currentXLocation] = currentCharacter
@@ -295,6 +340,17 @@ func getImageLayerAsHighColor(sourceImageData image.Image, imageStyle types.Imag
 		currentImageYLocation += 2
 	}
 	return layerEntry
+}
+
+func isTransparentPixel(processedImageData image.Image, x, y int) bool {
+	// Get the color at the specified pixel
+	c := processedImageData.At(x, y)
+
+	// Convert to RGBA to get access to individual channels
+	rgba := color.RGBAModel.Convert(c).(color.RGBA)
+
+	// Check if alpha value is 0 (fully transparent)
+	return rgba.A == 0
 }
 
 /*

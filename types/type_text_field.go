@@ -1,47 +1,41 @@
 package types
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"reflect"
+)
 
 type TextFieldEntryType struct {
-	StyleEntry          TuiStyleEntryType
-	XLocation           int
-	YLocation           int
-	Width               int
+	BaseControlType
 	MaxLengthAllowed    int
 	DefaultValue        string
 	CursorPosition      int
 	ViewportPosition    int
 	IsPasswordProtected bool
 	CurrentValue        []rune
-	IsEnabled           bool
+}
+
+func (shared TextFieldEntryType) GetAlias() string {
+	return shared.Alias
 }
 
 func (shared TextFieldEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
-		StyleEntry          TuiStyleEntryType
-		XLocation           int
-		YLocation           int
-		Width               int
+		BaseControlType
 		MaxLengthAllowed    int
-		IsPasswordProtected bool
-		CurrentValue        []rune
 		DefaultValue        string
-		StringPosition      int
 		CursorPosition      int
 		ViewportPosition    int
-		IsEnabled           bool
+		IsPasswordProtected bool
+		CurrentValue        []rune
 	}{
-		StyleEntry:          shared.StyleEntry,
-		XLocation:           shared.XLocation,
-		YLocation:           shared.YLocation,
-		Width:               shared.Width,
+		BaseControlType:     shared.BaseControlType,
 		MaxLengthAllowed:    shared.MaxLengthAllowed,
-		IsPasswordProtected: shared.IsPasswordProtected,
-		CurrentValue:        shared.CurrentValue,
 		DefaultValue:        shared.DefaultValue,
 		CursorPosition:      shared.CursorPosition,
 		ViewportPosition:    shared.ViewportPosition,
-		IsEnabled:           shared.IsEnabled,
+		IsPasswordProtected: shared.IsPasswordProtected,
+		CurrentValue:        shared.CurrentValue,
 	})
 	if err != nil {
 		return nil, err
@@ -59,17 +53,34 @@ func (shared TextFieldEntryType) GetEntryAsJsonDump() string {
 
 func NewTextFieldEntry(existingTextFieldEntry ...*TextFieldEntryType) TextFieldEntryType {
 	var textFieldEntry TextFieldEntryType
+	textFieldEntry.BaseControlType = NewBaseControl()
+
 	if existingTextFieldEntry != nil {
-		textFieldEntry.XLocation = existingTextFieldEntry[0].XLocation
-		textFieldEntry.YLocation = existingTextFieldEntry[0].YLocation
-		textFieldEntry.Width = existingTextFieldEntry[0].Width
+		textFieldEntry.BaseControlType = existingTextFieldEntry[0].BaseControlType
 		textFieldEntry.MaxLengthAllowed = existingTextFieldEntry[0].MaxLengthAllowed
-		textFieldEntry.IsPasswordProtected = existingTextFieldEntry[0].IsPasswordProtected
-		textFieldEntry.CurrentValue = existingTextFieldEntry[0].CurrentValue
 		textFieldEntry.DefaultValue = existingTextFieldEntry[0].DefaultValue
 		textFieldEntry.CursorPosition = existingTextFieldEntry[0].CursorPosition
-		textFieldEntry.IsEnabled = existingTextFieldEntry[0].IsEnabled
+		textFieldEntry.ViewportPosition = existingTextFieldEntry[0].ViewportPosition
+		textFieldEntry.IsPasswordProtected = existingTextFieldEntry[0].IsPasswordProtected
+		textFieldEntry.CurrentValue = existingTextFieldEntry[0].CurrentValue
 	}
 	textFieldEntry.CurrentValue = []rune{' '}
 	return textFieldEntry
+}
+
+func IsTextFieldEntryEqual(sourceTextFieldEntry *TextFieldEntryType, targetTextFieldEntry *TextFieldEntryType) bool {
+	if sourceTextFieldEntry.BaseControlType == targetTextFieldEntry.BaseControlType &&
+		sourceTextFieldEntry.MaxLengthAllowed == targetTextFieldEntry.MaxLengthAllowed &&
+		sourceTextFieldEntry.DefaultValue == targetTextFieldEntry.DefaultValue &&
+		sourceTextFieldEntry.CursorPosition == targetTextFieldEntry.CursorPosition &&
+		sourceTextFieldEntry.ViewportPosition == targetTextFieldEntry.ViewportPosition &&
+		sourceTextFieldEntry.IsPasswordProtected == targetTextFieldEntry.IsPasswordProtected &&
+		reflect.DeepEqual(sourceTextFieldEntry.CurrentValue, targetTextFieldEntry.CurrentValue) {
+		return true
+	}
+	return false
+}
+
+func GetTextFieldAlias(entry *TextFieldEntryType) string {
+	return entry.Alias
 }

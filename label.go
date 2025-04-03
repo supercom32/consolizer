@@ -1,30 +1,34 @@
 package consolizer
 
 import (
-	"github.com/supercom32/consolizer/constants"
-	"github.com/supercom32/consolizer/internal/memory"
-	"github.com/supercom32/consolizer/internal/stringformat"
-	"github.com/supercom32/consolizer/types"
 	"strings"
+	"supercom32.net/consolizer/constants"
+	"supercom32.net/consolizer/internal/memory"
+	"supercom32.net/consolizer/internal/stringformat"
+	"supercom32.net/consolizer/types"
 )
 
 type LabelInstanceType struct {
-	layerAlias string
-	labelAlias string
+	layerAlias   string
+	controlAlias string
 }
 
 type labelType struct{}
 
 var Label labelType
 
+func (shared *LabelInstanceType) AddToTabIndex() {
+	addTabIndex(shared.layerAlias, shared.controlAlias, constants.CellTypeLabel)
+}
+
 func (shared *LabelInstanceType) SetLabelValue(value string) {
-	labelEntry := memory.GetLabel(shared.layerAlias, shared.labelAlias)
+	labelEntry := memory.GetLabel(shared.layerAlias, shared.controlAlias)
 	labelEntry.Value = value
 }
 
 func (shared *LabelInstanceType) Delete() *LabelInstanceType {
-	if memory.IsLabelExists(shared.layerAlias, shared.labelAlias) {
-		memory.DeleteLabel(shared.layerAlias, shared.labelAlias)
+	if memory.IsLabelExists(shared.layerAlias, shared.controlAlias) {
+		memory.DeleteLabel(shared.layerAlias, shared.controlAlias)
 	}
 	return nil
 }
@@ -33,7 +37,7 @@ func (shared *labelType) Add(layerAlias string, labelAlias string, labelValue st
 	memory.AddLabel(layerAlias, labelAlias, labelValue, styleEntry, xLocation, yLocation, width)
 	var labelInstance LabelInstanceType
 	labelInstance.layerAlias = layerAlias
-	labelInstance.labelAlias = labelAlias
+	labelInstance.controlAlias = labelAlias
 	return labelInstance
 }
 
@@ -50,9 +54,9 @@ drawButtonsOnLayer allows you to draw all buttons on a given text layer.
 */
 func (shared *labelType) drawLabelsOnLayer(layerEntry types.LayerEntryType) {
 	layerAlias := layerEntry.LayerAlias
-	for currentKey := range memory.Label.Entries[layerAlias] {
-		labelEntry := memory.GetLabel(layerAlias, currentKey)
-		drawLabel(&layerEntry, currentKey, labelEntry.Value, labelEntry.StyleEntry, labelEntry.XLocation, labelEntry.YLocation, labelEntry.Width)
+	for _, currentLabelEntry := range memory.Labels.GetAllEntries(layerAlias) {
+		labelEntry := currentLabelEntry
+		drawLabel(&layerEntry, labelEntry.Alias, labelEntry.Value, labelEntry.StyleEntry, labelEntry.XLocation, labelEntry.YLocation, labelEntry.Width)
 	}
 }
 

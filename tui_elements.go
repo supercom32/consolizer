@@ -3,9 +3,9 @@ package consolizer
 import (
 	"fmt"
 	"github.com/gdamore/tcell/v2"
-	"github.com/supercom32/consolizer/constants"
-	"github.com/supercom32/consolizer/internal/stringformat"
-	"github.com/supercom32/consolizer/types"
+	"supercom32.net/consolizer/constants"
+	"supercom32.net/consolizer/internal/stringformat"
+	"supercom32.net/consolizer/types"
 )
 
 /*

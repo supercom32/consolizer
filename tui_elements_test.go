@@ -3,10 +3,10 @@ package consolizer
 import (
 	"github.com/gdamore/tcell/v2"
 	"github.com/stretchr/testify/assert"
-	"github.com/supercom32/consolizer/constants"
-	"github.com/supercom32/consolizer/internal/memory"
-	"github.com/supercom32/consolizer/internal/recast"
-	"github.com/supercom32/consolizer/types"
+	"supercom32.net/consolizer/constants"
+	"supercom32.net/consolizer/internal/memory"
+	"supercom32.net/consolizer/internal/recast"
+	"supercom32.net/consolizer/types"
 	"testing"
 )
 
@@ -119,7 +119,7 @@ func TestDrawButton(test *testing.T) {
 	layer2.FillLayer("b1b2b3b4b5")
 	layer2.AddButton("ButtonText", styleEntry, 2, 2, 20, 7, true)
 	button2 := layer2.AddButton("ButtonText", styleEntry, 2, 10, 20, 7, true)
-	memory.Button.Entries[layer2.layerAlias][button2.buttonAlias].IsPressed = true
+	memory.Buttons.Get(layer2.layerAlias, button2.controlAlias).IsPressed = true
 	UpdateDisplay(false)
 	layerEntry := commonResource.screenLayer
 	obtainedValue := layerEntry.GetBasicAnsiStringAsBase64()

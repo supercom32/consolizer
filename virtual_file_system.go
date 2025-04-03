@@ -8,9 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/nwaples/rardecode"
-	"github.com/supercom32/consolizer/constants"
-	"github.com/supercom32/consolizer/internal/memory"
-	"github.com/supercom32/consolizer/types"
 	"github.com/yeka/zip"
 	"image"
 	"image/jpeg"
@@ -19,6 +16,9 @@ import (
 	"io/ioutil"
 	"os"
 	"strings"
+	"supercom32.net/consolizer/constants"
+	"supercom32.net/consolizer/internal/memory"
+	"supercom32.net/consolizer/types"
 )
 
 var virtualFileSystemArchive string

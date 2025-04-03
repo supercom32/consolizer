@@ -2,7 +2,7 @@ package types
 
 import (
 	"encoding/json"
-	"github.com/supercom32/consolizer/constants"
+	"supercom32.net/consolizer/constants"
 )
 
 // TuiStyleEntryType

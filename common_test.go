@@ -1,6 +1,6 @@
 package consolizer
 
-import "github.com/supercom32/consolizer/types"
+import "supercom32.net/consolizer/types"
 
 func CommonTestSetup() (*LayerInstanceType, *LayerInstanceType, *LayerInstanceType, types.TuiStyleEntryType) {
 	commonResource.isDebugEnabled = true

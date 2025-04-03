@@ -5,38 +5,39 @@ import (
 )
 
 type DropdownEntryType struct {
-	StyleEntry     TuiStyleEntryType
-	SelectionEntry SelectionEntryType
-	ScrollBarAlias string
-	SelectorAlias  string
-	XLocation      int
-	YLocation      int
-	ItemWidth      int
-	ItemSelected   int
-	IsTrayOpen     bool
+	BaseControlType
+	SelectionEntry   SelectionEntryType
+	ScrollbarAlias   string
+	SelectorAlias    string
+	ItemWidth        int
+	ItemSelected     int
+	IsTrayOpen       bool
+	ViewportPosition int
+}
+
+func (shared DropdownEntryType) GetAlias() string {
+	return shared.Alias
 }
 
 func (shared DropdownEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
-		StyleEntry     TuiStyleEntryType
-		SelectionEntry SelectionEntryType
-		ScrollBarAlias string
-		SelectorAlias  string
-		XLocation      int
-		YLocation      int
-		ItemWidth      int
-		ItemSelected   int
-		IsTrayOpen     bool
+		BaseControlType
+		SelectionEntry   SelectionEntryType
+		ScrollbarAlias   string
+		SelectorAlias    string
+		ItemWidth        int
+		ItemSelected     int
+		IsTrayOpen       bool
+		ViewportPosition int
 	}{
-		StyleEntry:     shared.StyleEntry,
-		SelectionEntry: shared.SelectionEntry,
-		ScrollBarAlias: shared.ScrollBarAlias,
-		SelectorAlias:  shared.SelectorAlias,
-		XLocation:      shared.XLocation,
-		YLocation:      shared.YLocation,
-		ItemWidth:      shared.ItemWidth,
-		ItemSelected:   shared.ItemSelected,
-		IsTrayOpen:     shared.IsTrayOpen,
+		BaseControlType:  shared.BaseControlType,
+		SelectionEntry:   shared.SelectionEntry,
+		ScrollbarAlias:   shared.ScrollbarAlias,
+		SelectorAlias:    shared.Alias,
+		ItemWidth:        shared.ItemWidth,
+		ItemSelected:     shared.ItemSelected,
+		IsTrayOpen:       shared.IsTrayOpen,
+		ViewportPosition: shared.ViewportPosition,
 	})
 	if err != nil {
 		return nil, err
@@ -53,17 +54,34 @@ func (shared DropdownEntryType) GetEntryAsJsonDump() string {
 }
 
 func NewDropdownEntry(existingSelectorEntry ...*DropdownEntryType) DropdownEntryType {
-	var menuBarEntry DropdownEntryType
+	var dropdownEntry DropdownEntryType
+	dropdownEntry.BaseControlType = NewBaseControl()
+
 	if existingSelectorEntry != nil {
-		menuBarEntry.StyleEntry = existingSelectorEntry[0].StyleEntry
-		menuBarEntry.SelectionEntry = existingSelectorEntry[0].SelectionEntry
-		menuBarEntry.ScrollBarAlias = existingSelectorEntry[0].ScrollBarAlias
-		menuBarEntry.SelectorAlias = existingSelectorEntry[0].SelectorAlias
-		menuBarEntry.XLocation = existingSelectorEntry[0].XLocation
-		menuBarEntry.YLocation = existingSelectorEntry[0].YLocation
-		menuBarEntry.ItemWidth = existingSelectorEntry[0].ItemWidth
-		menuBarEntry.ItemSelected = existingSelectorEntry[0].ItemSelected
-		menuBarEntry.IsTrayOpen = existingSelectorEntry[0].IsTrayOpen
+		dropdownEntry.BaseControlType = existingSelectorEntry[0].BaseControlType
+		dropdownEntry.SelectionEntry = existingSelectorEntry[0].SelectionEntry
+		dropdownEntry.ScrollbarAlias = existingSelectorEntry[0].ScrollbarAlias
+		dropdownEntry.Alias = existingSelectorEntry[0].Alias
+		dropdownEntry.ItemWidth = existingSelectorEntry[0].ItemWidth
+		dropdownEntry.IsTrayOpen = existingSelectorEntry[0].IsTrayOpen
+		dropdownEntry.ViewportPosition = existingSelectorEntry[0].ViewportPosition
 	}
-	return menuBarEntry
+	return dropdownEntry
+}
+
+func IsDropdownEntryEqual(sourceDropdownEntry *DropdownEntryType, targetDropdownEntry *DropdownEntryType) bool {
+	if sourceDropdownEntry.BaseControlType == targetDropdownEntry.BaseControlType &&
+		&sourceDropdownEntry.SelectionEntry == &targetDropdownEntry.SelectionEntry &&
+		sourceDropdownEntry.ScrollbarAlias == targetDropdownEntry.ScrollbarAlias &&
+		sourceDropdownEntry.Alias == targetDropdownEntry.Alias &&
+		sourceDropdownEntry.ItemWidth == targetDropdownEntry.ItemWidth &&
+		sourceDropdownEntry.IsTrayOpen == targetDropdownEntry.IsTrayOpen &&
+		sourceDropdownEntry.ViewportPosition == targetDropdownEntry.ViewportPosition {
+		return true
+	}
+	return false
+}
+
+func GetDropdownAlias(entry *DropdownEntryType) string {
+	return entry.Alias
 }

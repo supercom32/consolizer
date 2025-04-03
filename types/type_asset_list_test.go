@@ -2,7 +2,7 @@ package types
 
 import (
 	"github.com/stretchr/testify/assert"
-	"github.com/supercom32/consolizer/internal/recast"
+	"supercom32.net/consolizer/internal/recast"
 	"testing"
 )
 

@@ -2,7 +2,7 @@ package consolizer
 
 import (
 	"github.com/stretchr/testify/assert"
-	"github.com/supercom32/consolizer/internal/memory"
+	"supercom32.net/consolizer/internal/memory"
 	"testing"
 	"time"
 )

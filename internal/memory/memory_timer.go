@@ -2,7 +2,7 @@ package memory
 
 import (
 	"fmt"
-	"github.com/supercom32/consolizer/types"
+	"supercom32.net/consolizer/types"
 	"sync"
 	"time"
 )

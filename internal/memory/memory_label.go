@@ -2,26 +2,12 @@ package memory
 
 import (
 	"fmt"
-	"github.com/supercom32/consolizer/types"
-	"sync"
+	"supercom32.net/consolizer/types"
 )
 
-type labelMemoryType struct {
-	sync.Mutex
-	Entries map[string]map[string]*types.LabelEntryType
-}
-
-var Label labelMemoryType
-
-func InitializeLabelMemory() {
-	Label.Entries = make(map[string]map[string]*types.LabelEntryType)
-}
+var Labels = NewControlMemoryManager[types.LabelEntryType]()
 
 func AddLabel(layerAlias string, labelAlias string, labelValue string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int) {
-	Label.Lock()
-	defer func() {
-		Label.Unlock()
-	}()
 	labelEntry := types.NewLabelEntry()
 	labelEntry.StyleEntry = styleEntry
 	labelEntry.Alias = labelAlias
@@ -29,48 +15,36 @@ func AddLabel(layerAlias string, labelAlias string, labelValue string, styleEntr
 	labelEntry.XLocation = xLocation
 	labelEntry.YLocation = yLocation
 	labelEntry.Width = width
-	if Label.Entries[layerAlias] == nil {
-		Label.Entries[layerAlias] = make(map[string]*types.LabelEntryType)
-	}
-	Label.Entries[layerAlias][labelAlias] = &labelEntry
+
+	// Use the ControlMemoryManager to add the label entry
+	Labels.Add(layerAlias, labelAlias, &labelEntry)
 }
 
 func GetLabel(layerAlias string, labelAlias string) *types.LabelEntryType {
-	Label.Lock()
-	defer func() {
-		Label.Unlock()
-	}()
-	if Label.Entries[layerAlias][labelAlias] == nil {
+	// Get the label entry using ControlMemoryManager
+	labelEntry := Labels.Get(layerAlias, labelAlias)
+	if labelEntry == nil {
 		panic(fmt.Sprintf("The requested label with alias '%s' on layer '%s' could not be returned since it does not exist.", labelAlias, layerAlias))
 	}
-	return Label.Entries[layerAlias][labelAlias]
+	return labelEntry
 }
 
 func IsLabelExists(layerAlias string, labelAlias string) bool {
-	Label.Lock()
-	defer func() {
-		Label.Unlock()
-	}()
-	if Label.Entries[layerAlias][labelAlias] == nil {
-		return false
-	}
-	return true
+	// Use ControlMemoryManager to check if the label exists
+	return Labels.Get(layerAlias, labelAlias) != nil
 }
 
 func DeleteLabel(layerAlias string, labelAlias string) {
-	Label.Lock()
-	defer func() {
-		Label.Unlock()
-	}()
-	delete(Label.Entries[layerAlias], labelAlias)
+	// Use ControlMemoryManager to remove the label entry
+	Labels.Remove(layerAlias, labelAlias)
 }
 
 func DeleteAllLabelsFromLayer(layerAlias string) {
-	Label.Lock()
-	defer func() {
-		Label.Unlock()
-	}()
-	for entryToRemove := range Label.Entries[layerAlias] {
-		delete(Label.Entries[layerAlias], entryToRemove)
+	// Get all label entries from the layer
+	labels := Labels.GetAllEntries(layerAlias)
+
+	// Loop through all entries and delete them
+	for _, label := range labels {
+		Labels.Remove(layerAlias, label.Alias) // Assuming label.Alias is used as the alias
 	}
 }

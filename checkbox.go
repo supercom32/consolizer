@@ -1,15 +1,15 @@
 package consolizer
 
 import (
-	"github.com/supercom32/consolizer/constants"
-	"github.com/supercom32/consolizer/internal/memory"
-	"github.com/supercom32/consolizer/internal/stringformat"
-	"github.com/supercom32/consolizer/types"
+	"supercom32.net/consolizer/constants"
+	"supercom32.net/consolizer/internal/memory"
+	"supercom32.net/consolizer/internal/stringformat"
+	"supercom32.net/consolizer/types"
 )
 
 type CheckboxInstanceType struct {
-	layerAlias    string
-	checkboxAlias string
+	layerAlias   string
+	controlAlias string
 }
 
 type checkboxType struct{}
@@ -17,10 +17,14 @@ type checkboxType struct{}
 var Checkbox checkboxType
 
 func (shared *CheckboxInstanceType) Delete() *CheckboxInstanceType {
-	if memory.IsCheckboxExists(shared.layerAlias, shared.checkboxAlias) {
-		memory.DeleteCheckbox(shared.layerAlias, shared.checkboxAlias)
+	if memory.IsCheckboxExists(shared.layerAlias, shared.controlAlias) {
+		memory.DeleteCheckbox(shared.layerAlias, shared.controlAlias)
 	}
 	return nil
+}
+
+func (shared *CheckboxInstanceType) AddToTabIndex() {
+	addTabIndex(shared.layerAlias, shared.controlAlias, constants.CellTypeCheckbox)
 }
 
 /*
@@ -28,8 +32,8 @@ IsCheckboxSelected allows you to detect if the given Checkbox is selected or not
 no longer exists, then a result of false is always returned.
 */
 func (shared *CheckboxInstanceType) IsCheckboxSelected() bool {
-	if memory.IsCheckboxExists(shared.layerAlias, shared.checkboxAlias) {
-		checkboxEntry := memory.GetCheckbox(shared.layerAlias, shared.checkboxAlias)
+	if memory.IsCheckboxExists(shared.layerAlias, shared.controlAlias) {
+		checkboxEntry := memory.GetCheckbox(shared.layerAlias, shared.controlAlias)
 		if checkboxEntry.IsSelected == true {
 			return true
 		}
@@ -56,7 +60,7 @@ func (shared *checkboxType) Add(layerAlias string, checkboxAlias string, checkbo
 	memory.AddCheckbox(layerAlias, checkboxAlias, checkboxLabel, styleEntry, xLocation, yLocation, isSelected, isEnabled)
 	var checkboxInstance CheckboxInstanceType
 	checkboxInstance.layerAlias = layerAlias
-	checkboxInstance.checkboxAlias = checkboxAlias
+	checkboxInstance.controlAlias = checkboxAlias
 	return checkboxInstance
 }
 
@@ -83,9 +87,8 @@ drawCheckboxesOnLayer allows you to draw all checkboxes on a given text layer.
 */
 func (shared *checkboxType) drawCheckboxesOnLayer(layerEntry types.LayerEntryType) {
 	layerAlias := layerEntry.LayerAlias
-	for currentKey := range memory.Checkbox.Entries[layerAlias] {
-		checkboxEntry := memory.GetCheckbox(layerAlias, currentKey)
-		shared.drawCheckbox(&layerEntry, currentKey, checkboxEntry.Label, checkboxEntry.StyleEntry, checkboxEntry.XLocation, checkboxEntry.YLocation, checkboxEntry.IsSelected, checkboxEntry.IsEnabled)
+	for _, checkboxEntry := range memory.Checkboxes.GetAllEntries(layerAlias) {
+		shared.drawCheckbox(&layerEntry, checkboxEntry.Alias, checkboxEntry.Label, checkboxEntry.StyleEntry, checkboxEntry.XLocation, checkboxEntry.YLocation, checkboxEntry.IsSelected, checkboxEntry.IsEnabled)
 	}
 }
 

@@ -1,0 +1,74 @@
+package memory
+
+import (
+	"fmt"
+	"supercom32.net/consolizer"
+	"sync"
+)
+
+type audioPlayerMemoryType struct {
+	sync.Mutex
+	Entries map[string]*consolizer.AudioPlayer
+}
+
+var AudioPlayers audioPlayerMemoryType
+
+func init() {
+	InitializeAudioPlayerMemory()
+}
+
+func InitializeAudioPlayerMemory() {
+	AudioPlayers.Entries = make(map[string]*consolizer.AudioPlayer)
+}
+
+func AddAudioPlayer(playerAlias string, player *consolizer.AudioPlayer) {
+	AudioPlayers.Lock()
+	defer AudioPlayers.Unlock()
+
+	if _, exists := AudioPlayers.Entries[playerAlias]; exists {
+		panic(fmt.Sprintf("An AudioPlayer with alias '%s' already exists.", playerAlias))
+	}
+
+	AudioPlayers.Entries[playerAlias] = player
+}
+
+func GetAudioPlayer(playerAlias string) *consolizer.AudioPlayer {
+	AudioPlayers.Lock()
+	defer AudioPlayers.Unlock()
+
+	if player, exists := AudioPlayers.Entries[playerAlias]; exists {
+		return player
+	}
+	panic(fmt.Sprintf("The requested AudioPlayer with alias '%s' could not be returned since it does not exist.", playerAlias))
+}
+
+func DeleteAudioPlayer(playerAlias string) {
+	AudioPlayers.Lock()
+	defer AudioPlayers.Unlock()
+
+	if _, exists := AudioPlayers.Entries[playerAlias]; !exists {
+		panic(fmt.Sprintf("The requested AudioPlayer with alias '%s' could not be deleted since it does not exist.", playerAlias))
+	}
+
+	delete(AudioPlayers.Entries, playerAlias)
+}
+
+func UnloadAllAudioPlayers() {
+	AudioPlayers.Lock()
+	defer AudioPlayers.Unlock()
+	for alias, player := range AudioPlayers.Entries {
+		player.Unload() // Assuming you have a method to clean up an AudioPlayer
+		delete(AudioPlayers.Entries, alias)
+	}
+}
+
+func GetAllAudioPlayers() []*consolizer.AudioPlayer {
+	AudioPlayers.Lock()
+	defer AudioPlayers.Unlock()
+
+	var players []*consolizer.AudioPlayer
+	for _, player := range AudioPlayers.Entries {
+		players = append(players, player)
+	}
+	return players
+}

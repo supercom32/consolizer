@@ -1,0 +1,128 @@
+package consolizer
+
+import (
+	"bytes"
+	"fmt"
+	"github.com/hajimehoshi/ebiten/v2/audio"
+	"github.com/hajimehoshi/ebiten/v2/audio/mp3"
+	"github.com/hajimehoshi/ebiten/v2/audio/vorbis"
+	"github.com/hajimehoshi/ebiten/v2/audio/wav"
+	"io"
+	"time"
+)
+
+type MusicType int
+
+const (
+	TypeOgg MusicType = iota
+	TypeMP3
+	TypeWav
+)
+
+func (musicType MusicType) String() string {
+	switch musicType {
+	case TypeOgg:
+		return "Ogg"
+	case TypeMP3:
+		return "MP3"
+	case TypeWav:
+		return "WAV"
+	default:
+		panic("invalid type")
+	}
+}
+
+type AudioPlayer struct {
+	player  *audio.Player
+	volume  float64
+	current time.Duration
+}
+
+var audioContext *audio.Context
+
+func SetAudioSampleRate(sampleRate int) error {
+	if audioContext == nil {
+		audioContext = audio.NewContext(sampleRate)
+	}
+	return fmt.Errorf("The sample rate can only be set once, and only before any audio has been loaded")
+}
+
+func NewAudioPlayer(data []byte, musicType MusicType, introLength int64, loopLength int64) (*AudioPlayer, error) {
+	if audioContext == nil {
+		audioContext = audio.NewContext(44100)
+	}
+	var stream io.Reader
+	var err error
+	switch musicType {
+	case TypeOgg:
+		stream, err = vorbis.DecodeF32(bytes.NewReader(data))
+		if err != nil {
+			return nil, err
+		}
+	case TypeMP3:
+		stream, err = mp3.DecodeF32(bytes.NewReader(data))
+		if err != nil {
+			return nil, err
+		}
+	case TypeWav:
+		stream, err = wav.DecodeF32(bytes.NewReader(data))
+		if err != nil {
+			return nil, err
+		}
+	default:
+		return nil, fmt.Errorf("unsupported music type: %v", musicType)
+	}
+	var playerInstance *audio.Player
+	if introLength == 0 && loopLength == 0 {
+		playerInstance, err = audioContext.NewPlayerF32(stream)
+	} else {
+		infiniteAudio := audio.NewInfiniteLoopWithIntroF32(bytes.NewReader(data), 10, 20)
+		playerInstance, err = audioContext.NewPlayerF32(infiniteAudio)
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &AudioPlayer{
+		player:  playerInstance,
+		volume:  1.0,
+		current: 0,
+	}, nil
+}
+
+func (shared *AudioPlayer) Play() {
+	shared.player.Play()
+}
+
+func (shared *AudioPlayer) Pause() {
+	shared.player.Pause()
+}
+
+func (shared *AudioPlayer) Stop() {
+	shared.player.Pause()
+}
+
+func (shared *AudioPlayer) SetPosition(position time.Duration) error {
+	shared.current = position
+	return shared.player.SetPosition(position)
+}
+
+func (shared *AudioPlayer) Position() time.Duration {
+	return shared.player.Position()
+}
+
+func (shared *AudioPlayer) SetVolume(volume float64) {
+	shared.volume = volume
+	shared.player.SetVolume(volume)
+}
+
+func (shared *AudioPlayer) IsPlaying() bool {
+	return shared.player.IsPlaying()
+}
+
+func (shared *AudioPlayer) Unload() *AudioPlayer {
+	if shared.player != nil {
+		shared.player.Pause()
+		shared.player = nil
+	}
+	return nil
+}

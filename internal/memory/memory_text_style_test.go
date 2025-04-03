@@ -2,9 +2,9 @@ package memory
 
 import (
 	"github.com/stretchr/testify/assert"
-	"github.com/supercom32/consolizer/constants"
-	"github.com/supercom32/consolizer/internal/recast"
-	"github.com/supercom32/consolizer/types"
+	"supercom32.net/consolizer/constants"
+	"supercom32.net/consolizer/internal/recast"
+	"supercom32.net/consolizer/types"
 	"testing"
 )
 

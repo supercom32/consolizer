@@ -2,31 +2,35 @@ package consolizer
 
 import (
 	"fmt"
-	"github.com/supercom32/consolizer/constants"
-	"github.com/supercom32/consolizer/internal/memory"
-	"github.com/supercom32/consolizer/internal/stringformat"
-	"github.com/supercom32/consolizer/types"
 	"github.com/u2takey/go-utils/strings"
+	"supercom32.net/consolizer/constants"
+	"supercom32.net/consolizer/internal/memory"
+	"supercom32.net/consolizer/internal/stringformat"
+	"supercom32.net/consolizer/types"
 )
 
 type ProgressBarInstanceType struct {
-	layerAlias       string
-	progressBarAlias string
+	layerAlias   string
+	controlAlias string
 }
 
 type progressBarType struct{}
 
 var ProgressBar progressBarType
 
+func (shared *ProgressBarInstanceType) AddToTabIndex() {
+	addTabIndex(shared.layerAlias, shared.controlAlias, constants.CellTypeProgressBar)
+}
+
 func (shared *ProgressBarInstanceType) Delete() *ProgressBarInstanceType {
-	if memory.IsProgressBarExists(shared.layerAlias, shared.progressBarAlias) {
-		memory.DeleteProgressBar(shared.layerAlias, shared.progressBarAlias)
+	if memory.IsProgressBarExists(shared.layerAlias, shared.controlAlias) {
+		memory.DeleteProgressBar(shared.layerAlias, shared.controlAlias)
 	}
 	return nil
 }
 
 func (shared *ProgressBarInstanceType) SetProgressBarValue(value int) {
-	progressBarEntry := memory.GetProgressBar(shared.layerAlias, shared.progressBarAlias)
+	progressBarEntry := memory.GetProgressBar(shared.layerAlias, shared.controlAlias)
 	if value <= progressBarEntry.MaxValue {
 		progressBarEntry.Value = value
 	} else {
@@ -35,19 +39,19 @@ func (shared *ProgressBarInstanceType) SetProgressBarValue(value int) {
 }
 
 func (shared *ProgressBarInstanceType) SetProgressBarMaxValue(value int) {
-	progressBarEntry := memory.GetProgressBar(shared.layerAlias, shared.progressBarAlias)
+	progressBarEntry := memory.GetProgressBar(shared.layerAlias, shared.controlAlias)
 	if value > 0 {
 		progressBarEntry.MaxValue = value
 	}
 }
 
 func (shared *ProgressBarInstanceType) SetProgressBarLabel(label string) {
-	progressBarEntry := memory.GetProgressBar(shared.layerAlias, shared.progressBarAlias)
+	progressBarEntry := memory.GetProgressBar(shared.layerAlias, shared.controlAlias)
 	progressBarEntry.Label = label
 }
 
 func (shared *ProgressBarInstanceType) IncrementProgressBarValue() {
-	progressBarEntry := memory.GetProgressBar(shared.layerAlias, shared.progressBarAlias)
+	progressBarEntry := memory.GetProgressBar(shared.layerAlias, shared.controlAlias)
 	progressBarEntry.Value = progressBarEntry.Value + 1
 	if progressBarEntry.Value > progressBarEntry.MaxValue {
 		progressBarEntry.Value = progressBarEntry.MaxValue
@@ -55,14 +59,14 @@ func (shared *ProgressBarInstanceType) IncrementProgressBarValue() {
 }
 
 func (shared *ProgressBarInstanceType) GetProgressBarValueAsRatio() string {
-	progressBarEntry := memory.GetProgressBar(shared.layerAlias, shared.progressBarAlias)
+	progressBarEntry := memory.GetProgressBar(shared.layerAlias, shared.controlAlias)
 	valueAsString := fmt.Sprintf("%d/%d", progressBarEntry.Value, progressBarEntry.MaxValue)
 	return valueAsString
 }
 
 func (shared *ProgressBarInstanceType) GetProgressBarValueAsPercent() string {
 	var returnValue int
-	progressBarEntry := memory.GetProgressBar(shared.layerAlias, shared.progressBarAlias)
+	progressBarEntry := memory.GetProgressBar(shared.layerAlias, shared.controlAlias)
 	if progressBarEntry.MaxValue > 0 {
 		returnValue = (progressBarEntry.Value * 100) / progressBarEntry.MaxValue
 	}
@@ -73,7 +77,7 @@ func (shared *progressBarType) Add(layerAlias string, progressBarAlias string, p
 	memory.AddProgressBar(layerAlias, progressBarAlias, progressBarLabel, styleEntry, xLocation, yLocation, width, height, value, maxValue, isBackgroundTransparent)
 	var progressBarInstance ProgressBarInstanceType
 	progressBarInstance.layerAlias = layerAlias
-	progressBarInstance.progressBarAlias = progressBarAlias
+	progressBarInstance.controlAlias = progressBarAlias
 	return progressBarInstance
 }
 
@@ -97,9 +101,9 @@ drawButtonsOnLayer allows you to draw all buttons on a given text layer.
 */
 func (shared *progressBarType) drawProgressBarsOnLayer(layerEntry types.LayerEntryType) {
 	layerAlias := layerEntry.LayerAlias
-	for currentKey := range memory.ProgressBar.Entries[layerAlias] {
-		progressBarEntry := memory.GetProgressBar(layerAlias, currentKey)
-		drawProgressBar(&layerEntry, currentKey, progressBarEntry.Label, progressBarEntry.StyleEntry, progressBarEntry.XLocation, progressBarEntry.YLocation, progressBarEntry.Width, progressBarEntry.Height, progressBarEntry.Value, progressBarEntry.MaxValue, progressBarEntry.IsBackgroundTransparent)
+	for _, currentProgressBarEntry := range memory.ProgressBars.GetAllEntries(layerAlias) {
+		progressBarEntry := currentProgressBarEntry
+		drawProgressBar(&layerEntry, progressBarEntry.Alias, progressBarEntry.Label, progressBarEntry.StyleEntry, progressBarEntry.XLocation, progressBarEntry.YLocation, progressBarEntry.Width, progressBarEntry.Height, progressBarEntry.Value, progressBarEntry.MaxValue, progressBarEntry.IsBackgroundTransparent)
 	}
 }
 

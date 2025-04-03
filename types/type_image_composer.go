@@ -1,8 +1,8 @@
 package types
 
 import (
-	"github.com/supercom32/consolizer/constants"
 	"image"
+	"supercom32.net/consolizer/constants"
 )
 
 type ImageComposerEntryType struct {
@@ -24,11 +24,14 @@ type ImageComposerImageEntryType struct {
 }
 
 type ImageStyleEntryType struct {
-	DrawingStyle         constants.ImageStyle
-	IsHistogramEqualized bool
-	IsGrayscale          bool
-	DitheringStyle       constants.DitheringStyle
-	DitheringIntensity   float64
+	DrawingStyle                 constants.ImageStyle
+	IsHistogramEqualized         bool
+	IsGrayscale                  bool
+	IsWidthAspectRatioPreserved  bool
+	IsHeightAspectRatioPreserved bool
+	DitheringStyle               constants.DitheringStyle
+	DitheringIntensity           float64
+	BlurSigmaIntensity           float64
 }
 
 func NewImageStyleEntry(existingImageStyleEntry ...*ImageStyleEntryType) ImageStyleEntryType {

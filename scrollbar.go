@@ -1,24 +1,27 @@
 package consolizer
 
 import (
-	"github.com/supercom32/consolizer/constants"
-	"github.com/supercom32/consolizer/internal/memory"
-	"github.com/supercom32/consolizer/types"
-	"sort"
+	"supercom32.net/consolizer/constants"
+	"supercom32.net/consolizer/internal/memory"
+	"supercom32.net/consolizer/types"
 )
 
 type ScrollbarInstanceType struct {
-	layerAlias     string
-	scrollbarAlias string
+	layerAlias   string
+	controlAlias string
 }
 
 type scrollbarType struct{}
 
 var scrollbar scrollbarType
 
+func (shared *ScrollbarInstanceType) AddToTabIndex() {
+	addTabIndex(shared.layerAlias, shared.controlAlias, constants.CellTypeScrollbar)
+}
+
 func (shared *ScrollbarInstanceType) Delete() *ScrollbarInstanceType {
-	if memory.IsScrollbarExists(shared.layerAlias, shared.scrollbarAlias) {
-		memory.DeleteScrollbar(shared.layerAlias, shared.scrollbarAlias)
+	if memory.IsScrollbarExists(shared.layerAlias, shared.controlAlias) {
+		memory.DeleteScrollbar(shared.layerAlias, shared.controlAlias)
 	}
 	return nil
 }
@@ -35,10 +38,10 @@ information should be noted:
 */
 func (shared *ScrollbarInstanceType) setScrollValue(value int) {
 	// TODO: Add scroll value validation.
-	if memory.IsScrollbarExists(shared.layerAlias, shared.scrollbarAlias) {
-		scrollbarEntry := memory.GetScrollbar(shared.layerAlias, shared.scrollbarAlias)
+	if memory.IsScrollbarExists(shared.layerAlias, shared.controlAlias) {
+		scrollbarEntry := memory.GetScrollbar(shared.layerAlias, shared.controlAlias)
 		scrollbarEntry.ScrollValue = value
-		scrollbar.computeScrollbarHandlePositionByScrollValue(shared.layerAlias, shared.scrollbarAlias)
+		scrollbar.computeScrollbarHandlePositionByScrollValue(shared.layerAlias, shared.controlAlias)
 	}
 }
 
@@ -47,8 +50,8 @@ getScrollValue allows you to obtain the scroll bar value for a given scrollbar. 
 no longer exists, then a result of 0 is always returned.
 */
 func (shared *ScrollbarInstanceType) getScrollValue() int {
-	if memory.IsScrollbarExists(shared.layerAlias, shared.scrollbarAlias) {
-		scrollbarEntry := memory.GetScrollbar(shared.layerAlias, shared.scrollbarAlias)
+	if memory.IsScrollbarExists(shared.layerAlias, shared.controlAlias) {
+		scrollbarEntry := memory.GetScrollbar(shared.layerAlias, shared.controlAlias)
 		return scrollbarEntry.ScrollValue
 	}
 	return 0
@@ -59,10 +62,10 @@ setHandlePosition allows you to specify the location of where the scrollbar hand
 The scrollbar value is automatically updated to match the location of the scrollbar handle position.
 */
 func (shared *ScrollbarInstanceType) setHandlePosition(positionIndex int) {
-	if memory.IsScrollbarExists(shared.layerAlias, shared.scrollbarAlias) {
-		scrollbarEntry := memory.GetScrollbar(shared.layerAlias, shared.scrollbarAlias)
+	if memory.IsScrollbarExists(shared.layerAlias, shared.controlAlias) {
+		scrollbarEntry := memory.GetScrollbar(shared.layerAlias, shared.controlAlias)
 		scrollbarEntry.HandlePosition = positionIndex
-		scrollbar.computeScrollbarValueByHandlePosition(shared.layerAlias, shared.scrollbarAlias)
+		scrollbar.computeScrollbarValueByHandlePosition(shared.layerAlias, shared.controlAlias)
 	}
 }
 
@@ -85,7 +88,7 @@ func (shared *scrollbarType) Add(layerAlias string, scrollbarAlias string, style
 	memory.AddScrollbar(layerAlias, scrollbarAlias, styleEntry, xLocation, yLocation, length, maxScrollValue, scrollValue, scrollIncrement, isHorizontal)
 	var ScrollbarInstance ScrollbarInstanceType
 	ScrollbarInstance.layerAlias = layerAlias
-	ScrollbarInstance.scrollbarAlias = scrollbarAlias
+	ScrollbarInstance.controlAlias = scrollbarAlias
 	return ScrollbarInstance
 }
 
@@ -106,18 +109,20 @@ func (shared *scrollbarType) DeleteAllScrollbars(layerAlias string) {
 
 /*
 drawScrollbarsOnLayer allows you to draw all scrollbars on a given text layer.
+In addition, the following information should be noted:
+
+- We sort the scroll bars since internally generated scrollbars will have the prefix "zzz" so that
+it appears last on the rendering order.
 */
 func (shared *scrollbarType) drawScrollbarsOnLayer(layerEntry types.LayerEntryType) {
 	layerAlias := layerEntry.LayerAlias
-	keyList := make([]string, 0)
-	for currentKey := range memory.ScrollBar.Entries[layerAlias] {
-		keyList = append(keyList, currentKey)
+	compareByAlias := func(a, b *types.ScrollbarEntryType) bool {
+		return a.Alias < b.Alias
 	}
-	sort.Strings(keyList)
-	for currentKey := range keyList {
-		scrollbarEntry := memory.GetScrollbar(layerAlias, keyList[currentKey])
+	for _, currentKey := range memory.ScrollBars.SortEntries(layerAlias, true, compareByAlias) {
+		scrollbarEntry := currentKey
 		if scrollbarEntry.IsVisible {
-			shared.drawScrollbar(&layerEntry, keyList[currentKey], scrollbarEntry.StyleEntry, scrollbarEntry.XLocation, scrollbarEntry.YLocation, scrollbarEntry.Length, scrollbarEntry.HandlePosition, scrollbarEntry.IsHorizontal)
+			shared.drawScrollbar(&layerEntry, scrollbarEntry.Alias, scrollbarEntry.StyleEntry, scrollbarEntry.XLocation, scrollbarEntry.YLocation, scrollbarEntry.Length, scrollbarEntry.HandlePosition, scrollbarEntry.IsHorizontal)
 		}
 	}
 }

@@ -2,9 +2,9 @@ package consolizer
 
 import (
 	"fmt"
-	"github.com/supercom32/consolizer/internal/stringformat"
 	"github.com/supercom32/filesystem"
 	"os"
+	"supercom32.net/consolizer/internal/stringformat"
 )
 
 func dumpScreenComparisons(originalScreenAsBase64 string, expectedScreenAsBase64 string) {

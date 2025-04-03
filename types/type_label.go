@@ -2,35 +2,23 @@ package types
 
 import (
 	"encoding/json"
-	"sync"
 )
 
 // func DrawButton(LayerAlias string, Value string, StyleEntry TuiStyleEntryType, IsPressed bool, IsSelected bool, XLocation int, YLocation int, Width int, Height int) {
 type LabelEntryType struct {
-	Mutex      sync.Mutex
-	StyleEntry TuiStyleEntryType
-	Alias      string
-	Value      string
-	XLocation  int
-	YLocation  int
-	Width      int
+	BaseControlType
+	Label                   string
+	Value                   string
+	IsBackgroundTransparent bool
 }
 
 func (shared LabelEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
-		StyleEntry TuiStyleEntryType
-		LabelAlias string
+		BaseControlType
 		LabelValue string
-		XLocation  int
-		YLocation  int
-		Width      int
 	}{
-		StyleEntry: shared.StyleEntry,
-		LabelAlias: shared.Alias,
-		LabelValue: shared.Value,
-		XLocation:  shared.XLocation,
-		YLocation:  shared.YLocation,
-		Width:      shared.Width,
+		BaseControlType: shared.BaseControlType,
+		LabelValue:      shared.Value,
 	})
 	if err != nil {
 		return nil, err
@@ -46,15 +34,20 @@ func (shared LabelEntryType) GetEntryAsJsonDump() string {
 	return string(j)
 }
 
-func NewLabelEntry(existingButtonEntry ...*LabelEntryType) LabelEntryType {
+func NewLabelEntry(existingLabelEntry ...*LabelEntryType) LabelEntryType {
 	var labelEntry LabelEntryType
-	if existingButtonEntry != nil {
-		labelEntry.StyleEntry = NewTuiStyleEntry(&existingButtonEntry[0].StyleEntry)
-		labelEntry.Alias = existingButtonEntry[0].Alias
-		labelEntry.Value = existingButtonEntry[0].Value
-		labelEntry.XLocation = existingButtonEntry[0].XLocation
-		labelEntry.YLocation = existingButtonEntry[0].YLocation
-		labelEntry.Width = existingButtonEntry[0].Width
+	labelEntry.BaseControlType = NewBaseControl()
+
+	if existingLabelEntry != nil {
+		labelEntry.StyleEntry = NewTuiStyleEntry(&existingLabelEntry[0].StyleEntry)
+		labelEntry.Alias = existingLabelEntry[0].Alias
+		labelEntry.Value = existingLabelEntry[0].Value
+		labelEntry.XLocation = existingLabelEntry[0].XLocation
+		labelEntry.YLocation = existingLabelEntry[0].YLocation
+		labelEntry.Width = existingLabelEntry[0].Width
+		labelEntry.IsEnabled = existingLabelEntry[0].IsEnabled
+		labelEntry.IsVisible = existingLabelEntry[0].IsVisible
+		labelEntry.TabIndex = existingLabelEntry[0].TabIndex
 	}
 	return labelEntry
 }

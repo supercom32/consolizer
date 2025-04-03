@@ -2,75 +2,50 @@ package memory
 
 import (
 	"fmt"
-	"github.com/supercom32/consolizer/types"
-	"sync"
+	"supercom32.net/consolizer/types"
 )
 
-type dropdownMemoryType struct {
-	sync.Mutex
-	Entries map[string]map[string]*types.DropdownEntryType
-}
-
-var Dropdown dropdownMemoryType
-
-func InitializeDropdownMemory() {
-	Dropdown.Entries = make(map[string]map[string]*types.DropdownEntryType)
-}
+var Dropdowns = NewControlMemoryManager[types.DropdownEntryType]()
 
 func AddDropdown(layerAlias string, dropdownAlias string, styleEntry types.TuiStyleEntryType, selectionEntry types.SelectionEntryType, xLocation int, yLocation int, itemWidth int, itemSelected int) {
-	Dropdown.Lock()
-	defer func() {
-		Dropdown.Unlock()
-	}()
-	dropDownEntry := types.NewDropdownEntry()
-	dropDownEntry.StyleEntry = styleEntry
-	dropDownEntry.SelectionEntry = selectionEntry
-	dropDownEntry.XLocation = xLocation
-	dropDownEntry.YLocation = yLocation
-	dropDownEntry.ItemWidth = itemWidth
-	dropDownEntry.ItemSelected = itemSelected
-	if Dropdown.Entries[layerAlias] == nil {
-		Dropdown.Entries[layerAlias] = make(map[string]*types.DropdownEntryType)
-	}
-	Dropdown.Entries[layerAlias][dropdownAlias] = &dropDownEntry
+	dropdownEntry := types.NewDropdownEntry()
+	dropdownEntry.Alias = dropdownAlias
+	dropdownEntry.StyleEntry = styleEntry
+	dropdownEntry.SelectionEntry = selectionEntry
+	dropdownEntry.XLocation = xLocation
+	dropdownEntry.YLocation = yLocation
+	dropdownEntry.ItemWidth = itemWidth
+	dropdownEntry.ItemSelected = itemSelected
+
+	// Use the ControlMemoryManager to add the dropdown entry
+	Dropdowns.Add(layerAlias, dropdownAlias, &dropdownEntry)
 }
 
 func DeleteDropdown(layerAlias string, dropdownAlias string) {
-	Dropdown.Lock()
-	defer func() {
-		Dropdown.Unlock()
-	}()
-	delete(Dropdown.Entries[layerAlias], dropdownAlias)
+	// Use ControlMemoryManager to remove the dropdown entry
+	Dropdowns.Remove(layerAlias, dropdownAlias)
 }
 
 func IsDropdownExists(layerAlias string, dropdownAlias string) bool {
-	Dropdown.Lock()
-	defer func() {
-		Dropdown.Unlock()
-	}()
-	if _, isExist := Dropdown.Entries[layerAlias][dropdownAlias]; isExist {
-		return true
-	}
-	return false
+	// Use ControlMemoryManager to check if the dropdown exists
+	return Dropdowns.Get(layerAlias, dropdownAlias) != nil
 }
 
 func GetDropdown(layerAlias string, dropdownAlias string) *types.DropdownEntryType {
-	Dropdown.Lock()
-	defer func() {
-		Dropdown.Unlock()
-	}()
-	if _, isExist := Dropdown.Entries[layerAlias][dropdownAlias]; !isExist {
+	// Get the dropdown entry using ControlMemoryManager
+	dropdownEntry := Dropdowns.Get(layerAlias, dropdownAlias)
+	if dropdownEntry == nil {
 		panic(fmt.Sprintf("The selector '%s' under layer '%s' could not be obtained since it does not exist!", dropdownAlias, layerAlias))
 	}
-	return Dropdown.Entries[layerAlias][dropdownAlias]
+	return dropdownEntry
 }
 
 func DeleteAllDropdownsFromLayer(layerAlias string) {
-	Dropdown.Lock()
-	defer func() {
-		Dropdown.Unlock()
-	}()
-	for entryToRemove := range Dropdown.Entries[layerAlias] {
-		delete(Dropdown.Entries[layerAlias], entryToRemove)
+	// Get all dropdown entries from the layer
+	dropdowns := Dropdowns.GetAllEntries(layerAlias)
+
+	// Loop through all entries and delete them
+	for _, dropdown := range dropdowns {
+		Dropdowns.Remove(layerAlias, dropdown.Alias)
 	}
 }

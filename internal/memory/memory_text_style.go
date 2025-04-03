@@ -2,46 +2,33 @@ package memory
 
 import (
 	"fmt"
-	"github.com/supercom32/consolizer/types"
-	"sync"
+	"supercom32.net/consolizer/types"
 )
 
-type textStyleMemoryType struct {
-	sync.Mutex
-	Entries map[string]*types.TextCellStyleEntryType
-}
-
-var TextStyle textStyleMemoryType
-
-func InitializeTextStyleMemory() {
-	TextStyle.Entries = make(map[string]*types.TextCellStyleEntryType)
-}
+var TextStyles = NewControlMemoryManager[types.TextCellStyleEntryType]()
 
 func AddTextStyle(textStyleAlias string, attributeEntry types.TextCellStyleEntryType) {
-	TextStyle.Lock()
-	defer func() {
-		TextStyle.Unlock()
-	}()
-	TextStyle.Entries[textStyleAlias] = &attributeEntry
+	// Use the generic memory manager to add the text style entry
+	TextStyles.Add("", textStyleAlias, &attributeEntry)
 }
 
 func GetTextStyle(textStyleAlias string) *types.TextCellStyleEntryType {
-	TextStyle.Lock()
-	defer func() {
-		TextStyle.Unlock()
-	}()
-	if TextStyle.Entries[textStyleAlias] == nil {
+	// Use the generic memory manager to retrieve the text style entry
+	textStyleEntry := TextStyles.Get("", textStyleAlias)
+	if textStyleEntry == nil {
 		panic(fmt.Sprintf("The requested text style with alias '%s' could not be returned since it does not exist.", textStyleAlias))
 	}
-	return TextStyle.Entries[textStyleAlias]
+	return textStyleEntry
 }
 
 func GetTextStyleAsAttributeEntry(textStyleAlias string) types.AttributeEntryType {
-	TextStyle.Lock()
-	defer func() {
-		TextStyle.Unlock()
-	}()
-	textStyleEntry := TextStyle.Entries[textStyleAlias]
+	// Use the generic memory manager to retrieve the text style entry
+	textStyleEntry := TextStyles.Get("", textStyleAlias)
+	if textStyleEntry == nil {
+		panic(fmt.Sprintf("The requested text style with alias '%s' could not be returned since it does not exist.", textStyleAlias))
+	}
+
+	// Convert to AttributeEntryType
 	attributeEntry := types.NewAttributeEntry()
 	attributeEntry.ForegroundColor = textStyleEntry.ForegroundColor
 	attributeEntry.BackgroundColor = textStyleEntry.BackgroundColor
@@ -53,22 +40,12 @@ func GetTextStyleAsAttributeEntry(textStyleAlias string) types.AttributeEntryTyp
 	return attributeEntry
 }
 
-// DeleteTextStyle
 func DeleteTextStyle(textStyleAlias string) {
-	TextStyle.Lock()
-	defer func() {
-		TextStyle.Unlock()
-	}()
-	delete(TextStyle.Entries, textStyleAlias)
+	// Use the generic memory manager to remove the text style entry
+	TextStyles.Remove("", textStyleAlias)
 }
 
 func IsTextStyleExists(textStyleAlias string) bool {
-	TextStyle.Lock()
-	defer func() {
-		TextStyle.Unlock()
-	}()
-	if _, isExist := TextStyle.Entries[textStyleAlias]; isExist {
-		return true
-	}
-	return false
+	// Use the generic memory manager to check if the text style exists
+	return TextStyles.Get("", textStyleAlias) != nil
 }

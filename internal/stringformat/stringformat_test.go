@@ -2,7 +2,7 @@ package stringformat
 
 import (
 	"github.com/stretchr/testify/assert"
-	"github.com/supercom32/consolizer/constants"
+	"supercom32.net/consolizer/constants"
 	"testing"
 )
 

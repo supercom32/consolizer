@@ -2,75 +2,50 @@ package memory
 
 import (
 	"fmt"
-	"github.com/supercom32/consolizer/types"
-	"sync"
+	"supercom32.net/consolizer/types"
 )
 
-type radioButtonMemoryType struct {
-	sync.Mutex
-	Entries map[string]map[string]*types.RadioButtonEntryType
-}
-
-var RadioButton radioButtonMemoryType
-
-func InitializeRadioButtonMemory() {
-	RadioButton.Entries = make(map[string]map[string]*types.RadioButtonEntryType)
-}
+var RadioButtons = NewControlMemoryManager[types.RadioButtonEntryType]()
 
 func AddRadioButton(layerAlias string, radioButtonAlias string, radioButtonLabel string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, groupId int, isSelected bool) {
-	RadioButton.Lock()
-	defer func() {
-		RadioButton.Unlock()
-	}()
 	radioButtonEntry := types.NewRadioButtonEntry()
+	radioButtonEntry.Alias = radioButtonAlias
 	radioButtonEntry.StyleEntry = styleEntry
 	radioButtonEntry.Label = radioButtonLabel
 	radioButtonEntry.XLocation = xLocation
 	radioButtonEntry.YLocation = yLocation
 	radioButtonEntry.GroupId = groupId
 	radioButtonEntry.IsSelected = isSelected
-	if RadioButton.Entries[layerAlias] == nil {
-		RadioButton.Entries[layerAlias] = make(map[string]*types.RadioButtonEntryType)
-	}
-	RadioButton.Entries[layerAlias][radioButtonAlias] = &radioButtonEntry
+
+	// Use the ControlMemoryManager to add the radio button entry
+	RadioButtons.Add(layerAlias, radioButtonAlias, &radioButtonEntry)
 }
 
 func GetRadioButton(layerAlias string, radioButtonAlias string) *types.RadioButtonEntryType {
-	RadioButton.Lock()
-	defer func() {
-		RadioButton.Unlock()
-	}()
-	if RadioButton.Entries[layerAlias][radioButtonAlias] == nil {
+	// Get the radio button entry using ControlMemoryManager
+	radioButtonEntry := RadioButtons.Get(layerAlias, radioButtonAlias)
+	if radioButtonEntry == nil {
 		panic(fmt.Sprintf("The requested radio button with alias '%s' on layer '%s' could not be returned since it does not exist.", radioButtonAlias, layerAlias))
 	}
-	return RadioButton.Entries[layerAlias][radioButtonAlias]
+	return radioButtonEntry
 }
 
 func IsRadioButtonExists(layerAlias string, radioButtonAlias string) bool {
-	RadioButton.Lock()
-	defer func() {
-		RadioButton.Unlock()
-	}()
-	if RadioButton.Entries[layerAlias][radioButtonAlias] == nil {
-		return false
-	}
-	return true
+	// Use ControlMemoryManager to check if the radio button exists
+	return RadioButtons.Get(layerAlias, radioButtonAlias) != nil
 }
 
 func DeleteRadioButton(layerAlias string, radioButtonAlias string) {
-	RadioButton.Lock()
-	defer func() {
-		RadioButton.Unlock()
-	}()
-	delete(RadioButton.Entries[layerAlias], radioButtonAlias)
+	// Use ControlMemoryManager to remove the radio button entry
+	RadioButtons.Remove(layerAlias, radioButtonAlias)
 }
 
 func DeleteAllRadioButtonsFromLayer(layerAlias string) {
-	RadioButton.Lock()
-	defer func() {
-		RadioButton.Unlock()
-	}()
-	for entryToRemove := range RadioButton.Entries[layerAlias] {
-		delete(RadioButton.Entries[layerAlias], entryToRemove)
+	// Get all radio button entries from the layer
+	radioButtons := RadioButtons.GetAllEntries(layerAlias)
+
+	// Loop through all entries and delete them
+	for _, radioButton := range radioButtons {
+		RadioButtons.Remove(layerAlias, radioButton.Alias) // Assuming radioButton.Alias is used as the alias
 	}
 }

@@ -1,9 +1,9 @@
 package math
 
 import (
-	"github.com/supercom32/consolizer/internal/recast"
-	"github.com/supercom32/consolizer/internal/stringformat"
 	"reflect"
+	"supercom32.net/consolizer/internal/recast"
+	"supercom32.net/consolizer/internal/stringformat"
 	"testing"
 )
 

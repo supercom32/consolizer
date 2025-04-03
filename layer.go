@@ -3,9 +3,9 @@ package consolizer
 import (
 	"fmt"
 	"github.com/google/uuid"
-	"github.com/supercom32/consolizer/constants"
-	"github.com/supercom32/consolizer/internal/memory"
-	"github.com/supercom32/consolizer/types"
+	"supercom32.net/consolizer/constants"
+	"supercom32.net/consolizer/internal/memory"
+	"supercom32.net/consolizer/types"
 )
 
 type LayerInstanceType struct {
@@ -46,9 +46,9 @@ func (shared LayerInstanceType) DrawComposedImage(imageComposeEntry ImageCompose
 	var imageLayer types.LayerEntryType
 	baseImage := imageComposeEntry.RenderImage()
 	if drawingStyle.DrawingStyle == constants.ImageStyleHighColor {
-		imageLayer = getImageLayerAsHighColor(baseImage, drawingStyle, widthInCharacters, heightInCharacters, 0)
+		imageLayer = getImageLayerAsHighColor(baseImage, drawingStyle, widthInCharacters, heightInCharacters, drawingStyle.BlurSigmaIntensity)
 	} else {
-		imageLayer = getImageLayerAsBraille(baseImage, drawingStyle, widthInCharacters, heightInCharacters, 0)
+		imageLayer = getImageLayerAsBraille(baseImage, drawingStyle, widthInCharacters, heightInCharacters, drawingStyle.BlurSigmaIntensity)
 	}
 	drawImageToLayer(shared.layerAlias, imageLayer, xLocation, yLocation)
 	return err
@@ -338,7 +338,7 @@ will be ignored.
 */
 func (shared LayerInstanceType) DeleteLayer() {
 	validateLayer(shared.layerAlias)
-	memory.DeleteLayer(shared.layerAlias, false)
+	memory.DeleteLayer(shared.layerAlias)
 	if commonResource.layerInstance.layerAlias == shared.layerAlias {
 		nextLayerAlias := memory.GetNextLayerAlias()
 		nextLayerInstance := memory.GetLayer(nextLayerAlias)
@@ -357,6 +357,65 @@ func (shared LayerInstanceType) IsLayerExists() bool {
 func (shared LayerInstanceType) SetIsVisible(isVisible bool) {
 	validateLayer(shared.layerAlias)
 	setLayerIsVisible(shared.layerAlias, isVisible)
+}
+
+/*
+Color24Bit allows you to color a layer using a 24-bit color expressed as
+an int32. This is useful for when you have colors which are already defined.
+*/
+
+func (shared LayerInstanceType) Color24Bit(foregroundColor constants.ColorType, backgroundColor constants.ColorType) {
+	ColorLayer24Bit(shared, foregroundColor, backgroundColor)
+}
+
+/*
+Locate allows you to set the default cursor location on your specified text
+layer for printing with. This is useful for when you wish to print text
+at different locations of your text layer at any given time. If you wish to
+change the cursor location for a text layer that is not currently set as your
+default, use 'LocateLayer' instead. In addition, the following information
+should be noted:
+
+- If you pass in a location value that falls outside the dimensions of the
+default text layer, a panic will be generated to fail as fast as possible.
+
+- Valid text layer locations start at position (0,0) for the upper left corner.
+Since location values do not start at (1,1), valid end positions for the bottom
+right corner will be one less than the text layer width and height. For
+example:
+
+	// Create a new text layer with the alias "ForegroundLayer", at location
+	// (0,0), with a width and height of 15x15, a z order priority of 1,
+	// and no parent layer associated with it.
+	consolizer.AddLayer("ForegroundLayer", 0, 0, 15, 15, 1, "")
+	// Set the text layer with the alias "ForegroundLayer" as our default.
+	consolizer.Layer("ForegroundLayer")
+	// Move our cursor location to the bottom right corner of our text layer.
+	consolizer.Locate(14, 14)
+*/
+func (shared LayerInstanceType) Locate(xLocation int, yLocation int) {
+	validateDefaultLayerIsNotEmpty()
+	LocateLayer(shared, xLocation, yLocation)
+}
+
+/*
+Print allows you to write text to the default text layer. If you wish to
+print to a text layer that is not currently set as the default, use
+'PrintLayer' instead. In addition, the following information should be noted:
+
+- When text is written to the text layer, the cursor position is also updated
+to reflect its new location. Like a typewriter, the cursor position moves to
+the start of the next line after each print statement.
+
+- If the string to print ends up being too long to fit at its current location,
+then only the visible portion of your string will be printed.
+
+- If printing has not yet finished and there are no available lines left, then
+all remaining characters will be discarded and printing will stop.
+*/
+func (shared LayerInstanceType) Print(textToPrint string) {
+	validateDefaultLayerIsNotEmpty()
+	PrintLayer(shared, textToPrint)
 }
 
 /*
@@ -538,7 +597,7 @@ will be ignored.
 */
 func deleteLayer(layerAlias string) {
 	validateLayer(layerAlias)
-	memory.DeleteLayer(layerAlias, false)
+	memory.DeleteLayer(layerAlias)
 	if commonResource.layerInstance.layerAlias == layerAlias {
 		nextLayerAlias := memory.GetNextLayerAlias()
 		// If last entry and no more layers, just return. Do not set anything.
@@ -552,7 +611,7 @@ func deleteLayer(layerAlias string) {
 }
 
 func DeleteLayer(layerInstance LayerInstanceType) {
-	memory.DeleteLayer(layerInstance.layerAlias, false)
+	memory.DeleteLayer(layerInstance.layerAlias)
 	if commonResource.layerInstance.layerAlias == layerInstance.layerAlias {
 		nextLayerAlias := memory.GetNextLayerAlias()
 		nextLayerInstance := memory.GetLayer(nextLayerAlias)
@@ -564,10 +623,10 @@ func DeleteLayer(layerInstance LayerInstanceType) {
 DeleteAllLayers allows you to remove all layers from memory.
 */
 func DeleteAllLayers() {
-	for _, entryToRemove := range memory.Screen.Entries {
+	for _, entryToRemove := range memory.Screen.GetAllEntries() {
 		deleteLayer(entryToRemove.LayerAlias)
 	}
-	memory.InitializeScreenMemory()
+	memory.ReInitializeScreenMemory()
 }
 
 func isLayerExists(layerAlias string) bool {

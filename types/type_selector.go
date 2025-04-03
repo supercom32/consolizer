@@ -2,51 +2,52 @@ package types
 
 import (
 	"encoding/json"
+	"reflect"
 )
 
 type SelectorEntryType struct {
-	ScrollBarAlias   string
-	StyleEntry       TuiStyleEntryType
+	BaseControlType
+	ScrollbarAlias   string
 	SelectionEntry   SelectionEntryType
-	XLocation        int
-	YLocation        int
-	SelectorHeight   int
 	ItemWidth        int
+	ColumnCount      int
 	NumberOfColumns  int
+	ViewportX        int
+	ViewportY        int
 	ViewportPosition int
 	ItemHighlighted  int
 	ItemSelected     int
-	IsVisible        bool
-	IsBorderDrawn    bool
+}
+
+func (shared SelectorEntryType) GetAlias() string {
+	return shared.Alias
 }
 
 func (shared SelectorEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
-		ScrollBarAlias   string
-		StyleEntry       TuiStyleEntryType
+		BaseControlType
+		ScrollbarAlias   string
 		SelectionEntry   SelectionEntryType
-		XLocation        int
-		YLocation        int
 		ItemWidth        int
+		ColumnCount      int
 		NumberOfColumns  int
+		ViewportX        int
+		ViewportY        int
 		ViewportPosition int
 		ItemHighlighted  int
 		ItemSelected     int
-		IsVisible        bool
-		IsBorderDrawn    bool
 	}{
-		ScrollBarAlias:   shared.ScrollBarAlias,
-		StyleEntry:       shared.StyleEntry,
+		BaseControlType:  shared.BaseControlType,
+		ScrollbarAlias:   shared.ScrollbarAlias,
 		SelectionEntry:   shared.SelectionEntry,
-		XLocation:        shared.XLocation,
-		YLocation:        shared.YLocation,
 		ItemWidth:        shared.ItemWidth,
+		ColumnCount:      shared.ColumnCount,
 		NumberOfColumns:  shared.NumberOfColumns,
+		ViewportX:        shared.ViewportX,
+		ViewportY:        shared.ViewportY,
 		ViewportPosition: shared.ViewportPosition,
 		ItemHighlighted:  shared.ItemHighlighted,
 		ItemSelected:     shared.ItemSelected,
-		IsVisible:        shared.IsVisible,
-		IsBorderDrawn:    shared.IsBorderDrawn,
 	})
 	if err != nil {
 		return nil, err
@@ -64,19 +65,41 @@ func (shared SelectorEntryType) GetEntryAsJsonDump() string {
 
 func NewSelectorEntry(existingSelectorEntry ...*SelectorEntryType) SelectorEntryType {
 	var selectorEntry SelectorEntryType
+	selectorEntry.BaseControlType = NewBaseControl()
+
 	if existingSelectorEntry != nil {
-		selectorEntry.ScrollBarAlias = existingSelectorEntry[0].ScrollBarAlias
-		selectorEntry.StyleEntry = existingSelectorEntry[0].StyleEntry
+		selectorEntry.BaseControlType = existingSelectorEntry[0].BaseControlType
+		selectorEntry.ScrollbarAlias = existingSelectorEntry[0].ScrollbarAlias
 		selectorEntry.SelectionEntry = existingSelectorEntry[0].SelectionEntry
-		selectorEntry.XLocation = existingSelectorEntry[0].XLocation
-		selectorEntry.YLocation = existingSelectorEntry[0].YLocation
 		selectorEntry.ItemWidth = existingSelectorEntry[0].ItemWidth
+		selectorEntry.ColumnCount = existingSelectorEntry[0].ColumnCount
 		selectorEntry.NumberOfColumns = existingSelectorEntry[0].NumberOfColumns
+		selectorEntry.ViewportX = existingSelectorEntry[0].ViewportX
+		selectorEntry.ViewportY = existingSelectorEntry[0].ViewportY
 		selectorEntry.ViewportPosition = existingSelectorEntry[0].ViewportPosition
 		selectorEntry.ItemHighlighted = existingSelectorEntry[0].ItemHighlighted
 		selectorEntry.ItemSelected = existingSelectorEntry[0].ItemSelected
-		selectorEntry.IsVisible = existingSelectorEntry[0].IsVisible
-		selectorEntry.IsBorderDrawn = existingSelectorEntry[0].IsBorderDrawn
 	}
 	return selectorEntry
+}
+
+func IsSelectorEntryEqual(sourceSelectorEntry *SelectorEntryType, targetSelectorEntry *SelectorEntryType) bool {
+	if sourceSelectorEntry.BaseControlType == targetSelectorEntry.BaseControlType &&
+		sourceSelectorEntry.ScrollbarAlias == targetSelectorEntry.ScrollbarAlias &&
+		reflect.DeepEqual(sourceSelectorEntry.SelectionEntry, targetSelectorEntry.SelectionEntry) &&
+		sourceSelectorEntry.ItemWidth == targetSelectorEntry.ItemWidth &&
+		sourceSelectorEntry.ColumnCount == targetSelectorEntry.ColumnCount &&
+		sourceSelectorEntry.NumberOfColumns == targetSelectorEntry.NumberOfColumns &&
+		sourceSelectorEntry.ViewportX == targetSelectorEntry.ViewportX &&
+		sourceSelectorEntry.ViewportY == targetSelectorEntry.ViewportY &&
+		sourceSelectorEntry.ViewportPosition == targetSelectorEntry.ViewportPosition &&
+		sourceSelectorEntry.ItemHighlighted == targetSelectorEntry.ItemHighlighted &&
+		sourceSelectorEntry.ItemSelected == targetSelectorEntry.ItemSelected {
+		return true
+	}
+	return false
+}
+
+func GetSelectorAlias(entry *SelectorEntryType) string {
+	return entry.Alias
 }

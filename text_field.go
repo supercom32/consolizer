@@ -1,34 +1,37 @@
 package consolizer
 
 import (
-	"github.com/supercom32/consolizer/constants"
-	"github.com/supercom32/consolizer/internal/memory"
-	"github.com/supercom32/consolizer/internal/stringformat"
-	"github.com/supercom32/consolizer/types"
 	"strings"
+	"supercom32.net/consolizer/constants"
+	"supercom32.net/consolizer/internal/memory"
+	"supercom32.net/consolizer/internal/stringformat"
+	"supercom32.net/consolizer/types"
 )
 
 type textFieldInstanceType struct {
-	layerAlias     string
-	textFieldAlias string
+	layerAlias   string
+	controlAlias string
 }
 
 type textFieldType struct{}
 
 var TextField textFieldType
 
+func (shared *textFieldInstanceType) AddToTabIndex() {
+	addTabIndex(shared.layerAlias, shared.controlAlias, constants.CellTypeTextField)
+}
+
 func (shared *textFieldInstanceType) GetFocus() string {
-	if memory.IsTextFieldExists(shared.layerAlias, shared.textFieldAlias) {
-		validatorTextField(shared.layerAlias, shared.textFieldAlias)
-		memory.GetTextField(shared.layerAlias, shared.textFieldAlias)
-		setFocusedControl(shared.layerAlias, shared.textFieldAlias, constants.CellTypeTextField)
+	if memory.IsTextFieldExists(shared.layerAlias, shared.controlAlias) {
+		validatorTextField(shared.layerAlias, shared.controlAlias)
+		setFocusedControl(shared.layerAlias, shared.controlAlias, constants.CellTypeTextField)
 	}
 	return ""
 }
 
 func (shared *textFieldInstanceType) Delete() string {
-	if memory.IsTextFieldExists(shared.layerAlias, shared.textFieldAlias) {
-		memory.DeleteTextField(shared.layerAlias, shared.textFieldAlias)
+	if memory.IsTextFieldExists(shared.layerAlias, shared.controlAlias) {
+		memory.DeleteTextField(shared.layerAlias, shared.controlAlias)
 	}
 	return ""
 }
@@ -37,9 +40,9 @@ func (shared *textFieldInstanceType) Delete() string {
 GetValue allows you to get the current value of your text field with.
 */
 func (shared *textFieldInstanceType) GetValue() string {
-	if memory.IsTextFieldExists(shared.layerAlias, shared.textFieldAlias) {
-		validatorTextField(shared.layerAlias, shared.textFieldAlias)
-		textFieldEntry := memory.GetTextField(shared.layerAlias, shared.textFieldAlias)
+	if memory.IsTextFieldExists(shared.layerAlias, shared.controlAlias) {
+		validatorTextField(shared.layerAlias, shared.controlAlias)
+		textFieldEntry := memory.GetTextField(shared.layerAlias, shared.controlAlias)
 		value := textFieldEntry.CurrentValue
 		return strings.TrimSpace(string(value))
 	}
@@ -50,10 +53,10 @@ func (shared *textFieldInstanceType) GetValue() string {
 SetLocation allows you to set the current location of your text field.
 */
 func (shared *textFieldInstanceType) SetLocation(xLocation int, yLocation int) {
-	if memory.IsTextFieldExists(shared.layerAlias, shared.textFieldAlias) {
-		validatorTextField(shared.layerAlias, shared.textFieldAlias)
+	if memory.IsTextFieldExists(shared.layerAlias, shared.controlAlias) {
+		validatorTextField(shared.layerAlias, shared.controlAlias)
 		validateLayerLocationByLayerAlias(shared.layerAlias, xLocation, yLocation)
-		textFieldEntry := memory.GetTextField(shared.layerAlias, shared.textFieldAlias)
+		textFieldEntry := memory.GetTextField(shared.layerAlias, shared.controlAlias)
 		textFieldEntry.XLocation = xLocation
 		textFieldEntry.YLocation = yLocation
 	}
@@ -88,7 +91,7 @@ func (shared *textFieldType) Add(layerAlias string, textFieldAlias string, style
 	memory.AddTextField(layerAlias, textFieldAlias, styleEntry, xLocation, yLocation, width, maxLengthAllowed, IsPasswordProtected, defaultValue+" ", isEnabled)
 	var textFieldInstance textFieldInstanceType
 	textFieldInstance.layerAlias = layerAlias
-	textFieldInstance.textFieldAlias = textFieldAlias
+	textFieldInstance.controlAlias = textFieldAlias
 	return textFieldInstance
 }
 
@@ -110,9 +113,9 @@ entry.
 */
 func (shared *textFieldType) drawTextFieldOnLayer(layerEntry types.LayerEntryType) {
 	layerAlias := layerEntry.LayerAlias
-	for currentKey := range memory.TextField.Entries[layerAlias] {
-		textFieldEntry := memory.GetTextField(layerAlias, currentKey)
-		shared.drawInputString(&layerEntry, textFieldEntry.StyleEntry, currentKey, textFieldEntry.XLocation, textFieldEntry.YLocation, textFieldEntry.Width, textFieldEntry.ViewportPosition, textFieldEntry.CurrentValue)
+	for _, currentTextFieldEntry := range memory.TextFields.GetAllEntries(layerAlias) {
+		textFieldEntry := currentTextFieldEntry
+		shared.drawInputString(&layerEntry, textFieldEntry.StyleEntry, textFieldEntry.Alias, textFieldEntry.XLocation, textFieldEntry.YLocation, textFieldEntry.Width, textFieldEntry.ViewportPosition, textFieldEntry.CurrentValue)
 	}
 }
 

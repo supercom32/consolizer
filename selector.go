@@ -1,25 +1,28 @@
 package consolizer
 
 import (
-	"github.com/supercom32/consolizer/constants"
-	"github.com/supercom32/consolizer/internal/memory"
-	"github.com/supercom32/consolizer/internal/stringformat"
-	"github.com/supercom32/consolizer/types"
-	"sort"
+	"supercom32.net/consolizer/constants"
+	"supercom32.net/consolizer/internal/memory"
+	"supercom32.net/consolizer/internal/stringformat"
+	"supercom32.net/consolizer/types"
 )
 
 type selectorInstanceType struct {
-	layerAlias    string
-	selectorAlias string
+	layerAlias   string
+	controlAlias string
 }
 
 type selectorType struct{}
 
 var Selector selectorType
 
+func (shared *selectorInstanceType) AddToTabIndex() {
+	addTabIndex(shared.layerAlias, shared.controlAlias, constants.CellTypeSelectorItem)
+}
+
 func (shared *selectorInstanceType) Delete() *selectorInstanceType {
-	if memory.IsSelectorExists(shared.layerAlias, shared.selectorAlias) {
-		memory.DeleteSelector(shared.layerAlias, shared.selectorAlias)
+	if memory.IsSelectorExists(shared.layerAlias, shared.controlAlias) {
+		memory.DeleteSelector(shared.layerAlias, shared.controlAlias)
 	}
 	return nil
 }
@@ -29,9 +32,9 @@ GetSelected allows you to retrieve the currently selected item. If the Selector 
 no longer exists, then an empty result is always returned.
 */
 func (shared *selectorInstanceType) GetSelected() (string, int) {
-	if memory.IsSelectorExists(shared.layerAlias, shared.selectorAlias) {
-		validatorMenu(shared.layerAlias, shared.selectorAlias)
-		menuEntry := memory.GetSelector(shared.layerAlias, shared.selectorAlias)
+	if memory.IsSelectorExists(shared.layerAlias, shared.controlAlias) {
+		validatorMenu(shared.layerAlias, shared.controlAlias)
+		menuEntry := memory.GetSelector(shared.layerAlias, shared.controlAlias)
 		value := menuEntry.ItemSelected
 		return menuEntry.SelectionEntry.SelectionAlias[value], value
 	}
@@ -43,9 +46,9 @@ setViewport allows you to specify the current viewport index for a given Selecto
 no longer exists, then no operation occurs.
 */
 func (shared *selectorInstanceType) setViewport(viewportPosition int) {
-	if memory.IsSelectorExists(shared.layerAlias, shared.selectorAlias) {
-		validatorMenu(shared.layerAlias, shared.selectorAlias)
-		menuEntry := memory.GetSelector(shared.layerAlias, shared.selectorAlias)
+	if memory.IsSelectorExists(shared.layerAlias, shared.controlAlias) {
+		validatorMenu(shared.layerAlias, shared.controlAlias)
+		menuEntry := memory.GetSelector(shared.layerAlias, shared.controlAlias)
 		menuEntry.ViewportPosition = viewportPosition
 	}
 }
@@ -72,7 +75,7 @@ func (shared *selectorType) Add(layerAlias string, selectorAlias string, styleEn
 	// TODO: Add verification to ensure no item can be 0 length/number.
 	memory.AddSelector(layerAlias, selectorAlias, styleEntry, selectionEntry, xLocation, yLocation, selectorHeight, itemWidth, numberOfColumns, viewportPosition, selectedItem, isBorderDrawn)
 	selectorEntry := memory.GetSelector(layerAlias, selectorAlias)
-	selectorEntry.ScrollBarAlias = stringformat.GetLastSortedUUID()
+	selectorEntry.ScrollbarAlias = stringformat.GetLastSortedUUID()
 	scrollBarMaxValue := len(selectionEntry.SelectionValue) - (selectorHeight * numberOfColumns) + 1
 	scrollBarXLocation := xLocation + (itemWidth * numberOfColumns)
 	scrollBarYLocation := yLocation
@@ -82,8 +85,8 @@ func (shared *selectorType) Add(layerAlias string, selectorAlias string, styleEn
 		scrollBarYLocation = scrollBarYLocation - 1
 		scrollBarHeight = selectorHeight + 2
 	}
-	scrollbar.Add(layerAlias, selectorEntry.ScrollBarAlias, styleEntry, scrollBarXLocation, scrollBarYLocation, scrollBarHeight, scrollBarMaxValue, 0, numberOfColumns, false)
-	scrollBarEntry := memory.GetScrollbar(layerAlias, selectorEntry.ScrollBarAlias)
+	scrollbar.Add(layerAlias, selectorEntry.ScrollbarAlias, styleEntry, scrollBarXLocation, scrollBarYLocation, scrollBarHeight, scrollBarMaxValue, 0, numberOfColumns, false)
+	scrollBarEntry := memory.GetScrollbar(layerAlias, selectorEntry.ScrollbarAlias)
 	selectorWidth := itemWidth
 	if len(selectionEntry.SelectionValue) <= selectorHeight*numberOfColumns || styleEntry.SelectorTextAlignment == constants.AlignmentNoPadding {
 		scrollBarEntry.IsEnabled = false
@@ -92,7 +95,7 @@ func (shared *selectorType) Add(layerAlias string, selectorAlias string, styleEn
 	}
 	var selectorInstance selectorInstanceType
 	selectorInstance.layerAlias = layerAlias
-	selectorInstance.selectorAlias = selectorAlias
+	selectorInstance.controlAlias = selectorAlias
 	setFocusedControl(layerAlias, selectorAlias, constants.CellTypeSelectorItem)
 	return selectorInstance
 }
@@ -166,18 +169,15 @@ drawSelectorsOnLayer allows you to draw all selectors on a given text layer.
 */
 func (shared *selectorType) drawSelectorsOnLayer(layerEntry types.LayerEntryType) {
 	layerAlias := layerEntry.LayerAlias
-	// Range over all our Selector aliases and add them to an array.
-	keyList := make([]string, 0)
-	for currentKey := range memory.Selector.Entries[layerAlias] {
-		keyList = append(keyList, currentKey)
+	compareByAlias := func(a, b *types.SelectorEntryType) bool {
+		return a.Alias < b.Alias
 	}
 	// Sort array so internally generated selectors appear last (Since sorted by name, and
 	// UUID generates "zzz" prefixes). This prevents Dropdown selectors from appearing under
 	// user created selectors, when they should always be on top.
-	sort.Strings(keyList)
-	for currentKey := range keyList {
-		selectorEntry := memory.GetSelector(layerAlias, keyList[currentKey])
-		shared.drawSelector(keyList[currentKey], &layerEntry, selectorEntry.StyleEntry, selectorEntry.SelectionEntry, selectorEntry.XLocation, selectorEntry.YLocation, selectorEntry.SelectorHeight, selectorEntry.ItemWidth, selectorEntry.NumberOfColumns, selectorEntry.ViewportPosition, selectorEntry.ItemHighlighted)
+	for _, currentSelectorEntry := range memory.Selectors.SortEntries(layerAlias, true, compareByAlias) {
+		selectorEntry := currentSelectorEntry
+		shared.drawSelector(selectorEntry.Alias, &layerEntry, selectorEntry.StyleEntry, selectorEntry.SelectionEntry, selectorEntry.XLocation, selectorEntry.YLocation, selectorEntry.Height, selectorEntry.ItemWidth, selectorEntry.NumberOfColumns, selectorEntry.ViewportPosition, selectorEntry.ItemHighlighted)
 	}
 }
 
@@ -273,13 +273,10 @@ func (shared *selectorType) updateMouseEventSelector() bool {
 	// matches a control that belongs to a Dropdown list, then stop processing (Do not attempt to close Dropdown).
 	if buttonPressed != 0 && (eventStateMemory.stateId == constants.EventStateDragAndDropScrollbar ||
 		characterEntry.AttributeEntry.CellType == constants.CellTypeScrollbar) {
-		for currentKey := range memory.Selector.Entries[focusedLayerAlias] {
-			if !memory.IsSelectorExists(focusedLayerAlias, currentKey) {
-				continue
-			}
-			selectorEntry := memory.GetSelector(focusedLayerAlias, currentKey)
+		for _, currentSelectorEntry := range memory.Selectors.GetAllEntries(focusedLayerAlias) {
+			selectorEntry := currentSelectorEntry
 			// TODO: Here we don't need to protect this since it is not user controlled?
-			scrollBarEntry := memory.GetScrollbar(focusedLayerAlias, selectorEntry.ScrollBarAlias)
+			scrollBarEntry := memory.GetScrollbar(focusedLayerAlias, selectorEntry.ScrollbarAlias)
 			if selectorEntry.ViewportPosition != scrollBarEntry.ScrollValue {
 				selectorEntry.ViewportPosition = scrollBarEntry.ScrollValue
 				isScreenUpdateRequired = true
@@ -287,13 +284,10 @@ func (shared *selectorType) updateMouseEventSelector() bool {
 		}
 	}
 	// If a Selector is no longer visible, then make the scroll bars associated with it invisible as well.
-	for currentKey := range memory.Selector.Entries[layerAlias] {
-		if !memory.IsSelectorExists(focusedLayerAlias, currentKey) {
-			continue
-		}
-		selectorEntry := memory.GetSelector(layerAlias, currentKey)
+	for _, currentSelectorEntry := range memory.Selectors.GetAllEntries(layerAlias) {
+		selectorEntry := currentSelectorEntry
 		// TODO: Here we don't need to protect this since it is not user controlled?
-		scrollBarEntry := memory.GetScrollbar(layerAlias, selectorEntry.ScrollBarAlias)
+		scrollBarEntry := memory.GetScrollbar(layerAlias, selectorEntry.ScrollbarAlias)
 		if !selectorEntry.IsVisible {
 			scrollBarEntry.IsVisible = false
 		} else {

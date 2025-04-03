@@ -2,9 +2,9 @@ package consolizer
 
 import (
 	"fmt"
-	"github.com/supercom32/consolizer/internal/memory"
-	"github.com/supercom32/consolizer/internal/stringformat"
-	"github.com/supercom32/consolizer/types"
+	"supercom32.net/consolizer/internal/memory"
+	"supercom32.net/consolizer/internal/stringformat"
+	"supercom32.net/consolizer/types"
 )
 
 /*
@@ -52,10 +52,11 @@ func printDialog(layerEntry *types.LayerEntryType, attributeEntry types.Attribut
 			}
 		}
 		if isPrintDelaySkipped == false {
-			SleepInMilliseconds(uint(printDelayInMilliseconds))
-			UpdateDisplay(false)
+			if printDelayInMilliseconds != 0 {
+				SleepInMilliseconds(uint(printDelayInMilliseconds))
+				UpdateDisplay(false)
+			}
 		}
-
 	}
 	UpdateDisplay(false)
 }

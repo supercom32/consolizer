@@ -6,6 +6,7 @@ import (
 
 type RadioButtonEntryType struct {
 	StyleEntry TuiStyleEntryType
+	Alias      string
 	Label      string
 	XLocation  int
 	YLocation  int
@@ -19,6 +20,7 @@ type RadioButtonEntryType struct {
 func (shared RadioButtonEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
 		StyleEntry TuiStyleEntryType
+		Alias      string
 		Label      string
 		XLocation  int
 		YLocation  int
@@ -29,6 +31,7 @@ func (shared RadioButtonEntryType) MarshalJSON() ([]byte, error) {
 		TabIndex   int
 	}{
 		StyleEntry: shared.StyleEntry,
+		Alias:      shared.Alias,
 		Label:      shared.Label,
 		XLocation:  shared.XLocation,
 		YLocation:  shared.YLocation,
@@ -57,6 +60,7 @@ func NewRadioButtonEntry(existingRadioButtonEntry ...*RadioButtonEntryType) Radi
 	var radioButtonEntry RadioButtonEntryType
 	if existingRadioButtonEntry != nil {
 		radioButtonEntry.StyleEntry = NewTuiStyleEntry(&existingRadioButtonEntry[0].StyleEntry)
+		radioButtonEntry.Alias = existingRadioButtonEntry[0].Alias
 		radioButtonEntry.Label = existingRadioButtonEntry[0].Label
 		radioButtonEntry.XLocation = existingRadioButtonEntry[0].XLocation
 		radioButtonEntry.YLocation = existingRadioButtonEntry[0].YLocation
