@@ -161,6 +161,7 @@ func (shared *dropdownType) updateDropdownStateMouse() bool {
 	characterEntry := getCellInformationUnderMouseCursor(mouseXLocation, mouseYLocation)
 	layerAlias := characterEntry.LayerAlias
 	cellControlAlias := characterEntry.AttributeEntry.CellControlAlias
+
 	// If a buttonType is pressed AND (you are in a drag and drop event OR the cell type is scroll bar), then
 	// sync all Dropdown selectors with their appropriate scroll bars. If the control under focus
 	// matches a control that belongs to a Dropdown list, then stop processing (Do not attempt to close Dropdown).
@@ -184,6 +185,7 @@ func (shared *dropdownType) updateDropdownStateMouse() bool {
 			return isUpdateRequired
 		}
 	}
+
 	// If our Dropdown alias is not empty, then open our Dropdown.
 	if buttonPressed != 0 && cellControlAlias != "" && characterEntry.AttributeEntry.CellType == constants.CellTypeDropdown &&
 		Dropdowns.IsExists(layerAlias, cellControlAlias) {
@@ -200,9 +202,26 @@ func (shared *dropdownType) updateDropdownStateMouse() bool {
 		isUpdateRequired = true
 		return isUpdateRequired
 	}
+
+	// Only close dropdowns if clicking outside both the dropdown and its scrollbar
 	_, _, previousButtonPress, _ := GetPreviousMouseStatus()
-	if buttonPressed != 0 && previousButtonPress == 0 && characterEntry.AttributeEntry.CellType != constants.CellTypeDropdown {
-		shared.closeAllOpenDropdowns(layerAlias)
+	if buttonPressed != 0 && previousButtonPress == 0 {
+		// Check if we're clicking on a scrollbar that belongs to an open dropdown
+		isScrollbarOfOpenDropdown := false
+		if characterEntry.AttributeEntry.CellType == constants.CellTypeScrollbar {
+			for _, currentDropdownEntry := range Dropdowns.GetAllEntries(layerAlias) {
+				dropdownEntry := currentDropdownEntry
+				if dropdownEntry.IsTrayOpen && dropdownEntry.ScrollbarAlias == cellControlAlias {
+					isScrollbarOfOpenDropdown = true
+					break
+				}
+			}
+		}
+
+		// Only close if not clicking on a dropdown or its scrollbar
+		if characterEntry.AttributeEntry.CellType != constants.CellTypeDropdown && !isScrollbarOfOpenDropdown {
+			shared.closeAllOpenDropdowns(layerAlias)
+		}
 	}
 	return isUpdateRequired
 }
