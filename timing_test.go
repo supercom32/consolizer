@@ -2,12 +2,11 @@ package consolizer
 
 import (
 	"github.com/stretchr/testify/assert"
-	"supercom32.net/consolizer/internal/memory"
 	"testing"
 )
 
 func TestTimerFunctionality(test *testing.T) {
-	memory.InitializeTimerMemory()
+	InitializeTimerMemory()
 	timerEntry := AddTimer(3000, true)
 	SleepInMilliseconds(1000)
 	assert.Equalf(test, timerEntry.IsExpired(), false, "The timer was flagged as expired when not enough time has elapsed.")
@@ -16,7 +15,7 @@ func TestTimerFunctionality(test *testing.T) {
 }
 
 func TestSetTimerFunctionality(test *testing.T) {
-	memory.InitializeTimerMemory()
+	InitializeTimerMemory()
 	timerEntry := AddTimer(9000, false)
 	timerEntry.SetTimer(3000, true)
 	SleepInSeconds(1)
@@ -27,7 +26,7 @@ func TestSetTimerFunctionality(test *testing.T) {
 }
 
 func TestResetTimerFunctionality(test *testing.T) {
-	memory.InitializeTimerMemory()
+	InitializeTimerMemory()
 	timerEntry := AddTimer(1000, true)
 	SleepInMilliseconds(1500)
 	assert.Equalf(test, true, timerEntry.IsExpired(), "The initial timer was not flagged as expired when more time has elapsed.")

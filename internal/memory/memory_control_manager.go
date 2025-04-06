@@ -1,6 +1,8 @@
 package memory
 
 import (
+	"fmt"
+	"reflect"
 	"sort"
 )
 
@@ -17,60 +19,65 @@ func NewControlMemoryManager[T any]() *ControlMemoryManager[T] {
 }
 
 // Add inserts a pointer entry into the specified layer's memory.
-func (l *ControlMemoryManager[T]) Add(layerAlias string, alias string, entry *T) {
+func (shared *ControlMemoryManager[T]) Add(layerAlias string, alias string, entry *T) {
 	// Ensure the layer exists, or create a new one
-	if l.MemoryManager[layerAlias] == nil {
-		l.MemoryManager[layerAlias] = NewMemoryManager[T]()
+	if shared.MemoryManager[layerAlias] == nil {
+		shared.MemoryManager[layerAlias] = NewMemoryManager[T]()
 	}
-	// Add the pointer entry to the specified layer
-	l.MemoryManager[layerAlias].Add(alias, entry)
+	// AddLayer the pointer entry to the specified layer
+	shared.MemoryManager[layerAlias].Add(alias, entry)
 }
 
 // Remove deletes an entry from the specified layer's memory.
-func (l *ControlMemoryManager[T]) Remove(layerAlias string, alias string) {
-	if l.MemoryManager[layerAlias] != nil {
-		l.MemoryManager[layerAlias].Remove(alias)
+func (shared *ControlMemoryManager[T]) Remove(layerAlias string, alias string) {
+	if shared.MemoryManager[layerAlias] != nil {
+		shared.MemoryManager[layerAlias].Remove(alias)
 	}
 }
 
 // RemoveAll deletes all entries from the specified layer's memory.
-func (l *ControlMemoryManager[T]) RemoveAll(layerAlias string) {
-	if l.MemoryManager[layerAlias] != nil {
-		l.MemoryManager[layerAlias].RemoveAll()
+func (shared *ControlMemoryManager[T]) RemoveAll(layerAlias string) {
+	if shared.MemoryManager[layerAlias] != nil {
+		shared.MemoryManager[layerAlias].RemoveAll()
 	}
 }
 
 // Get retrieves a pointer entry from the specified layer's memory.
-func (l *ControlMemoryManager[T]) Get(layerAlias string, alias string) *T {
-	if l.MemoryManager[layerAlias] != nil {
-		value := l.MemoryManager[layerAlias].Get(alias)
-		return value // Return the pointer directly
+func (shared *ControlMemoryManager[T]) Get(layerAlias string, alias string) *T {
+	typeName := reflect.TypeOf(*new(T)).Name() // GetLayer the type name without pointer
+	if shared.MemoryManager[layerAlias] != nil {
+		value := shared.MemoryManager[layerAlias].Get(alias)
+		if value == nil {
+			// Use reflect to get a human-readable type name (without pointer format)
+			panic(fmt.Sprintf("The %s '%s' under layer '%s' could not be obtained since it does not exist!", typeName, alias, layerAlias))
+		}
+		return value
 	}
-	return nil // Return nil if the layer or alias is not found
+	panic(fmt.Sprintf("The layer '%s' for '%s' could not be found!", layerAlias, typeName))
 }
 
 // GetAllEntries retrieves all entries as pointers from the specified layer.
-func (l *ControlMemoryManager[T]) GetAllEntries(layerAlias string) []*T {
-	if l.MemoryManager[layerAlias] == nil {
+func (shared *ControlMemoryManager[T]) GetAllEntries(layerAlias string) []*T {
+	if shared.MemoryManager[layerAlias] == nil {
 		return []*T{} // Return an empty slice if the layer doesn't exist
 	}
-	allEntries := l.MemoryManager[layerAlias].GetAllEntries()
+	allEntries := shared.MemoryManager[layerAlias].GetAllEntries()
 	return allEntries // Return the slice of pointers
 }
 
 // GetAllEntriesOverall retrieves all entries from all layers.
-func (l *ControlMemoryManager[T]) GetAllEntriesOverall() []*T {
+func (shared *ControlMemoryManager[T]) GetAllEntriesOverall() []*T {
 	var allEntries []*T
-	for layerAlias := range l.MemoryManager {
-		layerEntries := l.GetAllEntries(layerAlias)
+	for layerAlias := range shared.MemoryManager {
+		layerEntries := shared.GetAllEntries(layerAlias)
 		allEntries = append(allEntries, layerEntries...)
 	}
 	return allEntries
 }
 
 // GetAllEntriesAsAliasList retrieves all aliases from the specified layer.
-func (l *ControlMemoryManager[T]) GetAllEntriesAsAliasList(layerAlias string, getAlias func(*T) string) []string {
-	allEntries := l.GetAllEntries(layerAlias)
+func (shared *ControlMemoryManager[T]) GetAllEntriesAsAliasList(layerAlias string, getAlias func(*T) string) []string {
+	allEntries := shared.GetAllEntries(layerAlias)
 	aliases := make([]string, 0, len(allEntries))
 	for _, entry := range allEntries {
 		aliases = append(aliases, getAlias(entry))
@@ -79,8 +86,8 @@ func (l *ControlMemoryManager[T]) GetAllEntriesAsAliasList(layerAlias string, ge
 }
 
 // SortEntries sorts entries in the specified layer using a custom comparator.
-func (l *ControlMemoryManager[T]) SortEntries(layerAlias string, isAscendingOrder bool, compare func(a, b *T) bool) []*T {
-	allEntries := l.GetAllEntries(layerAlias)
+func (shared *ControlMemoryManager[T]) SortEntries(layerAlias string, isAscendingOrder bool, compare func(a, b *T) bool) []*T {
+	allEntries := shared.GetAllEntries(layerAlias)
 	sortedEntries := append([]*T{}, allEntries...) // Make a copy to avoid mutating the original slice
 	sort.Slice(sortedEntries, func(i, j int) bool {
 		if isAscendingOrder {

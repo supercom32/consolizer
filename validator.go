@@ -3,7 +3,6 @@ package consolizer
 import (
 	"fmt"
 	"supercom32.net/consolizer/constants"
-	"supercom32.net/consolizer/internal/memory"
 	"supercom32.net/consolizer/types"
 )
 
@@ -15,7 +14,7 @@ func validateTextFieldWidth(width int) {
 
 func validateLayerLocationByLayerAlias(layerAlias string, xLocation int, yLocation int) {
 	validateLayer(layerAlias)
-	layerEntry := memory.GetLayer(layerAlias)
+	layerEntry := Screen.GetLayer(layerAlias)
 	validateLayerLocationByLayerEntry(layerEntry, xLocation, yLocation)
 }
 
@@ -45,7 +44,7 @@ func validateColorIndex(colorIndex int) {
 }
 
 func validateTextStyleExists(textStyleAlias string) {
-	if !memory.IsTextStyleExists(textStyleAlias) {
+	if !IsTextStyleExists(textStyleAlias) {
 		safeSttyPanic(fmt.Sprintf("The specified text style '%s' does not exist.", textStyleAlias))
 	}
 }
@@ -63,19 +62,19 @@ func validateTerminalWidthAndHeight(width int, height int) {
 }
 
 func validateLayer(layerAlias string) {
-	if !memory.IsLayerExists(layerAlias) {
+	if !Screen.IsLayerExists(layerAlias) {
 		safeSttyPanic(fmt.Sprintf("The specified layer '%s' does not exist.", layerAlias))
 	}
 }
 
 func validatorTextField(layerAlias string, textFieldAlias string) {
-	if !(memory.IsTextFieldExists(layerAlias, textFieldAlias)) {
+	if !(TextFields.IsExists(layerAlias, textFieldAlias)) {
 		safeSttyPanic(fmt.Sprintf("The text field '%s' under layer '%s' could not be obtained since it does not exist!", textFieldAlias, layerAlias))
 	}
 }
 
 func validatorMenu(layerAlias string, menuAlias string) {
-	if !(memory.IsSelectorExists(layerAlias, menuAlias)) {
+	if !(Selectors.IsExists(layerAlias, menuAlias)) {
 		safeSttyPanic(fmt.Sprintf("The menu '%s' under layer '%s' could not be obtained since it does not exist!", menuAlias, layerAlias))
 	}
 }

@@ -57,7 +57,7 @@ func NewImageComposerImageEntry() ImageComposerImageEntryType {
 	return imageComposerImageEntry
 }
 
-/*func (shared *ImageComposerEntryType) Add(imageAlias string, xLocation int, yLocation int, imageStyle ImageStyleEntryType, zOrder int) *ImageComposerImageEntryType {
+/*func (shared *ImageComposerEntryType) AddLayer(imageAlias string, xLocation int, yLocation int, imageStyle ImageStyleEntryType, zOrder int) *ImageComposerImageEntryType {
 	imageComposerImage := NewImageComposerImageEntry()
 	imageComposerImage.ZOrder = zOrder
 	imageComposerImage.HotspotXLocation = xLocation

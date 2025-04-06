@@ -6,7 +6,6 @@ import (
 	_ "math/rand"
 	_ "strconv"
 	"supercom32.net/consolizer/constants"
-	"supercom32.net/consolizer/internal/memory"
 	"supercom32.net/consolizer/internal/recast"
 	"supercom32.net/consolizer/internal/stringformat"
 	"supercom32.net/consolizer/types"
@@ -19,11 +18,11 @@ func TestTerminalAddLayer(test *testing.T) {
 	layer1 := AddLayer(0, 0, 20, 20, 1, nil)
 	layer2 := AddLayer(0, 0, 20, 20, 2, &layer1)
 	layer3 := AddLayer(0, 0, 20, 20, 3, nil)
-	layerEntry := memory.GetLayer(layer1.layerAlias)
+	layerEntry := GetLayer(layer1.layerAlias)
 	assert.Equalf(test, layer1.layerAlias, layerEntry.LayerAlias, "Failed to get layer entry!")
-	layerEntry = memory.GetLayer(layer2.layerAlias)
+	layerEntry = GetLayer(layer2.layerAlias)
 	assert.Equalf(test, layer2.layerAlias, layerEntry.LayerAlias, "Failed to get layer entry!")
-	layerEntry = memory.GetLayer(layer3.layerAlias)
+	layerEntry = GetLayer(layer3.layerAlias)
 	assert.Equalf(test, layer3.layerAlias, layerEntry.LayerAlias, "Failed to get layer entry!")
 }
 
@@ -47,7 +46,7 @@ func TestTerminalSetAlpha(test *testing.T) {
 	InitializeTerminal(20, 20)
 	layer1 := AddLayer(0, 0, 20, 20, 1, nil)
 	SetLayerAlpha(layer1, 50)
-	layerEntry := memory.GetLayer(layer1.layerAlias)
+	layerEntry := GetLayer(layer1.layerAlias)
 	alphaValue := layerEntry.DefaultAttribute.ForegroundTransformValue
 	assert.Equalf(test, float32(50), alphaValue, "Setting the foreground alpha value for a layer failed.")
 	alphaValue = layerEntry.DefaultAttribute.BackgroundTransformValue
@@ -92,7 +91,7 @@ func TestTerminalColor(test *testing.T) {
 	InitializeTerminal(20, 20)
 	layer1 := AddLayer(0, 0, 20, 20, 1, nil)
 	Color(3, 12)
-	layerEntry := memory.GetLayer(layer1.layerAlias)
+	layerEntry := GetLayer(layer1.layerAlias)
 	expectedValues := recast.GetArrayOfInterfaces(constants.AnsiColorByIndex[3], constants.AnsiColorByIndex[12])
 	obtainedValues := recast.GetArrayOfInterfaces(layerEntry.DefaultAttribute.ForegroundColor, layerEntry.DefaultAttribute.BackgroundColor)
 	assert.Equalf(test, expectedValues, obtainedValues, "The default specified layer color does not match what was set.")
@@ -109,7 +108,7 @@ func TestTerminalColorRGB(test *testing.T) {
 	backgroundBlueIndex := int32(192)
 	layer1 := AddLayer(0, 0, 20, 20, 1, nil)
 	ColorRGB(foregroundRedIndex, foregroundGreenIndex, foregroundBlueIndex, backgroundRedIndex, backgroundGreenIndex, backgroundBlueIndex)
-	layerEntry := memory.GetLayer(layer1.layerAlias)
+	layerEntry := GetLayer(layer1.layerAlias)
 	expectedValues := recast.GetArrayOfInterfaces(constants.ColorType(0x3004b65f9), constants.ColorType(0x3007b91c0))
 	obtainedValues := recast.GetArrayOfInterfaces(layerEntry.DefaultAttribute.ForegroundColor, layerEntry.DefaultAttribute.BackgroundColor)
 	assert.Equalf(test, expectedValues, obtainedValues, "The default specified layer color does not match what was set.")
@@ -122,7 +121,7 @@ func TestTerminalMoveLayerByAbsoluteValue(test *testing.T) {
 	xLocation := 9
 	yLocation := 8
 	layer1.MoveLayerByAbsoluteValue(xLocation, yLocation)
-	layerEntry := memory.GetLayer(layer1.layerAlias)
+	layerEntry := GetLayer(layer1.layerAlias)
 	expectedValues := recast.GetArrayOfInterfaces(xLocation, yLocation)
 	obtainedValues := recast.GetArrayOfInterfaces(layerEntry.ScreenXLocation, layerEntry.ScreenYLocation)
 	assert.Equalf(test, expectedValues, obtainedValues, "The layer did not move by the absolute value specified.")
@@ -141,7 +140,7 @@ func TestTerminalMoveLayerByRelativeValue(test *testing.T) {
 	xLocation := 9
 	yLocation := -8
 	layer1.MoveLayerByRelativeValue(xLocation, yLocation)
-	layerEntry := memory.GetLayer(layer1.layerAlias)
+	layerEntry := GetLayer(layer1.layerAlias)
 	expectedValues := recast.GetArrayOfInterfaces(xLocation, yLocation)
 	obtainedValues := recast.GetArrayOfInterfaces(layerEntry.ScreenXLocation, layerEntry.ScreenYLocation)
 	assert.Equalf(test, expectedValues, obtainedValues, "The layer did not move by the relative value specified.")
@@ -160,7 +159,7 @@ func TestTerminalLocate(test *testing.T) {
 	InitializeTerminal(20, 20)
 	layer1 := AddLayer(0, 0, 20, 20, 1, nil)
 	Locate(xLocation, yLocation)
-	layerEntry := memory.GetLayer(layer1.layerAlias)
+	layerEntry := GetLayer(layer1.layerAlias)
 	expectedValues := recast.GetArrayOfInterfaces(xLocation, yLocation)
 	obtainedValues := recast.GetArrayOfInterfaces(layerEntry.CursorXLocation, layerEntry.CursorYLocation)
 	assert.Equalf(test, expectedValues, obtainedValues, "The cursor position did not move to the location specified.")
@@ -187,7 +186,7 @@ func TestTerminalPrint(test *testing.T) {
 	Print("This is a test print on an arbitrary location!") // This line will be intentionally shifted.
 	Color(3, 15)
 	Print("This is a test print after printing on an arbitrary location!") // This line will force scroll by 1 line.
-	layerEntry := memory.GetLayer(layer1.layerAlias)
+	layerEntry := GetLayer(layer1.layerAlias)
 	obtainedValue := layerEntry.GetBasicAnsiStringAsBase64()
 	expectedValue := "G1szODsyOzEyODsxMjg7MG0bWzQ4OzI7MTI4OzA7MTI4bVRoaXMgaXMgYSB0ZXN0IHByaW50G1szODsyOzA7MDswbRtbNDg7MjswOzA7MG0KG1szODsyOzI1NTsyNTU7MjU1bSAgICAgICAgICAgICAgICAgICAgG1szODsyOzA7MDswbRtbNDg7MjswOzA7MG0KG1szODsyOzI1NTsyNTU7MjU1bSAgICAgICAgICAgICAgICAgICAgG1szODsyOzA7MDswbRtbNDg7MjswOzA7MG0KG1szODsyOzI1NTsyNTU7MjU1bSAgICAgICAgICAgICAgICAgICAgG1szODsyOzA7MDswbRtbNDg7MjswOzA7MG0KG1szODsyOzI1NTsyNTU7MjU1bSAgICAgICAgICAgICAgICAgICAgG1szODsyOzA7MDswbRtbNDg7MjswOzA7MG0KG1szODsyOzI1NTsyNTU7MjU1bSAgICAgICAgICAgICAgICAgICAgG1szODsyOzA7MDswbRtbNDg7MjswOzA7MG0KG1szODsyOzI1NTsyNTU7MjU1bSAgICAgICAbWzM4OzI7MjU1OzA7MjU1bRtbNDg7MjswOzI1NTsyNTVtVGhpcyBpcyBhIHRlcxtbMzg7MjswOzA7MG0bWzQ4OzI7MDswOzBtChtbMzg7MjsxMjg7MTI4OzBtG1s0ODsyOzI1NTsyNTU7MjU1bVRoaXMgaXMgYSB0ZXN0IHByaW50G1szODsyOzA7MDswbRtbNDg7MjswOzA7MG0K"
 	result := assert.Equalf(test, expectedValue, obtainedValue, "The printed screen does not match the master original!")
@@ -204,7 +203,7 @@ func TestTerminalClear(test *testing.T) {
 	layer1 := AddLayer(0, 0, layerWidth, layerHeight, 1, nil)
 	Color(13, 14)
 	layer1.FillLayer("0123456789")
-	layerEntry := memory.GetLayer(layer1.layerAlias)
+	layerEntry := GetLayer(layer1.layerAlias)
 	obtainedValue := layerEntry.GetBasicAnsiStringAsBase64()
 	expectedValue := "G1szODsyOzI1NTswOzI1NW0bWzQ4OzI7MDsyNTU7MjU1bTAxMjM0NTY3ODkwMTIzG1szODsyOzA7MDswbRtbNDg7MjswOzA7MG0KG1szODsyOzI1NTswOzI1NW0bWzQ4OzI7MDsyNTU7MjU1bTQ1Njc4OTAxMjM0NTY3G1szODsyOzA7MDswbRtbNDg7MjswOzA7MG0KG1szODsyOzI1NTswOzI1NW0bWzQ4OzI7MDsyNTU7MjU1bTg5MDEyMzQ1Njc4OTAxG1szODsyOzA7MDswbRtbNDg7MjswOzA7MG0KG1szODsyOzI1NTswOzI1NW0bWzQ4OzI7MDsyNTU7MjU1bTIzNDU2Nzg5MDEyMzQ1G1szODsyOzA7MDswbRtbNDg7MjswOzA7MG0KG1szODsyOzI1NTswOzI1NW0bWzQ4OzI7MDsyNTU7MjU1bTY3ODkwMTIzNDU2Nzg5G1szODsyOzA7MDswbRtbNDg7MjswOzA7MG0KG1szODsyOzI1NTswOzI1NW0bWzQ4OzI7MDsyNTU7MjU1bTAxMjM0NTY3ODkwMTIzG1szODsyOzA7MDswbRtbNDg7MjswOzA7MG0KG1szODsyOzI1NTswOzI1NW0bWzQ4OzI7MDsyNTU7MjU1bTQ1Njc4OTAxMjM0NTY3G1szODsyOzA7MDswbRtbNDg7MjswOzA7MG0KG1szODsyOzI1NTswOzI1NW0bWzQ4OzI7MDsyNTU7MjU1bTg5MDEyMzQ1Njc4OTAxG1szODsyOzA7MDswbRtbNDg7MjswOzA7MG0K"
 	assert.Equalf(test, expectedValue, obtainedValue, "The filled layer does not match the expected result")
@@ -227,7 +226,7 @@ func TestTerminalScrollCharacterMemory(test *testing.T) {
 	for lineIndex := 0; lineIndex < 13; lineIndex++ {
 		Print(fmt.Sprintf("This is the '%d' line of text printed!", lineIndex))
 	}
-	layerEntry := memory.GetLayer(layer1.layerAlias)
+	layerEntry := GetLayer(layer1.layerAlias)
 	obtainedValue := layerEntry.GetBasicAnsiStringAsBase64()
 	expectedValue := "G1szODsyOzA7MjU1OzBtG1s0ODsyOzE5MjsxOTI7MTkybVRoaXMgaXMgdGhlICc1JyBsaW5lIG9mIHRleHQgcHJpbnRlZCEbWzM4OzI7MjU1OzI1NTsyNTVtG1s0ODsyOzA7MDswbSAgIBtbMzg7MjswOzA7MG0bWzQ4OzI7MDswOzBtChtbMzg7MjswOzI1NTswbRtbNDg7MjsxOTI7MTkyOzE5Mm1UaGlzIGlzIHRoZSAnNicgbGluZSBvZiB0ZXh0IHByaW50ZWQhG1szODsyOzI1NTsyNTU7MjU1bRtbNDg7MjswOzA7MG0gICAbWzM4OzI7MDswOzBtG1s0ODsyOzA7MDswbQobWzM4OzI7MDsyNTU7MG0bWzQ4OzI7MTkyOzE5MjsxOTJtVGhpcyBpcyB0aGUgJzcnIGxpbmUgb2YgdGV4dCBwcmludGVkIRtbMzg7MjsyNTU7MjU1OzI1NW0bWzQ4OzI7MDswOzBtICAgG1szODsyOzA7MDswbRtbNDg7MjswOzA7MG0KG1szODsyOzA7MjU1OzBtG1s0ODsyOzE5MjsxOTI7MTkybVRoaXMgaXMgdGhlICc4JyBsaW5lIG9mIHRleHQgcHJpbnRlZCEgICAbWzM4OzI7MDswOzBtG1s0ODsyOzA7MDswbQobWzM4OzI7MDsyNTU7MG0bWzQ4OzI7MTkyOzE5MjsxOTJtVGhpcyBpcyB0aGUgJzknIGxpbmUgb2YgdGV4dCBwcmludGVkISAgIBtbMzg7MjswOzA7MG0bWzQ4OzI7MDswOzBtChtbMzg7MjswOzI1NTswbRtbNDg7MjsxOTI7MTkyOzE5Mm1UaGlzIGlzIHRoZSAnMTAnIGxpbmUgb2YgdGV4dCBwcmludGVkISAgG1szODsyOzA7MDswbRtbNDg7MjswOzA7MG0KG1szODsyOzA7MjU1OzBtG1s0ODsyOzE5MjsxOTI7MTkybVRoaXMgaXMgdGhlICcxMScgbGluZSBvZiB0ZXh0IHByaW50ZWQhICAbWzM4OzI7MDswOzBtG1s0ODsyOzA7MDswbQobWzM4OzI7MDsyNTU7MG0bWzQ4OzI7MTkyOzE5MjsxOTJtVGhpcyBpcyB0aGUgJzEyJyBsaW5lIG9mIHRleHQgcHJpbnRlZCEgIBtbMzg7MjswOzA7MG0bWzQ4OzI7MDswOzBtCg=="
 	assert.Equalf(test, expectedValue, obtainedValue, "The printed screen does not match the master original!")
@@ -240,7 +239,7 @@ func TestTerminalGetRuneOnLayer(test *testing.T) {
 	InitializeTerminal(layerWidth, layerHeight)
 	layer1 := AddLayer(0, 0, layerWidth, layerHeight, 1, nil)
 	Color(10, 7)
-	layerEntry := memory.GetLayer(layer1.layerAlias)
+	layerEntry := GetLayer(layer1.layerAlias)
 	attributeEntry := types.NewAttributeEntry()
 	attributeEntry.CellUserId = 999
 	arrayOfRunes := stringformat.GetRunesFromString("T")
@@ -353,28 +352,28 @@ func TestDeleteLayer(test *testing.T) {
 	p3c2 := AddLayer(0, 0, layerWidth, layerHeight, 1, &p3c1)
 	p3c3 := AddLayer(0, 0, layerWidth, layerHeight, 1, &p3c2)
 	AddLayer(0, 0, layerWidth, layerHeight, 1, &p3c3)
-	sortedLayerAliasSlice := memory.GetSortedLayerMemoryAliasSlice()
+	sortedLayerAliasSlice := GetSortedLayerMemoryAliasSlice()
 	obtainedValue := len(sortedLayerAliasSlice)
 	expectedValue := 12
 	assert.Equalf(test, expectedValue, obtainedValue, "The number of layers created does not match!")
 
 	Layer(p1)
 	p3.DeleteLayer()
-	sortedLayerAliasSlice = memory.GetSortedLayerMemoryAliasSlice()
+	sortedLayerAliasSlice = GetSortedLayerMemoryAliasSlice()
 	obtainedValue = len(sortedLayerAliasSlice)
 	expectedValue = 7
 	assert.Equalf(test, expectedValue, obtainedValue, "The number of layers created does not match!")
 
 	Layer(p1)
 	p4.DeleteLayer()
-	sortedLayerAliasSlice = memory.GetSortedLayerMemoryAliasSlice()
+	sortedLayerAliasSlice = GetSortedLayerMemoryAliasSlice()
 	obtainedValue = len(sortedLayerAliasSlice)
 	expectedValue = 6
 	assert.Equalf(test, expectedValue, obtainedValue, "The number of layers created does not match!")
 
 	Layer(p2)
 	p1.DeleteLayer()
-	sortedLayerAliasSlice = memory.GetSortedLayerMemoryAliasSlice()
+	sortedLayerAliasSlice = GetSortedLayerMemoryAliasSlice()
 	obtainedValue = len(sortedLayerAliasSlice)
 	expectedValue = 1
 	assert.Equalf(test, expectedValue, obtainedValue, "The number of layers created does not match!")

@@ -2,7 +2,6 @@ package consolizer
 
 import (
 	"github.com/stretchr/testify/assert"
-	"supercom32.net/consolizer/internal/memory"
 	"testing"
 	"time"
 )
@@ -10,7 +9,7 @@ import (
 func TestTooltipThinLine(test *testing.T) {
 	layer2, _, _, styleEntry := CommonTestSetup()
 	layer2.AddTooltip("This is a tooltip!", styleEntry, 0, 0, 20, 5, 3, 3, 25, 1, false, false, 0)
-	memory.SetMouseStatus(0, 0, 0, "")
+	SetMouseStatus(0, 0, 0, "")
 	time.Sleep(1 * time.Second)
 	UpdateDisplay(false)
 	UpdatePeriodicEvents()
@@ -26,7 +25,7 @@ func TestTooltipThinLine(test *testing.T) {
 func TestTooltipNoBorder(test *testing.T) {
 	layer2, _, _, styleEntry := CommonTestSetup()
 	layer2.AddTooltip("This is a tooltip and this works great!", styleEntry, 0, 0, 20, 5, 3, 3, 15, 10, false, false, 0)
-	memory.SetMouseStatus(0, 0, 0, "")
+	SetMouseStatus(0, 0, 0, "")
 	time.Sleep(1 * time.Second)
 	UpdateDisplay(false)
 	UpdatePeriodicEvents()
@@ -42,7 +41,7 @@ func TestTooltipNoBorder(test *testing.T) {
 func TestTooltipNoDelay(test *testing.T) {
 	layer2, _, _, styleEntry := CommonTestSetup()
 	layer2.AddTooltip("This is a tooltip and this works great!", styleEntry, 0, 0, 20, 5, 3, 3, 15, 10, false, true, 0)
-	memory.SetMouseStatus(0, 0, 0, "")
+	SetMouseStatus(0, 0, 0, "")
 	time.Sleep(1 * time.Second)
 	UpdateDisplay(false)
 	UpdatePeriodicEvents()
@@ -58,7 +57,7 @@ func TestTooltipNoDelay(test *testing.T) {
 func TestTooltipWithDelay(test *testing.T) {
 	layer2, _, _, styleEntry := CommonTestSetup()
 	layer2.AddTooltip("This is a tooltip and this works great!", styleEntry, 0, 0, 20, 5, 3, 3, 15, 10, false, true, 2000)
-	memory.SetMouseStatus(0, 0, 0, "")
+	SetMouseStatus(0, 0, 0, "")
 	UpdateDisplay(false)
 	UpdatePeriodicEvents()
 	time.Sleep(1 * time.Second)

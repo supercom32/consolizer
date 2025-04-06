@@ -17,7 +17,6 @@ import (
 	"os"
 	"strings"
 	"supercom32.net/consolizer/constants"
-	"supercom32.net/consolizer/internal/memory"
 	"supercom32.net/consolizer/types"
 )
 
@@ -214,7 +213,7 @@ func getImageEntryFromFileSystem(imageFile string) (types.ImageEntryType, error)
 		return imageEntry, err
 	}
 	imageEntry.ImageData = imageData
-	memory.AddImage(imageFile, imageEntry)
+	AddImage(imageFile, imageEntry)
 	return imageEntry, err
 }
 

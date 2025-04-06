@@ -1,16 +1,12 @@
-package memory
+package consolizer
 
 import (
 	"fmt"
+	"supercom32.net/consolizer/internal/memory"
 	"supercom32.net/consolizer/types"
 )
 
-var TextStyles = NewControlMemoryManager[types.TextCellStyleEntryType]()
-
-func AddTextStyle(textStyleAlias string, attributeEntry types.TextCellStyleEntryType) {
-	// Use the generic memory manager to add the text style entry
-	TextStyles.Add("", textStyleAlias, &attributeEntry)
-}
+var TextStyles = memory.NewControlMemoryManager[types.TextCellStyleEntryType]()
 
 func GetTextStyle(textStyleAlias string) *types.TextCellStyleEntryType {
 	// Use the generic memory manager to retrieve the text style entry
@@ -38,11 +34,6 @@ func GetTextStyleAsAttributeEntry(textStyleAlias string) types.AttributeEntryTyp
 	attributeEntry.IsUnderlined = textStyleEntry.IsUnderlined
 	attributeEntry.IsBold = textStyleEntry.IsBold
 	return attributeEntry
-}
-
-func DeleteTextStyle(textStyleAlias string) {
-	// Use the generic memory manager to remove the text style entry
-	TextStyles.Remove("", textStyleAlias)
 }
 
 func IsTextStyleExists(textStyleAlias string) bool {

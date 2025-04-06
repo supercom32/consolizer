@@ -1,6 +1,7 @@
 package consolizer
 
 import (
+	"fmt"
 	"math"
 	"strings"
 	"supercom32.net/consolizer/constants"
@@ -17,14 +18,62 @@ type TextboxInstanceType struct {
 type textboxType struct{}
 
 var textbox textboxType
+var Textboxes = memory.NewControlMemoryManager[types.TextboxEntryType]()
+
+func AddTextbox(layerAlias string, textboxAlias string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, height int, isBorderDrawn bool) {
+	textboxEntry := types.NewTexboxEntry()
+	textboxEntry.Alias = textboxAlias
+	textboxEntry.StyleEntry = styleEntry
+	textboxEntry.XLocation = xLocation
+	textboxEntry.YLocation = yLocation
+	textboxEntry.Width = width
+	textboxEntry.Height = height
+	textboxEntry.IsBorderDrawn = isBorderDrawn
+
+	// Use the generic memory manager to add the textbox entry
+	Textboxes.Add(layerAlias, textboxAlias, &textboxEntry)
+}
+
+func GetTextbox(layerAlias string, textboxAlias string) *types.TextboxEntryType {
+	// Use the generic memory manager to retrieve the textbox entry
+	textboxEntry := Textboxes.Get(layerAlias, textboxAlias)
+	if textboxEntry == nil {
+		panic(fmt.Sprintf("The requested text with alias '%s' on layer '%s' could not be returned since it does not exist.", textboxAlias, layerAlias))
+	}
+	return textboxEntry
+}
+
+func IsTextboxExists(layerAlias string, textboxAlias string) bool {
+	// Use the generic memory manager to check existence
+	return Textboxes.Get(layerAlias, textboxAlias) != nil
+}
+
+func DeleteTextbox(layerAlias string, textboxAlias string) {
+	// Use the generic memory manager to remove the textbox entry
+	Textboxes.Remove(layerAlias, textboxAlias)
+}
+
+func DeleteAllTextboxesFromLayer(layerAlias string) {
+	// Retrieve all textboxes in the specified layer
+	textboxes := Textboxes.GetAllEntries(layerAlias)
+
+	// Loop through all entries and delete them
+	for _, textbox := range textboxes {
+		Textboxes.Remove(layerAlias, textbox.Alias) // Assuming textbox.Alias contains the alias
+	}
+}
+
+// ============================================================================
+// REGULAR ENTRY
+// ============================================================================
 
 func (shared *TextboxInstanceType) AddToTabIndex() {
 	addTabIndex(shared.layerAlias, shared.controlAlias, constants.CellTypeTextbox)
 }
 
 func (shared *TextboxInstanceType) Delete() string {
-	if memory.IsTextboxExists(shared.layerAlias, shared.controlAlias) {
-		memory.DeleteTextbox(shared.layerAlias, shared.controlAlias)
+	if Textboxes.IsExists(shared.layerAlias, shared.controlAlias) {
+		Textboxes.Remove(shared.layerAlias, shared.controlAlias)
 	}
 	return ""
 }
@@ -37,9 +86,9 @@ information should be noted:
 - Text can be broke up into multiple lines by using the '\n' escape sequence.
 */
 func (shared *TextboxInstanceType) setText(text string) {
-	if memory.IsTextboxExists(shared.layerAlias, shared.controlAlias) {
+	if Textboxes.IsExists(shared.layerAlias, shared.controlAlias) {
 		textData := strings.Split(text, "\n")
-		textboxEntry := memory.Textboxes.Get(shared.layerAlias, shared.controlAlias)
+		textboxEntry := Textboxes.Get(shared.layerAlias, shared.controlAlias)
 		for _, text := range textData {
 			textboxEntry.TextData = append(textboxEntry.TextData, stringformat.GetRunesFromString(text))
 		}
@@ -52,8 +101,8 @@ setViewport allows you to set the current viewport for a textbox. If the textbox
 no longer exists, then no operation takes place.
 */
 func (shared *TextboxInstanceType) setViewport(xLocation int, yLocation int) {
-	if memory.IsTextboxExists(shared.layerAlias, shared.controlAlias) {
-		textboxEntry := memory.Textboxes.Get(shared.layerAlias, shared.controlAlias)
+	if Textboxes.IsExists(shared.layerAlias, shared.controlAlias) {
+		textboxEntry := Textboxes.Get(shared.layerAlias, shared.controlAlias)
 		textboxEntry.ViewportXLocation = xLocation
 		textboxEntry.ViewportYLocation = yLocation
 	}
@@ -187,11 +236,11 @@ updateScrollbarBasedOnTextboxViewport allows you to update a textboxes scroll ba
 viewport value it has.
 */
 func (shared *textboxType) updateScrollbarBasedOnTextboxViewport(layerAlias string, textboxAlias string) {
-	textboxEntry := memory.GetTextbox(layerAlias, textboxAlias)
-	horizontalScrollbarEntry := memory.GetScrollbar(layerAlias, textboxEntry.HorizontalScrollbarAlias)
+	textboxEntry := Textboxes.Get(layerAlias, textboxAlias)
+	horizontalScrollbarEntry := ScrollBars.Get(layerAlias, textboxEntry.HorizontalScrollbarAlias)
 	horizontalScrollbarEntry.ScrollValue = textboxEntry.ViewportXLocation
 	scrollbar.computeScrollbarHandlePositionByScrollValue(layerAlias, textboxEntry.HorizontalScrollbarAlias)
-	verticalScrollbarEntry := memory.GetScrollbar(layerAlias, textboxEntry.VerticalScrollbarAlias)
+	verticalScrollbarEntry := ScrollBars.Get(layerAlias, textboxEntry.VerticalScrollbarAlias)
 	verticalScrollbarEntry.ScrollValue = textboxEntry.ViewportYLocation
 	scrollbar.computeScrollbarHandlePositionByScrollValue(layerAlias, textboxEntry.VerticalScrollbarAlias)
 }
@@ -200,7 +249,7 @@ func (shared *textboxType) updateScrollbarBasedOnTextboxViewport(layerAlias stri
 getMaxHorizontalTextValue returns the maximum line length of any single line of text in your textbox.
 */
 func (shared *textboxType) getMaxHorizontalTextValue(layerAlias string, textboxAlias string) int {
-	textboxEntry := memory.Textboxes.Get(layerAlias, textboxAlias)
+	textboxEntry := Textboxes.Get(layerAlias, textboxAlias)
 	maxHorizontalValue := 0
 	for _, currentLine := range textboxEntry.TextData {
 		lengthOfLine := stringformat.GetWidthOfRunesWhenPrinted(currentLine)
@@ -217,11 +266,11 @@ setTextboxMaxScrollBarValues allows you to set the maximum scroll values for you
 the actual dimensions of the text within your textbox.
 */
 func (shared *textboxType) setTextboxMaxScrollBarValues(layerAlias string, textboxAlias string) {
-	textboxEntry := memory.Textboxes.Get(layerAlias, textboxAlias)
+	textboxEntry := Textboxes.Get(layerAlias, textboxAlias)
 	maxVerticalValue := len(textboxEntry.TextData)
 	maxHorizontalValue := shared.getMaxHorizontalTextValue(layerAlias, textboxAlias)
-	hScrollBarEntry := memory.GetScrollbar(layerAlias, textboxEntry.HorizontalScrollbarAlias)
-	vScrollBarEntry := memory.GetScrollbar(layerAlias, textboxEntry.VerticalScrollbarAlias)
+	hScrollBarEntry := ScrollBars.Get(layerAlias, textboxEntry.HorizontalScrollbarAlias)
+	vScrollBarEntry := ScrollBars.Get(layerAlias, textboxEntry.VerticalScrollbarAlias)
 	maxHorizontalValue = maxHorizontalValue - textboxEntry.Width
 	// If the max horizontal width is smaller than the textbox width, disable scrolling.
 	if maxHorizontalValue <= 0 {
@@ -261,8 +310,17 @@ the text layer data under it.
 then only the visible portion of the text box will be drawn.
 */
 func (shared *textboxType) AddTextbox(layerAlias string, textboxAlias string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, height int, isBorderDrawn bool) TextboxInstanceType {
-	memory.AddTextbox(layerAlias, textboxAlias, styleEntry, xLocation, yLocation, width, height, isBorderDrawn)
-	textboxEntry := memory.GetTextbox(layerAlias, textboxAlias)
+	newTextboxEntry := types.NewTexboxEntry()
+	newTextboxEntry.Alias = textboxAlias
+	newTextboxEntry.StyleEntry = styleEntry
+	newTextboxEntry.XLocation = xLocation
+	newTextboxEntry.YLocation = yLocation
+	newTextboxEntry.Width = width
+	newTextboxEntry.Height = height
+	newTextboxEntry.IsBorderDrawn = isBorderDrawn
+	// Use the generic memory manager to add the textbox entry
+	Textboxes.Add(layerAlias, textboxAlias, &newTextboxEntry)
+	textboxEntry := Textboxes.Get(layerAlias, textboxAlias)
 	textboxEntry.TextData = append(textboxEntry.TextData, stringformat.GetRunesFromString(" "))
 	textboxEntry.HorizontalScrollbarAlias = stringformat.GetLastSortedUUID()
 	textboxEntry.VerticalScrollbarAlias = stringformat.GetLastSortedUUID()
@@ -280,8 +338,8 @@ func (shared *textboxType) AddTextbox(layerAlias string, textboxAlias string, st
 		hScrollbarWidth = hScrollbarWidth + 2
 		vScrollbarHeight = vScrollbarHeight + 2
 	}
-	memory.AddScrollbar(layerAlias, textboxEntry.HorizontalScrollbarAlias, styleEntry, hScrollbarXLocation, hScrollbarYLocation, hScrollbarWidth, 0, 0, 1, true)
-	memory.AddScrollbar(layerAlias, textboxEntry.VerticalScrollbarAlias, styleEntry, vScrollbarXLocation, vScrollbarYLocation, vScrollbarHeight, 0, 0, 1, false)
+	scrollbar.Add(layerAlias, textboxEntry.HorizontalScrollbarAlias, styleEntry, hScrollbarXLocation, hScrollbarYLocation, hScrollbarWidth, 0, 0, 1, true)
+	scrollbar.Add(layerAlias, textboxEntry.VerticalScrollbarAlias, styleEntry, vScrollbarXLocation, vScrollbarYLocation, vScrollbarHeight, 0, 0, 1, false)
 	shared.setTextboxMaxScrollBarValues(layerAlias, textboxAlias)
 	var textboxInstance TextboxInstanceType
 	textboxInstance.layerAlias = layerAlias
@@ -297,11 +355,11 @@ the following information should be noted:
 will simply be ignored.
 */
 func (shared *textboxType) DeleteTextbox(layerAlias string, textboxAlias string) {
-	memory.DeleteTextbox(layerAlias, textboxAlias)
+	Textboxes.Remove(layerAlias, textboxAlias)
 }
 
 func (shared *textboxType) DeleteAllTextboxes(layerAlias string) {
-	memory.DeleteAllTextboxesFromLayer(layerAlias)
+	Textboxes.RemoveAll(layerAlias)
 }
 
 /*
@@ -309,7 +367,7 @@ drawTextboxesOnLayer allows you to draw all text boxes on a given text layer.
 */
 func (shared *textboxType) drawTextboxesOnLayer(layerEntry types.LayerEntryType) {
 	layerAlias := layerEntry.LayerAlias
-	for _, currentTextBoxEntry := range memory.Textboxes.GetAllEntries(layerAlias) {
+	for _, currentTextBoxEntry := range Textboxes.GetAllEntries(layerAlias) {
 		shared.drawTextbox(&layerEntry, currentTextBoxEntry.Alias)
 	}
 }
@@ -328,7 +386,7 @@ the text layer data under it.
 then only the visible portion of the text box will be drawn.
 */
 func (shared *textboxType) drawTextbox(layerEntry *types.LayerEntryType, textboxAlias string) {
-	t := memory.GetTextbox(layerEntry.LayerAlias, textboxAlias)
+	t := Textboxes.Get(layerEntry.LayerAlias, textboxAlias)
 	attributeEntry := types.NewAttributeEntry()
 	attributeEntry.ForegroundColor = t.StyleEntry.TextboxForegroundColor
 	attributeEntry.BackgroundColor = t.StyleEntry.TextboxBackgroundColor
@@ -495,10 +553,10 @@ func (shared *textboxType) UpdateKeyboardEventTextbox(keystroke []rune) bool {
 	focusedLayerAlias := eventStateMemory.currentlyFocusedControl.layerAlias
 	focusedControlAlias := eventStateMemory.currentlyFocusedControl.controlAlias
 	focusedControlType := eventStateMemory.currentlyFocusedControl.controlType
-	if focusedControlType != constants.CellTypeTextbox || !memory.IsTextboxExists(focusedLayerAlias, focusedControlAlias) {
+	if focusedControlType != constants.CellTypeTextbox || !Textboxes.IsExists(focusedLayerAlias, focusedControlAlias) {
 		return false
 	}
-	textboxEntry := memory.GetTextbox(focusedLayerAlias, focusedControlAlias)
+	textboxEntry := Textboxes.Get(focusedLayerAlias, focusedControlAlias)
 	if len(keystroke) == 1 { // If a regular char is entered.
 		shared.insertCharacterUsingAbsoluteCoordinates(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation, []rune(keystrokeAsString)[0])
 		shared.updateCursor(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
@@ -603,13 +661,13 @@ In the event that a screen update is required this method returns true.
 */
 func (shared *textboxType) updateMouseEventTextbox() bool {
 	isUpdateRequired := false
-	mouseXLocation, mouseYLocation, buttonPressed, _ := memory.GetMouseStatus()
+	mouseXLocation, mouseYLocation, buttonPressed, _ := GetMouseStatus()
 	characterEntry := getCellInformationUnderMouseCursor(mouseXLocation, mouseYLocation)
 	layerAlias := characterEntry.LayerAlias
 	// If your clicking on a text box and not in the drag and drop event state.
 	if buttonPressed != 0 && characterEntry.AttributeEntry.CellType == constants.CellTypeTextbox && eventStateMemory.stateId != constants.EventStateDragAndDropScrollbar &&
-		memory.IsTextboxExists(layerAlias, characterEntry.AttributeEntry.CellControlAlias) {
-		textboxEntry := memory.GetTextbox(layerAlias, characterEntry.AttributeEntry.CellControlAlias)
+		Textboxes.IsExists(layerAlias, characterEntry.AttributeEntry.CellControlAlias) {
+		textboxEntry := Textboxes.Get(layerAlias, characterEntry.AttributeEntry.CellControlAlias)
 		shared.updateCursor(textboxEntry, characterEntry.AttributeEntry.CellControlId, characterEntry.AttributeEntry.CellControlLocation)
 		shared.updateViewport(textboxEntry)
 		shared.setTextboxMaxScrollBarValues(layerAlias, characterEntry.AttributeEntry.CellControlAlias)
@@ -622,10 +680,10 @@ func (shared *textboxType) updateMouseEventTextbox() bool {
 	if buttonPressed != 0 && (eventStateMemory.stateId == constants.EventStateDragAndDropScrollbar ||
 		characterEntry.AttributeEntry.CellType == constants.CellTypeScrollbar) {
 		isMatchFound := false
-		for _, currentTextBoxEntry := range memory.Textboxes.GetAllEntries(layerAlias) {
+		for _, currentTextBoxEntry := range Textboxes.GetAllEntries(layerAlias) {
 			textboxEntry := currentTextBoxEntry
-			hScrollBarEntry := memory.GetScrollbar(layerAlias, textboxEntry.HorizontalScrollbarAlias)
-			vScrollBarEntry := memory.GetScrollbar(layerAlias, textboxEntry.VerticalScrollbarAlias)
+			hScrollBarEntry := ScrollBars.Get(layerAlias, textboxEntry.HorizontalScrollbarAlias)
+			vScrollBarEntry := ScrollBars.Get(layerAlias, textboxEntry.VerticalScrollbarAlias)
 			if textboxEntry.ViewportXLocation != hScrollBarEntry.ScrollValue {
 				textboxEntry.ViewportXLocation = hScrollBarEntry.ScrollValue
 				isUpdateRequired = true

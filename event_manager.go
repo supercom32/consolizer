@@ -4,7 +4,6 @@ import (
 	"github.com/gdamore/tcell/v2"
 	"strings"
 	"supercom32.net/consolizer/constants"
-	"supercom32.net/consolizer/internal/memory"
 	"supercom32.net/consolizer/types"
 	"time"
 )
@@ -79,7 +78,7 @@ func UpdateEventQueues() {
 		if isScreenUpdateRequired == true {
 			UpdateDisplay(false)
 		}
-		memory.KeyboardMemory.AddKeystrokeToKeyboardBuffer(keystroke)
+		KeyboardMemory.AddKeystrokeToKeyboardBuffer(keystroke)
 
 	case *tcell.EventMouse:
 		mouseXLocation, mouseYLocation := event.Position()
@@ -101,7 +100,7 @@ func UpdateEventQueues() {
 			wheelState = "Right"
 		}
 		isScreenUpdateRequired := false
-		memory.SetMouseStatus(mouseXLocation, mouseYLocation, mouseButtonNumber, wheelState)
+		SetMouseStatus(mouseXLocation, mouseYLocation, mouseButtonNumber, wheelState)
 		bringLayerToFrontIfRequired()
 		if moveLayerIfRequired() {
 			isScreenUpdateRequired = true
@@ -212,8 +211,8 @@ a window off-screen where it can never be grabbed again.
 */
 func moveLayerIfRequired() bool {
 	isScreenUpdateRequired := false
-	mouseXLocation, mouseYLocation, buttonPressed, _ := memory.GetMouseStatus()
-	previousMouseXLocation, previousMouseYLocation, previousButtonPressed, _ := memory.GetPreviousMouseStatus()
+	mouseXLocation, mouseYLocation, buttonPressed, _ := GetMouseStatus()
+	previousMouseXLocation, previousMouseYLocation, previousButtonPressed, _ := GetPreviousMouseStatus()
 	if buttonPressed != 0 {
 		characterEntry := getCellInformationUnderMouseCursor(mouseXLocation, mouseYLocation)
 		if previousButtonPressed != 0 && eventStateMemory.stateId == constants.EventStateDragAndDrop && isLayerExists(eventStateMemory.currentlyFocusedControl.layerAlias) {
@@ -240,7 +239,7 @@ bringLayerToFrontIfRequired allows you to bring a layer to the front of the
 visible display area if the layer being clicked is focusable.
 */
 func bringLayerToFrontIfRequired() {
-	mouseXLocation, mouseYLocation, buttonPressed, _ := memory.GetMouseStatus()
+	mouseXLocation, mouseYLocation, buttonPressed, _ := GetMouseStatus()
 	if buttonPressed != 0 {
 		characterEntry := getCellInformationUnderMouseCursor(mouseXLocation, mouseYLocation)
 		if characterEntry.LayerAlias == "" {
@@ -249,15 +248,15 @@ func bringLayerToFrontIfRequired() {
 		buttonHistory.layerAlias = ""
 		buttonHistory.buttonAlias = ""
 		// Protect against layer deletions.
-		if !memory.IsLayerExists(characterEntry.LayerAlias) {
+		if !Screen.IsLayerExists(characterEntry.LayerAlias) {
 			return
 		}
-		layerEntry := memory.GetLayer(characterEntry.LayerAlias)
+		layerEntry := Screen.GetLayer(characterEntry.LayerAlias)
 		if layerEntry.IsFocusable == true {
 			return
 		}
-		layerAlias, previousLayerAlias := memory.GetRootParentLayerAlias(characterEntry.LayerAlias, "")
-		memory.SetHighestZOrderNumber(previousLayerAlias, layerAlias)
+		layerAlias, previousLayerAlias := Screen.GetRootParentLayerAlias(characterEntry.LayerAlias, "")
+		Screen.SetHighestZOrderNumber(previousLayerAlias, layerAlias)
 	}
 }
 
@@ -280,11 +279,11 @@ area.
 parent layer dimensions instead of the terminal window dimensions.
 */
 func isInteractiveLayerOffscreen(layerAlias string) bool {
-	layerEntry := memory.GetLayer(layerAlias)
+	layerEntry := Screen.GetLayer(layerAlias)
 	viewportWidth := commonResource.terminalWidth
 	viewportHeight := commonResource.terminalHeight
 	if layerEntry.ParentAlias != "" {
-		parentEntry := memory.GetLayer(layerEntry.ParentAlias)
+		parentEntry := Screen.GetLayer(layerEntry.ParentAlias)
 		viewportWidth = parentEntry.Width
 		viewportHeight = parentEntry.Height
 	}

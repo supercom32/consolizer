@@ -1,7 +1,6 @@
 package consolizer
 
 import (
-	"supercom32.net/consolizer/internal/memory"
 	"time"
 )
 
@@ -12,7 +11,7 @@ type TimerType struct {
 // AddTimer creates and returns a new TimerType instance with a generated UUID.
 func AddTimer(lengthOfTimerInMilliseconds int64, isTimerEnabled bool) *TimerType {
 	timer := &TimerType{timerAlias: getUUID()}
-	memory.AddTimer(timer.timerAlias, lengthOfTimerInMilliseconds, isTimerEnabled)
+	Timers.Add(timer.timerAlias, lengthOfTimerInMilliseconds, isTimerEnabled)
 	return timer
 }
 
@@ -22,7 +21,7 @@ If the specified timer has expired, then it will automatically be disabled.
 In order to activate the timer again, simply call 'StartTimer'.
 */
 func (shared *TimerType) IsExpired() bool {
-	timerEntry := memory.GetTimer(shared.timerAlias)
+	timerEntry := Timers.Get(shared.timerAlias)
 	if timerEntry.IsTimerEnabled {
 		timeElapsed := GetCurrentTimeInMilliseconds() - timerEntry.StartTime
 		if timeElapsed > timerEntry.TimerLength {
@@ -39,7 +38,7 @@ is not enabled by default, you must call 'StartTimer' when you wish for it
 to begin.
 */
 func (shared *TimerType) SetTimer(durationInMilliseconds int64, isEnabled bool) {
-	timerEntry := memory.GetTimer(shared.timerAlias)
+	timerEntry := Timers.Get(shared.timerAlias)
 	timerEntry.StartTime = GetCurrentTimeInMilliseconds()
 	timerEntry.TimerLength = durationInMilliseconds
 	timerEntry.IsTimerEnabled = isEnabled
@@ -53,7 +52,7 @@ created. In addition, the following information should be noted:
 generated to fail as fast as possible.
 */
 func (shared *TimerType) Start() {
-	timerEntry := memory.GetTimer(shared.timerAlias)
+	timerEntry := Timers.Get(shared.timerAlias)
 	timerEntry.StartTime = GetCurrentTimeInMilliseconds()
 	timerEntry.IsTimerEnabled = true
 }

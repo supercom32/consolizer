@@ -11,7 +11,6 @@ import (
 	"os"
 	"sort"
 	"supercom32.net/consolizer/constants"
-	"supercom32.net/consolizer/internal/memory"
 	"supercom32.net/consolizer/types"
 )
 
@@ -46,7 +45,7 @@ func (shared *ImageComposerEntryType) Add(fileName string, xLocation int, yLocat
 	imageEntry, err := getImage(fileName)
 	if err != nil {
 		// Here we perform this action anyway to trigger a panic, so we don't need to duplicate the panic code.
-		memory.GetImage(fileName)
+		GetImage(fileName)
 	}
 	imageComposerImage.ImageData = imageEntry.ImageData
 	shared.images[fileName] = &imageComposerImage
@@ -376,7 +375,7 @@ func OverlayImageWithAlpha(sourceImage image.Image, sourceXLocation int, sourceY
 	if sourceImage == nil {
 		return targetImage
 	}
-	// Get the bounds of the source and target images.
+	// GetLayer the bounds of the source and target images.
 	sourceBounds := sourceImage.Bounds()
 	targetBounds := targetImage.Bounds()
 
@@ -474,7 +473,7 @@ func applyWaveEffect(inputImage image.Image, amplitude float64, isHorizontal boo
 				newY = height - 1
 			}
 
-			// Get the color from the original image and set it in the result image.
+			// GetLayer the color from the original image and set it in the result image.
 			color := inputImage.At(newX, newY)
 			resultImage.Set(x, y, color)
 		}
@@ -510,7 +509,7 @@ func applyRippleEffect(inputImage image.Image, amplitude float64) image.Image {
 				continue
 			}
 
-			// Get the color from the original image and set it in the result image.
+			// GetLayer the color from the original image and set it in the result image.
 			color := inputImage.At(newX, newY)
 			resultImage.Set(x, y, color)
 		}
@@ -551,7 +550,7 @@ func applyFlagWavingEffect(inputImage image.Image, amplitude float64, frequency 
 				newY = height - 1
 			}
 
-			// Get the color from the original image and set it in the result image.
+			// GetLayer the color from the original image and set it in the result image.
 			color := inputImage.At(newX, newY)
 			resultImage.Set(x, y, color)
 		}
@@ -597,7 +596,7 @@ func applyBlindsEffect(inputImage image.Image, step int) image.Image {
 				newX = width - 1
 			}
 
-			// Get the color from the original image and set it in the result image.
+			// GetLayer the color from the original image and set it in the result image.
 			color := inputImage.At(newX, y)
 			resultImage.Set(x, y, color)
 		}
@@ -630,7 +629,7 @@ func applyHorizontalWeavingEffect(inputImage image.Image, step int) image.Image 
 				// Set missing areas to black.
 				resultImage.Set(x, y, color.Black)
 			} else {
-				// Get the color from the original image and set it in the result image.
+				// GetLayer the color from the original image and set it in the result image.
 				color := inputImage.At(newX, y)
 				resultImage.Set(x, y, color)
 			}
@@ -664,7 +663,7 @@ func applyVerticalWeavingEffect(inputImage image.Image, step int) image.Image {
 				// Set missing areas to black.
 				resultImage.Set(x, y, color.Black)
 			} else {
-				// Get the color from the original image and set it in the result image.
+				// GetLayer the color from the original image and set it in the result image.
 				color := inputImage.At(x, newY)
 				resultImage.Set(x, y, color)
 			}
@@ -700,7 +699,7 @@ func applyForwardDiagonalWeavingEffect(inputImage image.Image, step int) image.I
 				// Set missing areas to black.
 				resultImage.Set(x, y, color.Black)
 			} else {
-				// Get the color from the original image and set it in the result image.
+				// GetLayer the color from the original image and set it in the result image.
 				color := inputImage.At(newX, newY)
 				resultImage.Set(x, y, color)
 			}
@@ -736,7 +735,7 @@ func applyBackwardDiagonalWeavingEffect(inputImage image.Image, step int) image.
 				// Set missing areas to black.
 				resultImage.Set(x, y, color.Black)
 			} else {
-				// Get the color from the original image and set it in the result image.
+				// GetLayer the color from the original image and set it in the result image.
 				color := inputImage.At(newX, newY)
 				resultImage.Set(x, y, color)
 			}
@@ -771,7 +770,7 @@ func applyCounterClockwiseSwirlEffect(inputImage image.Image, step int) image.Im
 			newY := int(centerY + distance*math.Sin(newAngle))
 
 			if newX >= 0 && newX < width && newY >= 0 && newY < height {
-				// Get the color from the original image and set it in the result image.
+				// GetLayer the color from the original image and set it in the result image.
 				color := inputImage.At(newX, newY)
 				resultImage.Set(x, y, color)
 			}
@@ -806,7 +805,7 @@ func applyClockwiseSwirlEffect(inputImage image.Image, step int) image.Image {
 			newY := int(centerY + distance*math.Sin(newAngle))
 
 			if newX >= 0 && newX < width && newY >= 0 && newY < height {
-				// Get the color from the original image and set it in the result image.
+				// GetLayer the color from the original image and set it in the result image.
 				color := inputImage.At(newX, newY)
 				resultImage.Set(x, y, color)
 			}

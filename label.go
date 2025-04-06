@@ -16,25 +16,38 @@ type LabelInstanceType struct {
 type labelType struct{}
 
 var Label labelType
+var Labels = memory.NewControlMemoryManager[types.LabelEntryType]()
+
+// ============================================================================
+// REGULAR ENTRY
+// ============================================================================
 
 func (shared *LabelInstanceType) AddToTabIndex() {
 	addTabIndex(shared.layerAlias, shared.controlAlias, constants.CellTypeLabel)
 }
 
 func (shared *LabelInstanceType) SetLabelValue(value string) {
-	labelEntry := memory.GetLabel(shared.layerAlias, shared.controlAlias)
+	labelEntry := Labels.Get(shared.layerAlias, shared.controlAlias)
 	labelEntry.Value = value
 }
 
 func (shared *LabelInstanceType) Delete() *LabelInstanceType {
-	if memory.IsLabelExists(shared.layerAlias, shared.controlAlias) {
-		memory.DeleteLabel(shared.layerAlias, shared.controlAlias)
+	if Labels.IsExists(shared.layerAlias, shared.controlAlias) {
+		Labels.Remove(shared.layerAlias, shared.controlAlias)
 	}
 	return nil
 }
 
 func (shared *labelType) Add(layerAlias string, labelAlias string, labelValue string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int) LabelInstanceType {
-	memory.AddLabel(layerAlias, labelAlias, labelValue, styleEntry, xLocation, yLocation, width)
+	labelEntry := types.NewLabelEntry()
+	labelEntry.StyleEntry = styleEntry
+	labelEntry.Alias = labelAlias
+	labelEntry.Value = labelValue
+	labelEntry.XLocation = xLocation
+	labelEntry.YLocation = yLocation
+	labelEntry.Width = width
+	// Use the ControlMemoryManager to add the label entry
+	Labels.Add(layerAlias, labelAlias, &labelEntry)
 	var labelInstance LabelInstanceType
 	labelInstance.layerAlias = layerAlias
 	labelInstance.controlAlias = labelAlias
@@ -42,11 +55,11 @@ func (shared *labelType) Add(layerAlias string, labelAlias string, labelValue st
 }
 
 func (shared *labelType) DeleteLabel(layerAlias string, labelAlias string) {
-	memory.DeleteLabel(layerAlias, labelAlias)
+	Labels.Remove(layerAlias, labelAlias)
 }
 
 func (shared *labelType) DeleteAllLabels(layerAlias string) {
-	memory.DeleteAllLabelsFromLayer(layerAlias)
+	Labels.RemoveAll(layerAlias)
 }
 
 /*
@@ -54,7 +67,7 @@ drawButtonsOnLayer allows you to draw all buttons on a given text layer.
 */
 func (shared *labelType) drawLabelsOnLayer(layerEntry types.LayerEntryType) {
 	layerAlias := layerEntry.LayerAlias
-	for _, currentLabelEntry := range memory.Labels.GetAllEntries(layerAlias) {
+	for _, currentLabelEntry := range Labels.GetAllEntries(layerAlias) {
 		labelEntry := currentLabelEntry
 		drawLabel(&layerEntry, labelEntry.Alias, labelEntry.Value, labelEntry.StyleEntry, labelEntry.XLocation, labelEntry.YLocation, labelEntry.Width)
 	}

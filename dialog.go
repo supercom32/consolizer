@@ -2,7 +2,6 @@ package consolizer
 
 import (
 	"fmt"
-	"supercom32.net/consolizer/internal/memory"
 	"supercom32.net/consolizer/internal/stringformat"
 	"supercom32.net/consolizer/types"
 )
@@ -45,7 +44,7 @@ func printDialog(layerEntry *types.LayerEntryType, attributeEntry types.Attribut
 			}
 		}
 		if isSkipable == true {
-			_, _, mouseButtonPressed, _ := memory.GetMouseStatus()
+			_, _, mouseButtonPressed, _ := GetMouseStatus()
 			keyPressed := Inkey()
 			if mouseButtonPressed != 0 || string(keyPressed) == "enter" {
 				isPrintDelaySkipped = true
@@ -90,8 +89,8 @@ func getDialogAttributeEntry(attributeTag string, defaultAttributeEntry types.At
 	var attributeEntry types.AttributeEntryType
 	if attributeTag != "" {
 		textStyleAlias := stringformat.GetSubString(attributeTag, 1, len(attributeTag)-2)
-		if memory.IsTextStyleExists(textStyleAlias) {
-			attributeEntry = memory.GetTextStyleAsAttributeEntry(textStyleAlias)
+		if IsTextStyleExists(textStyleAlias) {
+			attributeEntry = GetTextStyleAsAttributeEntry(textStyleAlias)
 			return attributeEntry
 		}
 	}

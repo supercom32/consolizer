@@ -22,10 +22,15 @@ type ButtonInstanceType struct {
 type buttonType struct{}
 
 var Button buttonType
+var Buttons = memory.NewControlMemoryManager[types.ButtonEntryType]()
+
+// ============================================================================
+// REGULAR ENTRY
+// ============================================================================
 
 func (shared *ButtonInstanceType) Delete() *ButtonInstanceType {
-	if memory.IsButtonExists(shared.layerAlias, shared.controlAlias) {
-		memory.DeleteButton(shared.layerAlias, shared.controlAlias)
+	if Buttons.IsExists(shared.layerAlias, shared.controlAlias) {
+		Buttons.Remove(shared.layerAlias, shared.controlAlias)
 	}
 	return nil
 }
@@ -74,7 +79,7 @@ func (shared *ButtonInstanceType) GetButtonPressed() (string, string) {
 }
 
 func (shared *ButtonInstanceType) IsButtonStatePressed() bool {
-	buttonEntry := memory.GetButton(shared.layerAlias, shared.controlAlias)
+	buttonEntry := Buttons.Get(shared.layerAlias, shared.controlAlias)
 	if buttonEntry.IsPressed == true {
 		return true
 	}
@@ -82,7 +87,7 @@ func (shared *ButtonInstanceType) IsButtonStatePressed() bool {
 }
 
 func (shared *ButtonInstanceType) SetEnabled(isEnabled bool) {
-	buttonEntry := memory.GetButton(shared.layerAlias, shared.controlAlias)
+	buttonEntry := Buttons.Get(shared.layerAlias, shared.controlAlias)
 	buttonEntry.IsEnabled = isEnabled
 }
 
@@ -107,9 +112,17 @@ then the width will automatically default to the width of your button label.
 will automatically default to the minimum of 3 characters.
 */
 func (shared *buttonType) Add(layerAlias string, buttonAlias string, buttonLabel string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, height int, isEnabled bool) ButtonInstanceType {
-	memory.AddButton(layerAlias, buttonAlias, buttonLabel, styleEntry, xLocation, yLocation, width, height)
-	buttonEntry := memory.GetButton(layerAlias, buttonAlias)
-	buttonEntry.IsEnabled = isEnabled
+	buttonEntry := types.NewButtonEntry()
+	buttonEntry.StyleEntry = styleEntry
+	buttonEntry.Alias = buttonAlias
+	buttonEntry.Label = buttonLabel
+	buttonEntry.XLocation = xLocation
+	buttonEntry.YLocation = yLocation
+	buttonEntry.IsEnabled = true
+	buttonEntry.Width = width
+	buttonEntry.Height = height
+	// Use the ControlMemoryManager to handle button entries
+	Buttons.Add(layerAlias, buttonAlias, &buttonEntry)
 	var buttonInstance ButtonInstanceType
 	buttonInstance.layerAlias = layerAlias
 	buttonInstance.controlAlias = buttonAlias
@@ -124,14 +137,14 @@ the following information should be noted:
 will simply be ignored.
 */
 func (shared *buttonType) DeleteButton(layerAlias string, buttonAlias string) {
-	memory.DeleteButton(layerAlias, buttonAlias)
+	Buttons.Remove(layerAlias, buttonAlias)
 }
 
 /*
 DeleteAllButtons allows you to delete all buttons on a given text layer.
 */
 func (shared *buttonType) DeleteAllButtons(layerAlias string) {
-	memory.DeleteAllButtonsFromLayer(layerAlias)
+	Buttons.RemoveAll(layerAlias)
 }
 
 /*
@@ -139,7 +152,7 @@ drawButtonsOnLayer allows you to draw all buttons on a given text layer.
 */
 func (shared *buttonType) drawButtonsOnLayer(layerEntry types.LayerEntryType) {
 	layerAlias := layerEntry.LayerAlias
-	buttons := memory.Buttons.GetAllEntries(layerAlias)
+	buttons := Buttons.GetAllEntries(layerAlias)
 	for _, buttonEntry := range buttons {
 		drawButton(&layerEntry, buttonEntry.Alias, buttonEntry.Label, buttonEntry.StyleEntry, buttonEntry.IsPressed, buttonEntry.IsSelected, buttonEntry.IsEnabled, buttonEntry.XLocation, buttonEntry.YLocation, buttonEntry.Width, buttonEntry.Height)
 	}
@@ -202,7 +215,7 @@ func (shared *buttonType) updateButtonStates(isMouseTriggered bool) bool {
 		// Update the button state if a mouse caused a change.
 		return shared.updateButtonStateMouse()
 	} else {
-		// Add code to update when keyboard caused a change.
+		// AddLayer code to update when keyboard caused a change.
 	}
 	return false
 }
@@ -214,20 +227,20 @@ true.
 */
 func (shared *buttonType) updateButtonStateMouse() bool {
 	isUpdateRequired := false
-	mouseXLocation, mouseYLocation, buttonPressed, _ := memory.GetMouseStatus()
+	mouseXLocation, mouseYLocation, buttonPressed, _ := GetMouseStatus()
 	characterEntry := getCellInformationUnderMouseCursor(mouseXLocation, mouseYLocation)
 	layerAlias := characterEntry.LayerAlias
 	buttonAlias := characterEntry.AttributeEntry.CellControlAlias
 
 	// If not a button, reset all buttons if needed.
 	if characterEntry.AttributeEntry.CellType != constants.CellTypeButton {
-		// Get all buttons from all layers using ControlMemoryManager
-		for currentLayer := range memory.Buttons.MemoryManager {
-			buttons := memory.Buttons.GetAllEntries(currentLayer)
+		// GetLayer all buttons from all layers using ControlMemoryManager
+		for currentLayer := range Buttons.MemoryManager {
+			buttons := Buttons.GetAllEntries(currentLayer)
 
 			for _, buttonEntry := range buttons {
 				// In case of delete race condition, we check if button exists
-				if !memory.IsButtonExists(currentLayer, buttonEntry.Alias) {
+				if !Buttons.IsExists(currentLayer, buttonEntry.Alias) {
 					continue
 				}
 
@@ -245,18 +258,18 @@ func (shared *buttonType) updateButtonStateMouse() bool {
 		return isUpdateRequired
 	}
 
-	if buttonAlias != "" && buttonPressed == 0 && memory.IsButtonExists(layerAlias, buttonAlias) {
-		buttonEntry := memory.GetButton(layerAlias, buttonAlias)
+	if buttonAlias != "" && buttonPressed == 0 && Buttons.IsExists(layerAlias, buttonAlias) {
+		buttonEntry := Buttons.Get(layerAlias, buttonAlias)
 		if buttonEntry.IsPressed == true {
 			buttonEntry.Mutex.Lock()
 			buttonEntry.IsPressed = false
 			buttonEntry.Mutex.Unlock()
 			isUpdateRequired = true
 		}
-	} else if buttonAlias != "" && buttonPressed != 0 && memory.IsButtonExists(layerAlias, buttonAlias) {
+	} else if buttonAlias != "" && buttonPressed != 0 && Buttons.IsExists(layerAlias, buttonAlias) {
 		// If button was found and mouse is being pressed, update button only
 		// if required.
-		buttonEntry := memory.GetButton(layerAlias, buttonAlias)
+		buttonEntry := Buttons.Get(layerAlias, buttonAlias)
 		if buttonEntry.IsEnabled && buttonEntry.IsPressed == false {
 			buttonEntry.Mutex.Lock()
 			buttonHistory.layerAlias = layerAlias

@@ -55,9 +55,29 @@ func (shared *MemoryManager[T]) GetAllEntries() []*T {
 	return entries
 }
 
+func (shared *MemoryManager[T]) GetAllEntriesWithKeys() map[string]*T {
+	shared.muxtex.RLock()
+	defer shared.muxtex.RUnlock()
+
+	// Create a copy of the map to avoid race conditions
+	entries := make(map[string]*T, len(shared.memoryItems))
+	for key, value := range shared.memoryItems {
+		entries[key] = value
+	}
+	return entries
+}
+
 // RemoveAll clears all entries from the memoryItems map.
 func (shared *MemoryManager[T]) RemoveAll() {
 	shared.muxtex.Lock()
 	defer shared.muxtex.Unlock()
 	shared.memoryItems = make(map[string]*T) // Reinitialize the map to reset it
+}
+
+// IsExists checks if an entry with the given alias exists in the specified layer.
+func (shared *ControlMemoryManager[T]) IsExists(layerAlias string, alias string) bool {
+	if shared.MemoryManager[layerAlias] != nil {
+		return shared.MemoryManager[layerAlias].Get(alias) != nil
+	}
+	return false
 }

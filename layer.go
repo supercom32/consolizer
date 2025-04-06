@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"supercom32.net/consolizer/constants"
-	"supercom32.net/consolizer/internal/memory"
 	"supercom32.net/consolizer/types"
 )
 
@@ -21,14 +20,14 @@ func getUUID() string {
 }
 
 func (shared LayerInstanceType) Clear() {
-	layerEntry := memory.GetLayer(shared.layerAlias)
+	layerEntry := Screen.GetLayer(shared.layerAlias)
 	localAttributeEntry := types.NewAttributeEntry()
 	fillArea(layerEntry, localAttributeEntry, "", 0, 0, shared.LayerWidth, shared.LayerHeight, 0)
 }
 
 func (shared LayerInstanceType) DrawImage(fileName string, drawingStyle types.ImageStyleEntryType, xLocation int, yLocation int, widthInCharacters int, heightInCharacters int, blurSigma float64) error {
 	var err error
-	if !memory.IsImageExists(fileName) {
+	if !IsImageExists(fileName) {
 		err = LoadImage(fileName)
 		if err != nil {
 			return err
@@ -130,7 +129,7 @@ information should be noted:
 specified, then only the visible portion of the line will be drawn.
 */
 func (shared LayerInstanceType) DrawVerticalLine(styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, height int, isConnectorsDrawn bool) {
-	layerEntry := memory.GetLayer(shared.layerAlias)
+	layerEntry := Screen.GetLayer(shared.layerAlias)
 	localAttributeEntry := types.NewAttributeEntry()
 	drawVerticalLine(layerEntry, styleEntry, localAttributeEntry, xLocation, yLocation, height, isConnectorsDrawn)
 }
@@ -145,7 +144,7 @@ information should be noted:
 specified, then only the visible portion of the line will be drawn.
 */
 func (shared LayerInstanceType) DrawHorizontalLine(styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, isConnectorsDrawn bool) {
-	layerEntry := memory.GetLayer(shared.layerAlias)
+	layerEntry := Screen.GetLayer(shared.layerAlias)
 	localAttributeEntry := types.NewAttributeEntry()
 	drawHorizontalLine(layerEntry, styleEntry, localAttributeEntry, xLocation, yLocation, width, isConnectorsDrawn)
 }
@@ -164,7 +163,7 @@ drags the window title bar, the whole layer will move to simulate movement of
 the window itself.
 */
 func (shared LayerInstanceType) DrawBorder(styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, height int, isInteractive bool) {
-	layerEntry := memory.GetLayer(shared.layerAlias)
+	layerEntry := Screen.GetLayer(shared.layerAlias)
 	localAttributeEntry := types.NewAttributeEntry()
 	drawBorder(layerEntry, styleEntry, localAttributeEntry, xLocation, yLocation, width, height, isInteractive)
 }
@@ -179,7 +178,7 @@ specified layer, then only the visible portion of the border will be
 drawn.
 */
 func (shared LayerInstanceType) DrawFrameLabel(styleEntry types.TuiStyleEntryType, label string, xLocation int, yLocation int) {
-	layerEntry := memory.GetLayer(shared.layerAlias)
+	layerEntry := Screen.GetLayer(shared.layerAlias)
 	drawFrameLabel(layerEntry, styleEntry, label, xLocation, yLocation)
 }
 
@@ -197,7 +196,7 @@ drags the window title bar, the whole layer will move to simulate movement of
 the window itself.
 */
 func (shared LayerInstanceType) DrawFrame(styleEntry types.TuiStyleEntryType, isRaised bool, xLocation int, yLocation int, width int, height int, isInteractive bool) {
-	layerEntry := memory.GetLayer(shared.layerAlias)
+	layerEntry := Screen.GetLayer(shared.layerAlias)
 	localAttributeEntry := types.NewAttributeEntry()
 	if isRaised {
 		drawFrame(layerEntry, styleEntry, localAttributeEntry, constants.FrameStyleRaised, xLocation, yLocation, width, height, isInteractive)
@@ -220,7 +219,7 @@ drags the window title bar, the whole layer will move to simulate movement of
 the window itself.
 */
 func (shared LayerInstanceType) DrawWindow(styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, height int, isInteractive bool) {
-	layerEntry := memory.GetLayer(shared.layerAlias)
+	layerEntry := Screen.GetLayer(shared.layerAlias)
 	localAttributeEntry := types.NewAttributeEntry()
 	drawWindow(layerEntry, styleEntry, localAttributeEntry, xLocation, yLocation, width, height, isInteractive)
 }
@@ -233,7 +232,7 @@ specified degree. In addition, the following information should be noted:
 - The alpha value can range from 0.0 (no shadow) to 1.0 (totally black).
 */
 func (shared LayerInstanceType) DrawShadow(xLocation int, yLocation int, width int, height int, alphaValue float32) {
-	layerEntry := memory.GetLayer(shared.layerAlias)
+	layerEntry := Screen.GetLayer(shared.layerAlias)
 	localAttributeEntry := types.NewAttributeEntry()
 	drawShadow(layerEntry, localAttributeEntry, xLocation, yLocation, width, height, alphaValue)
 }
@@ -248,7 +247,7 @@ noted:
 the visible portion of the fill will be drawn.
 */
 func (shared LayerInstanceType) FillArea(fillCharacters string, xLocation int, yLocation int, width int, height int) {
-	layerEntry := memory.GetLayer(shared.layerAlias)
+	layerEntry := Screen.GetLayer(shared.layerAlias)
 	attributeEntry := layerEntry.DefaultAttribute
 	fillArea(layerEntry, attributeEntry, fillCharacters, xLocation, yLocation, width, height, constants.NullCellControlLocation)
 }
@@ -259,7 +258,7 @@ If you wish to fill the layer with repeating text, simply provide the string
 you wish to repeat.
 */
 func (shared LayerInstanceType) FillLayer(fillCharacters string) {
-	layerEntry := memory.GetLayer(shared.layerAlias)
+	layerEntry := Screen.GetLayer(shared.layerAlias)
 	attributeEntry := layerEntry.DefaultAttribute
 	fillLayer(layerEntry, attributeEntry, fillCharacters)
 }
@@ -269,7 +268,7 @@ DrawBar allows you to draw a horizontal bar on a given text layer row. This is
 useful for drawing application headers or status bar footers.
 */
 func (shared LayerInstanceType) DrawBar(xLocation int, yLocation int, barLength int, fillCharacters string) {
-	layerEntry := memory.GetLayer(shared.layerAlias)
+	layerEntry := Screen.GetLayer(shared.layerAlias)
 	attributeEntry := layerEntry.DefaultAttribute
 	fillArea(layerEntry, attributeEntry, fillCharacters, xLocation, yLocation, barLength, 1, constants.NullCellControlLocation)
 }
@@ -286,7 +285,7 @@ parent.
 */
 func (shared LayerInstanceType) MoveLayerByAbsoluteValue(xLocation int, yLocation int) {
 	validateLayer(shared.layerAlias)
-	layerEntry := memory.GetLayer(shared.layerAlias)
+	layerEntry := Screen.GetLayer(shared.layerAlias)
 	layerEntry.ScreenXLocation = xLocation
 	layerEntry.ScreenYLocation = yLocation
 }
@@ -309,7 +308,7 @@ parent.
 */
 func (shared LayerInstanceType) MoveLayerByRelativeValue(xLocation int, yLocation int) {
 	validateLayer(shared.layerAlias)
-	layerEntry := memory.GetLayer(shared.layerAlias)
+	layerEntry := Screen.GetLayer(shared.layerAlias)
 	layerEntry.ScreenXLocation += xLocation
 	layerEntry.ScreenYLocation += yLocation
 }
@@ -338,10 +337,10 @@ will be ignored.
 */
 func (shared LayerInstanceType) DeleteLayer() {
 	validateLayer(shared.layerAlias)
-	memory.DeleteLayer(shared.layerAlias)
+	Screen.DeleteLayer(shared.layerAlias)
 	if commonResource.layerInstance.layerAlias == shared.layerAlias {
-		nextLayerAlias := memory.GetNextLayerAlias()
-		nextLayerInstance := memory.GetLayer(nextLayerAlias)
+		nextLayerAlias := Screen.GetNextLayerAlias()
+		nextLayerInstance := Screen.GetLayer(nextLayerAlias)
 		commonResource.layerInstance = LayerInstanceType{layerAlias: nextLayerAlias, parentAlias: nextLayerInstance.ParentAlias, LayerWidth: nextLayerInstance.Width, LayerHeight: nextLayerInstance.Height}
 	}
 	shared.layerAlias = ""
@@ -456,7 +455,7 @@ around the "{" and "}" characters. If you wish to use the default text
 style, simply omit specifying any text style between your enclosing braces.
 For example:
 
-	// Add a text layer with the alias "ForegroundLayer", at location (0, 0),
+	// AddLayer a text layer with the alias "ForegroundLayer", at location (0, 0),
 	// with a width and height of 80x20 characters, z order priority of 1,
 	// with no parent layer.
 	dosktop.AddLayer("ForegroundLayer", 0, 0, 80, 20, 1, "")
@@ -475,7 +474,7 @@ For example:
 	dosktop.PrintDialog("ForegroundLayer", 0, 0, 30, 10, true, "This is some dialog text in {red}red color{}. Only the words 'red color' should be colored.")
 */
 func (shared LayerInstanceType) PrintDialog(xLocation int, yLocation int, widthOfLineInCharacters int, printDelayInMilliseconds int, isSkipable bool, stringToPrint string) {
-	layerEntry := memory.GetLayer(shared.layerAlias)
+	layerEntry := Screen.GetLayer(shared.layerAlias)
 	if xLocation < 0 || xLocation > layerEntry.Width || yLocation < 0 || yLocation > layerEntry.Height {
 		panic(fmt.Sprintf("The specified location (%d, %d) is out of bounds for layer '%s' with a size of (%d, %d).", xLocation, yLocation, layerEntry.LayerAlias, layerEntry.Width, layerEntry.Height))
 	}
@@ -521,12 +520,12 @@ func AddLayer(xLocation int, yLocation int, width int, height int, zOrderPriorit
 	layerAlias := getUUID()
 	validateTerminalWidthAndHeight(width, height)
 	if parentLayerInstance == nil {
-		memory.AddLayer(layerAlias, xLocation, yLocation, width, height, zOrderPriority, "")
+		Screen.AddLayer(layerAlias, xLocation, yLocation, width, height, zOrderPriority, "")
 		layerInstance := LayerInstanceType{layerAlias: layerAlias, parentAlias: "", LayerWidth: width, LayerHeight: height}
 		commonResource.layerInstance = layerInstance
 		return layerInstance
 	} else {
-		memory.AddLayer(layerAlias, xLocation, yLocation, width, height, zOrderPriority, parentLayerInstance.layerAlias)
+		Screen.AddLayer(layerAlias, xLocation, yLocation, width, height, zOrderPriority, parentLayerInstance.layerAlias)
 		layerInstance := LayerInstanceType{layerAlias: layerAlias, parentAlias: "", LayerWidth: width, LayerHeight: height}
 		commonResource.layerInstance = layerInstance
 		return layerInstance
@@ -545,7 +544,7 @@ parent.
 */
 func MoveLayerByAbsoluteValue(layerAlias string, xLocation int, yLocation int) {
 	validateLayer(layerAlias)
-	layerEntry := memory.GetLayer(layerAlias)
+	layerEntry := Screen.GetLayer(layerAlias)
 	layerEntry.ScreenXLocation = xLocation
 	layerEntry.ScreenYLocation = yLocation
 }
@@ -568,7 +567,7 @@ parent.
 */
 func MoveLayerByRelativeValue(layerAlias string, xLocation int, yLocation int) {
 	validateLayer(layerAlias)
-	layerEntry := memory.GetLayer(layerAlias)
+	layerEntry := Screen.GetLayer(layerAlias)
 	layerEntry.ScreenXLocation += xLocation
 	layerEntry.ScreenYLocation += yLocation
 }
@@ -597,24 +596,24 @@ will be ignored.
 */
 func deleteLayer(layerAlias string) {
 	validateLayer(layerAlias)
-	memory.DeleteLayer(layerAlias)
+	Screen.DeleteLayer(layerAlias)
 	if commonResource.layerInstance.layerAlias == layerAlias {
-		nextLayerAlias := memory.GetNextLayerAlias()
+		nextLayerAlias := Screen.GetNextLayerAlias()
 		// If last entry and no more layers, just return. Do not set anything.
 		if nextLayerAlias == "" {
 			commonResource.layerInstance = LayerInstanceType{layerAlias: "", parentAlias: "", LayerWidth: 0, LayerHeight: 0}
 			return
 		}
-		nextLayerInstance := memory.GetLayer(nextLayerAlias)
+		nextLayerInstance := Screen.GetLayer(nextLayerAlias)
 		commonResource.layerInstance = LayerInstanceType{layerAlias: nextLayerAlias, parentAlias: nextLayerInstance.ParentAlias, LayerWidth: nextLayerInstance.Width, LayerHeight: nextLayerInstance.Height}
 	}
 }
 
 func DeleteLayer(layerInstance LayerInstanceType) {
-	memory.DeleteLayer(layerInstance.layerAlias)
+	Screen.DeleteLayer(layerInstance.layerAlias)
 	if commonResource.layerInstance.layerAlias == layerInstance.layerAlias {
-		nextLayerAlias := memory.GetNextLayerAlias()
-		nextLayerInstance := memory.GetLayer(nextLayerAlias)
+		nextLayerAlias := Screen.GetNextLayerAlias()
+		nextLayerInstance := Screen.GetLayer(nextLayerAlias)
 		commonResource.layerInstance = LayerInstanceType{layerAlias: nextLayerAlias, parentAlias: nextLayerInstance.ParentAlias, LayerWidth: nextLayerInstance.Width, LayerHeight: nextLayerInstance.Height}
 	}
 }
@@ -623,14 +622,14 @@ func DeleteLayer(layerInstance LayerInstanceType) {
 DeleteAllLayers allows you to remove all layers from memory.
 */
 func DeleteAllLayers() {
-	for _, entryToRemove := range memory.Screen.GetAllEntries() {
+	for _, entryToRemove := range Screen.ScreenMemory.GetAllEntries() {
 		deleteLayer(entryToRemove.LayerAlias)
 	}
-	memory.ReInitializeScreenMemory()
+	Screen.ReInitializeScreenMemory()
 }
 
 func isLayerExists(layerAlias string) bool {
-	if memory.IsLayerExists(layerAlias) {
+	if Screen.IsLayerExists(layerAlias) {
 		return true
 	}
 	return false
@@ -638,6 +637,6 @@ func isLayerExists(layerAlias string) bool {
 
 func setLayerIsVisible(layerAlias string, isVisible bool) {
 	validateLayer(layerAlias)
-	layerEntry := memory.GetLayer(layerAlias)
+	layerEntry := Screen.GetLayer(layerAlias)
 	layerEntry.IsVisible = isVisible
 }

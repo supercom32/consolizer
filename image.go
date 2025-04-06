@@ -12,9 +12,57 @@ import (
 	"image/png"
 	"strings"
 	"supercom32.net/consolizer/constants"
-	"supercom32.net/consolizer/internal/memory"
 	"supercom32.net/consolizer/types"
+	"sync"
 )
+
+type imageMemoryType struct {
+	sync.Mutex
+	Entries map[string]*types.ImageEntryType
+}
+
+var Image imageMemoryType
+
+func init() {
+	Image.Entries = make(map[string]*types.ImageEntryType)
+}
+
+func AddImage(imageAlias string, imageEntry types.ImageEntryType) {
+	Image.Lock()
+	defer func() {
+		Image.Unlock()
+	}()
+	// verify if any errors occurred?
+	Image.Entries[imageAlias] = &imageEntry
+}
+
+func GetImage(imageAlias string) *types.ImageEntryType {
+	Image.Lock()
+	defer func() {
+		Image.Unlock()
+	}()
+	if Image.Entries[imageAlias] == nil {
+		panic(fmt.Sprintf("The requested Image with alias '%s' could not be returned since it does not exist.", imageAlias))
+	}
+	return Image.Entries[imageAlias]
+}
+func DeleteImage(imageAlias string) {
+	Image.Lock()
+	defer func() {
+		Image.Unlock()
+	}()
+	delete(Image.Entries, imageAlias)
+}
+func IsImageExists(imageAlias string) bool {
+	Image.Lock()
+	defer func() {
+		Image.Unlock()
+	}()
+	if Image.Entries[imageAlias] == nil {
+		return false
+	}
+	return true
+}
 
 /*
 UnloadImage allows you to remove an image from memory. Since images can
@@ -28,7 +76,7 @@ be noted:
 operation will be ignored.
 */
 func UnloadImage(imageAlias string) {
-	memory.DeleteImage(imageAlias)
+	DeleteImage(imageAlias)
 }
 
 /*
@@ -43,7 +91,7 @@ func LoadImage(imageFile string) error {
 	if err != nil {
 		return err
 	}
-	memory.AddImage(imageFile, imageEntry)
+	AddImage(imageFile, imageEntry)
 	return err
 }
 
@@ -54,7 +102,7 @@ image as they are loaded. An example use of this method is as follows:
 
 	// Create a new asset list.
 	assetList := dosktop.NewAssetList()
-	// Add an image file to our asset list, with a filename of 'MyImageFile'
+	// AddLayer an image file to our asset list, with a filename of 'MyImageFile'
 	// and an image alias of 'MyImageAlias'.
 	assetList.AddImage("MyImageFile", "MyImageAlias")
 	// Load the list of images into memory.
@@ -124,7 +172,7 @@ func LoadPreRenderedImage(imageFile string, imageAlias string, imageStyle types.
 	}
 	imageEntry.LayerEntry = getImageLayerAsHighColor(imageEntry.ImageData, imageStyle, widthInCharacters, heightInCharacters, blurSigma)
 	imageEntry.ImageData = nil
-	memory.AddImage(imageAlias, imageEntry)
+	AddImage(imageAlias, imageEntry)
 	return err
 }
 
@@ -144,7 +192,7 @@ func LoadBase64Image(imageDataAsBase64 string, imageAlias string) error {
 		return err
 	}
 	imageEntry.ImageData = imageData
-	memory.AddImage(imageAlias, imageEntry)
+	AddImage(imageAlias, imageEntry)
 	return err
 }
 
@@ -189,7 +237,7 @@ func LoadPreRenderedBase64Image(imageDataAsBase64 string, imageAlias string, ima
 		return err
 	}
 	imageEntry.LayerEntry = getImageLayerAsHighColor(imageData, imageStyle, widthInCharacters, heightInCharacters, blurSigma)
-	memory.AddImage(imageAlias, imageEntry)
+	AddImage(imageAlias, imageEntry)
 	return err
 }
 
@@ -343,7 +391,7 @@ func getImageLayerAsHighColor(sourceImageData image.Image, imageStyle types.Imag
 }
 
 func isTransparentPixel(processedImageData image.Image, x, y int) bool {
-	// Get the color at the specified pixel
+	// GetLayer the color at the specified pixel
 	c := processedImageData.At(x, y)
 
 	// Convert to RGBA to get access to individual channels
@@ -394,10 +442,10 @@ so that hard edges are removed. A value of 0.0 means no blurring will occur,
 with higher values increasing the blur factor.
 */
 func DrawImageToLayer(layerAlias string, imageAlias string, imageStyle types.ImageStyleEntryType, xLocation int, yLocation int, widthInCharacters int, heightInCharacters int, blurSigma float64) {
-	imageEntryType := memory.GetImage(imageAlias)
+	imageEntryType := GetImage(imageAlias)
 	imageLayer := imageEntryType.LayerEntry
-	if memory.Image.Entries[imageAlias].ImageData != nil {
-		imageData := memory.Image.Entries[imageAlias].ImageData
+	if Image.Entries[imageAlias].ImageData != nil {
+		imageData := Image.Entries[imageAlias].ImageData
 		imageLayer = getImageLayer(imageData, imageStyle, widthInCharacters, heightInCharacters, blurSigma)
 	}
 	drawImageToLayer(layerAlias, imageLayer, xLocation, yLocation)
@@ -417,7 +465,7 @@ func getImageLayer(sourceImageData image.Image, imageStyle types.ImageStyleEntry
 drawImageToLayer allows you to draw a loaded image to the specified layer.
 */
 func drawImageToLayer(layerAlias string, imageLayer types.LayerEntryType, xLocation int, yLocation int) {
-	layerEntry := memory.GetLayer(layerAlias)
+	layerEntry := Screen.GetLayer(layerAlias)
 	imageLayer.ScreenXLocation = xLocation
 	imageLayer.ScreenYLocation = yLocation
 	overlayLayers(&imageLayer, layerEntry)
@@ -425,7 +473,7 @@ func drawImageToLayer(layerAlias string, imageLayer types.LayerEntryType, xLocat
 
 func getImage(fileName string) (*types.ImageEntryType, error) {
 	var err error
-	if !memory.IsImageExists(fileName) {
+	if !IsImageExists(fileName) {
 		err = LoadImage(fileName)
 		if err != nil {
 			return nil, err
@@ -434,7 +482,7 @@ func getImage(fileName string) (*types.ImageEntryType, error) {
 			UnloadImage(fileName)
 		}()
 	}
-	imageEntry := memory.GetImage(fileName)
+	imageEntry := GetImage(fileName)
 	return imageEntry, err
 }
 

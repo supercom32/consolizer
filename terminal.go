@@ -8,7 +8,6 @@ import (
 	"runtime"
 	"supercom32.net/consolizer/constants"
 	"supercom32.net/consolizer/internal/math"
-	"supercom32.net/consolizer/internal/memory"
 	"supercom32.net/consolizer/internal/stringformat"
 	"supercom32.net/consolizer/types"
 	"sync"
@@ -59,11 +58,9 @@ information should be noted:
 will be generated to fail as fast as possible.
 */
 func InitializeTerminal(width int, height int) {
-	memory.ReInitializeScreenMemory()
-	memory.InitializeImageMemory()
-	memory.InitializeTimerMemory()
+	InitializeTimerMemory()
 	// Set the mouse location off screen so it won't trigger events at 0,0 which the user never moved to.
-	memory.SetMouseStatus(-1, -1, 0, "")
+	SetMouseStatus(-1, -1, 0, "")
 	var detectedWidth int
 	var detectedHeight int
 	if !commonResource.isDebugEnabled {
@@ -193,7 +190,7 @@ in the input buffer and this method needs to be called repeatedly in
 order to read them.
 */
 func Inkey() []rune {
-	return memory.KeyboardMemory.GetKeystrokeFromKeyboardBuffer()
+	return KeyboardMemory.GetKeystrokeFromKeyboardBuffer()
 }
 
 /*
@@ -232,7 +229,7 @@ options available for your text style and can be configured easily
 by setting each attribute accordingly.
 */
 func AddTextStyle(textStyleAlias string, textStyleEntry types.TextCellStyleEntryType) {
-	memory.AddTextStyle(textStyleAlias, textStyleEntry)
+	TextStyles.Add("", textStyleAlias, &textStyleEntry)
 }
 
 /*
@@ -244,7 +241,7 @@ will be performed.
 */
 func DeleteTextStyle(textStyleAlias string) {
 	validateTextStyleExists(textStyleAlias)
-	memory.DeleteTextStyle(textStyleAlias)
+	TextStyles.Remove("", textStyleAlias)
 }
 
 /*
@@ -258,7 +255,7 @@ For example:
 	myTextStyleEntry := consolizer.NewTextStyle()
 	// Configure your text style so that the foreground color is red.
 	myTextStyleEntry.ForegroundColor = consolizer.GetRGBColor(255, 0, 0)
-	// Add a new text style called "RedColor".
+	// AddLayer a new text style called "RedColor".
 	consolizer.AddTextStyle("RedColor", myTextStyleEntry)
 */
 func NewTextStyle() types.TextCellStyleEntryType {
@@ -298,10 +295,10 @@ options you want to make available for a given menu prompt. For example:
 	tuiStyleEntry := consolizer.NewTuiStyleEntry()
 	// Create a new selection entry to populate our menu entries with.
 	selectionEntry := consolizer.NewSelectionEntry()
-	// Add a selection with the alias "Opt1" and a display value of "OK".
-	selectionEntry.Add("Opt1", "OK")
-	// Add a selection with the alias "Opt2" with the display value of "CANCEL".
-	selectionEntry.Add("Opt2", "CANCEL")
+	// AddLayer a selection with the alias "Opt1" and a display value of "OK".
+	selectionEntry.AddLayer("Opt1", "OK")
+	// AddLayer a selection with the alias "Opt2" with the display value of "CANCEL".
+	selectionEntry.AddLayer("Opt2", "CANCEL")
 	// Prompt the user with a vertical selection menu, on the text layer
 	// with the alias "ForegroundLayer", using a default TUI style entry,
 	// a selection entry with two options, at the layer location (0, 0),
@@ -320,7 +317,7 @@ use of this method is as follows:
 
 	// Create a new asset list.
 	assetList := consolizer.NewAssetList()
-	// Add an image file with the image filename 'MyImageFile', and image
+	// AddLayer an image file with the image filename 'MyImageFile', and image
 	// alias of 'MyImageAlias'.
 	assetList.AddImage("MyImageFile", "MyImageAlias")
 	// Load the list of images into memory.
@@ -348,7 +345,7 @@ This is to ensure that programmers do not attempt to rely on any specific
 behavior that might be a coincidental side effect.
 */
 func SetLayerZOrder(layerInstance LayerInstanceType, zOrder int) {
-	layerEntry := memory.GetLayer(layerInstance.layerAlias)
+	layerEntry := Screen.GetLayer(layerInstance.layerAlias)
 	layerEntry.ZOrder = zOrder
 }
 
@@ -386,7 +383,7 @@ func SetLayerAlpha(layerInstance LayerInstanceType, alphaValue float32) {
 }
 
 func setLayerAlpha(layerInstance LayerInstanceType, alphaValue float32) {
-	layerEntry := memory.GetLayer(layerInstance.layerAlias)
+	layerEntry := Screen.GetLayer(layerInstance.layerAlias)
 	layerEntry.DefaultAttribute.ForegroundTransformValue = alphaValue
 	layerEntry.DefaultAttribute.BackgroundTransformValue = alphaValue
 }
@@ -443,7 +440,7 @@ change the color for the default text layer previously set.
 func ColorLayer(layerInstance LayerInstanceType, foregroundColorIndex int, backgroundColorIndex int) {
 	validateColorIndex(foregroundColorIndex)
 	validateColorIndex(backgroundColorIndex)
-	layerEntry := memory.GetLayer(layerInstance.layerAlias)
+	layerEntry := Screen.GetLayer(layerInstance.layerAlias)
 	layerEntry.DefaultAttribute.ForegroundColor = constants.AnsiColorByIndex[foregroundColorIndex]
 	layerEntry.DefaultAttribute.BackgroundColor = constants.AnsiColorByIndex[backgroundColorIndex]
 }
@@ -487,7 +484,7 @@ an int32. This is useful for internal methods that already have a 24-bit color
 and do not require to compute it again.
 */
 func ColorLayer24Bit(layerInstance LayerInstanceType, foregroundColor constants.ColorType, backgroundColor constants.ColorType) {
-	layerEntry := memory.GetLayer(layerInstance.layerAlias)
+	layerEntry := Screen.GetLayer(layerInstance.layerAlias)
 	layerEntry.DefaultAttribute.ForegroundColor = foregroundColor
 	layerEntry.DefaultAttribute.BackgroundColor = backgroundColor
 }
@@ -547,7 +544,7 @@ example:
 */
 func LocateLayer(layerInstance LayerInstanceType, xLocation int, yLocation int) {
 	validateLayer(layerInstance.layerAlias)
-	layerEntry := memory.GetLayer(layerInstance.layerAlias)
+	layerEntry := Screen.GetLayer(layerInstance.layerAlias)
 	validateLayerLocationByLayerEntry(layerEntry, xLocation, yLocation)
 	layerEntry.CursorXLocation = xLocation
 	layerEntry.CursorYLocation = yLocation
@@ -590,7 +587,7 @@ then only the visible portion of your string will be printed.
 all remaining characters will be discarded and printing will stop.
 */
 func PrintLayer(layerInstance LayerInstanceType, textToPrint string) {
-	layerEntry := memory.GetLayer(layerInstance.layerAlias)
+	layerEntry := Screen.GetLayer(layerInstance.layerAlias)
 	if layerEntry.CursorYLocation >= layerEntry.Height {
 		layerEntry.CursorYLocation = layerEntry.Height - 1
 		layerEntry.CharacterMemory = scrollCharacterMemory(layerEntry)
@@ -714,7 +711,7 @@ do not wish to specify a text layer, you can use the method 'Clear' which will
 simply clear the default text layer previously set.
 */
 func ClearLayer(layerInstance LayerInstanceType) {
-	layerEntry := memory.GetLayer(layerInstance.layerAlias)
+	layerEntry := Screen.GetLayer(layerInstance.layerAlias)
 	clearLayer(layerEntry)
 }
 
@@ -789,7 +786,7 @@ on the terminal display. If you wish for any new changes to take effect,
 call 'UpdateDisplay' to refresh the visible display area first.
 */
 func GetCellIdUnderMouseLocation() int {
-	mouseXLocation, mouseYLocation, _, _ := memory.GetMouseStatus()
+	mouseXLocation, mouseYLocation, _, _ := GetMouseStatus()
 	return getCellIdByLayerEntry(&commonResource.screenLayer, mouseXLocation, mouseYLocation)
 }
 
@@ -800,7 +797,7 @@ layer alias into a layer entry and calls 'getCellIdByLayerEntry'.
 */
 func getCellIdByLayerAlias(layerAlias string, mouseXLocation int, mouseYLocation int) int {
 	validateLayer(layerAlias)
-	layerEntry := memory.GetLayer(layerAlias)
+	layerEntry := Screen.GetLayer(layerAlias)
 	return getCellIdByLayerEntry(layerEntry, mouseXLocation, mouseYLocation)
 }
 
@@ -839,7 +836,7 @@ func UpdateDisplay(isRefreshForced bool) {
 	defer func() {
 		commonResource.displayUpdate.Unlock()
 	}()
-	sortedLayerAliasSlice := memory.GetSortedLayerMemoryAliasSlice()
+	sortedLayerAliasSlice := Screen.GetSortedLayerMemoryAliasSlice()
 	baseLayerEntry := types.NewLayerEntry("", "", commonResource.terminalWidth, commonResource.terminalHeight)
 	baseLayerEntry = renderLayers(&baseLayerEntry, sortedLayerAliasSlice)
 	DrawLayerToScreen(&baseLayerEntry, isRefreshForced)
@@ -871,13 +868,13 @@ overlaid on the final (terminal ready) text layer. Button and other special
 TUI controls are also dynamically rendered at this time so that the original
 text layer data underneath them is preserved.
 */
-func renderLayers(rootLayerEntry *types.LayerEntryType, sortedLayerAliasSlice memory.LayerAliasZOrderPairList) types.LayerEntryType {
+func renderLayers(rootLayerEntry *types.LayerEntryType, sortedLayerAliasSlice LayerAliasZOrderPairList) types.LayerEntryType {
 	baseLayerEntry := types.NewLayerEntry("", "", 0, 0, rootLayerEntry)
 	for currentListIndex := 0; currentListIndex < len(sortedLayerAliasSlice); currentListIndex++ {
-		if !memory.IsLayerExists(sortedLayerAliasSlice[currentListIndex].Key) {
+		if !Screen.IsLayerExists(sortedLayerAliasSlice[currentListIndex].Key) {
 			continue
 		}
-		currentLayerEntry := types.NewLayerEntry("", "", 0, 0, memory.GetLayer(sortedLayerAliasSlice[currentListIndex].Key))
+		currentLayerEntry := types.NewLayerEntry("", "", 0, 0, Screen.GetLayer(sortedLayerAliasSlice[currentListIndex].Key))
 		if currentLayerEntry.IsVisible {
 			renderControls(currentLayerEntry)
 			if currentLayerEntry.IsParent && (currentLayerEntry.LayerAlias != baseLayerEntry.LayerAlias && currentLayerEntry.ParentAlias == baseLayerEntry.LayerAlias) {
@@ -919,7 +916,7 @@ know the alias of the layer you wish to overlay.
 */
 func overlayLayersByLayerAlias(sourceLayerAlias string, targetLayerEntry *types.LayerEntryType) {
 	validateLayer(sourceLayerAlias)
-	layerEntry := memory.GetLayer(sourceLayerAlias)
+	layerEntry := Screen.GetLayer(sourceLayerAlias)
 	overlayLayers(layerEntry, targetLayerEntry)
 }
 

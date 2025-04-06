@@ -1,6 +1,7 @@
 package consolizer
 
 import (
+	"fmt"
 	"supercom32.net/consolizer/constants"
 	"supercom32.net/consolizer/internal/memory"
 	"supercom32.net/consolizer/internal/stringformat"
@@ -15,14 +16,67 @@ type selectorInstanceType struct {
 type selectorType struct{}
 
 var Selector selectorType
+var Selectors = memory.NewControlMemoryManager[types.SelectorEntryType]()
+
+func AddSelector(layerAlias string, selectorAlias string, styleEntry types.TuiStyleEntryType, selectionEntry types.SelectionEntryType, xLocation int, yLocation int, selectorHeight int, itemWidth int, numberOfColumns int, viewportPosition int, itemSelected int, isBorderDrawn bool) {
+	selectorEntry := types.NewSelectorEntry()
+	selectorEntry.Alias = selectorAlias
+	selectorEntry.StyleEntry = styleEntry
+	selectorEntry.SelectionEntry = selectionEntry
+	selectorEntry.XLocation = xLocation
+	selectorEntry.YLocation = yLocation
+	selectorEntry.Height = selectorHeight
+	selectorEntry.ItemWidth = itemWidth
+	selectorEntry.NumberOfColumns = numberOfColumns
+	selectorEntry.ViewportPosition = viewportPosition
+	selectorEntry.ItemHighlighted = itemSelected
+	selectorEntry.IsBorderDrawn = isBorderDrawn
+	selectorEntry.IsVisible = true
+
+	// Use the generic memory manager to add the selector entry
+	Selectors.Add(layerAlias, selectorAlias, &selectorEntry)
+}
+
+func DeleteSelector(layerAlias string, selectorAlias string) {
+	// Use the generic memory manager to remove the selector entry
+	Selectors.Remove(layerAlias, selectorAlias)
+}
+
+func DeleteAllSelectorsFromLayer(layerAlias string) {
+	// Retrieve all selectors in the specified layer
+	selectors := Selectors.GetAllEntries(layerAlias)
+
+	// Loop through all entries and delete them
+	for _, selector := range selectors {
+		Selectors.Remove(layerAlias, selector.Alias) // Assuming selector.Alias contains the alias
+	}
+}
+
+func IsSelectorExists(layerAlias string, selectorAlias string) bool {
+	// Use the generic memory manager to check existence
+	return Selectors.IsExists(layerAlias, selectorAlias)
+}
+
+func GetSelector(layerAlias string, selectorAlias string) *types.SelectorEntryType {
+	// Use the generic memory manager to retrieve the selector entry
+	selectorEntry := Selectors.Get(layerAlias, selectorAlias)
+	if selectorEntry == nil {
+		panic(fmt.Sprintf("The selector '%s' under layer '%s' could not be obtained since it does not exist!", selectorAlias, layerAlias))
+	}
+	return selectorEntry
+}
+
+// ============================================================================
+// REGULAR ENTRY
+// ============================================================================
 
 func (shared *selectorInstanceType) AddToTabIndex() {
 	addTabIndex(shared.layerAlias, shared.controlAlias, constants.CellTypeSelectorItem)
 }
 
 func (shared *selectorInstanceType) Delete() *selectorInstanceType {
-	if memory.IsSelectorExists(shared.layerAlias, shared.controlAlias) {
-		memory.DeleteSelector(shared.layerAlias, shared.controlAlias)
+	if Selectors.IsExists(shared.layerAlias, shared.controlAlias) {
+		Selectors.Remove(shared.layerAlias, shared.controlAlias)
 	}
 	return nil
 }
@@ -32,9 +86,9 @@ GetSelected allows you to retrieve the currently selected item. If the Selector 
 no longer exists, then an empty result is always returned.
 */
 func (shared *selectorInstanceType) GetSelected() (string, int) {
-	if memory.IsSelectorExists(shared.layerAlias, shared.controlAlias) {
+	if Selectors.IsExists(shared.layerAlias, shared.controlAlias) {
 		validatorMenu(shared.layerAlias, shared.controlAlias)
-		menuEntry := memory.GetSelector(shared.layerAlias, shared.controlAlias)
+		menuEntry := Selectors.Get(shared.layerAlias, shared.controlAlias)
 		value := menuEntry.ItemSelected
 		return menuEntry.SelectionEntry.SelectionAlias[value], value
 	}
@@ -46,9 +100,9 @@ setViewport allows you to specify the current viewport index for a given Selecto
 no longer exists, then no operation occurs.
 */
 func (shared *selectorInstanceType) setViewport(viewportPosition int) {
-	if memory.IsSelectorExists(shared.layerAlias, shared.controlAlias) {
+	if Selectors.IsExists(shared.layerAlias, shared.controlAlias) {
 		validatorMenu(shared.layerAlias, shared.controlAlias)
-		menuEntry := memory.GetSelector(shared.layerAlias, shared.controlAlias)
+		menuEntry := Selectors.Get(shared.layerAlias, shared.controlAlias)
 		menuEntry.ViewportPosition = viewportPosition
 	}
 }
@@ -72,9 +126,25 @@ then only the visible portion of the radio button will be drawn.
 // TODO: Protect against viewport out of range errors.
 func (shared *selectorType) Add(layerAlias string, selectorAlias string, styleEntry types.TuiStyleEntryType, selectionEntry types.SelectionEntryType, xLocation int, yLocation int, selectorHeight int, itemWidth int, numberOfColumns int, viewportPosition int, selectedItem int, isBorderDrawn bool) selectorInstanceType {
 	validateSelectionEntry(selectionEntry)
-	// TODO: Add verification to ensure no item can be 0 length/number.
-	memory.AddSelector(layerAlias, selectorAlias, styleEntry, selectionEntry, xLocation, yLocation, selectorHeight, itemWidth, numberOfColumns, viewportPosition, selectedItem, isBorderDrawn)
-	selectorEntry := memory.GetSelector(layerAlias, selectorAlias)
+	newSelectorEntry := types.NewSelectorEntry()
+	newSelectorEntry.Alias = selectorAlias
+	newSelectorEntry.StyleEntry = styleEntry
+	newSelectorEntry.SelectionEntry = selectionEntry
+	newSelectorEntry.XLocation = xLocation
+	newSelectorEntry.YLocation = yLocation
+	newSelectorEntry.Height = selectorHeight
+	newSelectorEntry.ItemWidth = itemWidth
+	newSelectorEntry.NumberOfColumns = numberOfColumns
+	newSelectorEntry.ViewportPosition = viewportPosition
+	newSelectorEntry.ItemHighlighted = selectedItem
+	newSelectorEntry.IsBorderDrawn = isBorderDrawn
+	newSelectorEntry.IsVisible = true
+
+	// Use the generic memory manager to add the selector entry
+	Selectors.Add(layerAlias, selectorAlias, &newSelectorEntry)
+	// TODO: AddLayer verification to ensure no item can be 0 length/number.
+
+	selectorEntry := Selectors.Get(layerAlias, selectorAlias)
 	selectorEntry.ScrollbarAlias = stringformat.GetLastSortedUUID()
 	scrollBarMaxValue := len(selectionEntry.SelectionValue) - (selectorHeight * numberOfColumns) + 1
 	scrollBarXLocation := xLocation + (itemWidth * numberOfColumns)
@@ -86,7 +156,7 @@ func (shared *selectorType) Add(layerAlias string, selectorAlias string, styleEn
 		scrollBarHeight = selectorHeight + 2
 	}
 	scrollbar.Add(layerAlias, selectorEntry.ScrollbarAlias, styleEntry, scrollBarXLocation, scrollBarYLocation, scrollBarHeight, scrollBarMaxValue, 0, numberOfColumns, false)
-	scrollBarEntry := memory.GetScrollbar(layerAlias, selectorEntry.ScrollbarAlias)
+	scrollBarEntry := ScrollBars.Get(layerAlias, selectorEntry.ScrollbarAlias)
 	selectorWidth := itemWidth
 	if len(selectionEntry.SelectionValue) <= selectorHeight*numberOfColumns || styleEntry.SelectorTextAlignment == constants.AlignmentNoPadding {
 		scrollBarEntry.IsEnabled = false
@@ -101,11 +171,11 @@ func (shared *selectorType) Add(layerAlias string, selectorAlias string, styleEn
 }
 
 func (shared *selectorType) DeleteSelector(layerAlias string, selectorAlias string) {
-	memory.DeleteSelector(layerAlias, selectorAlias)
+	Selectors.Remove(layerAlias, selectorAlias)
 }
 
 func (shared *selectorType) DeleteAllSelectors(layerAlias string) {
-	memory.DeleteAllSelectorsFromLayer(layerAlias)
+	Selectors.RemoveAll(layerAlias)
 }
 
 /*
@@ -122,7 +192,7 @@ the text layer data under it.
 then only the visible portion of the Selector will be drawn.
 */
 func (shared *selectorType) drawSelector(selectorAlias string, layerEntry *types.LayerEntryType, styleEntry types.TuiStyleEntryType, selectionEntry types.SelectionEntryType, xLocation int, yLocation int, selectorHeight int, itemWidth int, numberOfColumns int, viewportPosition int, itemHighlighted int) {
-	selectorEntry := memory.GetSelector(layerEntry.LayerAlias, selectorAlias)
+	selectorEntry := Selectors.Get(layerEntry.LayerAlias, selectorAlias)
 	if selectorEntry.IsVisible == false {
 		return
 	}
@@ -175,7 +245,7 @@ func (shared *selectorType) drawSelectorsOnLayer(layerEntry types.LayerEntryType
 	// Sort array so internally generated selectors appear last (Since sorted by name, and
 	// UUID generates "zzz" prefixes). This prevents Dropdown selectors from appearing under
 	// user created selectors, when they should always be on top.
-	for _, currentSelectorEntry := range memory.Selectors.SortEntries(layerAlias, true, compareByAlias) {
+	for _, currentSelectorEntry := range Selectors.SortEntries(layerAlias, true, compareByAlias) {
 		selectorEntry := currentSelectorEntry
 		shared.drawSelector(selectorEntry.Alias, &layerEntry, selectorEntry.StyleEntry, selectorEntry.SelectionEntry, selectorEntry.XLocation, selectorEntry.YLocation, selectorEntry.Height, selectorEntry.ItemWidth, selectorEntry.NumberOfColumns, selectorEntry.ViewportPosition, selectorEntry.ItemHighlighted)
 	}
@@ -188,10 +258,10 @@ In the event that a screen update is required this method returns true.
 func (shared *selectorType) updateKeyboardEventSelector(keystroke []rune) bool {
 	keystrokeAsString := string(keystroke)
 	isScreenUpdateRequired := false
-	if eventStateMemory.currentlyFocusedControl.controlType != constants.CellTypeSelectorItem || !memory.IsSelectorExists(eventStateMemory.currentlyFocusedControl.layerAlias, eventStateMemory.currentlyFocusedControl.controlAlias) {
+	if eventStateMemory.currentlyFocusedControl.controlType != constants.CellTypeSelectorItem || !Selectors.IsExists(eventStateMemory.currentlyFocusedControl.layerAlias, eventStateMemory.currentlyFocusedControl.controlAlias) {
 		return isScreenUpdateRequired
 	}
-	selectorEntry := memory.GetSelector(eventStateMemory.currentlyFocusedControl.layerAlias, eventStateMemory.currentlyFocusedControl.controlAlias)
+	selectorEntry := Selectors.Get(eventStateMemory.currentlyFocusedControl.layerAlias, eventStateMemory.currentlyFocusedControl.controlAlias)
 	if keystrokeAsString == "down" {
 		// remainder := selectorEntry.ItemHighlighted % selectorEntry.NumberOfColumns
 		selectorEntry.ItemHighlighted = selectorEntry.ItemHighlighted + selectorEntry.NumberOfColumns
@@ -240,24 +310,24 @@ func (shared *selectorType) updateMouseEventSelector() bool {
 	isScreenUpdateRequired := false
 	focusedLayerAlias := eventStateMemory.currentlyFocusedControl.layerAlias
 	var characterEntry types.CharacterEntryType
-	mouseXLocation, mouseYLocation, buttonPressed, _ := memory.GetMouseStatus()
+	mouseXLocation, mouseYLocation, buttonPressed, _ := GetMouseStatus()
 	characterEntry = getCellInformationUnderMouseCursor(mouseXLocation, mouseYLocation)
-	if characterEntry.AttributeEntry.CellType == constants.CellTypeSelectorItem && eventStateMemory.stateId == constants.EventStateNone && memory.IsSelectorExists(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias) {
+	if characterEntry.AttributeEntry.CellType == constants.CellTypeSelectorItem && eventStateMemory.stateId == constants.EventStateNone && Selectors.IsExists(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias) {
 		if buttonPressed != 0 {
-			selectorEntry := memory.GetSelector(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias)
+			selectorEntry := Selectors.Get(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias)
 			selectorEntry.ItemHighlighted = characterEntry.AttributeEntry.CellControlId
 			selectorEntry.ItemSelected = characterEntry.AttributeEntry.CellControlId
 		} else {
-			selectorEntry := memory.GetSelector(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias)
+			selectorEntry := Selectors.Get(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias)
 			selectorEntry.ItemHighlighted = characterEntry.AttributeEntry.CellControlId
 		}
 		setFocusedControl(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias, constants.CellTypeSelectorItem)
 		setPreviouslyHighlightedControl(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias, constants.CellTypeSelectorItem)
 		isScreenUpdateRequired = true
 	} else {
-		if eventStateMemory.previouslyHighlightedControl.controlType == constants.CellTypeSelectorItem && memory.IsSelectorExists(eventStateMemory.previouslyHighlightedControl.layerAlias, eventStateMemory.previouslyHighlightedControl.controlAlias) &&
-			memory.IsSelectorExists(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias) {
-			selectorEntry := memory.GetSelector(eventStateMemory.previouslyHighlightedControl.layerAlias, eventStateMemory.previouslyHighlightedControl.controlAlias)
+		if eventStateMemory.previouslyHighlightedControl.controlType == constants.CellTypeSelectorItem && Selectors.IsExists(eventStateMemory.previouslyHighlightedControl.layerAlias, eventStateMemory.previouslyHighlightedControl.controlAlias) &&
+			Selectors.IsExists(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias) {
+			selectorEntry := Selectors.Get(eventStateMemory.previouslyHighlightedControl.layerAlias, eventStateMemory.previouslyHighlightedControl.controlAlias)
 			selectorEntry.ItemHighlighted = constants.NullItemSelection
 			setFocusedControl("", "", constants.NullControlType)
 			setPreviouslyHighlightedControl("", "", constants.NullControlType)
@@ -273,10 +343,10 @@ func (shared *selectorType) updateMouseEventSelector() bool {
 	// matches a control that belongs to a Dropdown list, then stop processing (Do not attempt to close Dropdown).
 	if buttonPressed != 0 && (eventStateMemory.stateId == constants.EventStateDragAndDropScrollbar ||
 		characterEntry.AttributeEntry.CellType == constants.CellTypeScrollbar) {
-		for _, currentSelectorEntry := range memory.Selectors.GetAllEntries(focusedLayerAlias) {
+		for _, currentSelectorEntry := range Selectors.GetAllEntries(focusedLayerAlias) {
 			selectorEntry := currentSelectorEntry
 			// TODO: Here we don't need to protect this since it is not user controlled?
-			scrollBarEntry := memory.GetScrollbar(focusedLayerAlias, selectorEntry.ScrollbarAlias)
+			scrollBarEntry := ScrollBars.Get(focusedLayerAlias, selectorEntry.ScrollbarAlias)
 			if selectorEntry.ViewportPosition != scrollBarEntry.ScrollValue {
 				selectorEntry.ViewportPosition = scrollBarEntry.ScrollValue
 				isScreenUpdateRequired = true
@@ -284,10 +354,10 @@ func (shared *selectorType) updateMouseEventSelector() bool {
 		}
 	}
 	// If a Selector is no longer visible, then make the scroll bars associated with it invisible as well.
-	for _, currentSelectorEntry := range memory.Selectors.GetAllEntries(layerAlias) {
+	for _, currentSelectorEntry := range Selectors.GetAllEntries(layerAlias) {
 		selectorEntry := currentSelectorEntry
 		// TODO: Here we don't need to protect this since it is not user controlled?
-		scrollBarEntry := memory.GetScrollbar(layerAlias, selectorEntry.ScrollbarAlias)
+		scrollBarEntry := ScrollBars.Get(layerAlias, selectorEntry.ScrollbarAlias)
 		if !selectorEntry.IsVisible {
 			scrollBarEntry.IsVisible = false
 		} else {

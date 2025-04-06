@@ -5,7 +5,6 @@ import (
 	"log"
 	"strconv"
 	"supercom32.net/consolizer/constants"
-	"supercom32.net/consolizer/internal/memory"
 	"supercom32.net/consolizer/types"
 	"testing"
 	"time"
@@ -120,7 +119,7 @@ func testTextboxes() {
 	textBox3.setText("This is a test123456\nThis DDDDtesdfsfsdfsdfsdfsdfsdfsddffdsfdsst123456\nThis is GGGGGst1234\nThis is a ZZZZst123456\nThis is a test123456\nzzzzzzzzz\naaaa\ndddddd\nttttt\n222222\n555555")
 
 	for {
-		mouseXLocation, mouseYLocation, _, _ := memory.GetMouseStatus()
+		mouseXLocation, mouseYLocation, _, _ := GetMouseStatus()
 		characterEntry := getCellInformationUnderMouseCursor(mouseXLocation, mouseYLocation)
 		Locate(0, 0)
 		Print(fmt.Sprintf("%d, %d   ", characterEntry.AttributeEntry.CellControlId, characterEntry.AttributeEntry.CellControlLocation))
@@ -215,7 +214,7 @@ func testDropdown() {
 			Locate(0, 0)
 			PrintLayer(layer1, "                                                ")
 			Locate(0, 0)
-			_, _, pressed, _ := memory.GetPreviousMouseStatus()
+			_, _, pressed, _ := GetPreviousMouseStatus()
 			PrintLayer(layer1, "***"+strconv.Itoa(int(pressed))+"***")
 		}
 		if key == "q" {
@@ -291,7 +290,7 @@ func testSelector() {
 		selectionEntry.Add(strconv.Itoa(i), strconv.Itoa(i))
 	}
 	menuBarInstance := layer1.AddSelector(styleEntry, selectionEntry, 2, 10, 4, 7, 3, 0, -1, false)
-	// menuBarInstance2 := Selector.Add(layerAlias1, "menuBar2", styleEntry, selectionEntry, 10, 20, 4, 7, 1, 0, -1, false)
+	// menuBarInstance2 := Selector.AddLayer(layerAlias1, "menuBar2", styleEntry, selectionEntry, 10, 20, 4, 7, 1, 0, -1, false)
 	LocateLayer(layer1, 3, 3)
 	PrintLayer(layer1, menuBarInstance.layerAlias)
 	for {
@@ -330,7 +329,7 @@ func testTextField() {
 	layer1.AddTextField(styleEntry, 0, 5, 15, 30, false, "Test 李克强宣布中国今年经济增长的目 acbc1", true)
 	layer1.AddScrollbar(styleEntry, 0, 8, 10, 10, 0, 1, false)
 	for {
-		mouseXLocation, mouseYLocation, _, _ := memory.GetMouseStatus()
+		mouseXLocation, mouseYLocation, _, _ := GetMouseStatus()
 		characterEntry := getCellInformationUnderMouseCursor(mouseXLocation, mouseYLocation)
 		Locate(0, 0)
 		Print(fmt.Sprintf("%d, %d   ", characterEntry.AttributeEntry.CellControlId, characterEntry.AttributeEntry.CellControlLocation))
@@ -360,7 +359,7 @@ func testWindowMovement() {
 	Locate(xLocation, yLocation)
 	Print("This is a test of the layer system")
 	Locate(1, 1)
-	Print(strconv.Itoa(memory.GetLayer(layer2.layerAlias).ZOrder))
+	Print(strconv.Itoa(GetLayer(layer2.layerAlias).ZOrder))
 	styleEntry := types.NewTuiStyleEntry()
 	layer3.DrawWindow(styleEntry, 0, 0, 18, 9, true)
 	layer4.DrawWindow(styleEntry, 0, 0, 18, 9, true)
@@ -383,10 +382,10 @@ func testButtonPressAction() {
 	styleEntry := types.NewTuiStyleEntry()
 	layer1.AddButton("CANCEL", styleEntry, 2, 2, 10, 10, true)
 	layer1.AddButton("OK", styleEntry, 15, 2, 10, 10, true)
-	layerInformation := memory.GetLayer(layer1.layerAlias)
+	layerInformation := GetLayer(layer1.layerAlias)
 	Button.drawButtonsOnLayer(*layerInformation)
 	for {
-		mouseXLocation, mouseYLocation, _, _ := memory.GetMouseStatus()
+		mouseXLocation, mouseYLocation, _, _ := GetMouseStatus()
 		characterEntry := getCellInformationUnderMouseCursor(mouseXLocation, mouseYLocation)
 		Locate(0, 0)
 		Print(fmt.Sprintf("%d, %d, %d   ", characterEntry.AttributeEntry.CellType, characterEntry.AttributeEntry.CellControlId, characterEntry.AttributeEntry.CellControlLocation))

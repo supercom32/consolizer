@@ -16,9 +16,30 @@ type checkboxType struct{}
 
 var Checkbox checkboxType
 
+var Checkboxes = memory.NewControlMemoryManager[types.CheckboxEntryType]()
+
+// ============================================================================
+// REGULAR ENTRY
+// ============================================================================
+
+func DeleteCheckbox(layerAlias string, checkboxAlias string) {
+	// Use ControlMemoryManager to remove the checkbox entry
+	Checkboxes.Remove(layerAlias, checkboxAlias)
+}
+
+func DeleteAllCheckboxesFromLayer(layerAlias string) {
+	// GetLayer all checkbox entries from the layer
+	checkboxes := Checkboxes.GetAllEntries(layerAlias)
+
+	// Loop through all entries and delete them
+	for _, checkbox := range checkboxes {
+		Checkboxes.Remove(layerAlias, checkbox.Label) // Assuming checkbox.Label is used as the alias
+	}
+}
+
 func (shared *CheckboxInstanceType) Delete() *CheckboxInstanceType {
-	if memory.IsCheckboxExists(shared.layerAlias, shared.controlAlias) {
-		memory.DeleteCheckbox(shared.layerAlias, shared.controlAlias)
+	if Checkboxes.IsExists(shared.layerAlias, shared.controlAlias) {
+		Checkboxes.Remove(shared.layerAlias, shared.controlAlias)
 	}
 	return nil
 }
@@ -32,8 +53,8 @@ IsCheckboxSelected allows you to detect if the given Checkbox is selected or not
 no longer exists, then a result of false is always returned.
 */
 func (shared *CheckboxInstanceType) IsCheckboxSelected() bool {
-	if memory.IsCheckboxExists(shared.layerAlias, shared.controlAlias) {
-		checkboxEntry := memory.GetCheckbox(shared.layerAlias, shared.controlAlias)
+	if Checkboxes.IsExists(shared.layerAlias, shared.controlAlias) {
+		checkboxEntry := Checkboxes.Get(shared.layerAlias, shared.controlAlias)
 		if checkboxEntry.IsSelected == true {
 			return true
 		}
@@ -57,7 +78,16 @@ the text layer data under it.
 then only the visible portion of the Checkbox will be drawn.
 */
 func (shared *checkboxType) Add(layerAlias string, checkboxAlias string, checkboxLabel string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, isSelected bool, isEnabled bool) CheckboxInstanceType {
-	memory.AddCheckbox(layerAlias, checkboxAlias, checkboxLabel, styleEntry, xLocation, yLocation, isSelected, isEnabled)
+	checkboxEntry := types.NewCheckboxEntry()
+	checkboxEntry.Alias = checkboxAlias
+	checkboxEntry.StyleEntry = styleEntry
+	checkboxEntry.Label = checkboxLabel
+	checkboxEntry.XLocation = xLocation
+	checkboxEntry.YLocation = yLocation
+	checkboxEntry.IsSelected = isSelected
+	checkboxEntry.IsEnabled = isEnabled
+	// Use the ControlMemoryManager to add the checkbox entry
+	Checkboxes.Add(layerAlias, checkboxAlias, &checkboxEntry)
 	var checkboxInstance CheckboxInstanceType
 	checkboxInstance.layerAlias = layerAlias
 	checkboxInstance.controlAlias = checkboxAlias
@@ -72,14 +102,14 @@ the following information should be noted:
 will simply be ignored.
 */
 func (shared *checkboxType) DeleteCheckbox(layerAlias string, checkboxAlias string) {
-	memory.DeleteCheckbox(layerAlias, checkboxAlias)
+	Checkboxes.Remove(layerAlias, checkboxAlias)
 }
 
 /*
 DeleteAllCheckboxesFromLayer allows you to delete all checkboxes on a given text layer.
 */
 func (shared *checkboxType) DeleteAllCheckboxesFromLayer(layerAlias string) {
-	memory.DeleteAllCheckboxesFromLayer(layerAlias)
+	Checkboxes.RemoveAll(layerAlias)
 }
 
 /*
@@ -87,7 +117,7 @@ drawCheckboxesOnLayer allows you to draw all checkboxes on a given text layer.
 */
 func (shared *checkboxType) drawCheckboxesOnLayer(layerEntry types.LayerEntryType) {
 	layerAlias := layerEntry.LayerAlias
-	for _, checkboxEntry := range memory.Checkboxes.GetAllEntries(layerAlias) {
+	for _, checkboxEntry := range Checkboxes.GetAllEntries(layerAlias) {
 		shared.drawCheckbox(&layerEntry, checkboxEntry.Alias, checkboxEntry.Label, checkboxEntry.StyleEntry, checkboxEntry.XLocation, checkboxEntry.YLocation, checkboxEntry.IsSelected, checkboxEntry.IsEnabled)
 	}
 }
@@ -132,17 +162,17 @@ In the event that a screen update is required this method returns true.
 */
 func (shared *checkboxType) updateMouseEventCheckbox() bool {
 	isUpdateRequired := false
-	mouseXLocation, mouseYLocation, buttonPressed, _ := memory.GetMouseStatus()
+	mouseXLocation, mouseYLocation, buttonPressed, _ := GetMouseStatus()
 	characterEntry := getCellInformationUnderMouseCursor(mouseXLocation, mouseYLocation)
 	layerAlias := characterEntry.LayerAlias
 	controlAlias := characterEntry.AttributeEntry.CellControlAlias
 	if characterEntry.AttributeEntry.CellType == constants.CellTypeCheckbox && characterEntry.AttributeEntry.CellControlId != constants.NullCellId {
-		_, _, previousButtonPressed, _ := memory.GetPreviousMouseStatus()
-		if buttonPressed != 0 && previousButtonPressed == 0 && memory.IsCheckboxExists(layerAlias, controlAlias) {
+		_, _, previousButtonPressed, _ := GetPreviousMouseStatus()
+		if buttonPressed != 0 && previousButtonPressed == 0 && Checkboxes.IsExists(layerAlias, controlAlias) {
 			eventStateMemory.currentlyFocusedControl.layerAlias = layerAlias
 			eventStateMemory.currentlyFocusedControl.controlAlias = controlAlias
 			eventStateMemory.currentlyFocusedControl.controlType = constants.CellTypeCheckbox
-			checkboxEntry := memory.GetCheckbox(layerAlias, controlAlias)
+			checkboxEntry := Checkboxes.Get(layerAlias, controlAlias)
 			if !checkboxEntry.IsEnabled {
 				return isUpdateRequired
 			}

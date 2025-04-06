@@ -15,14 +15,19 @@ type textFieldInstanceType struct {
 
 type textFieldType struct{}
 
+var TextFields = memory.NewControlMemoryManager[types.TextFieldEntryType]()
 var TextField textFieldType
+
+// ============================================================================
+// REGULAR ENTRY
+// ============================================================================
 
 func (shared *textFieldInstanceType) AddToTabIndex() {
 	addTabIndex(shared.layerAlias, shared.controlAlias, constants.CellTypeTextField)
 }
 
 func (shared *textFieldInstanceType) GetFocus() string {
-	if memory.IsTextFieldExists(shared.layerAlias, shared.controlAlias) {
+	if TextFields.IsExists(shared.layerAlias, shared.controlAlias) {
 		validatorTextField(shared.layerAlias, shared.controlAlias)
 		setFocusedControl(shared.layerAlias, shared.controlAlias, constants.CellTypeTextField)
 	}
@@ -30,8 +35,8 @@ func (shared *textFieldInstanceType) GetFocus() string {
 }
 
 func (shared *textFieldInstanceType) Delete() string {
-	if memory.IsTextFieldExists(shared.layerAlias, shared.controlAlias) {
-		memory.DeleteTextField(shared.layerAlias, shared.controlAlias)
+	if TextFields.IsExists(shared.layerAlias, shared.controlAlias) {
+		TextFields.Remove(shared.layerAlias, shared.controlAlias)
 	}
 	return ""
 }
@@ -40,9 +45,9 @@ func (shared *textFieldInstanceType) Delete() string {
 GetValue allows you to get the current value of your text field with.
 */
 func (shared *textFieldInstanceType) GetValue() string {
-	if memory.IsTextFieldExists(shared.layerAlias, shared.controlAlias) {
+	if TextFields.IsExists(shared.layerAlias, shared.controlAlias) {
 		validatorTextField(shared.layerAlias, shared.controlAlias)
-		textFieldEntry := memory.GetTextField(shared.layerAlias, shared.controlAlias)
+		textFieldEntry := TextFields.Get(shared.layerAlias, shared.controlAlias)
 		value := textFieldEntry.CurrentValue
 		return strings.TrimSpace(string(value))
 	}
@@ -53,10 +58,10 @@ func (shared *textFieldInstanceType) GetValue() string {
 SetLocation allows you to set the current location of your text field.
 */
 func (shared *textFieldInstanceType) SetLocation(xLocation int, yLocation int) {
-	if memory.IsTextFieldExists(shared.layerAlias, shared.controlAlias) {
+	if TextFields.IsExists(shared.layerAlias, shared.controlAlias) {
 		validatorTextField(shared.layerAlias, shared.controlAlias)
 		validateLayerLocationByLayerAlias(shared.layerAlias, xLocation, yLocation)
-		textFieldEntry := memory.GetTextField(shared.layerAlias, shared.controlAlias)
+		textFieldEntry := TextFields.Get(shared.layerAlias, shared.controlAlias)
 		textFieldEntry.XLocation = xLocation
 		textFieldEntry.YLocation = yLocation
 	}
@@ -88,7 +93,22 @@ visible.
 func (shared *textFieldType) Add(layerAlias string, textFieldAlias string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, maxLengthAllowed int, IsPasswordProtected bool, defaultValue string, isEnabled bool) textFieldInstanceType {
 	validateLayerLocationByLayerAlias(layerAlias, xLocation, yLocation)
 	validateTextFieldWidth(width)
-	memory.AddTextField(layerAlias, textFieldAlias, styleEntry, xLocation, yLocation, width, maxLengthAllowed, IsPasswordProtected, defaultValue+" ", isEnabled)
+	// This is required so that the cursor appears at the end of your text field.
+	defaultValueWithTrailingBlank := defaultValue + " "
+	textFieldEntry := types.NewTextFieldEntry()
+	textFieldEntry.Alias = textFieldAlias
+	textFieldEntry.StyleEntry = styleEntry
+	textFieldEntry.XLocation = xLocation
+	textFieldEntry.YLocation = yLocation
+	textFieldEntry.Width = width
+	textFieldEntry.MaxLengthAllowed = maxLengthAllowed
+	textFieldEntry.IsPasswordProtected = IsPasswordProtected
+	textFieldEntry.CurrentValue = []rune(defaultValueWithTrailingBlank)
+	textFieldEntry.DefaultValue = defaultValueWithTrailingBlank
+	textFieldEntry.IsEnabled = isEnabled
+	// Use the generic memory manager to add the text field entry
+	TextFields.Add(layerAlias, textFieldAlias, &textFieldEntry)
+
 	var textFieldInstance textFieldInstanceType
 	textFieldInstance.layerAlias = layerAlias
 	textFieldInstance.controlAlias = textFieldAlias
@@ -100,11 +120,11 @@ DeleteTextField allows you to delete a text field on a given layer.
 */
 func (shared *textFieldType) DeleteTextField(layerAlias string, textFieldAlias string) {
 	validatorTextField(layerAlias, textFieldAlias)
-	memory.DeleteTextField(layerAlias, textFieldAlias)
+	TextFields.Remove(layerAlias, textFieldAlias)
 }
 
 func (shared *textFieldType) DeleteAllTextFields(layerAlias string) {
-	memory.DeleteAllTextFieldsFromLayer(layerAlias)
+	TextFields.RemoveAll(layerAlias)
 }
 
 /*
@@ -113,7 +133,7 @@ entry.
 */
 func (shared *textFieldType) drawTextFieldOnLayer(layerEntry types.LayerEntryType) {
 	layerAlias := layerEntry.LayerAlias
-	for _, currentTextFieldEntry := range memory.TextFields.GetAllEntries(layerAlias) {
+	for _, currentTextFieldEntry := range TextFields.GetAllEntries(layerAlias) {
 		textFieldEntry := currentTextFieldEntry
 		shared.drawInputString(&layerEntry, textFieldEntry.StyleEntry, textFieldEntry.Alias, textFieldEntry.XLocation, textFieldEntry.YLocation, textFieldEntry.Width, textFieldEntry.ViewportPosition, textFieldEntry.CurrentValue)
 	}
@@ -142,7 +162,7 @@ func (shared *textFieldType) drawInputString(layerEntry *types.LayerEntryType, s
 	attributeEntry.CellType = constants.CellTypeTextField
 	attributeEntry.CellControlAlias = textFieldAlias
 	numberOfCharactersToSafelyPrint := stringformat.GetMaxCharactersThatFitInStringSize(inputValue[stringPosition:], width)
-	textFieldEntry := memory.GetTextField(layerEntry.LayerAlias, textFieldAlias)
+	textFieldEntry := TextFields.Get(layerEntry.LayerAlias, textFieldAlias)
 	focusedLayerAlias := eventStateMemory.currentlyFocusedControl.layerAlias
 	focusedControlAlias := eventStateMemory.currentlyFocusedControl.controlAlias
 	focusedControlType := eventStateMemory.currentlyFocusedControl.controlType
@@ -274,10 +294,10 @@ func (shared *textFieldType) updateKeyboardEventTextField(keystroke []rune) bool
 	focusedLayerAlias := eventStateMemory.currentlyFocusedControl.layerAlias
 	focusedControlAlias := eventStateMemory.currentlyFocusedControl.controlAlias
 	focusedControlType := eventStateMemory.currentlyFocusedControl.controlType
-	if focusedControlType != constants.CellTypeTextField || !memory.IsTextFieldExists(focusedLayerAlias, focusedControlAlias) {
+	if focusedControlType != constants.CellTypeTextField || !TextFields.IsExists(focusedLayerAlias, focusedControlAlias) {
 		return false
 	}
-	textFieldEntry := memory.GetTextField(focusedLayerAlias, focusedControlAlias)
+	textFieldEntry := TextFields.Get(focusedLayerAlias, focusedControlAlias)
 	if !textFieldEntry.IsEnabled {
 		return false
 	}
@@ -338,11 +358,11 @@ In the event that a screen update is required this method returns true.
 func (shared *textFieldType) updateMouseEventTextField() bool {
 	isScreenUpdateRequired := false
 	var characterEntry types.CharacterEntryType
-	mouseXLocation, mouseYLocation, buttonPressed, _ := memory.GetMouseStatus()
+	mouseXLocation, mouseYLocation, buttonPressed, _ := GetMouseStatus()
 	if buttonPressed != 0 && eventStateMemory.stateId != constants.EventStateDragAndDropScrollbar {
 		characterEntry = getCellInformationUnderMouseCursor(mouseXLocation, mouseYLocation)
-		if characterEntry.AttributeEntry.CellType == constants.CellTypeTextField && memory.IsTextFieldExists(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias) {
-			textFieldEntry := memory.GetTextField(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias)
+		if characterEntry.AttributeEntry.CellType == constants.CellTypeTextField && TextFields.IsExists(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias) {
+			textFieldEntry := TextFields.Get(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias)
 			if !textFieldEntry.IsEnabled {
 				return isScreenUpdateRequired
 			}

@@ -16,14 +16,19 @@ type TooltipInstanceType struct {
 type tooltipType struct{}
 
 var Tooltip tooltipType
+var Tooltips = memory.NewControlMemoryManager[types.TooltipEntryType]()
+
+// ============================================================================
+// REGULAR ENTRY
+// ============================================================================
 
 func (shared *TooltipInstanceType) AddToTabIndex() {
 	addTabIndex(shared.layerAlias, shared.controlAlias, constants.CellTypeTooltip)
 }
 
 func (shared *TooltipInstanceType) Delete() string {
-	if memory.IsTooltipExists(shared.layerAlias, shared.controlAlias) {
-		memory.DeleteTooltip(shared.layerAlias, shared.controlAlias)
+	if Tooltips.IsExists(shared.layerAlias, shared.controlAlias) {
+		Tooltips.Remove(shared.layerAlias, shared.controlAlias)
 	}
 	return ""
 }
@@ -33,12 +38,27 @@ SetTooltipValue allows you to set the value of the tooltip associated with the T
 This function updates the value of the tooltip label identified by the layerAlias and tooltipAlias fields.
 */
 func (shared *TooltipInstanceType) SetTooltipValue(value string) {
-	labelEntry := memory.GetLabel(shared.layerAlias, shared.controlAlias)
+	labelEntry := Labels.Get(shared.layerAlias, shared.controlAlias)
 	labelEntry.Value = value
 }
 
 func (shared *tooltipType) Add(layerAlias string, tooltipAlias string, tooltipValue string, styleEntry types.TuiStyleEntryType, hotspotXLocation int, hotspotYLocation int, hotspotWidth int, hotspotHeight int, tooltipXLocation int, tooltipYLocation int, tooltipWidth int, tooltipHeight int, isLocationAbsolute bool, isBorderDrawn bool, hoverTime int) TooltipInstanceType {
-	memory.AddTooltip(layerAlias, tooltipAlias, tooltipValue, styleEntry, hotspotXLocation, hotspotYLocation, hotspotWidth, hotspotHeight, tooltipXLocation, tooltipYLocation, tooltipWidth, tooltipHeight, isLocationAbsolute, isBorderDrawn, hoverTime)
+	tooltipEntry := types.NewTooltipEntry()
+	tooltipEntry.StyleEntry = styleEntry
+	tooltipEntry.Alias = tooltipAlias
+	tooltipEntry.Value = tooltipValue
+	tooltipEntry.HotspotXLocation = hotspotXLocation
+	tooltipEntry.HotspotYLocation = hotspotYLocation
+	tooltipEntry.HotspotWidth = hotspotWidth
+	tooltipEntry.HotspotHeight = hotspotHeight
+	tooltipEntry.TooltipXLocation = tooltipXLocation
+	tooltipEntry.TooltipYLocation = tooltipYLocation
+	tooltipEntry.TooltipWidth = tooltipWidth
+	tooltipEntry.TooltipHeight = tooltipHeight
+	tooltipEntry.IsLocationAbsolute = isLocationAbsolute
+	tooltipEntry.IsBorderDrawn = isBorderDrawn
+	tooltipEntry.HoverDisplayDelay = hoverTime
+	Tooltips.Add(layerAlias, tooltipAlias, &tooltipEntry)
 	var tooltipInstance TooltipInstanceType
 	tooltipInstance.layerAlias = layerAlias
 	tooltipInstance.controlAlias = tooltipAlias
@@ -53,11 +73,11 @@ the following information should be noted:
 will simply be ignored.
 */
 func (shared *tooltipType) DeleteTooltip(layerAlias string, labelAlias string) {
-	memory.DeleteTooltip(layerAlias, labelAlias)
+	Tooltips.Remove(layerAlias, labelAlias)
 }
 
 func (shared *tooltipType) DeleteAllTooltips(layerAlias string) {
-	memory.DeleteAllTooltipsFromLayer(layerAlias)
+	Tooltips.RemoveAll(layerAlias)
 }
 
 /*
@@ -65,7 +85,7 @@ drawButtonsOnLayer allows you to draw all buttons on a given text layer.
 */
 func (shared *tooltipType) drawTooltipsOnLayer(layerEntry types.LayerEntryType) {
 	layerAlias := layerEntry.LayerAlias
-	for _, currentTooltipEntry := range memory.Tooltips.GetAllEntries(layerAlias) {
+	for _, currentTooltipEntry := range Tooltips.GetAllEntries(layerAlias) {
 		tooltipEntry := currentTooltipEntry
 		shared.drawTooltip(&layerEntry, tooltipEntry)
 	}
@@ -85,7 +105,7 @@ func (shared *tooltipType) drawTooltip(layerEntry *types.LayerEntryType, tooltip
 		calculatedWidth := tooltipEntry.TooltipWidth + 1
 		calculatedHeight := tooltipEntry.TooltipHeight
 		if !tooltipEntry.IsLocationAbsolute {
-			mouseXLocation, mouseYLocation, _, _ := memory.GetMouseStatus()
+			mouseXLocation, mouseYLocation, _, _ := GetMouseStatus()
 			calculatedXLocation = mouseXLocation + tooltipEntry.TooltipXLocation - 2
 			calculatedYLocation = mouseYLocation + tooltipEntry.TooltipYLocation - 1
 			calculatedWidth = tooltipEntry.TooltipWidth + 1
@@ -106,11 +126,11 @@ func (shared *tooltipType) drawTooltip(layerEntry *types.LayerEntryType, tooltip
 func (shared *tooltipType) updateMouseEventTooltip() bool {
 	isScreenUpdateRequired := false
 	var characterEntry types.CharacterEntryType
-	mouseXLocation, mouseYLocation, _, _ := memory.GetMouseStatus()
+	mouseXLocation, mouseYLocation, _, _ := GetMouseStatus()
 	characterEntry = getCellInformationUnderMouseCursor(mouseXLocation, mouseYLocation)
-	if characterEntry.AttributeEntry.CellType == constants.CellTypeTooltip && eventStateMemory.stateId == constants.EventStateNone && memory.IsTooltipExists(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias) {
-		tooltipEntry := memory.GetTooltip(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias)
-		mouseXLocation, mouseYLocation, _, _ = memory.GetMouseStatus()
+	if characterEntry.AttributeEntry.CellType == constants.CellTypeTooltip && eventStateMemory.stateId == constants.EventStateNone && Tooltips.IsExists(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias) {
+		tooltipEntry := Tooltips.Get(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias)
+		mouseXLocation, mouseYLocation, _, _ = GetMouseStatus()
 		if tooltipEntry.HoverStartTime == (time.Time{}) {
 			// If no start time was defined, do it now.
 			setPreviouslyHighlightedControl(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias, constants.CellTypeTooltip)
@@ -131,7 +151,7 @@ func (shared *tooltipType) updateMouseEventTooltip() bool {
 		}
 	} else {
 		if eventStateMemory.previouslyHighlightedControl.controlType == constants.CellTypeTooltip {
-			for _, currentTooltipEntry := range memory.Tooltips.GetAllEntriesOverall() {
+			for _, currentTooltipEntry := range Tooltips.GetAllEntriesOverall() {
 				currentTooltipEntry.IsDrawn = false
 				currentTooltipEntry.HoverStartTime = time.Time{}
 			}
