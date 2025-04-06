@@ -1,11 +1,12 @@
 package consolizer
 
 import (
-	"github.com/gdamore/tcell/v2"
 	"strings"
+	"time"
+
+	"github.com/gdamore/tcell/v2"
 	"supercom32.net/consolizer/constants"
 	"supercom32.net/consolizer/types"
-	"time"
 )
 
 type controlIdentifierType struct {
@@ -22,6 +23,8 @@ type eventStateType struct {
 	previouslyHighlightedControl controlIdentifierType
 	tabIndexMemory               []controlIdentifierType
 	currentTabIndex              int
+	// Track modifier key states
+	modifierKeys tcell.ModMask
 }
 
 var eventStateMemory eventStateType
@@ -53,6 +56,10 @@ func UpdateEventQueues() {
 	case *tcell.EventKey:
 		isScreenUpdateRequired := false
 		var keystroke []rune
+
+		// Update modifier key state
+		eventStateMemory.modifierKeys = event.Modifiers()
+
 		if strings.Contains(event.Name(), "Rune") {
 			keystroke = []rune{event.Rune()}
 		} else {
@@ -309,4 +316,24 @@ func getCellInformationUnderMouseCursor(mouseXLocation int, mouseYLocation int) 
 		characterEntry = layerEntry.CharacterMemory[mouseYLocation-layerEntry.ScreenYLocation][mouseXLocation-layerEntry.ScreenXLocation]
 	}
 	return characterEntry
+}
+
+// IsModifierKeyPressed checks if a specific modifier key is currently pressed
+func IsModifierKeyPressed(modifier tcell.ModMask) bool {
+	return (eventStateMemory.modifierKeys & modifier) != 0
+}
+
+// IsShiftPressed checks if the shift key is currently pressed
+func IsShiftPressed() bool {
+	return IsModifierKeyPressed(tcell.ModShift)
+}
+
+// IsCtrlPressed checks if the control key is currently pressed
+func IsCtrlPressed() bool {
+	return IsModifierKeyPressed(tcell.ModCtrl)
+}
+
+// IsAltPressed checks if the alt key is currently pressed
+func IsAltPressed() bool {
+	return IsModifierKeyPressed(tcell.ModAlt)
 }
