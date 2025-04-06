@@ -74,10 +74,10 @@ func (shared *MemoryManager[T]) RemoveAll() {
 	shared.memoryItems = make(map[string]*T) // Reinitialize the map to reset it
 }
 
-// IsExists checks if an entry with the given alias exists in the specified layer.
-func (shared *ControlMemoryManager[T]) IsExists(layerAlias string, alias string) bool {
-	if shared.MemoryManager[layerAlias] != nil {
-		return shared.MemoryManager[layerAlias].Get(alias) != nil
-	}
-	return false
+// IsExists checks if a value with the given key exists in memoryItems.
+func (shared *MemoryManager[T]) IsExists(key string) bool {
+	shared.muxtex.RLock()
+	defer shared.muxtex.RUnlock()
+	_, exists := shared.memoryItems[key]
+	return exists
 }

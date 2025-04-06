@@ -98,7 +98,7 @@ func (shared TuiStyleEntryType) GetEntryAsJsonDump() string {
 	return string(j)
 }
 
-// NewTuiStyleEntry asdasd existingCharacterObject ...*CharacterEntryType) CharacterEntryType
+// NewTuiStyleEntry (existingCharacterObject ...*CharacterEntryType) CharacterEntryType
 func NewTuiStyleEntry(existingStyleEntry ...*TuiStyleEntryType) TuiStyleEntryType {
 	var styleEntry TuiStyleEntryType
 	if existingStyleEntry != nil {

@@ -2,10 +2,18 @@ package consolizer
 
 import (
 	"fmt"
+	"sort"
+
 	"github.com/google/uuid"
 	"supercom32.net/consolizer/constants"
+	"supercom32.net/consolizer/internal/memory"
 	"supercom32.net/consolizer/types"
 )
+
+type layerType struct{}
+
+var layer layerType
+var Layers *memory.MemoryManager[types.LayerEntryType]
 
 type LayerInstanceType struct {
 	layerAlias  string
@@ -14,18 +22,187 @@ type LayerInstanceType struct {
 	LayerHeight int
 }
 
+type layerAliasZOrderPair struct {
+	Key   string
+	Value int
+}
+type LayerAliasZOrderPairList []layerAliasZOrderPair
+
+func init() {
+	layer.ReInitializeScreenMemory()
+}
+
+func (shared *layerType) ReInitializeScreenMemory() {
+	Layers = memory.NewMemoryManager[types.LayerEntryType]() // Initialize MemoryManager
+}
+
+func (shared *layerType) Add(layerAlias string, xLocation int, yLocation int, width int, height int, zOrderPriority int, parentAlias string) {
+	if width <= 0 {
+		panic(fmt.Sprintf("The layer '%s' could not be created since a HotspotWidth of '%d' was specified!", layerAlias, width))
+	}
+	if height <= 0 {
+		panic(fmt.Sprintf("The layer '%s' could not be created since a Length of '%d' was specified!", layerAlias, height))
+	}
+	layerEntry := types.NewLayerEntry(layerAlias, parentAlias, width, height)
+	layerEntry.LayerAlias = layerAlias
+	layerEntry.ScreenXLocation = xLocation
+	layerEntry.ScreenYLocation = yLocation
+	layerEntry.ZOrder = zOrderPriority
+	layerEntry.ParentAlias = parentAlias
+
+	if parentAlias != "" {
+		parentEntry := Layers.Get(parentAlias)
+		if parentEntry != nil {
+			parentEntry.IsParent = true
+		} else {
+			panic(fmt.Sprintf("The layer '%s' could not be created since the parent alias '%s' does not exist!", layerAlias, parentAlias))
+		}
+	}
+	Layers.Add(layerAlias, &layerEntry)
+}
+
+// GetNextLayerAlias retrieves the next available layer alias.
+func (shared *layerType) GetNextLayerAlias() string {
+	for _, currentEntry := range Layers.GetAllEntries() {
+		return currentEntry.LayerAlias
+	}
+	return ""
+}
+
+func (shared *layerType) Delete(layerAlias string) {
+	screenEntry := Layers.Get(layerAlias)
+	if screenEntry == nil {
+		panic(fmt.Sprintf("The layer '%s' could not be deleted since it does not exist!", layerAlias))
+	}
+	layerEntry := Layers.Get(layerAlias)
+	parentAlias := layerEntry.ParentAlias
+	isParent := layerEntry.IsParent
+
+	// If this layer is a parent, recursively delete all children first
+	if isParent {
+		shared.deleteAllChildrenOfParent(layerAlias)
+	}
+
+	// Delete all controls on this layer
+	Labels.RemoveAll(layerAlias)
+	Buttons.RemoveAll(layerAlias)
+	Checkboxes.RemoveAll(layerAlias)
+	Dropdowns.RemoveAll(layerAlias)
+	ProgressBars.RemoveAll(layerAlias)
+	RadioButtons.RemoveAll(layerAlias)
+	ScrollBars.RemoveAll(layerAlias)
+	Selectors.RemoveAll(layerAlias)
+	Textboxes.RemoveAll(layerAlias)
+	TextFields.RemoveAll(layerAlias)
+
+	// Remove the layer itself
+	Layers.Remove(layerAlias)
+
+	// Update parent's IsParent status if needed
+	if parentAlias != "" {
+		parentEntry := Layers.Get(parentAlias)
+		if parentEntry != nil {
+			if !shared.IsAParent(parentAlias) {
+				layerEntry = Layers.Get(parentAlias)
+				layerEntry.IsParent = false
+			}
+		}
+	}
+}
+
+func (shared *layerType) deleteAllChildrenOfParent(parentAlias string) {
+	// Get all entries first to avoid modification during iteration
+	entries := make([]string, 0)
+	for _, currentValue := range Layers.GetAllEntries() {
+		if currentValue.ParentAlias == parentAlias {
+			entries = append(entries, currentValue.LayerAlias)
+		}
+	}
+
+	// Delete each child layer
+	for _, childAlias := range entries {
+		shared.Delete(childAlias)
+	}
+}
+
+func (shared *layerType) IsAParent(parentAlias string) bool {
+	isParent := false
+	for _, currentValue := range Layers.GetAllEntries() {
+		if currentValue.ParentAlias == parentAlias {
+			isParent = true
+		}
+	}
+	return isParent
+}
+
+// GetSortedLayerMemoryAliasSlice returns a sorted list of layer aliases based on z-order.
+func (shared *layerType) GetSortedLayerMemoryAliasSlice() LayerAliasZOrderPairList {
+	pairList := make(LayerAliasZOrderPairList, len(Layers.GetAllEntries()))
+	currentEntry := 0
+	for currentKey, currentValue := range Layers.GetAllEntriesWithKeys() {
+		pairList[currentEntry].Key = currentKey
+		pairList[currentEntry].Value = currentValue.ZOrder
+		currentEntry++
+	}
+	sort.SliceStable(pairList, func(firstIndex, secondIndex int) bool {
+		return pairList[firstIndex].Value < pairList[secondIndex].Value
+	})
+	return pairList
+}
+
+// SetHighestZOrderNumber sets the highest z-order number for the given layer.
+func (shared *layerType) SetHighestZOrderNumber(layerAlias string, parentAlias string) {
+	if Layers.IsExists(layerAlias) {
+		highestZOrderNumber := shared.getHighestZOrderNumber(parentAlias)
+		for _, currentValue := range Layers.GetAllEntries() {
+			if currentValue.ParentAlias == parentAlias && currentValue.ZOrder == highestZOrderNumber {
+				currentValue.ZOrder = highestZOrderNumber - 1
+				currentValue.IsTopmost = false
+			}
+		}
+		Layers.Get(layerAlias).ZOrder = highestZOrderNumber
+		Layers.Get(layerAlias).IsTopmost = true
+	}
+}
+
+func (shared *layerType) getHighestZOrderNumber(parentAlias string) int {
+	highestZOrderNumber := 0
+	for _, currentValue := range Layers.GetAllEntries() {
+		if currentValue.ParentAlias == parentAlias && currentValue.ZOrder > highestZOrderNumber {
+			highestZOrderNumber = currentValue.ZOrder
+		}
+	}
+	return highestZOrderNumber
+}
+
+func (shared *layerType) GetRootParentLayerAlias(layerAlias string, previousChildAlias string) (string, string) {
+	layerEntry := Layers.Get(layerAlias)
+	if layerEntry.ParentAlias != "" {
+		childToTrack := previousChildAlias
+		if childToTrack == "" {
+			childToTrack = layerAlias
+		}
+		return shared.GetRootParentLayerAlias(layerEntry.ParentAlias, childToTrack)
+	}
+	return layerAlias, previousChildAlias
+}
+
+// ============================================================================
+// REGULAR ENTRY
+// ============================================================================
+
 func getUUID() string {
 	id := uuid.New()
 	return id.String()
 }
 
-func (shared LayerInstanceType) Clear() {
-	layerEntry := Screen.GetLayer(shared.layerAlias)
+func (shared *LayerInstanceType) Clear() {
+	layerEntry := Layers.Get(shared.layerAlias)
 	localAttributeEntry := types.NewAttributeEntry()
 	fillArea(layerEntry, localAttributeEntry, "", 0, 0, shared.LayerWidth, shared.LayerHeight, 0)
 }
 
-func (shared LayerInstanceType) DrawImage(fileName string, drawingStyle types.ImageStyleEntryType, xLocation int, yLocation int, widthInCharacters int, heightInCharacters int, blurSigma float64) error {
+func (shared *LayerInstanceType) DrawImage(fileName string, drawingStyle types.ImageStyleEntryType, xLocation int, yLocation int, widthInCharacters int, heightInCharacters int, blurSigma float64) error {
 	var err error
 	if !IsImageExists(fileName) {
 		err = LoadImage(fileName)
@@ -40,7 +217,7 @@ func (shared LayerInstanceType) DrawImage(fileName string, drawingStyle types.Im
 	return err
 }
 
-func (shared LayerInstanceType) DrawComposedImage(imageComposeEntry ImageComposerEntryType, drawingStyle types.ImageStyleEntryType, xLocation int, yLocation int, widthInCharacters int, heightInCharacters int) error {
+func (shared *LayerInstanceType) DrawComposedImage(imageComposeEntry ImageComposerEntryType, drawingStyle types.ImageStyleEntryType, xLocation int, yLocation int, widthInCharacters int, heightInCharacters int) error {
 	var err error
 	var imageLayer types.LayerEntryType
 	baseImage := imageComposeEntry.RenderImage()
@@ -53,67 +230,67 @@ func (shared LayerInstanceType) DrawComposedImage(imageComposeEntry ImageCompose
 	return err
 }
 
-func (shared LayerInstanceType) AddButton(buttonLabel string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, height int, isEnabled bool) ButtonInstanceType {
+func (shared *LayerInstanceType) AddButton(buttonLabel string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, height int, isEnabled bool) ButtonInstanceType {
 	buttonAlias := getUUID()
 	buttonInstance := Button.Add(shared.layerAlias, buttonAlias, buttonLabel, styleEntry, xLocation, yLocation, width, height, isEnabled)
 	return buttonInstance
 }
 
-func (shared LayerInstanceType) AddCheckbox(checkboxLabel string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, isSelected bool, isEnabled bool) CheckboxInstanceType {
+func (shared *LayerInstanceType) AddCheckbox(checkboxLabel string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, isSelected bool, isEnabled bool) CheckboxInstanceType {
 	checkboxAlias := getUUID()
 	checkboxInstance := Checkbox.Add(shared.layerAlias, checkboxAlias, checkboxLabel, styleEntry, xLocation, yLocation, isSelected, isEnabled)
 	return checkboxInstance
 }
 
-func (shared LayerInstanceType) AddDropdown(styleEntry types.TuiStyleEntryType, selectionEntry types.SelectionEntryType, xLocation int, yLocation int, selectorHeight int, itemWidth int, defaultItemSelected int) DropdownInstanceType {
+func (shared *LayerInstanceType) AddDropdown(styleEntry types.TuiStyleEntryType, selectionEntry types.SelectionEntryType, xLocation int, yLocation int, selectorHeight int, itemWidth int, defaultItemSelected int) DropdownInstanceType {
 	dropdownAlias := getUUID()
 	dropdownInstance := Dropdown.Add(shared.layerAlias, dropdownAlias, styleEntry, selectionEntry, xLocation, yLocation, selectorHeight, itemWidth, defaultItemSelected)
 	return dropdownInstance
 }
 
-func (shared LayerInstanceType) AddLabel(labelValue string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int) LabelInstanceType {
+func (shared *LayerInstanceType) AddLabel(labelValue string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int) LabelInstanceType {
 	labelAlias := getUUID()
 	labelInstance := Label.Add(shared.layerAlias, labelAlias, labelValue, styleEntry, xLocation, yLocation, width)
 	return labelInstance
 }
 
-func (shared LayerInstanceType) AddProgressBar(progressBarLabel string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, height int, value int, maxValue int, isBackgroundTransparent bool) ProgressBarInstanceType {
+func (shared *LayerInstanceType) AddProgressBar(progressBarLabel string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, height int, value int, maxValue int, isBackgroundTransparent bool) ProgressBarInstanceType {
 	progressBarAlias := getUUID()
 	progressBarInstance := ProgressBar.Add(shared.layerAlias, progressBarAlias, progressBarLabel, styleEntry, xLocation, yLocation, width, height, value, maxValue, isBackgroundTransparent)
 	return progressBarInstance
 }
 
-func (shared LayerInstanceType) AddRadioButton(radioButtonLabel string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, groupId int, isSelected bool) RadioButtonInstanceType {
+func (shared *LayerInstanceType) AddRadioButton(radioButtonLabel string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, groupId int, isSelected bool) RadioButtonInstanceType {
 	radioButtonAlias := getUUID()
 	radioButtonInstance := radioButton.Add(shared.layerAlias, radioButtonAlias, radioButtonLabel, styleEntry, xLocation, yLocation, groupId, isSelected)
 	return radioButtonInstance
 }
 
-func (shared LayerInstanceType) AddScrollbar(styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, length int, maxScrollValue int, scrollValue int, scrollIncrement int, isHorizontal bool) ScrollbarInstanceType {
+func (shared *LayerInstanceType) AddScrollbar(styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, length int, maxScrollValue int, scrollValue int, scrollIncrement int, isHorizontal bool) ScrollbarInstanceType {
 	scrollbarAlias := getUUID()
 	scrollbarInstance := scrollbar.Add(shared.layerAlias, scrollbarAlias, styleEntry, xLocation, yLocation, length, maxScrollValue, scrollValue, scrollIncrement, isHorizontal)
 	return scrollbarInstance
 }
 
-func (shared LayerInstanceType) AddSelector(styleEntry types.TuiStyleEntryType, selectionEntry types.SelectionEntryType, xLocation int, yLocation int, selectorHeight int, itemWidth int, numberOfColumns int, viewportPosition int, selectedItem int, isBorderDrawn bool) selectorInstanceType {
+func (shared *LayerInstanceType) AddSelector(styleEntry types.TuiStyleEntryType, selectionEntry types.SelectionEntryType, xLocation int, yLocation int, selectorHeight int, itemWidth int, numberOfColumns int, viewportPosition int, selectedItem int, isBorderDrawn bool) selectorInstanceType {
 	selectorAlias := getUUID()
 	selectorInstance := Selector.Add(shared.layerAlias, selectorAlias, styleEntry, selectionEntry, xLocation, yLocation, selectorHeight, itemWidth, numberOfColumns, viewportPosition, selectedItem, isBorderDrawn)
 	return selectorInstance
 }
 
-func (shared LayerInstanceType) AddTextField(styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, maxLengthAllowed int, isPasswordProtected bool, defaultValue string, isEnabled bool) textFieldInstanceType {
+func (shared *LayerInstanceType) AddTextField(styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, maxLengthAllowed int, isPasswordProtected bool, defaultValue string, isEnabled bool) textFieldInstanceType {
 	textFieldAlias := getUUID()
 	textFieldInstance := TextField.Add(shared.layerAlias, textFieldAlias, styleEntry, xLocation, yLocation, width, maxLengthAllowed, isPasswordProtected, defaultValue, isEnabled)
 	return textFieldInstance
 }
 
-func (shared LayerInstanceType) AddTextbox(styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, height int, isBorderDrawn bool) TextboxInstanceType {
+func (shared *LayerInstanceType) AddTextbox(styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, height int, isBorderDrawn bool) TextboxInstanceType {
 	textBoxAlias := getUUID()
 	textBoxInstance := textbox.AddTextbox(shared.layerAlias, textBoxAlias, styleEntry, xLocation, yLocation, width, height, isBorderDrawn)
 	return textBoxInstance
 }
 
-func (shared LayerInstanceType) AddTooltip(tooltipValue string, styleEntry types.TuiStyleEntryType, hotspotXLocation int, hotspotYLocation int, hotspotWidth int, hotspotHeight int, tooltipXLocation int, tooltipYLocation int, tooltipWidth int, tooltipHeight int, isLocationAbsolute bool, isBorderDrawn bool, hoverTime int) TooltipInstanceType {
+func (shared *LayerInstanceType) AddTooltip(tooltipValue string, styleEntry types.TuiStyleEntryType, hotspotXLocation int, hotspotYLocation int, hotspotWidth int, hotspotHeight int, tooltipXLocation int, tooltipYLocation int, tooltipWidth int, tooltipHeight int, isLocationAbsolute bool, isBorderDrawn bool, hoverTime int) TooltipInstanceType {
 	tooltipAlias := getUUID()
 	tooltipInstance := Tooltip.Add(shared.layerAlias, tooltipAlias, tooltipValue, styleEntry, hotspotXLocation, hotspotYLocation, hotspotWidth, hotspotHeight, tooltipXLocation, tooltipYLocation, tooltipWidth, tooltipHeight, isLocationAbsolute, isBorderDrawn, hoverTime)
 	return tooltipInstance
@@ -128,8 +305,8 @@ information should be noted:
 - If the the line to be drawn falls outside the area of the text layer
 specified, then only the visible portion of the line will be drawn.
 */
-func (shared LayerInstanceType) DrawVerticalLine(styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, height int, isConnectorsDrawn bool) {
-	layerEntry := Screen.GetLayer(shared.layerAlias)
+func (shared *LayerInstanceType) DrawVerticalLine(styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, height int, isConnectorsDrawn bool) {
+	layerEntry := Layers.Get(shared.layerAlias)
 	localAttributeEntry := types.NewAttributeEntry()
 	drawVerticalLine(layerEntry, styleEntry, localAttributeEntry, xLocation, yLocation, height, isConnectorsDrawn)
 }
@@ -143,8 +320,8 @@ information should be noted:
 - If the the line to be drawn falls outside the area of the text layer
 specified, then only the visible portion of the line will be drawn.
 */
-func (shared LayerInstanceType) DrawHorizontalLine(styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, isConnectorsDrawn bool) {
-	layerEntry := Screen.GetLayer(shared.layerAlias)
+func (shared *LayerInstanceType) DrawHorizontalLine(styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, isConnectorsDrawn bool) {
+	layerEntry := Layers.Get(shared.layerAlias)
 	localAttributeEntry := types.NewAttributeEntry()
 	drawHorizontalLine(layerEntry, styleEntry, localAttributeEntry, xLocation, yLocation, width, isConnectorsDrawn)
 }
@@ -162,8 +339,8 @@ interact with the layer being drawn on. For example, when enabled if the user
 drags the window title bar, the whole layer will move to simulate movement of
 the window itself.
 */
-func (shared LayerInstanceType) DrawBorder(styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, height int, isInteractive bool) {
-	layerEntry := Screen.GetLayer(shared.layerAlias)
+func (shared *LayerInstanceType) DrawBorder(styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, height int, isInteractive bool) {
+	layerEntry := Layers.Get(shared.layerAlias)
 	localAttributeEntry := types.NewAttributeEntry()
 	drawBorder(layerEntry, styleEntry, localAttributeEntry, xLocation, yLocation, width, height, isInteractive)
 }
@@ -177,8 +354,8 @@ with a border of a frame.
 specified layer, then only the visible portion of the border will be
 drawn.
 */
-func (shared LayerInstanceType) DrawFrameLabel(styleEntry types.TuiStyleEntryType, label string, xLocation int, yLocation int) {
-	layerEntry := Screen.GetLayer(shared.layerAlias)
+func (shared *LayerInstanceType) DrawFrameLabel(styleEntry types.TuiStyleEntryType, label string, xLocation int, yLocation int) {
+	layerEntry := Layers.Get(shared.layerAlias)
 	drawFrameLabel(layerEntry, styleEntry, label, xLocation, yLocation)
 }
 
@@ -195,8 +372,8 @@ interact with the layer being drawn on. For example, when enabled if the user
 drags the window title bar, the whole layer will move to simulate movement of
 the window itself.
 */
-func (shared LayerInstanceType) DrawFrame(styleEntry types.TuiStyleEntryType, isRaised bool, xLocation int, yLocation int, width int, height int, isInteractive bool) {
-	layerEntry := Screen.GetLayer(shared.layerAlias)
+func (shared *LayerInstanceType) DrawFrame(styleEntry types.TuiStyleEntryType, isRaised bool, xLocation int, yLocation int, width int, height int, isInteractive bool) {
+	layerEntry := Layers.Get(shared.layerAlias)
 	localAttributeEntry := types.NewAttributeEntry()
 	if isRaised {
 		drawFrame(layerEntry, styleEntry, localAttributeEntry, constants.FrameStyleRaised, xLocation, yLocation, width, height, isInteractive)
@@ -218,8 +395,8 @@ interact with the layer being drawn on. For example, when enabled if the user
 drags the window title bar, the whole layer will move to simulate movement of
 the window itself.
 */
-func (shared LayerInstanceType) DrawWindow(styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, height int, isInteractive bool) {
-	layerEntry := Screen.GetLayer(shared.layerAlias)
+func (shared *LayerInstanceType) DrawWindow(styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, height int, isInteractive bool) {
+	layerEntry := Layers.Get(shared.layerAlias)
 	localAttributeEntry := types.NewAttributeEntry()
 	drawWindow(layerEntry, styleEntry, localAttributeEntry, xLocation, yLocation, width, height, isInteractive)
 }
@@ -231,8 +408,8 @@ specified degree. In addition, the following information should be noted:
 
 - The alpha value can range from 0.0 (no shadow) to 1.0 (totally black).
 */
-func (shared LayerInstanceType) DrawShadow(xLocation int, yLocation int, width int, height int, alphaValue float32) {
-	layerEntry := Screen.GetLayer(shared.layerAlias)
+func (shared *LayerInstanceType) DrawShadow(xLocation int, yLocation int, width int, height int, alphaValue float32) {
+	layerEntry := Layers.Get(shared.layerAlias)
 	localAttributeEntry := types.NewAttributeEntry()
 	drawShadow(layerEntry, localAttributeEntry, xLocation, yLocation, width, height, alphaValue)
 }
@@ -246,8 +423,8 @@ noted:
 - If the area to fill falls outside the range of the specified layer, then only
 the visible portion of the fill will be drawn.
 */
-func (shared LayerInstanceType) FillArea(fillCharacters string, xLocation int, yLocation int, width int, height int) {
-	layerEntry := Screen.GetLayer(shared.layerAlias)
+func (shared *LayerInstanceType) FillArea(fillCharacters string, xLocation int, yLocation int, width int, height int) {
+	layerEntry := Layers.Get(shared.layerAlias)
 	attributeEntry := layerEntry.DefaultAttribute
 	fillArea(layerEntry, attributeEntry, fillCharacters, xLocation, yLocation, width, height, constants.NullCellControlLocation)
 }
@@ -257,8 +434,8 @@ FillLayer allows you to fill an entire layer with characters of your choice.
 If you wish to fill the layer with repeating text, simply provide the string
 you wish to repeat.
 */
-func (shared LayerInstanceType) FillLayer(fillCharacters string) {
-	layerEntry := Screen.GetLayer(shared.layerAlias)
+func (shared *LayerInstanceType) FillLayer(fillCharacters string) {
+	layerEntry := Layers.Get(shared.layerAlias)
 	attributeEntry := layerEntry.DefaultAttribute
 	fillLayer(layerEntry, attributeEntry, fillCharacters)
 }
@@ -267,8 +444,8 @@ func (shared LayerInstanceType) FillLayer(fillCharacters string) {
 DrawBar allows you to draw a horizontal bar on a given text layer row. This is
 useful for drawing application headers or status bar footers.
 */
-func (shared LayerInstanceType) DrawBar(xLocation int, yLocation int, barLength int, fillCharacters string) {
-	layerEntry := Screen.GetLayer(shared.layerAlias)
+func (shared *LayerInstanceType) DrawBar(xLocation int, yLocation int, barLength int, fillCharacters string) {
+	layerEntry := Layers.Get(shared.layerAlias)
 	attributeEntry := layerEntry.DefaultAttribute
 	fillArea(layerEntry, attributeEntry, fillCharacters, xLocation, yLocation, barLength, 1, constants.NullCellControlLocation)
 }
@@ -283,9 +460,9 @@ display area will be rendered. Likewise, if your text layer is a child of
 a parent layer, then only the visible display area will be rendered on the
 parent.
 */
-func (shared LayerInstanceType) MoveLayerByAbsoluteValue(xLocation int, yLocation int) {
+func (shared *LayerInstanceType) MoveLayerByAbsoluteValue(xLocation int, yLocation int) {
 	validateLayer(shared.layerAlias)
-	layerEntry := Screen.GetLayer(shared.layerAlias)
+	layerEntry := Layers.Get(shared.layerAlias)
 	layerEntry.ScreenXLocation = xLocation
 	layerEntry.ScreenYLocation = yLocation
 }
@@ -306,9 +483,9 @@ display area will be rendered. Likewise, if your text layer is a child of
 a parent layer, then only the visible display area will be rendered on the
 parent.
 */
-func (shared LayerInstanceType) MoveLayerByRelativeValue(xLocation int, yLocation int) {
+func (shared *LayerInstanceType) MoveLayerByRelativeValue(xLocation int, yLocation int) {
 	validateLayer(shared.layerAlias)
-	layerEntry := Screen.GetLayer(shared.layerAlias)
+	layerEntry := Layers.Get(shared.layerAlias)
 	layerEntry.ScreenXLocation += xLocation
 	layerEntry.ScreenYLocation += yLocation
 }
@@ -335,25 +512,28 @@ possible.
 - If you attempt to delete a text layer that does not exist, then the operation
 will be ignored.
 */
-func (shared LayerInstanceType) DeleteLayer() {
+func (shared *LayerInstanceType) DeleteLayer() {
 	validateLayer(shared.layerAlias)
-	Screen.DeleteLayer(shared.layerAlias)
+	layer.Delete(shared.layerAlias)
 	if commonResource.layerInstance.layerAlias == shared.layerAlias {
-		nextLayerAlias := Screen.GetNextLayerAlias()
-		nextLayerInstance := Screen.GetLayer(nextLayerAlias)
-		commonResource.layerInstance = LayerInstanceType{layerAlias: nextLayerAlias, parentAlias: nextLayerInstance.ParentAlias, LayerWidth: nextLayerInstance.Width, LayerHeight: nextLayerInstance.Height}
+		nextLayerAlias := layer.GetNextLayerAlias()
+		var nextLayerInstance *types.LayerEntryType
+		if nextLayerAlias != "" {
+			nextLayerInstance = Layers.Get(nextLayerAlias)
+			commonResource.layerInstance = LayerInstanceType{layerAlias: nextLayerAlias, parentAlias: nextLayerInstance.ParentAlias, LayerWidth: nextLayerInstance.Width, LayerHeight: nextLayerInstance.Height}
+		}
 	}
 	shared.layerAlias = ""
 }
 
-func (shared LayerInstanceType) IsLayerExists() bool {
+func (shared *LayerInstanceType) IsLayerExists() bool {
 	if shared.layerAlias != "" {
 		return true
 	}
 	return false
 }
 
-func (shared LayerInstanceType) SetIsVisible(isVisible bool) {
+func (shared *LayerInstanceType) SetIsVisible(isVisible bool) {
 	validateLayer(shared.layerAlias)
 	setLayerIsVisible(shared.layerAlias, isVisible)
 }
@@ -363,8 +543,8 @@ Color24Bit allows you to color a layer using a 24-bit color expressed as
 an int32. This is useful for when you have colors which are already defined.
 */
 
-func (shared LayerInstanceType) Color24Bit(foregroundColor constants.ColorType, backgroundColor constants.ColorType) {
-	ColorLayer24Bit(shared, foregroundColor, backgroundColor)
+func (shared *LayerInstanceType) Color24Bit(foregroundColor constants.ColorType, backgroundColor constants.ColorType) {
+	ColorLayer24Bit(*shared, foregroundColor, backgroundColor)
 }
 
 /*
@@ -392,9 +572,9 @@ example:
 	// Move our cursor location to the bottom right corner of our text layer.
 	consolizer.Locate(14, 14)
 */
-func (shared LayerInstanceType) Locate(xLocation int, yLocation int) {
+func (shared *LayerInstanceType) Locate(xLocation int, yLocation int) {
 	validateDefaultLayerIsNotEmpty()
-	LocateLayer(shared, xLocation, yLocation)
+	LocateLayer(*shared, xLocation, yLocation)
 }
 
 /*
@@ -412,9 +592,9 @@ then only the visible portion of your string will be printed.
 - If printing has not yet finished and there are no available lines left, then
 all remaining characters will be discarded and printing will stop.
 */
-func (shared LayerInstanceType) Print(textToPrint string) {
+func (shared *LayerInstanceType) Print(textToPrint string) {
 	validateDefaultLayerIsNotEmpty()
-	PrintLayer(shared, textToPrint)
+	PrintLayer(*shared, textToPrint)
 }
 
 /*
@@ -473,8 +653,8 @@ For example:
 	// "{}".
 	dosktop.PrintDialog("ForegroundLayer", 0, 0, 30, 10, true, "This is some dialog text in {red}red color{}. Only the words 'red color' should be colored.")
 */
-func (shared LayerInstanceType) PrintDialog(xLocation int, yLocation int, widthOfLineInCharacters int, printDelayInMilliseconds int, isSkipable bool, stringToPrint string) {
-	layerEntry := Screen.GetLayer(shared.layerAlias)
+func (shared *LayerInstanceType) PrintDialog(xLocation int, yLocation int, widthOfLineInCharacters int, printDelayInMilliseconds int, isSkipable bool, stringToPrint string) {
+	layerEntry := Layers.Get(shared.layerAlias)
 	if xLocation < 0 || xLocation > layerEntry.Width || yLocation < 0 || yLocation > layerEntry.Height {
 		panic(fmt.Sprintf("The specified location (%d, %d) is out of bounds for layer '%s' with a size of (%d, %d).", xLocation, yLocation, layerEntry.LayerAlias, layerEntry.Width, layerEntry.Height))
 	}
@@ -520,12 +700,12 @@ func AddLayer(xLocation int, yLocation int, width int, height int, zOrderPriorit
 	layerAlias := getUUID()
 	validateTerminalWidthAndHeight(width, height)
 	if parentLayerInstance == nil {
-		Screen.AddLayer(layerAlias, xLocation, yLocation, width, height, zOrderPriority, "")
+		layer.Add(layerAlias, xLocation, yLocation, width, height, zOrderPriority, "")
 		layerInstance := LayerInstanceType{layerAlias: layerAlias, parentAlias: "", LayerWidth: width, LayerHeight: height}
 		commonResource.layerInstance = layerInstance
 		return layerInstance
 	} else {
-		Screen.AddLayer(layerAlias, xLocation, yLocation, width, height, zOrderPriority, parentLayerInstance.layerAlias)
+		layer.Add(layerAlias, xLocation, yLocation, width, height, zOrderPriority, parentLayerInstance.layerAlias)
 		layerInstance := LayerInstanceType{layerAlias: layerAlias, parentAlias: "", LayerWidth: width, LayerHeight: height}
 		commonResource.layerInstance = layerInstance
 		return layerInstance
@@ -544,7 +724,7 @@ parent.
 */
 func MoveLayerByAbsoluteValue(layerAlias string, xLocation int, yLocation int) {
 	validateLayer(layerAlias)
-	layerEntry := Screen.GetLayer(layerAlias)
+	layerEntry := Layers.Get(layerAlias)
 	layerEntry.ScreenXLocation = xLocation
 	layerEntry.ScreenYLocation = yLocation
 }
@@ -567,7 +747,7 @@ parent.
 */
 func MoveLayerByRelativeValue(layerAlias string, xLocation int, yLocation int) {
 	validateLayer(layerAlias)
-	layerEntry := Screen.GetLayer(layerAlias)
+	layerEntry := Layers.Get(layerAlias)
 	layerEntry.ScreenXLocation += xLocation
 	layerEntry.ScreenYLocation += yLocation
 }
@@ -596,24 +776,24 @@ will be ignored.
 */
 func deleteLayer(layerAlias string) {
 	validateLayer(layerAlias)
-	Screen.DeleteLayer(layerAlias)
+	layer.Delete(layerAlias)
 	if commonResource.layerInstance.layerAlias == layerAlias {
-		nextLayerAlias := Screen.GetNextLayerAlias()
+		nextLayerAlias := layer.GetNextLayerAlias()
 		// If last entry and no more layers, just return. Do not set anything.
 		if nextLayerAlias == "" {
 			commonResource.layerInstance = LayerInstanceType{layerAlias: "", parentAlias: "", LayerWidth: 0, LayerHeight: 0}
 			return
 		}
-		nextLayerInstance := Screen.GetLayer(nextLayerAlias)
+		nextLayerInstance := Layers.Get(nextLayerAlias)
 		commonResource.layerInstance = LayerInstanceType{layerAlias: nextLayerAlias, parentAlias: nextLayerInstance.ParentAlias, LayerWidth: nextLayerInstance.Width, LayerHeight: nextLayerInstance.Height}
 	}
 }
 
 func DeleteLayer(layerInstance LayerInstanceType) {
-	Screen.DeleteLayer(layerInstance.layerAlias)
+	deleteLayer(layerInstance.layerAlias)
 	if commonResource.layerInstance.layerAlias == layerInstance.layerAlias {
-		nextLayerAlias := Screen.GetNextLayerAlias()
-		nextLayerInstance := Screen.GetLayer(nextLayerAlias)
+		nextLayerAlias := layer.GetNextLayerAlias()
+		nextLayerInstance := Layers.Get(nextLayerAlias)
 		commonResource.layerInstance = LayerInstanceType{layerAlias: nextLayerAlias, parentAlias: nextLayerInstance.ParentAlias, LayerWidth: nextLayerInstance.Width, LayerHeight: nextLayerInstance.Height}
 	}
 }
@@ -622,14 +802,17 @@ func DeleteLayer(layerInstance LayerInstanceType) {
 DeleteAllLayers allows you to remove all layers from memory.
 */
 func DeleteAllLayers() {
-	for _, entryToRemove := range Screen.ScreenMemory.GetAllEntries() {
-		deleteLayer(entryToRemove.LayerAlias)
+	for _, entryToRemove := range Layers.GetAllEntries() {
+		if !Layers.IsExists(entryToRemove.LayerAlias) {
+			continue
+		}
+		layer.Delete(entryToRemove.LayerAlias)
 	}
-	Screen.ReInitializeScreenMemory()
+	layer.ReInitializeScreenMemory()
 }
 
 func isLayerExists(layerAlias string) bool {
-	if Screen.IsLayerExists(layerAlias) {
+	if Layers.IsExists(layerAlias) {
 		return true
 	}
 	return false
@@ -637,6 +820,6 @@ func isLayerExists(layerAlias string) bool {
 
 func setLayerIsVisible(layerAlias string, isVisible bool) {
 	validateLayer(layerAlias)
-	layerEntry := Screen.GetLayer(layerAlias)
+	layerEntry := Layers.Get(layerAlias)
 	layerEntry.IsVisible = isVisible
 }

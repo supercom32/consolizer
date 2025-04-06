@@ -345,7 +345,7 @@ This is to ensure that programmers do not attempt to rely on any specific
 behavior that might be a coincidental side effect.
 */
 func SetLayerZOrder(layerInstance LayerInstanceType, zOrder int) {
-	layerEntry := Screen.GetLayer(layerInstance.layerAlias)
+	layerEntry := Layers.Get(layerInstance.layerAlias)
 	layerEntry.ZOrder = zOrder
 }
 
@@ -383,7 +383,7 @@ func SetLayerAlpha(layerInstance LayerInstanceType, alphaValue float32) {
 }
 
 func setLayerAlpha(layerInstance LayerInstanceType, alphaValue float32) {
-	layerEntry := Screen.GetLayer(layerInstance.layerAlias)
+	layerEntry := Layers.Get(layerInstance.layerAlias)
 	layerEntry.DefaultAttribute.ForegroundTransformValue = alphaValue
 	layerEntry.DefaultAttribute.BackgroundTransformValue = alphaValue
 }
@@ -440,7 +440,7 @@ change the color for the default text layer previously set.
 func ColorLayer(layerInstance LayerInstanceType, foregroundColorIndex int, backgroundColorIndex int) {
 	validateColorIndex(foregroundColorIndex)
 	validateColorIndex(backgroundColorIndex)
-	layerEntry := Screen.GetLayer(layerInstance.layerAlias)
+	layerEntry := Layers.Get(layerInstance.layerAlias)
 	layerEntry.DefaultAttribute.ForegroundColor = constants.AnsiColorByIndex[foregroundColorIndex]
 	layerEntry.DefaultAttribute.BackgroundColor = constants.AnsiColorByIndex[backgroundColorIndex]
 }
@@ -484,7 +484,7 @@ an int32. This is useful for internal methods that already have a 24-bit color
 and do not require to compute it again.
 */
 func ColorLayer24Bit(layerInstance LayerInstanceType, foregroundColor constants.ColorType, backgroundColor constants.ColorType) {
-	layerEntry := Screen.GetLayer(layerInstance.layerAlias)
+	layerEntry := Layers.Get(layerInstance.layerAlias)
 	layerEntry.DefaultAttribute.ForegroundColor = foregroundColor
 	layerEntry.DefaultAttribute.BackgroundColor = backgroundColor
 }
@@ -544,7 +544,7 @@ example:
 */
 func LocateLayer(layerInstance LayerInstanceType, xLocation int, yLocation int) {
 	validateLayer(layerInstance.layerAlias)
-	layerEntry := Screen.GetLayer(layerInstance.layerAlias)
+	layerEntry := Layers.Get(layerInstance.layerAlias)
 	validateLayerLocationByLayerEntry(layerEntry, xLocation, yLocation)
 	layerEntry.CursorXLocation = xLocation
 	layerEntry.CursorYLocation = yLocation
@@ -587,7 +587,7 @@ then only the visible portion of your string will be printed.
 all remaining characters will be discarded and printing will stop.
 */
 func PrintLayer(layerInstance LayerInstanceType, textToPrint string) {
-	layerEntry := Screen.GetLayer(layerInstance.layerAlias)
+	layerEntry := Layers.Get(layerInstance.layerAlias)
 	if layerEntry.CursorYLocation >= layerEntry.Height {
 		layerEntry.CursorYLocation = layerEntry.Height - 1
 		layerEntry.CharacterMemory = scrollCharacterMemory(layerEntry)
@@ -711,7 +711,7 @@ do not wish to specify a text layer, you can use the method 'Clear' which will
 simply clear the default text layer previously set.
 */
 func ClearLayer(layerInstance LayerInstanceType) {
-	layerEntry := Screen.GetLayer(layerInstance.layerAlias)
+	layerEntry := Layers.Get(layerInstance.layerAlias)
 	clearLayer(layerEntry)
 }
 
@@ -797,7 +797,7 @@ layer alias into a layer entry and calls 'getCellIdByLayerEntry'.
 */
 func getCellIdByLayerAlias(layerAlias string, mouseXLocation int, mouseYLocation int) int {
 	validateLayer(layerAlias)
-	layerEntry := Screen.GetLayer(layerAlias)
+	layerEntry := Layers.Get(layerAlias)
 	return getCellIdByLayerEntry(layerEntry, mouseXLocation, mouseYLocation)
 }
 
@@ -836,7 +836,7 @@ func UpdateDisplay(isRefreshForced bool) {
 	defer func() {
 		commonResource.displayUpdate.Unlock()
 	}()
-	sortedLayerAliasSlice := Screen.GetSortedLayerMemoryAliasSlice()
+	sortedLayerAliasSlice := layer.GetSortedLayerMemoryAliasSlice()
 	baseLayerEntry := types.NewLayerEntry("", "", commonResource.terminalWidth, commonResource.terminalHeight)
 	baseLayerEntry = renderLayers(&baseLayerEntry, sortedLayerAliasSlice)
 	DrawLayerToScreen(&baseLayerEntry, isRefreshForced)
@@ -871,10 +871,10 @@ text layer data underneath them is preserved.
 func renderLayers(rootLayerEntry *types.LayerEntryType, sortedLayerAliasSlice LayerAliasZOrderPairList) types.LayerEntryType {
 	baseLayerEntry := types.NewLayerEntry("", "", 0, 0, rootLayerEntry)
 	for currentListIndex := 0; currentListIndex < len(sortedLayerAliasSlice); currentListIndex++ {
-		if !Screen.IsLayerExists(sortedLayerAliasSlice[currentListIndex].Key) {
+		if !Layers.IsExists(sortedLayerAliasSlice[currentListIndex].Key) {
 			continue
 		}
-		currentLayerEntry := types.NewLayerEntry("", "", 0, 0, Screen.GetLayer(sortedLayerAliasSlice[currentListIndex].Key))
+		currentLayerEntry := types.NewLayerEntry("", "", 0, 0, Layers.Get(sortedLayerAliasSlice[currentListIndex].Key))
 		if currentLayerEntry.IsVisible {
 			renderControls(currentLayerEntry)
 			if currentLayerEntry.IsParent && (currentLayerEntry.LayerAlias != baseLayerEntry.LayerAlias && currentLayerEntry.ParentAlias == baseLayerEntry.LayerAlias) {
@@ -916,7 +916,7 @@ know the alias of the layer you wish to overlay.
 */
 func overlayLayersByLayerAlias(sourceLayerAlias string, targetLayerEntry *types.LayerEntryType) {
 	validateLayer(sourceLayerAlias)
-	layerEntry := Screen.GetLayer(sourceLayerAlias)
+	layerEntry := Layers.Get(sourceLayerAlias)
 	overlayLayers(layerEntry, targetLayerEntry)
 }
 

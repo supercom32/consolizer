@@ -97,3 +97,11 @@ func (shared *ControlMemoryManager[T]) SortEntries(layerAlias string, isAscendin
 	})
 	return sortedEntries
 }
+
+// IsExists checks if an entry with the given alias exists in the specified layer.
+func (shared *ControlMemoryManager[T]) IsExists(layerAlias string, alias string) bool {
+	if shared.MemoryManager[layerAlias] != nil {
+		return shared.MemoryManager[layerAlias].Get(alias) != nil
+	}
+	return false
+}

@@ -248,15 +248,15 @@ func bringLayerToFrontIfRequired() {
 		buttonHistory.layerAlias = ""
 		buttonHistory.buttonAlias = ""
 		// Protect against layer deletions.
-		if !Screen.IsLayerExists(characterEntry.LayerAlias) {
+		if !Layers.IsExists(characterEntry.LayerAlias) {
 			return
 		}
-		layerEntry := Screen.GetLayer(characterEntry.LayerAlias)
+		layerEntry := Layers.Get(characterEntry.LayerAlias)
 		if layerEntry.IsFocusable == true {
 			return
 		}
-		layerAlias, previousLayerAlias := Screen.GetRootParentLayerAlias(characterEntry.LayerAlias, "")
-		Screen.SetHighestZOrderNumber(previousLayerAlias, layerAlias)
+		layerAlias, previousLayerAlias := layer.GetRootParentLayerAlias(characterEntry.LayerAlias, "")
+		layer.SetHighestZOrderNumber(previousLayerAlias, layerAlias)
 	}
 }
 
@@ -279,11 +279,11 @@ area.
 parent layer dimensions instead of the terminal window dimensions.
 */
 func isInteractiveLayerOffscreen(layerAlias string) bool {
-	layerEntry := Screen.GetLayer(layerAlias)
+	layerEntry := Layers.Get(layerAlias)
 	viewportWidth := commonResource.terminalWidth
 	viewportHeight := commonResource.terminalHeight
 	if layerEntry.ParentAlias != "" {
-		parentEntry := Screen.GetLayer(layerEntry.ParentAlias)
+		parentEntry := Layers.Get(layerEntry.ParentAlias)
 		viewportWidth = parentEntry.Width
 		viewportHeight = parentEntry.Height
 	}

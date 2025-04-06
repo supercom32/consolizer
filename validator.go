@@ -14,7 +14,7 @@ func validateTextFieldWidth(width int) {
 
 func validateLayerLocationByLayerAlias(layerAlias string, xLocation int, yLocation int) {
 	validateLayer(layerAlias)
-	layerEntry := Screen.GetLayer(layerAlias)
+	layerEntry := Layers.Get(layerAlias)
 	validateLayerLocationByLayerEntry(layerEntry, xLocation, yLocation)
 }
 
@@ -62,7 +62,7 @@ func validateTerminalWidthAndHeight(width int, height int) {
 }
 
 func validateLayer(layerAlias string) {
-	if !Screen.IsLayerExists(layerAlias) {
+	if !Layers.IsExists(layerAlias) {
 		safeSttyPanic(fmt.Sprintf("The specified layer '%s' does not exist.", layerAlias))
 	}
 }

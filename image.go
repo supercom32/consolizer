@@ -465,7 +465,7 @@ func getImageLayer(sourceImageData image.Image, imageStyle types.ImageStyleEntry
 drawImageToLayer allows you to draw a loaded image to the specified layer.
 */
 func drawImageToLayer(layerAlias string, imageLayer types.LayerEntryType, xLocation int, yLocation int) {
-	layerEntry := Screen.GetLayer(layerAlias)
+	layerEntry := Layers.Get(layerAlias)
 	imageLayer.ScreenXLocation = xLocation
 	imageLayer.ScreenYLocation = yLocation
 	overlayLayers(&imageLayer, layerEntry)
