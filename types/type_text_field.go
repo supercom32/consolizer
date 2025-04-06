@@ -13,6 +13,11 @@ type TextFieldEntryType struct {
 	ViewportPosition    int
 	IsPasswordProtected bool
 	CurrentValue        []rune
+	// Highlight positions
+	HighlightStart         int
+	HighlightEnd           int
+	IsHighlightActive      bool
+	IsHighlightModeToggled bool
 }
 
 func (shared TextFieldEntryType) GetAlias() string {
@@ -22,20 +27,28 @@ func (shared TextFieldEntryType) GetAlias() string {
 func (shared TextFieldEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
 		BaseControlType
-		MaxLengthAllowed    int
-		DefaultValue        string
-		CursorPosition      int
-		ViewportPosition    int
-		IsPasswordProtected bool
-		CurrentValue        []rune
+		MaxLengthAllowed       int
+		DefaultValue           string
+		CursorPosition         int
+		ViewportPosition       int
+		IsPasswordProtected    bool
+		CurrentValue           []rune
+		HighlightStart         int
+		HighlightEnd           int
+		IsHighlightActive      bool
+		IsHighlightModeToggled bool
 	}{
-		BaseControlType:     shared.BaseControlType,
-		MaxLengthAllowed:    shared.MaxLengthAllowed,
-		DefaultValue:        shared.DefaultValue,
-		CursorPosition:      shared.CursorPosition,
-		ViewportPosition:    shared.ViewportPosition,
-		IsPasswordProtected: shared.IsPasswordProtected,
-		CurrentValue:        shared.CurrentValue,
+		BaseControlType:        shared.BaseControlType,
+		MaxLengthAllowed:       shared.MaxLengthAllowed,
+		DefaultValue:           shared.DefaultValue,
+		CursorPosition:         shared.CursorPosition,
+		ViewportPosition:       shared.ViewportPosition,
+		IsPasswordProtected:    shared.IsPasswordProtected,
+		CurrentValue:           shared.CurrentValue,
+		HighlightStart:         shared.HighlightStart,
+		HighlightEnd:           shared.HighlightEnd,
+		IsHighlightActive:      shared.IsHighlightActive,
+		IsHighlightModeToggled: shared.IsHighlightModeToggled,
 	})
 	if err != nil {
 		return nil, err

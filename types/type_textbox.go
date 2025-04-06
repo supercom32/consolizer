@@ -14,6 +14,13 @@ type TextboxEntryType struct {
 	ViewportYLocation        int
 	CursorXLocation          int
 	CursorYLocation          int
+	// Highlight positions
+	HighlightStartX        int
+	HighlightStartY        int
+	HighlightEndX          int
+	HighlightEndY          int
+	IsHighlightActive      bool
+	IsHighlightModeToggled bool
 }
 
 func (shared TextboxEntryType) GetAlias() string {
@@ -30,6 +37,12 @@ func (shared TextboxEntryType) MarshalJSON() ([]byte, error) {
 		ViewportY                int
 		CursorX                  int
 		CursorY                  int
+		HighlightStartX          int
+		HighlightStartY          int
+		HighlightEndX            int
+		HighlightEndY            int
+		IsHighlightActive        bool
+		IsHighlightModeToggled   bool
 	}{
 		BaseControlType:          shared.BaseControlType,
 		HorizontalScrollbarAlias: shared.HorizontalScrollbarAlias,
@@ -39,6 +52,12 @@ func (shared TextboxEntryType) MarshalJSON() ([]byte, error) {
 		ViewportY:                shared.ViewportYLocation,
 		CursorX:                  shared.CursorXLocation,
 		CursorY:                  shared.CursorYLocation,
+		HighlightStartX:          shared.HighlightStartX,
+		HighlightStartY:          shared.HighlightStartY,
+		HighlightEndX:            shared.HighlightEndX,
+		HighlightEndY:            shared.HighlightEndY,
+		IsHighlightActive:        shared.IsHighlightActive,
+		IsHighlightModeToggled:   shared.IsHighlightModeToggled,
 	})
 	if err != nil {
 		return nil, err
@@ -66,6 +85,12 @@ func NewTexboxEntry(existingTextboxEntry ...*TextboxEntryType) TextboxEntryType 
 		textboxEntry.ViewportYLocation = existingTextboxEntry[0].ViewportYLocation
 		textboxEntry.CursorXLocation = existingTextboxEntry[0].CursorXLocation
 		textboxEntry.CursorYLocation = existingTextboxEntry[0].CursorYLocation
+		textboxEntry.HighlightStartX = existingTextboxEntry[0].HighlightStartX
+		textboxEntry.HighlightStartY = existingTextboxEntry[0].HighlightStartY
+		textboxEntry.HighlightEndX = existingTextboxEntry[0].HighlightEndX
+		textboxEntry.HighlightEndY = existingTextboxEntry[0].HighlightEndY
+		textboxEntry.IsHighlightActive = existingTextboxEntry[0].IsHighlightActive
+		textboxEntry.IsHighlightModeToggled = existingTextboxEntry[0].IsHighlightModeToggled
 	}
 	return textboxEntry
 }
@@ -77,7 +102,13 @@ func IsTextboxEntryEqual(sourceTextboxEntry *TextboxEntryType, targetTextboxEntr
 		sourceTextboxEntry.ViewportXLocation == targetTextboxEntry.ViewportXLocation &&
 		sourceTextboxEntry.ViewportYLocation == targetTextboxEntry.ViewportYLocation &&
 		sourceTextboxEntry.CursorXLocation == targetTextboxEntry.CursorXLocation &&
-		sourceTextboxEntry.CursorYLocation == targetTextboxEntry.CursorYLocation {
+		sourceTextboxEntry.CursorYLocation == targetTextboxEntry.CursorYLocation &&
+		sourceTextboxEntry.HighlightStartX == targetTextboxEntry.HighlightStartX &&
+		sourceTextboxEntry.HighlightStartY == targetTextboxEntry.HighlightStartY &&
+		sourceTextboxEntry.HighlightEndX == targetTextboxEntry.HighlightEndX &&
+		sourceTextboxEntry.HighlightEndY == targetTextboxEntry.HighlightEndY &&
+		sourceTextboxEntry.IsHighlightActive == targetTextboxEntry.IsHighlightActive &&
+		sourceTextboxEntry.IsHighlightModeToggled == targetTextboxEntry.IsHighlightModeToggled {
 		return true
 	}
 	return false

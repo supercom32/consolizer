@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"strings"
+
 	"supercom32.net/consolizer/constants"
 	"supercom32.net/consolizer/internal/memory"
 	"supercom32.net/consolizer/internal/stringformat"
@@ -435,7 +436,59 @@ func (shared *textboxType) printControlText(layerEntry *types.LayerEntryType, te
 		attributeEntry.CellControlLocation = controlYLocation
 		// If the textbox being drawn is focused, render the cursor as well.
 		if isControlCurrentlyFocused(layerEntry.LayerAlias, textboxAlias, constants.CellTypeTextbox) {
-			if cursorXLocation == currentControlId && cursorYLocation == controlYLocation {
+			textboxEntry := Textboxes.Get(layerEntry.LayerAlias, textboxAlias)
+			if textboxEntry.IsHighlightActive {
+				// Check if current position is within highlight range
+				isHighlighted := false
+
+				// Determine the correct start and end positions for highlighting
+				var highlightStartX, highlightEndX, highlightStartY, highlightEndY int
+
+				// If cursor is to the left of the start position
+				if textboxEntry.CursorYLocation < textboxEntry.HighlightStartY ||
+					(textboxEntry.CursorYLocation == textboxEntry.HighlightStartY &&
+						textboxEntry.CursorXLocation < textboxEntry.HighlightStartX) {
+					// Cursor is before the highlight start, so swap the positions
+					highlightStartX = textboxEntry.CursorXLocation
+					highlightStartY = textboxEntry.CursorYLocation
+					highlightEndX = textboxEntry.HighlightStartX
+					highlightEndY = textboxEntry.HighlightStartY
+				} else {
+					// Cursor is after or at the highlight start
+					highlightStartX = textboxEntry.HighlightStartX
+					highlightStartY = textboxEntry.HighlightStartY
+					highlightEndX = textboxEntry.CursorXLocation
+					highlightEndY = textboxEntry.CursorYLocation
+				}
+
+				// Check if the current position is within the highlight range
+				if controlYLocation >= highlightStartY && controlYLocation <= highlightEndY {
+					if controlYLocation == highlightStartY && controlYLocation == highlightEndY {
+						// Same line highlight
+						isHighlighted = currentControlId >= highlightStartX && currentControlId <= highlightEndX
+					} else if controlYLocation == highlightStartY {
+						// First line of multi-line highlight
+						isHighlighted = currentControlId >= highlightStartX
+					} else if controlYLocation == highlightEndY {
+						// Last line of multi-line highlight
+						isHighlighted = currentControlId <= highlightEndX
+					} else {
+						// Middle line of multi-line highlight
+						isHighlighted = true
+					}
+				}
+
+				if isHighlighted {
+					attributeEntry.ForegroundColor = styleEntry.HighlightForegroundColor
+					attributeEntry.BackgroundColor = styleEntry.HighlightBackgroundColor
+				} else if cursorXLocation == currentControlId && cursorYLocation == controlYLocation {
+					attributeEntry.ForegroundColor = styleEntry.TextboxCursorForegroundColor
+					attributeEntry.BackgroundColor = styleEntry.TextboxCursorBackgroundColor
+				} else {
+					attributeEntry.ForegroundColor = styleEntry.TextboxForegroundColor
+					attributeEntry.BackgroundColor = styleEntry.TextboxBackgroundColor
+				}
+			} else if cursorXLocation == currentControlId && cursorYLocation == controlYLocation {
 				attributeEntry.ForegroundColor = styleEntry.TextboxCursorForegroundColor
 				attributeEntry.BackgroundColor = styleEntry.TextboxCursorBackgroundColor
 			} else {
@@ -548,8 +601,8 @@ UpdateKeyboardEventTextbox allows you to update the state of all text boxes acco
 In the event that a screen update is required this method returns true.
 */
 func (shared *textboxType) UpdateKeyboardEventTextbox(keystroke []rune) bool {
+	isScreenUpdateRequired := false
 	keystrokeAsString := string(keystroke)
-	isScreenUpdateRequired := true
 	focusedLayerAlias := eventStateMemory.currentlyFocusedControl.layerAlias
 	focusedControlAlias := eventStateMemory.currentlyFocusedControl.controlAlias
 	focusedControlType := eventStateMemory.currentlyFocusedControl.controlType
@@ -557,102 +610,275 @@ func (shared *textboxType) UpdateKeyboardEventTextbox(keystroke []rune) bool {
 		return false
 	}
 	textboxEntry := Textboxes.Get(focusedLayerAlias, focusedControlAlias)
-	if len(keystroke) == 1 { // If a regular char is entered.
-		shared.insertCharacterUsingAbsoluteCoordinates(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation, []rune(keystrokeAsString)[0])
-		shared.updateCursor(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
-		shared.updateViewport(textboxEntry)
-		shared.setTextboxMaxScrollBarValues(focusedLayerAlias, focusedControlAlias)
-		shared.updateScrollbarBasedOnTextboxViewport(focusedLayerAlias, focusedControlAlias)
+
+	// Store old cursor position for highlight updates
+	oldCursorX := textboxEntry.CursorXLocation
+	oldCursorY := textboxEntry.CursorYLocation
+
+	if IsShiftPressed() {
+		if !textboxEntry.IsHighlightModeToggled {
+			// Start new highlight when toggling on
+			textboxEntry.IsHighlightModeToggled = true
+			textboxEntry.IsHighlightActive = true
+			textboxEntry.HighlightStartX = oldCursorX
+			textboxEntry.HighlightStartY = oldCursorY
+
+		}
+	} else {
+		textboxEntry.IsHighlightModeToggled = false
 	}
-	if keystrokeAsString == "delete" {
-		shared.deleteCharacterUsingAbsoluteCoordinates(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
-		shared.updateCursor(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
-		shared.updateViewport(textboxEntry)
-		shared.setTextboxMaxScrollBarValues(focusedLayerAlias, focusedControlAlias)
-		shared.updateScrollbarBasedOnTextboxViewport(focusedLayerAlias, focusedControlAlias)
-	}
-	if keystrokeAsString == "enter" {
-		shared.moveTextAfterCursorToNextLine(textboxEntry, textboxEntry.CursorYLocation)
-		shared.updateCursor(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
-		shared.updateViewport(textboxEntry)
-		shared.setTextboxMaxScrollBarValues(focusedLayerAlias, focusedControlAlias)
-		shared.updateScrollbarBasedOnTextboxViewport(focusedLayerAlias, focusedControlAlias)
-	}
-	if keystrokeAsString == "home" {
-		textboxEntry.CursorXLocation = 0
-		shared.updateCursor(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
-		shared.updateViewport(textboxEntry)
-		shared.setTextboxMaxScrollBarValues(focusedLayerAlias, focusedControlAlias)
-		shared.updateScrollbarBasedOnTextboxViewport(focusedLayerAlias, focusedControlAlias)
-	}
-	if keystrokeAsString == "end" {
-		textboxEntry.CursorXLocation = len(textboxEntry.TextData[textboxEntry.CursorYLocation])
-		shared.updateCursor(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
-		shared.updateViewport(textboxEntry)
-		shared.setTextboxMaxScrollBarValues(focusedLayerAlias, focusedControlAlias)
-		shared.updateScrollbarBasedOnTextboxViewport(focusedLayerAlias, focusedControlAlias)
-	}
-	if keystrokeAsString == "pgup" {
-		textboxEntry.CursorYLocation = textboxEntry.CursorYLocation - textboxEntry.Width
-		shared.updateCursor(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
-		shared.updateViewport(textboxEntry)
-		shared.setTextboxMaxScrollBarValues(focusedLayerAlias, focusedControlAlias)
-		shared.updateScrollbarBasedOnTextboxViewport(focusedLayerAlias, focusedControlAlias)
-	}
-	if keystrokeAsString == "pgdn" {
-		textboxEntry.CursorYLocation = textboxEntry.CursorYLocation + textboxEntry.Width
-		shared.updateCursor(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
-		shared.updateViewport(textboxEntry)
-		shared.setTextboxMaxScrollBarValues(focusedLayerAlias, focusedControlAlias)
-		shared.updateScrollbarBasedOnTextboxViewport(focusedLayerAlias, focusedControlAlias)
-	}
-	if keystrokeAsString == "backspace" || keystrokeAsString == "backspace2" {
-		shared.updateCursor(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
-		shared.backspaceCharacterUsingRelativeCoordinates(textboxEntry)
-		shared.updateCursor(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
-		shared.updateViewport(textboxEntry)
-		shared.setTextboxMaxScrollBarValues(focusedLayerAlias, focusedControlAlias)
-		shared.updateScrollbarBasedOnTextboxViewport(focusedLayerAlias, focusedControlAlias)
-	}
-	if keystrokeAsString == "left" {
+
+	// Handle cursor movement and text modification
+	switch keystrokeAsString {
+	case "left", "shift+left":
+		if textboxEntry.IsHighlightModeToggled == false {
+			textboxEntry.IsHighlightActive = false
+		}
 		textboxEntry.CursorXLocation--
-		shared.updateCursor(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
-		shared.updateViewport(textboxEntry)
-		shared.setTextboxMaxScrollBarValues(focusedLayerAlias, focusedControlAlias)
-		shared.updateScrollbarBasedOnTextboxViewport(focusedLayerAlias, focusedControlAlias)
-	}
-	if keystrokeAsString == "right" {
+		if textboxEntry.CursorXLocation < 0 {
+			if textboxEntry.CursorYLocation > 0 {
+				textboxEntry.CursorYLocation--
+				textboxEntry.CursorXLocation = len(textboxEntry.TextData[textboxEntry.CursorYLocation]) - 1
+			} else {
+				textboxEntry.CursorXLocation = 0
+			}
+		}
+		isScreenUpdateRequired = true
+
+	case "right", "shift+right":
+		if textboxEntry.IsHighlightModeToggled == false {
+			textboxEntry.IsHighlightActive = false
+		}
 		textboxEntry.CursorXLocation++
 		if textboxEntry.CursorXLocation >= len(textboxEntry.TextData[textboxEntry.CursorYLocation]) {
-			textboxEntry.CursorXLocation = len(textboxEntry.TextData[textboxEntry.CursorYLocation]) - 1
+			if textboxEntry.CursorYLocation < len(textboxEntry.TextData)-1 {
+				textboxEntry.CursorYLocation++
+				textboxEntry.CursorXLocation = 0
+			} else {
+				textboxEntry.CursorXLocation = len(textboxEntry.TextData[textboxEntry.CursorYLocation]) - 1
+			}
 		}
-		if textboxEntry.CursorXLocation >= len(textboxEntry.TextData[textboxEntry.CursorYLocation]) {
-			textboxEntry.CursorXLocation = len(textboxEntry.TextData[textboxEntry.CursorYLocation])
+		isScreenUpdateRequired = true
+
+	case "up", "shift+up":
+		if textboxEntry.IsHighlightModeToggled == false {
+			textboxEntry.IsHighlightActive = false
 		}
-		shared.updateCursor(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
-		shared.updateViewport(textboxEntry)
-		shared.setTextboxMaxScrollBarValues(focusedLayerAlias, focusedControlAlias)
-		shared.updateScrollbarBasedOnTextboxViewport(focusedLayerAlias, focusedControlAlias)
-	}
-	if keystrokeAsString == "up" {
 		textboxEntry.CursorYLocation--
 		if textboxEntry.CursorYLocation < 0 {
 			textboxEntry.CursorYLocation = 0
 		}
-		shared.updateCursor(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
-		shared.updateViewport(textboxEntry)
-		shared.updateScrollbarBasedOnTextboxViewport(focusedLayerAlias, focusedControlAlias)
-	}
-	if keystrokeAsString == "down" {
+		if textboxEntry.CursorXLocation >= len(textboxEntry.TextData[textboxEntry.CursorYLocation]) {
+			textboxEntry.CursorXLocation = len(textboxEntry.TextData[textboxEntry.CursorYLocation]) - 1
+		}
+		isScreenUpdateRequired = true
+
+	case "down", "shift+down":
+		if textboxEntry.IsHighlightModeToggled == false {
+			textboxEntry.IsHighlightActive = false
+		}
 		textboxEntry.CursorYLocation++
 		if textboxEntry.CursorYLocation >= len(textboxEntry.TextData) {
 			textboxEntry.CursorYLocation = len(textboxEntry.TextData) - 1
 		}
-		shared.updateCursor(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
-		shared.updateViewport(textboxEntry)
-		shared.updateScrollbarBasedOnTextboxViewport(focusedLayerAlias, focusedControlAlias)
+		if textboxEntry.CursorXLocation >= len(textboxEntry.TextData[textboxEntry.CursorYLocation]) {
+			textboxEntry.CursorXLocation = len(textboxEntry.TextData[textboxEntry.CursorYLocation]) - 1
+		}
+		isScreenUpdateRequired = true
+
+	case "home", "shift+home":
+		if textboxEntry.IsHighlightModeToggled == false {
+			textboxEntry.IsHighlightActive = false
+		}
+		textboxEntry.CursorXLocation = 0
+		isScreenUpdateRequired = true
+
+	case "end", "shift+end":
+		if textboxEntry.IsHighlightModeToggled == false {
+			textboxEntry.IsHighlightActive = false
+		}
+		textboxEntry.CursorXLocation = len(textboxEntry.TextData[textboxEntry.CursorYLocation]) - 1
+		isScreenUpdateRequired = true
+
+	case "pgup", "shift+pgup":
+		if textboxEntry.IsHighlightModeToggled == false {
+			textboxEntry.IsHighlightActive = false
+		}
+		textboxEntry.CursorYLocation = textboxEntry.CursorYLocation - textboxEntry.Height
+		if textboxEntry.CursorYLocation < 0 {
+			textboxEntry.CursorYLocation = 0
+		}
+		isScreenUpdateRequired = true
+
+	case "pgdn", "shift+pgdn":
+		if textboxEntry.IsHighlightModeToggled == false {
+			textboxEntry.IsHighlightActive = false
+		}
+		textboxEntry.CursorYLocation = textboxEntry.CursorYLocation + textboxEntry.Height
+		if textboxEntry.CursorYLocation >= len(textboxEntry.TextData) {
+			textboxEntry.CursorYLocation = len(textboxEntry.TextData) - 1
+		}
+		isScreenUpdateRequired = true
+
+	case "delete", "shift+delete":
+		if textboxEntry.IsHighlightActive {
+			// Delete all highlighted text
+			shared.deleteHighlightedText(textboxEntry)
+			textboxEntry.IsHighlightActive = false
+		} else {
+			// Normal delete behavior
+			shared.deleteCharacterUsingAbsoluteCoordinates(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
+		}
+		isScreenUpdateRequired = true
+
+	case "backspace", "backspace2", "shift+backspace", "shift+backspace2":
+		if textboxEntry.IsHighlightActive {
+			// Delete all highlighted text
+			shared.deleteHighlightedText(textboxEntry)
+			textboxEntry.IsHighlightActive = false
+		} else {
+			// Normal backspace behavior
+			shared.backspaceCharacterUsingRelativeCoordinates(textboxEntry)
+		}
+		isScreenUpdateRequired = true
+	case "enter":
+		if textboxEntry.IsHighlightModeToggled == false {
+			textboxEntry.IsHighlightActive = false
+		}
+		shared.moveTextAfterCursorToNextLine(textboxEntry, textboxEntry.CursorYLocation)
+		isScreenUpdateRequired = true
+
+	default:
+		if len(keystroke) == 1 { // If a regular char is entered
+			shared.insertCharacterUsingAbsoluteCoordinates(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation, []rune(keystrokeAsString)[0])
+			isScreenUpdateRequired = true
+		}
 	}
+
+	// Update highlight end position if highlight mode is toggled on
+	if textboxEntry.IsHighlightActive {
+		textboxEntry.HighlightEndX = textboxEntry.CursorXLocation
+		textboxEntry.HighlightEndY = textboxEntry.CursorYLocation
+		isScreenUpdateRequired = true
+	}
+
+	// Update cursor position and viewport
+	shared.updateCursor(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
+	shared.updateViewport(textboxEntry)
+	shared.setTextboxMaxScrollBarValues(focusedLayerAlias, focusedControlAlias)
+	shared.updateScrollbarBasedOnTextboxViewport(focusedLayerAlias, focusedControlAlias)
+
 	return isScreenUpdateRequired
+}
+
+// deleteHighlightedText deletes all text within the highlighted range
+func (shared *textboxType) deleteHighlightedText(textboxEntry *types.TextboxEntryType) {
+	// Determine the correct start and end positions for highlighting
+	var highlightStartX, highlightEndX, highlightStartY, highlightEndY int
+
+	// If cursor is to the left of the start position
+	if textboxEntry.CursorYLocation < textboxEntry.HighlightStartY ||
+		(textboxEntry.CursorYLocation == textboxEntry.HighlightStartY &&
+			textboxEntry.CursorXLocation < textboxEntry.HighlightStartX) {
+		// Cursor is before the highlight start, so swap the positions
+		highlightStartX = textboxEntry.CursorXLocation
+		highlightStartY = textboxEntry.CursorYLocation
+		highlightEndX = textboxEntry.HighlightStartX
+		highlightEndY = textboxEntry.HighlightStartY
+	} else {
+		// Cursor is after or at the highlight start
+		highlightStartX = textboxEntry.HighlightStartX
+		highlightStartY = textboxEntry.HighlightStartY
+		highlightEndX = textboxEntry.CursorXLocation
+		highlightEndY = textboxEntry.CursorYLocation
+	}
+
+	// Ensure we don't exceed array bounds
+	if highlightStartY >= len(textboxEntry.TextData) {
+		highlightStartY = len(textboxEntry.TextData) - 1
+	}
+	if highlightEndY >= len(textboxEntry.TextData) {
+		highlightEndY = len(textboxEntry.TextData) - 1
+	}
+
+	// If the highlight is on a single line
+	if highlightStartY == highlightEndY {
+		// Ensure we don't exceed line bounds
+		if highlightStartX >= len(textboxEntry.TextData[highlightStartY]) {
+			highlightStartX = len(textboxEntry.TextData[highlightStartY]) - 1
+		}
+		if highlightEndX >= len(textboxEntry.TextData[highlightStartY]) {
+			highlightEndX = len(textboxEntry.TextData[highlightStartY]) - 1
+		}
+
+		// Delete the highlighted portion of the line
+		line := textboxEntry.TextData[highlightStartY]
+		if highlightStartX < len(line) {
+			if highlightEndX+1 < len(line) {
+				textboxEntry.TextData[highlightStartY] = append(line[:highlightStartX], line[highlightEndX+1:]...)
+			} else {
+				textboxEntry.TextData[highlightStartY] = line[:highlightStartX]
+			}
+		}
+	} else {
+		// Multi-line highlight
+		// Create a new slice to hold the result
+		newTextData := make([][]rune, 0, len(textboxEntry.TextData))
+
+		// Add lines before the highlight
+		if highlightStartY > 0 {
+			newTextData = append(newTextData, textboxEntry.TextData[:highlightStartY]...)
+		}
+
+		// Handle the first line of the highlight
+		if highlightStartX > 0 && highlightStartX < len(textboxEntry.TextData[highlightStartY]) {
+			newTextData = append(newTextData, textboxEntry.TextData[highlightStartY][:highlightStartX])
+		}
+
+		// Handle the last line of the highlight
+		if highlightEndY < len(textboxEntry.TextData) && highlightEndX+1 < len(textboxEntry.TextData[highlightEndY]) {
+			newTextData = append(newTextData, textboxEntry.TextData[highlightEndY][highlightEndX+1:])
+		}
+
+		// Add lines after the highlight
+		if highlightEndY+1 < len(textboxEntry.TextData) {
+			newTextData = append(newTextData, textboxEntry.TextData[highlightEndY+1:]...)
+		}
+
+		// If we ended up with no lines, add a blank line
+		if len(newTextData) == 0 {
+			newTextData = append(newTextData, []rune{' '})
+		}
+
+		textboxEntry.TextData = newTextData
+	}
+
+	// Move cursor to the start of the deleted text
+	textboxEntry.CursorXLocation = highlightStartX
+	textboxEntry.CursorYLocation = highlightStartY
+
+	// Ensure we have at least one line with a space character
+	if len(textboxEntry.TextData) == 0 {
+		textboxEntry.TextData = append(textboxEntry.TextData, []rune{' '})
+	}
+
+	// Ensure the cursor position is valid
+	if textboxEntry.CursorYLocation >= len(textboxEntry.TextData) {
+		textboxEntry.CursorYLocation = len(textboxEntry.TextData) - 1
+	}
+	if textboxEntry.CursorXLocation >= len(textboxEntry.TextData[textboxEntry.CursorYLocation]) {
+		textboxEntry.CursorXLocation = len(textboxEntry.TextData[textboxEntry.CursorYLocation]) - 1
+	}
+
+	// Ensure each line ends with a space character for the cursor
+	for i := 0; i < len(textboxEntry.TextData); i++ {
+		if len(textboxEntry.TextData[i]) == 0 || textboxEntry.TextData[i][len(textboxEntry.TextData[i])-1] != ' ' {
+			textboxEntry.TextData[i] = append(textboxEntry.TextData[i], ' ')
+		}
+	}
+
+	// Turn off highlighting mode
+	textboxEntry.IsHighlightActive = false
 }
 
 /*

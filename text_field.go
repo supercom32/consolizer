@@ -2,6 +2,7 @@ package consolizer
 
 import (
 	"strings"
+
 	"supercom32.net/consolizer/constants"
 	"supercom32.net/consolizer/internal/memory"
 	"supercom32.net/consolizer/internal/stringformat"
@@ -171,16 +172,35 @@ func (shared *textFieldType) drawInputString(layerEntry *types.LayerEntryType, s
 	// cell IDs (if required for mouse location detection).
 	xLocationOffset := 0
 	for currentRuneIndex := 0; currentRuneIndex < len(numberOfCharactersToSafelyPrint); currentRuneIndex++ {
-		if focusedControlType == constants.CellTypeTextField && focusedLayerAlias == layerEntry.LayerAlias && focusedControlAlias == textFieldAlias {
-			if stringPosition+currentRuneIndex == textFieldEntry.CursorPosition {
-				attributeEntry.ForegroundColor = styleEntry.TextFieldCursorForegroundColor
-				attributeEntry.BackgroundColor = styleEntry.TextFieldCursorBackgroundColor
-			} else {
-				attributeEntry.ForegroundColor = styleEntry.TextFieldForegroundColor
-				attributeEntry.BackgroundColor = styleEntry.TextFieldBackgroundColor
+		absolutePosition := stringPosition + currentRuneIndex
+		isFocused := focusedControlType == constants.CellTypeTextField && focusedLayerAlias == layerEntry.LayerAlias && focusedControlAlias == textFieldAlias
+
+		// Handle highlighting in both directions
+		isHighlighted := false
+		if textFieldEntry.IsHighlightActive {
+			start := textFieldEntry.HighlightStart
+			end := textFieldEntry.HighlightEnd
+			if start > end {
+				start, end = end, start
 			}
+			isHighlighted = absolutePosition >= start && absolutePosition <= end
 		}
-		attributeEntry.CellControlId = stringPosition + currentRuneIndex
+
+		isCursor := isFocused && absolutePosition == textFieldEntry.CursorPosition
+
+		// Set colors based on state
+		if isCursor {
+			attributeEntry.ForegroundColor = styleEntry.TextFieldCursorForegroundColor
+			attributeEntry.BackgroundColor = styleEntry.TextFieldCursorBackgroundColor
+		} else if isHighlighted {
+			attributeEntry.ForegroundColor = styleEntry.HighlightForegroundColor
+			attributeEntry.BackgroundColor = styleEntry.HighlightBackgroundColor
+		} else {
+			attributeEntry.ForegroundColor = styleEntry.TextFieldForegroundColor
+			attributeEntry.BackgroundColor = styleEntry.TextFieldBackgroundColor
+		}
+
+		attributeEntry.CellControlId = absolutePosition
 		if textFieldEntry.IsPasswordProtected {
 			// If the field is password protected, then do not print the terminating ' ' character with an *.
 			if xLocationOffset == len(textFieldEntry.CurrentValue)-1 {
@@ -189,10 +209,10 @@ func (shared *textFieldType) drawInputString(layerEntry *types.LayerEntryType, s
 				printLayer(layerEntry, attributeEntry, xLocation+xLocationOffset, yLocation, []rune{'*'})
 			}
 		} else {
-			printLayer(layerEntry, attributeEntry, xLocation+xLocationOffset, yLocation, []rune{inputValue[stringPosition+currentRuneIndex]})
+			printLayer(layerEntry, attributeEntry, xLocation+xLocationOffset, yLocation, []rune{inputValue[absolutePosition]})
 		}
 		xLocationOffset++
-		if stringformat.IsRuneCharacterWide(inputValue[stringPosition+currentRuneIndex]) {
+		if stringformat.IsRuneCharacterWide(inputValue[absolutePosition]) {
 			xLocationOffset++
 			if textFieldEntry.IsPasswordProtected {
 				// If the field is password protected, then do not print the terminating ' ' character with an *.
@@ -290,7 +310,7 @@ In the event that a screen update is required this method returns true.
 */
 func (shared *textFieldType) updateKeyboardEventTextField(keystroke []rune) bool {
 	keystrokeAsString := string(keystroke)
-	isScreenUpdateRequired := true
+	isScreenUpdateRequired := false
 	focusedLayerAlias := eventStateMemory.currentlyFocusedControl.layerAlias
 	focusedControlAlias := eventStateMemory.currentlyFocusedControl.controlAlias
 	focusedControlType := eventStateMemory.currentlyFocusedControl.controlType
@@ -301,53 +321,225 @@ func (shared *textFieldType) updateKeyboardEventTextField(keystroke []rune) bool
 	if !textFieldEntry.IsEnabled {
 		return false
 	}
-	if len(keystroke) == 1 { // If a regular char is entered.
-		// Here we check if the character limit is under the max length allowed. We plus 1 because we need to account
-		// for the cursor at the end of a string as well.
-		if len(textFieldEntry.CurrentValue) < textFieldEntry.MaxLengthAllowed+1 {
-			// LogInfo(fmt.Sprintf("cur: %d view: %d", textFieldEntry.CursorPosition, textFieldEntry.ViewportPosition))
-			shared.insertCharacterAtPosition(textFieldEntry, keystroke[0])
-			textFieldEntry.CursorPosition++
-			shared.updateTextFieldCursor(textFieldEntry)
-			shared.updateTextFieldViewport(textFieldEntry)
+
+	if IsShiftPressed() {
+		if !textFieldEntry.IsHighlightModeToggled {
+			// Start new highlight when toggling on
+			textFieldEntry.IsHighlightModeToggled = true
+			textFieldEntry.IsHighlightActive = true
+			textFieldEntry.HighlightStart = textFieldEntry.CursorPosition
+		}
+	} else {
+		textFieldEntry.IsHighlightModeToggled = false
+	}
+
+	switch keystrokeAsString {
+	case "ctrl+a":
+		// Select all text
+		textFieldEntry.HighlightStart = 0
+		textFieldEntry.HighlightEnd = len(textFieldEntry.CurrentValue) - 1
+		textFieldEntry.IsHighlightActive = true
+		isScreenUpdateRequired = true
+
+	case "ctrl+c":
+		// Copy highlighted text
+		if textFieldEntry.IsHighlightActive {
+			// TODO: Implement clipboard functionality
+			// highlightedText := textFieldEntry.CurrentValue[textFieldEntry.HighlightStart:textFieldEntry.HighlightEnd+1]
+		}
+
+	case "ctrl+x":
+		// Cut highlighted text
+		if textFieldEntry.IsHighlightActive {
+			// TODO: Implement clipboard functionality
+			// highlightedText := textFieldEntry.CurrentValue[textFieldEntry.HighlightStart:textFieldEntry.HighlightEnd+1]
+			start := textFieldEntry.HighlightStart
+			end := textFieldEntry.HighlightEnd
+			if start > end {
+				start, end = end, start
+			}
+			// Include cursor position in the deletion
+			if textFieldEntry.CursorPosition > end {
+				end = textFieldEntry.CursorPosition
+			} else if textFieldEntry.CursorPosition < start {
+				start = textFieldEntry.CursorPosition
+			}
+			// Preserve the trailing blank character
+			if end == len(textFieldEntry.CurrentValue)-1 {
+				// If we're deleting up to the end, keep the trailing blank
+				textFieldEntry.CurrentValue = append(textFieldEntry.CurrentValue[:start], ' ')
+			} else {
+				// Otherwise, delete the highlighted text
+				textFieldEntry.CurrentValue = append(textFieldEntry.CurrentValue[:start], textFieldEntry.CurrentValue[end+1:]...)
+			}
+			textFieldEntry.CursorPosition = start
+			textFieldEntry.IsHighlightActive = false
 			isScreenUpdateRequired = true
 		}
-	}
-	if keystrokeAsString == "delete" {
-		shared.deleteCharacterAtPosition(textFieldEntry)
+
+	case "delete", "shift+delete":
+		if textFieldEntry.IsHighlightActive {
+			// Delete highlighted text
+			start := textFieldEntry.HighlightStart
+			end := textFieldEntry.HighlightEnd
+			if start > end {
+				start, end = end, start
+			}
+			// Include cursor position in the deletion
+			if textFieldEntry.CursorPosition > end {
+				end = textFieldEntry.CursorPosition
+			} else if textFieldEntry.CursorPosition < start {
+				start = textFieldEntry.CursorPosition
+			}
+			// Preserve the trailing blank character
+			if end == len(textFieldEntry.CurrentValue)-1 {
+				// If we're deleting up to the end, keep the trailing blank
+				textFieldEntry.CurrentValue = append(textFieldEntry.CurrentValue[:start], ' ')
+			} else {
+				// Otherwise, delete the highlighted text
+				textFieldEntry.CurrentValue = append(textFieldEntry.CurrentValue[:start], textFieldEntry.CurrentValue[end+1:]...)
+			}
+			textFieldEntry.CursorPosition = start
+			textFieldEntry.IsHighlightActive = false
+		} else {
+			shared.deleteCharacterAtPosition(textFieldEntry)
+		}
 		isScreenUpdateRequired = true
-	}
-	if keystrokeAsString == "home" {
+
+	case "home", "shift+home":
+		if textFieldEntry.IsHighlightModeToggled == false {
+			textFieldEntry.IsHighlightActive = false
+		}
 		textFieldEntry.CursorPosition = 0
 		textFieldEntry.ViewportPosition = 0
+		if textFieldEntry.IsHighlightActive {
+			textFieldEntry.HighlightEnd = textFieldEntry.CursorPosition
+		}
 		isScreenUpdateRequired = true
-	}
-	if keystrokeAsString == "end" {
+
+	case "end", "shift+end":
+		if textFieldEntry.IsHighlightModeToggled == false {
+			textFieldEntry.IsHighlightActive = false
+		}
 		textFieldEntry.CursorPosition = len(textFieldEntry.CurrentValue) - 1
 		shared.updateTextFieldViewport(textFieldEntry)
+		if textFieldEntry.IsHighlightActive {
+			textFieldEntry.HighlightEnd = textFieldEntry.CursorPosition
+		}
 		isScreenUpdateRequired = true
-	}
-	if keystrokeAsString == "backspace" || keystrokeAsString == "backspace2" {
-		textFieldEntry.CursorPosition--
-		shared.backspaceCharacterAtPosition(textFieldEntry)
+
+	case "backspace", "backspace2", "shift+backspace", "shift+backspace2":
+		if textFieldEntry.IsHighlightActive {
+			// Delete highlighted text
+			start := textFieldEntry.HighlightStart
+			end := textFieldEntry.HighlightEnd
+			if start > end {
+				start, end = end, start
+			}
+			// Include cursor position in the deletion
+			if textFieldEntry.CursorPosition > end {
+				end = textFieldEntry.CursorPosition
+			} else if textFieldEntry.CursorPosition < start {
+				start = textFieldEntry.CursorPosition
+			}
+			// Preserve the trailing blank character
+			if end == len(textFieldEntry.CurrentValue)-1 {
+				// If we're deleting up to the end, keep the trailing blank
+				textFieldEntry.CurrentValue = append(textFieldEntry.CurrentValue[:start], ' ')
+			} else {
+				// Otherwise, delete the highlighted text
+				textFieldEntry.CurrentValue = append(textFieldEntry.CurrentValue[:start], textFieldEntry.CurrentValue[end+1:]...)
+			}
+			textFieldEntry.CursorPosition = start
+			textFieldEntry.IsHighlightActive = false
+		} else {
+			textFieldEntry.CursorPosition--
+			shared.backspaceCharacterAtPosition(textFieldEntry)
+		}
 		shared.updateTextFieldCursor(textFieldEntry)
 		shared.updateTextFieldViewport(textFieldEntry)
-
 		isScreenUpdateRequired = true
-	}
-	if keystrokeAsString == "left" {
+
+	case "left", "shift+left":
+		if textFieldEntry.IsHighlightModeToggled == false {
+			textFieldEntry.IsHighlightActive = false
+		}
+		if textFieldEntry.IsHighlightActive {
+			// When highlighting to the left, exclude the character under the cursor
+			if textFieldEntry.CursorPosition > textFieldEntry.HighlightStart {
+				textFieldEntry.HighlightEnd = textFieldEntry.CursorPosition - 2
+			} else {
+				textFieldEntry.HighlightEnd = textFieldEntry.CursorPosition
+			}
+		}
 		textFieldEntry.CursorPosition--
 		shared.updateTextFieldCursor(textFieldEntry)
 		shared.updateTextFieldViewport(textFieldEntry)
-
 		isScreenUpdateRequired = true
-	}
-	if keystrokeAsString == "right" {
+
+	case "right", "shift+right":
+		if textFieldEntry.IsHighlightModeToggled == false {
+			textFieldEntry.IsHighlightActive = false
+		}
+		if textFieldEntry.IsHighlightActive {
+			textFieldEntry.HighlightEnd = textFieldEntry.CursorPosition
+		}
 		textFieldEntry.CursorPosition++
 		shared.updateTextFieldCursor(textFieldEntry)
 		shared.updateTextFieldViewport(textFieldEntry)
 		isScreenUpdateRequired = true
+
+	default:
+		if textFieldEntry.IsHighlightModeToggled == false {
+			textFieldEntry.IsHighlightActive = false
+		}
+		// Handle regular character input
+		if len(keystroke) == 1 {
+			// Check if character limit is under max length allowed
+			if len(textFieldEntry.CurrentValue) < textFieldEntry.MaxLengthAllowed+1 {
+				if textFieldEntry.IsHighlightActive {
+					// Delete highlighted text before inserting new character
+					start := textFieldEntry.HighlightStart
+					end := textFieldEntry.HighlightEnd
+					if start > end {
+						start, end = end, start
+					}
+					// Include cursor position in the deletion
+					if textFieldEntry.CursorPosition > end {
+						end = textFieldEntry.CursorPosition
+					} else if textFieldEntry.CursorPosition < start {
+						start = textFieldEntry.CursorPosition
+					}
+					// Preserve the trailing blank character
+					if end == len(textFieldEntry.CurrentValue)-1 {
+						// If we're deleting up to the end, keep the trailing blank
+						textFieldEntry.CurrentValue = append(textFieldEntry.CurrentValue[:start], ' ')
+					} else {
+						// Otherwise, delete the highlighted text
+						textFieldEntry.CurrentValue = append(textFieldEntry.CurrentValue[:start], textFieldEntry.CurrentValue[end+1:]...)
+					}
+					textFieldEntry.CursorPosition = start
+					textFieldEntry.IsHighlightActive = false
+				}
+				shared.insertCharacterAtPosition(textFieldEntry, keystroke[0])
+				textFieldEntry.CursorPosition++
+				shared.updateTextFieldCursor(textFieldEntry)
+				shared.updateTextFieldViewport(textFieldEntry)
+				isScreenUpdateRequired = true
+			}
+		}
+
+		// Handle Shift+Arrow keys for highlighting
+		if strings.HasPrefix(keystrokeAsString, "shift+") {
+			if !textFieldEntry.IsHighlightActive {
+				textFieldEntry.HighlightStart = textFieldEntry.CursorPosition
+				textFieldEntry.IsHighlightActive = true
+			}
+			textFieldEntry.HighlightEnd = textFieldEntry.CursorPosition
+			isScreenUpdateRequired = true
+		}
 	}
+
 	return isScreenUpdateRequired
 }
 
@@ -367,12 +559,29 @@ func (shared *textFieldType) updateMouseEventTextField() bool {
 				return isScreenUpdateRequired
 			}
 			textFieldEntry.CursorPosition = characterEntry.AttributeEntry.CellControlId
-			// LogInfo(strconv.Itoa(textFieldEntry.CursorPosition))
 			shared.updateTextFieldCursor(textFieldEntry)
 			setFocusedControl(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias, constants.CellTypeTextField)
 			isScreenUpdateRequired = true
 		}
 	}
+
+	// Handle mouse drag for text selection
+	if eventStateMemory.stateId == constants.EventStateDragAndDrop && eventStateMemory.currentlyFocusedControl.controlType == constants.CellTypeTextField {
+		characterEntry = getCellInformationUnderMouseCursor(mouseXLocation, mouseYLocation)
+		if characterEntry.AttributeEntry.CellType == constants.CellTypeTextField && TextFields.IsExists(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias) {
+			textFieldEntry := TextFields.Get(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias)
+			if !textFieldEntry.IsEnabled {
+				return isScreenUpdateRequired
+			}
+			if !textFieldEntry.IsHighlightActive {
+				textFieldEntry.HighlightStart = textFieldEntry.CursorPosition
+				textFieldEntry.IsHighlightActive = true
+			}
+			textFieldEntry.HighlightEnd = characterEntry.AttributeEntry.CellControlId
+			isScreenUpdateRequired = true
+		}
+	}
+
 	return isScreenUpdateRequired
 }
 
