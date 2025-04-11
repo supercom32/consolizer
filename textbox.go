@@ -807,7 +807,7 @@ the following information should be noted:
 */
 func (shared *textboxType) UpdateKeyboardEventTextboxWithString(keystroke string) {
 	for _, currentCharacter := range keystroke {
-		shared.UpdateKeyboardEventTextbox([]rune{currentCharacter})
+		shared.UpdateKeyboardEvent([]rune{currentCharacter})
 	}
 }
 
@@ -821,28 +821,14 @@ the following information should be noted:
 */
 func (shared *textboxType) UpdateKeyboardEventTextboxWithCommands(keystroke ...string) {
 	for _, currentCommand := range keystroke {
-		shared.UpdateKeyboardEventTextbox([]rune(currentCommand))
+		shared.UpdateKeyboardEvent([]rune(currentCommand))
 	}
 }
 
-/*
-UpdateKeyboardEventTextbox allows you to process keyboard input for a textbox. In addition,
-the following information should be noted:
-
-- Handles all keyboard events including cursor movement and text editing.
-- Manages text highlighting and selection.
-- Returns true if a screen update is required.
-*/
-func (shared *textboxType) UpdateKeyboardEventTextbox(keystroke []rune) bool {
+func (shared *textboxType) UpdateKeyboardEventManually(layerAlias string, textboxAlias string, keystroke []rune) bool {
 	isScreenUpdateRequired := false
 	keystrokeAsString := string(keystroke)
-	focusedLayerAlias := eventStateMemory.currentlyFocusedControl.layerAlias
-	focusedControlAlias := eventStateMemory.currentlyFocusedControl.controlAlias
-	focusedControlType := eventStateMemory.currentlyFocusedControl.controlType
-	if focusedControlType != constants.CellTypeTextbox || !Textboxes.IsExists(focusedLayerAlias, focusedControlAlias) {
-		return false
-	}
-	textboxEntry := Textboxes.Get(focusedLayerAlias, focusedControlAlias)
+	textboxEntry := Textboxes.Get(layerAlias, textboxAlias)
 
 	// Store old cursor position for highlight updates
 	oldCursorX := textboxEntry.CursorXLocation
@@ -998,10 +984,27 @@ func (shared *textboxType) UpdateKeyboardEventTextbox(keystroke []rune) bool {
 	// Update cursor position and viewport
 	shared.updateCursor(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
 	shared.updateViewport(textboxEntry)
-	shared.setTextboxMaxScrollBarValues(focusedLayerAlias, focusedControlAlias)
-	shared.updateScrollbarBasedOnTextboxViewport(focusedLayerAlias, focusedControlAlias)
-
+	shared.setTextboxMaxScrollBarValues(layerAlias, textboxAlias)
+	shared.updateScrollbarBasedOnTextboxViewport(layerAlias, textboxAlias)
 	return isScreenUpdateRequired
+}
+
+/*
+UpdateKeyboardEvent allows you to process keyboard input for a textbox. In addition,
+the following information should be noted:
+
+- Handles all keyboard events including cursor movement and text editing.
+- Manages text highlighting and selection.
+- Returns true if a screen update is required.
+*/
+func (shared *textboxType) UpdateKeyboardEvent(keystroke []rune) bool {
+	focusedLayerAlias := eventStateMemory.currentlyFocusedControl.layerAlias
+	focusedControlAlias := eventStateMemory.currentlyFocusedControl.controlAlias
+	focusedControlType := eventStateMemory.currentlyFocusedControl.controlType
+	if focusedControlType != constants.CellTypeTextbox || !Textboxes.IsExists(focusedLayerAlias, focusedControlAlias) {
+		return false
+	}
+	return shared.UpdateKeyboardEventManually(focusedLayerAlias, focusedControlAlias, keystroke)
 }
 
 /*
@@ -1122,14 +1125,14 @@ func (shared *textboxType) deleteHighlightedText(textboxEntry *types.TextboxEntr
 }
 
 /*
-updateMouseEventTextbox allows you to process mouse events for a textbox. In addition,
+updateMouseEvent allows you to process mouse events for a textbox. In addition,
 the following information should be noted:
 
 - Handles mouse clicks for cursor positioning.
 - Manages text selection with mouse drag.
 - Returns true if a screen update is required.
 */
-func (shared *textboxType) updateMouseEventTextbox() bool {
+func (shared *textboxType) updateMouseEvent() bool {
 	isUpdateRequired := false
 	mouseXLocation, mouseYLocation, buttonPressed, _ := GetMouseStatus()
 	characterEntry := getCellInformationUnderMouseCursor(mouseXLocation, mouseYLocation)

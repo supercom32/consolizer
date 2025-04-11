@@ -15,14 +15,14 @@ type DropdownInstanceType struct {
 type dropdownType struct{}
 
 /*
-updateKeyboardEventDropdown allows you to update the state of all dropdowns according to the
+updateKeyboardEvent allows you to update the state of all dropdowns according to the
 current keyboard event. In addition, the following information should be noted:
 
 - Handles Enter key to open/close the dropdown.
 - Handles Up/Down keys to navigate through dropdown options when open.
 - Returns true if the screen needs to be updated due to state changes.
 */
-func (shared *dropdownType) updateKeyboardEventDropdown(keystroke []rune) bool {
+func (shared *dropdownType) updateKeyboardEvent(keystroke []rune) bool {
 	keystrokeAsString := string(keystroke)
 	isScreenUpdateRequired := false
 	focusedLayerAlias := eventStateMemory.currentlyFocusedControl.layerAlias

@@ -123,7 +123,7 @@ func (shared *tooltipType) drawTooltip(layerEntry *types.LayerEntryType, tooltip
 	}
 }
 
-func (shared *tooltipType) updateMouseEventTooltip() bool {
+func (shared *tooltipType) updateMouseEvent() bool {
 	isScreenUpdateRequired := false
 	var characterEntry types.CharacterEntryType
 	mouseXLocation, mouseYLocation, _, _ := GetMouseStatus()

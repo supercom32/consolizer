@@ -191,10 +191,10 @@ func (shared *radioButtonType) DeleteAllRadioButtons(layerAlias string) {
 }
 
 /*
-updateMouseEventRadioButton allows you to update the state of all radio buttons according to the current mouse event state.
+updateMouseEvent allows you to update the state of all radio buttons according to the current mouse event state.
 In the event that a screen update is required this method returns true.
 */
-func (shared *radioButtonType) updateMouseEventRadioButton() bool {
+func (shared *radioButtonType) updateMouseEvent() bool {
 	isUpdateRequired := false
 	mouseXLocation, mouseYLocation, buttonPressed, _ := GetMouseStatus()
 	characterEntry := getCellInformationUnderMouseCursor(mouseXLocation, mouseYLocation)

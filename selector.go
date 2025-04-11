@@ -359,14 +359,14 @@ func (shared *selectorType) updateKeyboardEventForSelector(layerAlias string, se
 }
 
 /*
-updateKeyboardEventSelector allows you to update the state of all selectors according to the current keystroke event.
+updateKeyboardEvent allows you to update the state of all selectors according to the current keystroke event.
 In the event that a screen update is required this method returns true. In addition, the following information should be noted:
 
 - Handles navigation keys (up, down, left, right) to move between items.
 - Enter key selects the currently highlighted item.
 - Returns true if the screen needs to be updated due to state changes.
 */
-func (shared *selectorType) updateKeyboardEventSelector(keystroke []rune) bool {
+func (shared *selectorType) updateKeyboardEvent(keystroke []rune) bool {
 	isScreenUpdateRequired := false
 	if eventStateMemory.currentlyFocusedControl.controlType != constants.CellTypeSelectorItem || !Selectors.IsExists(eventStateMemory.currentlyFocusedControl.layerAlias, eventStateMemory.currentlyFocusedControl.controlAlias) {
 		return isScreenUpdateRequired
@@ -375,14 +375,14 @@ func (shared *selectorType) updateKeyboardEventSelector(keystroke []rune) bool {
 }
 
 /*
-updateMouseEventSelector allows you to update the state of all selectors according to the current mouse event state.
+updateMouseEvent allows you to update the state of all selectors according to the current mouse event state.
 In the event that a screen update is required this method returns true. In addition, the following information should be noted:
 
 - Handles mouse clicks to select items.
 - Manages scrollbar synchronization for selectors with many items.
 - Returns true if the screen needs to be updated due to state changes.
 */
-func (shared *selectorType) updateMouseEventSelector() bool {
+func (shared *selectorType) updateMouseEvent() bool {
 	isScreenUpdateRequired := false
 	focusedLayerAlias := eventStateMemory.currentlyFocusedControl.layerAlias
 	var characterEntry types.CharacterEntryType

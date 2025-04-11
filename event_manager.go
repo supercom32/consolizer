@@ -35,7 +35,7 @@ func UpdatePeriodicEvents() {
 	if elapsedTime >= 500*time.Millisecond {
 		eventIntervalTime = time.Now()
 		isScreenUpdateRequired := false
-		if Tooltip.updateMouseEventTooltip() {
+		if Tooltip.updateMouseEvent() {
 			isScreenUpdateRequired = true
 		}
 		if isScreenUpdateRequired == true {
@@ -70,19 +70,19 @@ func UpdateEventQueues() {
 			keystroke = nil
 			isScreenUpdateRequired = true
 		}
-		if scrollbar.updateKeyboardEventScrollbar(keystroke) {
+		if scrollbar.updateKeyboardEvent(keystroke) {
 			isScreenUpdateRequired = true
 		}
-		if TextField.updateKeyboardEventTextField(keystroke) {
+		if TextField.updateKeyboardEvent(keystroke) {
 			isScreenUpdateRequired = true
 		}
-		if textbox.UpdateKeyboardEventTextbox(keystroke) {
+		if textbox.UpdateKeyboardEvent(keystroke) {
 			isScreenUpdateRequired = true
 		}
-		if Selector.updateKeyboardEventSelector(keystroke) {
+		if Selector.updateKeyboardEvent(keystroke) {
 			isScreenUpdateRequired = true
 		}
-		if Dropdown.updateKeyboardEventDropdown(keystroke) {
+		if Dropdown.updateKeyboardEvent(keystroke) {
 			isScreenUpdateRequired = true
 		}
 		if isScreenUpdateRequired == true {
@@ -115,46 +115,46 @@ func UpdateEventQueues() {
 		if moveLayerIfRequired() {
 			isScreenUpdateRequired = true
 		}
-		if Tooltip.updateMouseEventTooltip() {
+		if Tooltip.updateMouseEvent() {
 			isScreenUpdateRequired = true
 		}
-		if TextField.updateMouseEventTextField() {
+		if TextField.updateMouseEvent() {
 			isScreenUpdateRequired = true
 		}
-		if Selector.updateMouseEventSelector() {
+		if Selector.updateMouseEvent() {
 			isScreenUpdateRequired = true
 		}
-		if textbox.updateMouseEventTextbox() {
+		if textbox.updateMouseEvent() {
 			isScreenUpdateRequired = true
 		}
-		if radioButton.updateMouseEventRadioButton() {
+		if radioButton.updateMouseEvent() {
 			isScreenUpdateRequired = true
 		}
 		// This is done last so that it can update itself if a Selector or scroll bar change was detected.
 		if Dropdown.updateDropdownStateMouse() {
 			isScreenUpdateRequired = true
 		}
-		if Checkbox.updateMouseEventCheckbox() {
+		if Checkbox.updateMouseEvent() {
 			isScreenUpdateRequired = true
 		}
 		if Button.updateButtonStates(true) {
 			isScreenUpdateRequired = true
 		}
-		if scrollbar.updateMouseEventScrollbar() {
+		if scrollbar.updateMouseEvent() {
 			buttonHistory.layerAlias = ""
 			buttonHistory.buttonAlias = ""
 			isScreenUpdateRequired = true
 		}
 		// LogInfo("mouse scrollbar" + time.Now().String())
-		if Selector.updateMouseEventSelector() {
+		if Selector.updateMouseEvent() {
 			isScreenUpdateRequired = true
 		}
 		// LogInfo("mouse event selector" + time.Now().String())
-		if textbox.updateMouseEventTextbox() {
+		if textbox.updateMouseEvent() {
 			isScreenUpdateRequired = true
 		}
 		// LogInfo("mouse event textbox" + time.Now().String())
-		if radioButton.updateMouseEventRadioButton() {
+		if radioButton.updateMouseEvent() {
 			isScreenUpdateRequired = true
 		}
 		// LogInfo("mouse event radio" + time.Now().String())

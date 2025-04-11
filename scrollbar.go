@@ -255,10 +255,10 @@ func (shared *scrollbarType) computeScrollbarHandlePositionByScrollValue(layerAl
 }
 
 /*
-updateKeyboardEventScrollbar allows you to update the state of all scrollbars according to the current keystroke event.
+updateKeyboardEvent allows you to update the state of all scrollbars according to the current keystroke event.
 In the event that a screen update is required this method returns true.
 */
-func (shared *scrollbarType) updateKeyboardEventScrollbar(keystroke []rune) bool {
+func (shared *scrollbarType) updateKeyboardEvent(keystroke []rune) bool {
 	keystrokeAsString := string(keystroke)
 	isScreenUpdateRequired := false
 	focusedLayerAlias := eventStateMemory.currentlyFocusedControl.layerAlias
@@ -327,10 +327,10 @@ func (shared *scrollbarType) updateKeyboardEventScrollbar(keystroke []rune) bool
 }
 
 /*
-updateMouseEventScrollbar allows you to update the state of all scrollbars according to the current mouse event state.
+updateMouseEvent allows you to update the state of all scrollbars according to the current mouse event state.
 In the event that a screen update is required this method returns true.
 */
-func (shared *scrollbarType) updateMouseEventScrollbar() bool {
+func (shared *scrollbarType) updateMouseEvent() bool {
 	isScreenUpdateRequired := false
 	focusedLayerAlias := eventStateMemory.currentlyFocusedControl.layerAlias
 	focusedControlAlias := eventStateMemory.currentlyFocusedControl.controlAlias

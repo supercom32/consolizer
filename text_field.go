@@ -360,26 +360,10 @@ func (shared *textFieldType) updateTextFieldCursor(textFieldEntry *types.TextFie
 	}
 }
 
-/*
-updateKeyboardEventTextField allows you to update the state of all text fields according to the current
-keystroke event. In addition, the following information should be noted:
-
-- Handles all keyboard input for text fields.
-- Manages cursor movement, text insertion, and deletion.
-- Handles special keys like Home, End, Delete, and Backspace.
-- Manages text highlighting and selection.
-- Returns true if a screen update is required.
-*/
-func (shared *textFieldType) updateKeyboardEventTextField(keystroke []rune) bool {
+func (shared *textFieldType) updateKeyboardEventManually(layerAlias string, textFieldAlias string, keystroke []rune) bool {
 	keystrokeAsString := string(keystroke)
 	isScreenUpdateRequired := false
-	focusedLayerAlias := eventStateMemory.currentlyFocusedControl.layerAlias
-	focusedControlAlias := eventStateMemory.currentlyFocusedControl.controlAlias
-	focusedControlType := eventStateMemory.currentlyFocusedControl.controlType
-	if focusedControlType != constants.CellTypeTextField || !TextFields.IsExists(focusedLayerAlias, focusedControlAlias) {
-		return false
-	}
-	textFieldEntry := TextFields.Get(focusedLayerAlias, focusedControlAlias)
+	textFieldEntry := TextFields.Get(layerAlias, textFieldAlias)
 	if !textFieldEntry.IsEnabled {
 		return false
 	}
@@ -601,19 +585,38 @@ func (shared *textFieldType) updateKeyboardEventTextField(keystroke []rune) bool
 			isScreenUpdateRequired = true
 		}
 	}
-
 	return isScreenUpdateRequired
 }
 
 /*
-updateMouseEventTextField allows you to update the state of all text fields according to the current
+updateKeyboardEvent allows you to update the state of all text fields according to the current
+keystroke event. In addition, the following information should be noted:
+
+- Handles all keyboard input for text fields.
+- Manages cursor movement, text insertion, and deletion.
+- Handles special keys like Home, End, Delete, and Backspace.
+- Manages text highlighting and selection.
+- Returns true if a screen update is required.
+*/
+func (shared *textFieldType) updateKeyboardEvent(keystroke []rune) bool {
+	focusedLayerAlias := eventStateMemory.currentlyFocusedControl.layerAlias
+	focusedControlAlias := eventStateMemory.currentlyFocusedControl.controlAlias
+	focusedControlType := eventStateMemory.currentlyFocusedControl.controlType
+	if focusedControlType != constants.CellTypeTextField || !TextFields.IsExists(focusedLayerAlias, focusedControlAlias) {
+		return false
+	}
+	return shared.updateKeyboardEventManually(focusedLayerAlias, focusedControlAlias, keystroke)
+}
+
+/*
+updateMouseEvent allows you to update the state of all text fields according to the current
 mouse event. In addition, the following information should be noted:
 
 - Handles mouse clicks and drags for text selection.
 - Manages cursor positioning based on mouse clicks.
 - Returns true if a screen update is required.
 */
-func (shared *textFieldType) updateMouseEventTextField() bool {
+func (shared *textFieldType) updateMouseEvent() bool {
 	isScreenUpdateRequired := false
 	var characterEntry types.CharacterEntryType
 	mouseXLocation, mouseYLocation, buttonPressed, _ := GetMouseStatus()
@@ -662,7 +665,7 @@ the following information should be noted:
 */
 func (shared *textFieldType) updateKeyboardEventTextboxWithString(keystroke string) {
 	for _, currentCharacter := range keystroke {
-		shared.updateKeyboardEventTextField([]rune{currentCharacter})
+		shared.updateKeyboardEvent([]rune{currentCharacter})
 	}
 }
 
@@ -676,7 +679,7 @@ the following information should be noted:
 */
 func (shared *textFieldType) updateKeyboardEventTextboxWithCommands(keystroke ...string) {
 	for _, currentCommand := range keystroke {
-		shared.updateKeyboardEventTextField([]rune(currentCommand))
+		shared.updateKeyboardEvent([]rune(currentCommand))
 	}
 }
 

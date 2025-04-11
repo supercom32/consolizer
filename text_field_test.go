@@ -32,7 +32,7 @@ func TestTextFieldLongText(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 20, 10, false, "this is a long string of text which i know is long.", true)
 	setFocusedControl(layer1.layerAlias, textFieldInstance.controlAlias, constants.CellTypeTextField)
-	TextField.updateKeyboardEventTextField([]rune("end"))
+	TextField.updateKeyboardEvent([]rune("end"))
 	UpdateDisplay(false)
 	layerEntry := commonResource.screenLayer
 	obtainedValue := layerEntry.GetBasicAnsiStringAsBase64()
@@ -57,7 +57,7 @@ func TestTextFieldHomeKey(test *testing.T) {
 	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 20, 30, false, "", true)
 	setFocusedControl(layer1.layerAlias, textFieldInstance.controlAlias, constants.CellTypeTextField)
 	TextField.updateKeyboardEventTextboxWithString("abcdefghijklmnopqrstuvwxyz")
-	TextField.updateKeyboardEventTextField([]rune("home"))
+	TextField.updateKeyboardEvent([]rune("home"))
 	UpdateDisplay(false)
 	layerEntry := commonResource.screenLayer
 	obtainedValue := layerEntry.GetBasicAnsiStringAsBase64()
@@ -70,7 +70,7 @@ func TestTextFieldInsert(test *testing.T) {
 	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 20, 50, false, "", true)
 	setFocusedControl(layer1.layerAlias, textFieldInstance.controlAlias, constants.CellTypeTextField)
 	TextField.updateKeyboardEventTextboxWithString("abcdefghijklmnopqrstuvwxyz")
-	TextField.updateKeyboardEventTextField([]rune("home"))
+	TextField.updateKeyboardEvent([]rune("home"))
 	TextField.updateKeyboardEventTextboxWithCommands("right", "right", "right", "right", "right")
 	TextField.updateKeyboardEventTextboxWithString("_INSERTED_")
 	UpdateDisplay(false)
@@ -85,7 +85,7 @@ func TestTextFieldBackspace(test *testing.T) {
 	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 20, 90, false, "", true)
 	setFocusedControl(layer1.layerAlias, textFieldInstance.controlAlias, constants.CellTypeTextField)
 	TextField.updateKeyboardEventTextboxWithString("abcdefghijklmnopqrstuvwxyz")
-	TextField.updateKeyboardEventTextField([]rune("home"))
+	TextField.updateKeyboardEvent([]rune("home"))
 	TextField.updateKeyboardEventTextboxWithCommands("right", "right", "right", "right", "right", "backspace", "backspace", "backspace", "backspace")
 	UpdateDisplay(false)
 	layerEntry := commonResource.screenLayer
@@ -99,7 +99,7 @@ func TestTextFieldDelete(test *testing.T) {
 	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 20, 90, false, "", true)
 	setFocusedControl(layer1.layerAlias, textFieldInstance.controlAlias, constants.CellTypeTextField)
 	TextField.updateKeyboardEventTextboxWithString("abcdefghijklmnopqrstuvwxyz")
-	TextField.updateKeyboardEventTextField([]rune("home"))
+	TextField.updateKeyboardEvent([]rune("home"))
 	TextField.updateKeyboardEventTextboxWithCommands("right", "right", "right", "right", "right", "delete", "delete", "delete", "delete")
 	UpdateDisplay(false)
 	layerEntry := commonResource.screenLayer
@@ -113,7 +113,7 @@ func TestTextFieldDeleteAtEnd(test *testing.T) {
 	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 20, 90, false, "", true)
 	setFocusedControl(layer1.layerAlias, textFieldInstance.controlAlias, constants.CellTypeTextField)
 	TextField.updateKeyboardEventTextboxWithString("abcdefghijklmnopqrstuvwxyz")
-	TextField.updateKeyboardEventTextField([]rune("end"))
+	TextField.updateKeyboardEvent([]rune("end"))
 	TextField.updateKeyboardEventTextboxWithCommands("left", "left", "left", "left", "delete", "delete", "delete", "delete", "delete", "delete")
 	UpdateDisplay(false)
 	layerEntry := commonResource.screenLayer
@@ -139,7 +139,7 @@ func TestTextFieldBackspaceStop(test *testing.T) {
 	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 20, 70, false, "", true)
 	setFocusedControl(layer1.layerAlias, textFieldInstance.controlAlias, constants.CellTypeTextField)
 	TextField.updateKeyboardEventTextboxWithString("abcdefghijklmnopqrstuvwxyz")
-	TextField.updateKeyboardEventTextField([]rune("home"))
+	TextField.updateKeyboardEvent([]rune("home"))
 	TextField.updateKeyboardEventTextboxWithCommands("right", "right", "right", "right", "backspace", "backspace", "backspace", "backspace", "backspace", "backspace")
 	UpdateDisplay(false)
 	layerEntry := commonResource.screenLayer

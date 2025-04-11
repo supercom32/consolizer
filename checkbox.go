@@ -157,10 +157,10 @@ func (shared *checkboxType) drawCheckbox(layerEntry *types.LayerEntryType, check
 }
 
 /*
-updateMouseEventCheckbox allows you to update the state of all checkboxes according to the current mouse event state.
+updateMouseEvent allows you to update the state of all checkboxes according to the current mouse event state.
 In the event that a screen update is required this method returns true.
 */
-func (shared *checkboxType) updateMouseEventCheckbox() bool {
+func (shared *checkboxType) updateMouseEvent() bool {
 	isUpdateRequired := false
 	mouseXLocation, mouseYLocation, buttonPressed, _ := GetMouseStatus()
 	characterEntry := getCellInformationUnderMouseCursor(mouseXLocation, mouseYLocation)
