@@ -19,10 +19,26 @@ type SelectorEntryType struct {
 	ItemSelected     int
 }
 
+/*
+GetAlias allows you to retrieve the alias of a selector control. In addition, the following
+information should be noted:
+
+- Returns the unique identifier for the selector.
+- This alias is used to reference the selector in other operations.
+- The alias is set when the selector is created.
+*/
 func (shared SelectorEntryType) GetAlias() string {
 	return shared.Alias
 }
 
+/*
+MarshalJSON allows you to serialize a selector control to JSON. In addition, the following
+information should be noted:
+
+- Converts the selector's state to a JSON representation.
+- Includes the base control properties and selector-specific fields.
+- Used for saving and loading selector configurations.
+*/
 func (shared SelectorEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
 		BaseControlType
@@ -55,6 +71,14 @@ func (shared SelectorEntryType) MarshalJSON() ([]byte, error) {
 	return j, nil
 }
 
+/*
+GetEntryAsJsonDump allows you to get a JSON string representation of a selector control. In addition,
+the following information should be noted:
+
+- Returns a formatted JSON string of the selector's state.
+- Useful for debugging and logging purposes.
+- Panics if JSON marshaling fails.
+*/
 func (shared SelectorEntryType) GetEntryAsJsonDump() string {
 	j, err := json.Marshal(shared)
 	if err != nil {
@@ -63,6 +87,14 @@ func (shared SelectorEntryType) GetEntryAsJsonDump() string {
 	return string(j)
 }
 
+/*
+NewSelectorEntry allows you to create a new selector control. In addition, the following
+information should be noted:
+
+- Initializes a selector with default values.
+- Can optionally copy properties from an existing selector.
+- Sets up the base control properties and selector-specific fields.
+*/
 func NewSelectorEntry(existingSelectorEntry ...*SelectorEntryType) SelectorEntryType {
 	var selectorEntry SelectorEntryType
 	selectorEntry.BaseControlType = NewBaseControl()

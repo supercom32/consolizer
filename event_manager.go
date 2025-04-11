@@ -82,6 +82,9 @@ func UpdateEventQueues() {
 		if Selector.updateKeyboardEventSelector(keystroke) {
 			isScreenUpdateRequired = true
 		}
+		if Dropdown.updateKeyboardEventDropdown(keystroke) {
+			isScreenUpdateRequired = true
+		}
 		if isScreenUpdateRequired == true {
 			UpdateDisplay(false)
 		}
@@ -230,13 +233,13 @@ func moveLayerIfRequired() bool {
 				MoveLayerByRelativeValue(eventStateMemory.currentlyFocusedControl.layerAlias, -xMove, -yMove)
 			}
 			isScreenUpdateRequired = true
-		}
-		if characterEntry.AttributeEntry.CellType == constants.CellTypeFrameTop {
+		} else if characterEntry.AttributeEntry.CellType == constants.CellTypeFrameTop && eventStateMemory.stateId != constants.EventStateDragAndDrop {
+			// Only set the drag state and focused control if we're not already dragging
 			eventStateMemory.stateId = constants.EventStateDragAndDrop
 			eventStateMemory.currentlyFocusedControl.layerAlias = characterEntry.LayerAlias
 		}
 	} else {
-		eventStateMemory.stateId = 0
+		eventStateMemory.stateId = constants.EventStateNone
 	}
 	return isScreenUpdateRequired
 }

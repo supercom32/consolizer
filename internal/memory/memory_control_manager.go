@@ -12,6 +12,14 @@ type ControlMemoryManager[T any] struct {
 }
 
 // NewControlMemoryManager creates a new instance of ControlMemoryManager.
+/*
+NewControlMemoryManager allows you to create a new control memory manager. In addition, the following
+information should be noted:
+
+- Initializes a new memory manager for handling layer-specific entries.
+- Creates an empty map for storing control entries.
+- The manager is generic and can handle any type of control.
+*/
 func NewControlMemoryManager[T any]() *ControlMemoryManager[T] {
 	return &ControlMemoryManager[T]{
 		MemoryManager: make(map[string]*MemoryManager[T]),
@@ -19,6 +27,14 @@ func NewControlMemoryManager[T any]() *ControlMemoryManager[T] {
 }
 
 // Add inserts a pointer entry into the specified layer's memory.
+/*
+Add allows you to insert a control entry into the memory manager. In addition, the following
+information should be noted:
+
+- Adds a control entry to the specified layer.
+- Creates a new layer if it doesn't exist.
+- The entry is stored as a pointer to allow for updates.
+*/
 func (shared *ControlMemoryManager[T]) Add(layerAlias string, alias string, entry *T) {
 	// Ensure the layer exists, or create a new one
 	if shared.MemoryManager[layerAlias] == nil {
@@ -29,6 +45,14 @@ func (shared *ControlMemoryManager[T]) Add(layerAlias string, alias string, entr
 }
 
 // Remove deletes an entry from the specified layer's memory.
+/*
+Remove allows you to delete a control entry from the memory manager. In addition, the following
+information should be noted:
+
+- Removes a control entry from the specified layer.
+- Does nothing if the layer or entry doesn't exist.
+- The entry's memory is freed when removed.
+*/
 func (shared *ControlMemoryManager[T]) Remove(layerAlias string, alias string) {
 	if shared.MemoryManager[layerAlias] != nil {
 		shared.MemoryManager[layerAlias].Remove(alias)
@@ -36,6 +60,14 @@ func (shared *ControlMemoryManager[T]) Remove(layerAlias string, alias string) {
 }
 
 // RemoveAll deletes all entries from the specified layer's memory.
+/*
+RemoveAll allows you to delete all control entries from a layer. In addition, the following
+information should be noted:
+
+- Removes all control entries from the specified layer.
+- Does nothing if the layer doesn't exist.
+- All memory associated with the entries is freed.
+*/
 func (shared *ControlMemoryManager[T]) RemoveAll(layerAlias string) {
 	if shared.MemoryManager[layerAlias] != nil {
 		shared.MemoryManager[layerAlias].RemoveAll()
@@ -43,6 +75,14 @@ func (shared *ControlMemoryManager[T]) RemoveAll(layerAlias string) {
 }
 
 // Get retrieves a pointer entry from the specified layer's memory.
+/*
+Get allows you to retrieve a control entry from the memory manager. In addition, the following
+information should be noted:
+
+- Returns a pointer to the control entry if it exists.
+- Returns nil if the layer or entry doesn't exist.
+- The entry can be modified through the returned pointer.
+*/
 func (shared *ControlMemoryManager[T]) Get(layerAlias string, alias string) *T {
 	typeName := reflect.TypeOf(*new(T)).Name() // GetLayer the type name without pointer
 	if shared.MemoryManager[layerAlias] != nil {
@@ -57,6 +97,14 @@ func (shared *ControlMemoryManager[T]) Get(layerAlias string, alias string) *T {
 }
 
 // GetAllEntries retrieves all entries as pointers from the specified layer.
+/*
+GetAllEntries allows you to retrieve all control entries from a layer. In addition, the following
+information should be noted:
+
+- Returns a slice of all control entries in the specified layer.
+- Returns an empty slice if the layer doesn't exist.
+- The entries are returned in alphabetical order by alias.
+*/
 func (shared *ControlMemoryManager[T]) GetAllEntries(layerAlias string) []*T {
 	if shared.MemoryManager[layerAlias] == nil {
 		return []*T{} // Return an empty slice if the layer doesn't exist
@@ -99,6 +147,14 @@ func (shared *ControlMemoryManager[T]) SortEntries(layerAlias string, isAscendin
 }
 
 // IsExists checks if an entry with the given alias exists in the specified layer.
+/*
+IsExists allows you to check if a control entry exists in the memory manager. In addition, the following
+information should be noted:
+
+- Returns true if the control entry exists in the specified layer.
+- Returns false if the layer or entry doesn't exist.
+- Useful for validation before performing operations.
+*/
 func (shared *ControlMemoryManager[T]) IsExists(layerAlias string, alias string) bool {
 	if shared.MemoryManager[layerAlias] != nil {
 		return shared.MemoryManager[layerAlias].Get(alias) != nil

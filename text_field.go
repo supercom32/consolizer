@@ -23,10 +23,25 @@ var TextField textFieldType
 // REGULAR ENTRY
 // ============================================================================
 
+/*
+AddToTabIndex allows you to add a text field to the tab index. This enables keyboard navigation
+between controls using the tab key. In addition, the following information should be noted:
+
+- The text field will be added to the tab order based on the order in which it was created.
+- The tab index is used to determine which control receives focus when the tab key is pressed.
+*/
 func (shared *textFieldInstanceType) AddToTabIndex() {
 	addTabIndex(shared.layerAlias, shared.controlAlias, constants.CellTypeTextField)
 }
 
+/*
+GetFocus allows you to set focus to a text field. Once called, the text field will be ready
+to receive keyboard input. In addition, the following information should be noted:
+
+- If the text field does not exist, no operation takes place.
+- The text field will be validated before receiving focus.
+- The cursor will be positioned at the end of the current text.
+*/
 func (shared *textFieldInstanceType) GetFocus() string {
 	if TextFields.IsExists(shared.layerAlias, shared.controlAlias) {
 		validatorTextField(shared.layerAlias, shared.controlAlias)
@@ -35,6 +50,14 @@ func (shared *textFieldInstanceType) GetFocus() string {
 	return ""
 }
 
+/*
+Delete allows you to remove a text field from a text layer. In addition, the following
+information should be noted:
+
+- If you attempt to delete a text field which does not exist, then the request
+will simply be ignored.
+- All memory associated with the text field will be freed.
+*/
 func (shared *textFieldInstanceType) Delete() string {
 	if TextFields.IsExists(shared.layerAlias, shared.controlAlias) {
 		TextFields.Remove(shared.layerAlias, shared.controlAlias)
@@ -43,7 +66,12 @@ func (shared *textFieldInstanceType) Delete() string {
 }
 
 /*
-GetValue allows you to get the current value of your text field with.
+GetValue allows you to get the current value of your text field. In addition, the following
+information should be noted:
+
+- If the text field is password protected, the actual value will be returned, not the masked characters.
+- The returned value will be trimmed of any leading or trailing whitespace.
+- If the text field does not exist, an empty string will be returned.
 */
 func (shared *textFieldInstanceType) GetValue() string {
 	if TextFields.IsExists(shared.layerAlias, shared.controlAlias) {
@@ -117,20 +145,37 @@ func (shared *textFieldType) Add(layerAlias string, textFieldAlias string, style
 }
 
 /*
-DeleteTextField allows you to delete a text field on a given layer.
+DeleteTextField allows you to delete a text field on a given layer. In addition, the following
+information should be noted:
+
+- If the text field does not exist, the request will be ignored.
+- All memory associated with the text field will be freed.
+- The text field will be removed from the tab index if it was added.
 */
 func (shared *textFieldType) DeleteTextField(layerAlias string, textFieldAlias string) {
 	validatorTextField(layerAlias, textFieldAlias)
 	TextFields.Remove(layerAlias, textFieldAlias)
 }
 
+/*
+DeleteAllTextFields allows you to delete all text fields on a given layer. In addition, the following
+information should be noted:
+
+- All text fields on the specified layer will be removed.
+- All memory associated with the text fields will be freed.
+- The text fields will be removed from the tab index if they were added.
+*/
 func (shared *textFieldType) DeleteAllTextFields(layerAlias string) {
 	TextFields.RemoveAll(layerAlias)
 }
 
 /*
-drawTextFieldOnLayer allows you to draw all text fields on a given text layer
-entry.
+drawTextFieldOnLayer allows you to draw all text fields on a given text layer entry. In addition,
+the following information should be noted:
+
+- Text fields are drawn in the order they were created.
+- Each text field is drawn with its own style and attributes.
+- The cursor is drawn if the text field is currently focused.
 */
 func (shared *textFieldType) drawTextFieldOnLayer(layerEntry types.LayerEntryType) {
 	layerAlias := layerEntry.LayerAlias
@@ -141,20 +186,13 @@ func (shared *textFieldType) drawTextFieldOnLayer(layerEntry types.LayerEntryTyp
 }
 
 /*
-drawInputString allows you to draw a string for an input field. This is
-different from regular printing, since input fields are usually
-constrained for space and have the possibility of not being able to
-show the entire string. In addition, the following information should be
-noted:
+drawInputString allows you to draw the input string for a text field. In addition, the following
+information should be noted:
 
-- If the location specified for the input string falls outside the range of
-the text layer, then only the visible portion will be displayed.
-
-- HotspotWidth indicates how large the visible area of your input string should be.
-
-- String position indicates the location in your string where printing should
-start. If the remainder of your string is too long for the specified width,
-then only the visible portion will be displayed.
+- The input string is drawn with the specified style and attributes.
+- If the text field is password protected, characters are masked.
+- The cursor is drawn if the text field is currently focused.
+- Highlighted text is drawn with inverted colors if active.
 */
 func (shared *textFieldType) drawInputString(layerEntry *types.LayerEntryType, styleEntry types.TuiStyleEntryType, textFieldAlias string, xLocation int, yLocation int, width int, stringPosition int, inputValue []rune) {
 	attributeEntry := types.NewAttributeEntry()
@@ -230,7 +268,12 @@ func (shared *textFieldType) drawInputString(layerEntry *types.LayerEntryType, s
 
 /*
 updateTextFieldViewport allows you to update the current viewport based on the current text and cursor
-location.
+location. In addition, the following information should be noted:
+
+- Adjusts the viewport to ensure the cursor remains visible within the text field's width.
+- Handles cases where the cursor moves outside the current viewport window.
+- Automatically scrolls the text left or right to keep the cursor in view.
+- Maintains proper text alignment and visibility when the cursor moves.
 */
 func (shared *textFieldType) updateTextFieldViewport(textFieldEntry *types.TextFieldEntryType) {
 	// If cursor xLocation is lower than the viewport window
@@ -271,8 +314,12 @@ func (shared *textFieldType) insertCharacterAtPosition(textFieldEntry *types.Tex
 }
 
 /*
-deleteCharacterAtPosition allows you to delete a character from a given text field. The location to delete is
-determined automatically by the current cursor position.
+deleteCharacterAtPosition allows you to delete a character at the current cursor position. In addition,
+the following information should be noted:
+
+- If the cursor is at the end of the text, no character is deleted.
+- The cursor position is updated after deletion.
+- The text field's current value is updated to reflect the deletion.
 */
 func (shared *textFieldType) deleteCharacterAtPosition(textFieldEntry *types.TextFieldEntryType) {
 	if len(textFieldEntry.CurrentValue) != 1 {
@@ -283,8 +330,12 @@ func (shared *textFieldType) deleteCharacterAtPosition(textFieldEntry *types.Tex
 }
 
 /*
-backspaceCharacterAtPosition allows you to backspace a character from a given text field. The location to backspace is
-determined automatically by the current cursor position.
+backspaceCharacterAtPosition allows you to backspace a character at the current cursor position. In addition,
+the following information should be noted:
+
+- If the cursor is at the beginning of the text, no character is deleted.
+- The cursor position is updated after backspacing.
+- The text field's current value is updated to reflect the deletion.
 */
 func (shared *textFieldType) backspaceCharacterAtPosition(textFieldEntry *types.TextFieldEntryType) {
 	if textFieldEntry.CursorPosition >= 0 {
@@ -293,7 +344,12 @@ func (shared *textFieldType) backspaceCharacterAtPosition(textFieldEntry *types.
 }
 
 /*
-updateTextFieldCursor allows you to update a text field cursors location to ensure that no values are out of bounds.
+updateTextFieldCursor allows you to update a text field cursor's location. In addition, the following
+information should be noted:
+
+- Ensures the cursor position is within valid bounds.
+- Updates the viewport position if necessary to keep the cursor visible.
+- Handles cases where the cursor position is invalid or out of range.
 */
 func (shared *textFieldType) updateTextFieldCursor(textFieldEntry *types.TextFieldEntryType) {
 	if textFieldEntry.CursorPosition == constants.NullCellControlId || textFieldEntry.CursorPosition >= len(textFieldEntry.CurrentValue) {
@@ -305,8 +361,14 @@ func (shared *textFieldType) updateTextFieldCursor(textFieldEntry *types.TextFie
 }
 
 /*
-updateKeyboardEventTextField allows you to update the state of all text fields according to the current keystroke event.
-In the event that a screen update is required this method returns true.
+updateKeyboardEventTextField allows you to update the state of all text fields according to the current
+keystroke event. In addition, the following information should be noted:
+
+- Handles all keyboard input for text fields.
+- Manages cursor movement, text insertion, and deletion.
+- Handles special keys like Home, End, Delete, and Backspace.
+- Manages text highlighting and selection.
+- Returns true if a screen update is required.
 */
 func (shared *textFieldType) updateKeyboardEventTextField(keystroke []rune) bool {
 	keystrokeAsString := string(keystroke)
@@ -544,14 +606,19 @@ func (shared *textFieldType) updateKeyboardEventTextField(keystroke []rune) bool
 }
 
 /*
-updateMouseEventTextField allows you to update the state of all text fields according to the current mouse event state.
-In the event that a screen update is required this method returns true.
+updateMouseEventTextField allows you to update the state of all text fields according to the current
+mouse event. In addition, the following information should be noted:
+
+- Handles mouse clicks and drags for text selection.
+- Manages cursor positioning based on mouse clicks.
+- Returns true if a screen update is required.
 */
 func (shared *textFieldType) updateMouseEventTextField() bool {
 	isScreenUpdateRequired := false
 	var characterEntry types.CharacterEntryType
 	mouseXLocation, mouseYLocation, buttonPressed, _ := GetMouseStatus()
-	if buttonPressed != 0 && eventStateMemory.stateId != constants.EventStateDragAndDropScrollbar {
+	if buttonPressed != 0 && eventStateMemory.stateId != constants.EventStateDragAndDropScrollbar &&
+		eventStateMemory.stateId != constants.EventStateDragAndDrop {
 		characterEntry = getCellInformationUnderMouseCursor(mouseXLocation, mouseYLocation)
 		if characterEntry.AttributeEntry.CellType == constants.CellTypeTextField && TextFields.IsExists(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias) {
 			textFieldEntry := TextFields.Get(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias)
@@ -585,14 +652,236 @@ func (shared *textFieldType) updateMouseEventTextField() bool {
 	return isScreenUpdateRequired
 }
 
+/*
+updateKeyboardEventTextboxWithString allows you to update a text field with a string of characters. In addition,
+the following information should be noted:
+
+- Processes each character in the string as a separate keystroke.
+- Useful for programmatically inserting text into a text field.
+- Maintains all text field functionality like highlighting and cursor movement.
+*/
 func (shared *textFieldType) updateKeyboardEventTextboxWithString(keystroke string) {
 	for _, currentCharacter := range keystroke {
 		shared.updateKeyboardEventTextField([]rune{currentCharacter})
 	}
 }
 
+/*
+updateKeyboardEventTextboxWithCommands allows you to update a text field with a list of command strings. In addition,
+the following information should be noted:
+
+- Processes each command string as a separate keystroke.
+- Useful for programmatically inserting text or executing commands in a text field.
+- Maintains all text field functionality like highlighting and cursor movement.
+*/
 func (shared *textFieldType) updateKeyboardEventTextboxWithCommands(keystroke ...string) {
 	for _, currentCommand := range keystroke {
 		shared.updateKeyboardEventTextField([]rune(currentCommand))
 	}
+}
+
+/*
+SetValue allows you to set the current value of your text field. In addition, the following
+information should be noted:
+
+- If the text field is password protected, the value will be stored but displayed as masked characters.
+- The value will be trimmed of any leading or trailing whitespace before being set.
+- If the text field does not exist, the request will be ignored.
+*/
+func (shared *textFieldInstanceType) SetValue(value string) string {
+	if TextFields.IsExists(shared.layerAlias, shared.controlAlias) {
+		validatorTextField(shared.layerAlias, shared.controlAlias)
+		textFieldEntry := TextFields.Get(shared.layerAlias, shared.controlAlias)
+		textFieldEntry.CurrentValue = []rune(value)
+	}
+	return ""
+}
+
+/*
+SetDefaultValue allows you to set the default value of your text field. In addition, the following
+information should be noted:
+
+- The default value will be used when the text field is first created or reset.
+- If the text field is password protected, the default value will be stored but displayed as masked characters.
+- The default value will be trimmed of any leading or trailing whitespace before being set.
+*/
+func (shared *textFieldInstanceType) SetDefaultValue(value string) string {
+	if TextFields.IsExists(shared.layerAlias, shared.controlAlias) {
+		validatorTextField(shared.layerAlias, shared.controlAlias)
+		textFieldEntry := TextFields.Get(shared.layerAlias, shared.controlAlias)
+		textFieldEntry.DefaultValue = value
+	}
+	return ""
+}
+
+/*
+SetMaxLength allows you to set the maximum number of characters allowed in the text field. In addition,
+the following information should be noted:
+
+- If the current value exceeds the new maximum length, it will be truncated.
+- Setting the maximum length to 0 or a negative number will remove the length restriction.
+- The maximum length applies to the actual text, not including any masked characters for password fields.
+*/
+func (shared *textFieldInstanceType) SetMaxLength(length int) string {
+	if TextFields.IsExists(shared.layerAlias, shared.controlAlias) {
+		validatorTextField(shared.layerAlias, shared.controlAlias)
+		textFieldEntry := TextFields.Get(shared.layerAlias, shared.controlAlias)
+		textFieldEntry.MaxLengthAllowed = length
+	}
+	return ""
+}
+
+/*
+SetPasswordProtected allows you to specify whether the text field should mask its contents. In addition,
+the following information should be noted:
+
+- When enabled, all characters will be displayed as asterisks (*) or another specified mask character.
+- The actual value is still stored and can be retrieved using GetValue.
+- This setting can be changed at any time, and the display will update accordingly.
+*/
+func (shared *textFieldInstanceType) SetPasswordProtected(isProtected bool) string {
+	if TextFields.IsExists(shared.layerAlias, shared.controlAlias) {
+		validatorTextField(shared.layerAlias, shared.controlAlias)
+		textFieldEntry := TextFields.Get(shared.layerAlias, shared.controlAlias)
+		textFieldEntry.IsPasswordProtected = isProtected
+	}
+	return ""
+}
+
+/*
+SetCursorPosition allows you to set the position of the cursor within the text field. In addition,
+the following information should be noted:
+
+- The cursor position is zero-based, where 0 represents the start of the text.
+- If the specified position is beyond the length of the text, the cursor will be placed at the end.
+- The viewport will automatically adjust to keep the cursor visible.
+*/
+func (shared *textFieldInstanceType) SetCursorPosition(position int) string {
+	if TextFields.IsExists(shared.layerAlias, shared.controlAlias) {
+		validatorTextField(shared.layerAlias, shared.controlAlias)
+		textFieldEntry := TextFields.Get(shared.layerAlias, shared.controlAlias)
+		textFieldEntry.CursorPosition = position
+	}
+	return ""
+}
+
+/*
+SetViewportPosition allows you to set the starting position of the visible portion of the text field.
+In addition, the following information should be noted:
+
+- The viewport position is zero-based, where 0 represents the start of the text.
+- If the specified position is beyond the length of the text, the viewport will be set to the end.
+- The cursor will remain visible within the viewport.
+*/
+func (shared *textFieldInstanceType) SetViewportPosition(position int) string {
+	if TextFields.IsExists(shared.layerAlias, shared.controlAlias) {
+		validatorTextField(shared.layerAlias, shared.controlAlias)
+		textFieldEntry := TextFields.Get(shared.layerAlias, shared.controlAlias)
+		textFieldEntry.ViewportPosition = position
+	}
+	return ""
+}
+
+/*
+SetStyle allows you to set the visual style of the text field. In addition, the following
+information should be noted:
+
+- The style includes foreground and background colors, as well as text attributes.
+- The style can be changed at any time, and the display will update immediately.
+- If the style is invalid or not found, the default style will be used.
+*/
+func (shared *textFieldInstanceType) SetStyle(styleAlias string) string {
+	if TextFields.IsExists(shared.layerAlias, shared.controlAlias) {
+		validatorTextField(shared.layerAlias, shared.controlAlias)
+		textFieldEntry := TextFields.Get(shared.layerAlias, shared.controlAlias)
+		textFieldEntry.StyleEntry = types.NewTuiStyleEntry()
+	}
+	return ""
+}
+
+/*
+SetLayer allows you to change the layer that the text field belongs to. In addition, the following
+information should be noted:
+
+- The text field will be removed from its current layer and added to the new layer.
+- If the new layer does not exist, it will be created automatically.
+- The text field's position and other properties will be preserved.
+*/
+func (shared *textFieldInstanceType) SetLayer(layerAlias string) string {
+	if TextFields.IsExists(shared.layerAlias, shared.controlAlias) {
+		validatorTextField(shared.layerAlias, shared.controlAlias)
+		TextFields.Remove(shared.layerAlias, shared.controlAlias)
+		TextFields.Add(layerAlias, shared.controlAlias, TextFields.Get(shared.layerAlias, shared.controlAlias))
+	}
+	return ""
+}
+
+/*
+SetPosition allows you to set the position of the text field on the screen. In addition, the following
+information should be noted:
+
+- The position is specified in screen coordinates, where (0,0) is the top-left corner.
+- The text field will be redrawn at the new position immediately.
+- If the new position would place the text field outside the screen bounds, it will be adjusted.
+*/
+func (shared *textFieldInstanceType) SetPosition(x int, y int) string {
+	if TextFields.IsExists(shared.layerAlias, shared.controlAlias) {
+		validatorTextField(shared.layerAlias, shared.controlAlias)
+		validateLayerLocationByLayerAlias(shared.layerAlias, x, y)
+		textFieldEntry := TextFields.Get(shared.layerAlias, shared.controlAlias)
+		textFieldEntry.XLocation = x
+		textFieldEntry.YLocation = y
+	}
+	return ""
+}
+
+/*
+SetSize allows you to set the size of the text field. In addition, the following information
+should be noted:
+
+- The size is specified in characters, where width is the number of visible characters and height is always 1.
+- If the new size is smaller than the current text, the text will be truncated.
+- The viewport will automatically adjust to show as much text as possible.
+*/
+func (shared *textFieldInstanceType) SetSize(width int, height int) string {
+	if TextFields.IsExists(shared.layerAlias, shared.controlAlias) {
+		validatorTextField(shared.layerAlias, shared.controlAlias)
+		textFieldEntry := TextFields.Get(shared.layerAlias, shared.controlAlias)
+		textFieldEntry.Width = width
+	}
+	return ""
+}
+
+/*
+SetVisible allows you to control whether the text field is visible on the screen. In addition,
+the following information should be noted:
+
+- When set to false, the text field will not be drawn but will still maintain its state.
+- The text field can still receive focus and input even when invisible.
+- Setting visibility to true will redraw the text field at its current position.
+*/
+func (shared *textFieldInstanceType) SetVisible(isVisible bool) string {
+	if TextFields.IsExists(shared.layerAlias, shared.controlAlias) {
+		validatorTextField(shared.layerAlias, shared.controlAlias)
+		textFieldEntry := TextFields.Get(shared.layerAlias, shared.controlAlias)
+		textFieldEntry.IsEnabled = isVisible
+	}
+	return ""
+}
+
+/*
+SetEnabled allows you to control whether the text field can receive input. In addition, the following
+information should be noted:
+
+- When set to false, the text field will appear grayed out and will not accept input.
+- The text field can still be visible and maintain its state when disabled.
+- Setting enabled to true will restore normal functionality.
+*/
+func (shared *textFieldInstanceType) SetEnabled(isEnabled bool) string {
+	if TextFields.IsExists(shared.layerAlias, shared.controlAlias) {
+		validatorTextField(shared.layerAlias, shared.controlAlias)
+		textFieldEntry := TextFields.Get(shared.layerAlias, shared.controlAlias)
+		textFieldEntry.IsEnabled = isEnabled
+	}
+	return ""
 }

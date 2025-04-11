@@ -23,10 +23,26 @@ type TextboxEntryType struct {
 	IsHighlightModeToggled bool
 }
 
+/*
+GetAlias allows you to retrieve the alias of a textbox control. In addition, the following
+information should be noted:
+
+- Returns the unique identifier for the textbox.
+- This alias is used to reference the textbox in other operations.
+- The alias is set when the textbox is created.
+*/
 func (shared TextboxEntryType) GetAlias() string {
 	return shared.Alias
 }
 
+/*
+MarshalJSON allows you to serialize a textbox control to JSON. In addition, the following
+information should be noted:
+
+- Converts the textbox's state to a JSON representation.
+- Includes the base control properties and textbox-specific fields.
+- Used for saving and loading textbox configurations.
+*/
 func (shared TextboxEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
 		BaseControlType
@@ -65,6 +81,14 @@ func (shared TextboxEntryType) MarshalJSON() ([]byte, error) {
 	return j, nil
 }
 
+/*
+GetEntryAsJsonDump allows you to get a JSON string representation of a textbox control. In addition,
+the following information should be noted:
+
+- Returns a formatted JSON string of the textbox's state.
+- Useful for debugging and logging purposes.
+- Panics if JSON marshaling fails.
+*/
 func (shared TextboxEntryType) GetEntryAsJsonDump() string {
 	j, err := json.Marshal(shared)
 	if err != nil {
@@ -73,6 +97,14 @@ func (shared TextboxEntryType) GetEntryAsJsonDump() string {
 	return string(j)
 }
 
+/*
+NewTexboxEntry allows you to create a new textbox control. In addition, the following
+information should be noted:
+
+- Initializes a textbox with default values.
+- Can optionally copy properties from an existing textbox.
+- Sets up the base control properties and textbox-specific fields.
+*/
 func NewTexboxEntry(existingTextboxEntry ...*TextboxEntryType) TextboxEntryType {
 	var textboxEntry TextboxEntryType
 	textboxEntry.BaseControlType = NewBaseControl()
@@ -95,6 +127,14 @@ func NewTexboxEntry(existingTextboxEntry ...*TextboxEntryType) TextboxEntryType 
 	return textboxEntry
 }
 
+/*
+IsTextboxEntryEqual allows you to compare two textbox controls for equality. In addition, the following
+information should be noted:
+
+- Compares all properties of both textboxes.
+- Returns true if all properties match, false otherwise.
+- Used for change detection and state synchronization.
+*/
 func IsTextboxEntryEqual(sourceTextboxEntry *TextboxEntryType, targetTextboxEntry *TextboxEntryType) bool {
 	if sourceTextboxEntry.BaseControlType == targetTextboxEntry.BaseControlType &&
 		sourceTextboxEntry.HorizontalScrollbarAlias == targetTextboxEntry.HorizontalScrollbarAlias &&
@@ -114,6 +154,14 @@ func IsTextboxEntryEqual(sourceTextboxEntry *TextboxEntryType, targetTextboxEntr
 	return false
 }
 
+/*
+GetTextboxAlias allows you to retrieve the alias of a textbox control. In addition, the following
+information should be noted:
+
+- Returns the unique identifier for the textbox.
+- This is a convenience method that delegates to GetAlias.
+- The alias is used to reference the textbox in other operations.
+*/
 func GetTextboxAlias(entry *TextboxEntryType) string {
 	return entry.Alias
 }

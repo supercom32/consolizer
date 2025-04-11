@@ -2,6 +2,7 @@ package types
 
 import (
 	"encoding/json"
+
 	"supercom32.net/consolizer/constants"
 )
 
@@ -24,6 +25,14 @@ type AttributeEntryType struct {
 	CellUserAlias            string // The alias of the cell control.
 }
 
+/*
+MarshalJSON allows you to serialize an attribute entry to JSON. In addition, the following
+information should be noted:
+
+- Converts the attribute entry's state to a JSON representation.
+- Includes all visual and control-specific attributes.
+- Used for saving and loading attribute configurations.
+*/
 func (shared AttributeEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
 		ForegroundColor          constants.ColorType
@@ -66,6 +75,14 @@ func (shared AttributeEntryType) MarshalJSON() ([]byte, error) {
 	return j, nil
 }
 
+/*
+GetEntryAsJsonDump allows you to get a JSON string representation of an attribute entry. In addition,
+the following information should be noted:
+
+- Returns a formatted JSON string of the attribute entry's state.
+- Useful for debugging and logging purposes.
+- Panics if JSON marshaling fails.
+*/
 func (shared AttributeEntryType) GetEntryAsJsonDump() string {
 	j, err := json.Marshal(shared)
 	if err != nil {
@@ -74,6 +91,14 @@ func (shared AttributeEntryType) GetEntryAsJsonDump() string {
 	return string(j)
 }
 
+/*
+NewAttributeEntry allows you to create a new attribute entry. In addition, the following
+information should be noted:
+
+- Initializes an attribute entry with default values.
+- Can optionally copy properties from an existing attribute entry.
+- Sets up all visual and control-specific attributes.
+*/
 func NewAttributeEntry(existingAttributeEntry ...*AttributeEntryType) AttributeEntryType {
 	var attributeEntry AttributeEntryType
 	if existingAttributeEntry != nil {

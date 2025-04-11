@@ -36,9 +36,7 @@ setScrollValue allows you set the current scroll value of a scroll bar.  In addi
 information should be noted:
 
 - The scroll bar handle position will automatically be updated to reflect your new scroll bar value.
-
 - If the scroll bar value specified is out of range, then the closes minimum/maximum value will be selected instead.
-
 - If the scroll bar instance does not exist, then the request is ignored.
 */
 func (shared *ScrollbarInstanceType) setScrollValue(value int) {
@@ -275,18 +273,54 @@ func (shared *scrollbarType) updateKeyboardEventScrollbar(keystroke []rune) bool
 		if keystrokeAsString == "up" || keystrokeAsString == "left" {
 			scrollbarEntry.ScrollValue = scrollbarEntry.ScrollValue - scrollbarEntry.ScrollIncrement
 			shared.computeScrollbarHandlePositionByScrollValue(focusedLayerAlias, focusedControlAlias)
+			// Update selector viewport position
+			for _, currentSelectorEntry := range Selectors.GetAllEntries(focusedLayerAlias) {
+				selectorEntry := currentSelectorEntry
+				if selectorEntry.ScrollbarAlias == focusedControlAlias {
+					selectorEntry.ViewportPosition = scrollbarEntry.ScrollValue
+					isScreenUpdateRequired = true
+					break
+				}
+			}
 		}
 		if keystrokeAsString == "down" || keystrokeAsString == "right" {
 			scrollbarEntry.ScrollValue = scrollbarEntry.ScrollValue + scrollbarEntry.ScrollIncrement
 			shared.computeScrollbarHandlePositionByScrollValue(focusedLayerAlias, focusedControlAlias)
+			// Update selector viewport position
+			for _, currentSelectorEntry := range Selectors.GetAllEntries(focusedLayerAlias) {
+				selectorEntry := currentSelectorEntry
+				if selectorEntry.ScrollbarAlias == focusedControlAlias {
+					selectorEntry.ViewportPosition = scrollbarEntry.ScrollValue
+					isScreenUpdateRequired = true
+					break
+				}
+			}
 		}
 		if keystrokeAsString == "pgup" {
 			scrollbarEntry.ScrollValue = scrollbarEntry.ScrollValue - (scrollbarEntry.ScrollIncrement * 3)
 			shared.computeScrollbarHandlePositionByScrollValue(focusedLayerAlias, focusedControlAlias)
+			// Update selector viewport position
+			for _, currentSelectorEntry := range Selectors.GetAllEntries(focusedLayerAlias) {
+				selectorEntry := currentSelectorEntry
+				if selectorEntry.ScrollbarAlias == focusedControlAlias {
+					selectorEntry.ViewportPosition = scrollbarEntry.ScrollValue
+					isScreenUpdateRequired = true
+					break
+				}
+			}
 		}
 		if keystrokeAsString == "pgdn" {
 			scrollbarEntry.ScrollValue = scrollbarEntry.ScrollValue + (scrollbarEntry.ScrollIncrement * 3)
 			shared.computeScrollbarHandlePositionByScrollValue(focusedLayerAlias, focusedControlAlias)
+			// Update selector viewport position
+			for _, currentSelectorEntry := range Selectors.GetAllEntries(focusedLayerAlias) {
+				selectorEntry := currentSelectorEntry
+				if selectorEntry.ScrollbarAlias == focusedControlAlias {
+					selectorEntry.ViewportPosition = scrollbarEntry.ScrollValue
+					isScreenUpdateRequired = true
+					break
+				}
+			}
 		}
 	}
 	return isScreenUpdateRequired

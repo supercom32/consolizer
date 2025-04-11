@@ -12,6 +12,14 @@ type LabelEntryType struct {
 	IsBackgroundTransparent bool
 }
 
+/*
+MarshalJSON allows you to serialize a label control to JSON. In addition, the following
+information should be noted:
+
+- Converts the label's state to a JSON representation.
+- Includes the base control properties and label-specific fields.
+- Used for saving and loading label configurations.
+*/
 func (shared LabelEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
 		BaseControlType
@@ -26,6 +34,14 @@ func (shared LabelEntryType) MarshalJSON() ([]byte, error) {
 	return j, nil
 }
 
+/*
+GetEntryAsJsonDump allows you to get a JSON string representation of a label control. In addition,
+the following information should be noted:
+
+- Returns a formatted JSON string of the label's state.
+- Useful for debugging and logging purposes.
+- Panics if JSON marshaling fails.
+*/
 func (shared LabelEntryType) GetEntryAsJsonDump() string {
 	j, err := json.Marshal(shared)
 	if err != nil {
@@ -34,6 +50,14 @@ func (shared LabelEntryType) GetEntryAsJsonDump() string {
 	return string(j)
 }
 
+/*
+NewLabelEntry allows you to create a new label control. In addition, the following
+information should be noted:
+
+- Initializes a label with default values.
+- Can optionally copy properties from an existing label.
+- Sets up the base control properties and label-specific fields.
+*/
 func NewLabelEntry(existingLabelEntry ...*LabelEntryType) LabelEntryType {
 	var labelEntry LabelEntryType
 	labelEntry.BaseControlType = NewBaseControl()
@@ -52,6 +76,14 @@ func NewLabelEntry(existingLabelEntry ...*LabelEntryType) LabelEntryType {
 	return labelEntry
 }
 
+/*
+IsLabelEntryEqual allows you to compare two label controls for equality. In addition, the following
+information should be noted:
+
+- Compares all properties of both labels.
+- Returns true if all properties match, false otherwise.
+- Used for change detection and state synchronization.
+*/
 func IsLabelEntryEqual(sourceButtonEntry *LabelEntryType, targetButtonEntry *LabelEntryType) bool {
 	if sourceButtonEntry.StyleEntry == targetButtonEntry.StyleEntry &&
 		sourceButtonEntry.Alias == targetButtonEntry.Alias &&

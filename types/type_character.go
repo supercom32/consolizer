@@ -11,6 +11,14 @@ type CharacterEntryType struct {
 	ParentAlias    string
 }
 
+/*
+MarshalJSON allows you to convert a character entry to JSON format. In addition, the following
+information should be noted:
+
+- Implements the json.Marshaler interface for CharacterEntryType.
+- Converts the character entry to a JSON string representation.
+- Used for serializing character entries when saving state or transmitting data.
+*/
 func (shared CharacterEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
 		Character      rune
@@ -29,6 +37,14 @@ func (shared CharacterEntryType) MarshalJSON() ([]byte, error) {
 	return j, nil
 }
 
+/*
+GetEntryAsJsonDump allows you to get a JSON string representation of the character entry. In addition, the following
+information should be noted:
+
+- Returns a formatted JSON string of the character entry.
+- Used for debugging and logging purposes.
+- The output is human-readable and includes all character properties.
+*/
 func (shared CharacterEntryType) GetEntryAsJsonDump() string {
 	j, err := json.Marshal(shared)
 	if err != nil {
@@ -37,6 +53,14 @@ func (shared CharacterEntryType) GetEntryAsJsonDump() string {
 	return string(j)
 }
 
+/*
+NewCharacterEntry allows you to create a new character entry. In addition, the following
+information should be noted:
+
+- Initializes a character entry with default values.
+- Sets up a character with specified properties like foreground color, background color, and character value.
+- The character can be used to render text in the terminal interface.
+*/
 func NewCharacterEntry(existingCharacterEntry ...*CharacterEntryType) CharacterEntryType {
 	var characterEntry CharacterEntryType
 	if existingCharacterEntry != nil {

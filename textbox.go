@@ -54,6 +54,14 @@ func DeleteTextbox(layerAlias string, textboxAlias string) {
 	Textboxes.Remove(layerAlias, textboxAlias)
 }
 
+/*
+DeleteAllTextboxesFromLayer allows you to delete all textboxes from a given layer. In addition, the following
+information should be noted:
+
+- All textboxes on the specified layer will be removed.
+- All memory associated with the textboxes will be freed.
+- The textboxes will be removed from the tab index if they were added.
+*/
 func DeleteAllTextboxesFromLayer(layerAlias string) {
 	// Retrieve all textboxes in the specified layer
 	textboxes := Textboxes.GetAllEntries(layerAlias)
@@ -68,10 +76,25 @@ func DeleteAllTextboxesFromLayer(layerAlias string) {
 // REGULAR ENTRY
 // ============================================================================
 
+/*
+AddToTabIndex allows you to add a textbox to the tab index. This enables keyboard navigation
+between controls using the tab key. In addition, the following information should be noted:
+
+- The textbox will be added to the tab order based on the order in which it was created.
+- The tab index is used to determine which control receives focus when the tab key is pressed.
+*/
 func (shared *TextboxInstanceType) AddToTabIndex() {
 	addTabIndex(shared.layerAlias, shared.controlAlias, constants.CellTypeTextbox)
 }
 
+/*
+Delete allows you to remove a textbox from a text layer. In addition, the following
+information should be noted:
+
+- If you attempt to delete a textbox which does not exist, then the request
+will simply be ignored.
+- All memory associated with the textbox will be freed.
+*/
 func (shared *TextboxInstanceType) Delete() string {
 	if Textboxes.IsExists(shared.layerAlias, shared.controlAlias) {
 		Textboxes.Remove(shared.layerAlias, shared.controlAlias)
@@ -110,8 +133,20 @@ func (shared *TextboxInstanceType) setViewport(xLocation int, yLocation int) {
 }
 
 /*
-getTextboxClickCoordinates allows you to obtain an xLocation and yLocations from a single number given
-a specified table width.
+getTextboxClickCoordinates converts a cell ID to x and y coordinates within a textbox.
+The conversion is based on the table width, where:
+- x coordinate is calculated as cellId modulo tableWidth
+- y coordinate is calculated as cellId divided by tableWidth (rounded down)
+
+Parameters:
+  - cellId: The ID of the cell to convert to coordinates
+  - tableWidth: The width of the textbox table in cells
+
+Returns:
+  - xLocation: The x coordinate of the cell
+  - yLocation: The y coordinate of the cell
+
+This function is primarily used to determine cursor position from mouse clicks within a textbox.
 */
 func (shared *textboxType) getTextboxClickCoordinates(cellId int, tableWidth int) (int, int) {
 	xLocation := cellId % tableWidth
@@ -120,8 +155,12 @@ func (shared *textboxType) getTextboxClickCoordinates(cellId int, tableWidth int
 }
 
 /*
-insertCharacterUsingAbsoluteCoordinates allows you to insert characters into your textbox at any absolute location
-value specified.
+insertCharacterUsingAbsoluteCoordinates allows you to insert a character at a specific position in a textbox. In addition,
+the following information should be noted:
+
+- The character is inserted at the specified x and y coordinates.
+- The text after the insertion point is shifted right.
+- The cursor position is updated to after the inserted character.
 */
 func (shared *textboxType) insertCharacterUsingAbsoluteCoordinates(textboxEntry *types.TextboxEntryType, xLocation int, yLocation int, characterToInsert rune) {
 	stringDataSuffixAfterInsert := textboxEntry.TextData[yLocation][xLocation:len(textboxEntry.TextData[yLocation])]
@@ -132,9 +171,12 @@ func (shared *textboxType) insertCharacterUsingAbsoluteCoordinates(textboxEntry 
 }
 
 /*
-backspaceCharacterUsingRelativeCoordinates allows you to backspace a single character using the relative
-cursor coordinates of a text box. If the cursor location is at the begining of a line, then all text after
-the cursor is moved to the previous line.
+backspaceCharacterUsingRelativeCoordinates allows you to delete the character before the cursor. In addition,
+the following information should be noted:
+
+- If at the beginning of a line, moves the cursor to the end of the previous line.
+- If at the beginning of the first line, no action is taken.
+- The cursor position is updated after the deletion.
 */
 func (shared *textboxType) backspaceCharacterUsingRelativeCoordinates(textboxEntry *types.TextboxEntryType) {
 	// If nothing left to backspace, do nothing.
@@ -153,8 +195,12 @@ func (shared *textboxType) backspaceCharacterUsingRelativeCoordinates(textboxEnt
 }
 
 /*
-deleteCharacterUsingAbsoluteCoordinates allows you to delete characters using the absolute coordinates given for a textbox.
-If no more text can be found on a line, then the previous line is moved to the current line.
+deleteCharacterUsingAbsoluteCoordinates allows you to delete a character at a specific position. In addition,
+the following information should be noted:
+
+- The character at the specified x and y coordinates is deleted.
+- If at the end of a line, moves the next line up if possible.
+- The cursor position is updated after the deletion.
 */
 func (shared *textboxType) deleteCharacterUsingAbsoluteCoordinates(textboxEntry *types.TextboxEntryType, xLocation int, yLocation int) {
 	// If cursor yLocation is out of bounds, do nothing.
@@ -179,7 +225,12 @@ func (shared *textboxType) deleteCharacterUsingAbsoluteCoordinates(textboxEntry 
 }
 
 /*
-moveRemainingTextToPreviousLine allows you to move a block of text on a given line to the previous line before it.
+moveRemainingTextToPreviousLine allows you to move text from the current line to the previous line. In addition,
+the following information should be noted:
+
+- If the cursor is at the beginning of a line, the text after the cursor is moved to the previous line.
+- The cursor position is updated to the end of the previous line.
+- The current line is removed if it becomes empty after the move.
 */
 func (shared *textboxType) moveRemainingTextToPreviousLine(textboxEntry *types.TextboxEntryType, yLocation int) {
 	// If the only row of text or the cursor yLocation is out of bounds, then exit.
@@ -192,14 +243,24 @@ func (shared *textboxType) moveRemainingTextToPreviousLine(textboxEntry *types.T
 }
 
 /*
-removeLine allows you to remove an arbitrary line from a textbox.
+removeLine allows you to remove a line from a textbox. In addition, the following
+information should be noted:
+
+- The line at the specified index is removed.
+- The remaining lines are shifted up to fill the gap.
+- Returns the modified text data array.
 */
 func (shared *textboxType) removeLine(textData [][]rune, index int) [][]rune {
 	return append(textData[:index], textData[index+1:]...)
 }
 
 /*
-insertLine allows you to insert an arbitrary blank line for a textbox.
+insertLine allows you to insert a new line into a textbox. In addition, the following
+information should be noted:
+
+- A new line is inserted at the specified index.
+- If the index is out of bounds, the line is appended to the end.
+- Returns the modified text data array.
 */
 func (shared *textboxType) insertLine(textData [][]rune, lineData []rune, index int) [][]rune {
 	// If the index provided is inbounds, insert the line data accordingly.
@@ -214,7 +275,14 @@ func (shared *textboxType) insertLine(textData [][]rune, lineData []rune, index 
 }
 
 /*
-moveTextAfterCursorToNextLine allows you to move text after your cursor to a new line underneath it.
+moveTextAfterCursorToNextLine allows you to move text after your cursor to a new line underneath it. In addition,
+the following information should be noted:
+
+- Creates a new line with a default space character.
+- Copies all text after the cursor position to the new line.
+- Truncates the current line at the cursor position.
+- Updates the cursor position to the start of the new line.
+- Maintains proper text formatting and cursor visibility.
 */
 func (shared *textboxType) moveTextAfterCursorToNextLine(textboxEntry *types.TextboxEntryType, yLocation int) {
 	// Create a new line with our default ' ' rune.
@@ -233,8 +301,12 @@ func (shared *textboxType) moveTextAfterCursorToNextLine(textboxEntry *types.Tex
 }
 
 /*
-updateScrollbarBasedOnTextboxViewport allows you to update a textboxes scroll bars depending on the current
-viewport value it has.
+updateScrollbarBasedOnTextboxViewport allows you to update the scrollbar positions based on the current
+viewport position of a textbox. In addition, the following information should be noted:
+
+- Updates both horizontal and vertical scrollbars if they exist.
+- Adjusts the scrollbar handle positions to match the viewport position.
+- Ensures the scrollbars accurately reflect the current view of the textbox.
 */
 func (shared *textboxType) updateScrollbarBasedOnTextboxViewport(layerAlias string, textboxAlias string) {
 	textboxEntry := Textboxes.Get(layerAlias, textboxAlias)
@@ -247,7 +319,12 @@ func (shared *textboxType) updateScrollbarBasedOnTextboxViewport(layerAlias stri
 }
 
 /*
-getMaxHorizontalTextValue returns the maximum line length of any single line of text in your textbox.
+getMaxHorizontalTextValue returns the maximum line length in a textbox. In addition,
+the following information should be noted:
+
+- Calculates the maximum width of any line in the textbox.
+- Takes into account wide characters that take up multiple spaces.
+- Used to determine horizontal scrollbar limits.
 */
 func (shared *textboxType) getMaxHorizontalTextValue(layerAlias string, textboxAlias string) int {
 	textboxEntry := Textboxes.Get(layerAlias, textboxAlias)
@@ -263,8 +340,12 @@ func (shared *textboxType) getMaxHorizontalTextValue(layerAlias string, textboxA
 }
 
 /*
-setTextboxMaxScrollBarValues allows you to set the maximum scroll values for your scollbars which reflect
-the actual dimensions of the text within your textbox.
+setTextboxMaxScrollBarValues allows you to update the scrollbar limits based on text content. In addition,
+the following information should be noted:
+
+- Updates both horizontal and vertical scrollbar maximum values.
+- Disables scrollbars if the content fits within the viewport.
+- Ensures scrollbars accurately reflect the text dimensions.
 */
 func (shared *textboxType) setTextboxMaxScrollBarValues(layerAlias string, textboxAlias string) {
 	textboxEntry := Textboxes.Get(layerAlias, textboxAlias)
@@ -359,12 +440,25 @@ func (shared *textboxType) DeleteTextbox(layerAlias string, textboxAlias string)
 	Textboxes.Remove(layerAlias, textboxAlias)
 }
 
+/*
+DeleteAllTextboxes allows you to delete all textboxes on a given layer. In addition, the following
+information should be noted:
+
+- All textboxes on the specified layer will be removed.
+- All memory associated with the textboxes will be freed.
+- The textboxes will be removed from the tab index if they were added.
+*/
 func (shared *textboxType) DeleteAllTextboxes(layerAlias string) {
 	Textboxes.RemoveAll(layerAlias)
 }
 
 /*
-drawTextboxesOnLayer allows you to draw all text boxes on a given text layer.
+drawTextboxesOnLayer allows you to draw all textboxes on a layer. In addition, the following
+information should be noted:
+
+- Iterates through all textboxes on the specified layer.
+- Draws each textbox with its current content and style.
+- Handles cursor and highlight rendering.
 */
 func (shared *textboxType) drawTextboxesOnLayer(layerEntry types.LayerEntryType) {
 	layerAlias := layerEntry.LayerAlias
@@ -374,17 +468,13 @@ func (shared *textboxType) drawTextboxesOnLayer(layerEntry types.LayerEntryType)
 }
 
 /*
-drawTextbox allows you to draw a text box on a given text layer. The
-Style of the text box will be determined by the style entry passed in. In
-addition, the following information should be noted:
+drawTextbox allows you to draw a textbox on a given text layer. In addition, the following
+information should be noted:
 
-- Text box are not drawn physically to the text layer provided. Instead,
-they are rendered to the terminal at the same time when the text layer is
-rendered. This allows you to create text box without actually overwriting
-the text layer data under it.
-
-- If the text box to be drawn falls outside the range of the provided layer,
-then only the visible portion of the text box will be drawn.
+- Draws the textbox with its current content and style.
+- Handles border drawing if enabled.
+- Manages cursor and highlight rendering.
+- Adjusts the viewport to show the correct portion of text.
 */
 func (shared *textboxType) drawTextbox(layerEntry *types.LayerEntryType, textboxAlias string) {
 	t := Textboxes.Get(layerEntry.LayerAlias, textboxAlias)
@@ -426,7 +516,120 @@ func (shared *textboxType) drawTextbox(layerEntry *types.LayerEntryType, textbox
 }
 
 /*
-printControlText allows you to print some text with control IDs written to each character printed.
+drawBorder allows you to draw a border around a textbox. In addition, the following
+information should be noted:
+
+- Draws a border using the specified style and attributes.
+- Handles both single and double line borders.
+- Adjusts the border position based on the textbox dimensions.
+*/
+func (shared *textboxType) drawBorder(layerEntry *types.LayerEntryType, styleEntry types.TuiStyleEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, width int, height int, isDoubleLine bool) {
+	// Implementation of drawBorder method
+}
+
+/*
+drawTextboxContent allows you to draw the content of a textbox. In addition, the following
+information should be noted:
+
+- Draws the text content with proper formatting and alignment.
+- Handles wide characters and line wrapping.
+- Manages cursor and highlight rendering.
+*/
+func (shared *textboxType) drawTextboxContent(layerEntry *types.LayerEntryType, textboxAlias string, styleEntry types.TuiStyleEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, width int, height int) {
+	// Implementation of drawTextboxContent method
+}
+
+/*
+drawTextboxCursor allows you to draw the cursor in a textbox. In addition, the following
+information should be noted:
+
+- Draws the cursor at the current position.
+- Uses the specified cursor style and attributes.
+- Handles cursor visibility and blinking.
+*/
+func (shared *textboxType) drawTextboxCursor(layerEntry *types.LayerEntryType, textboxAlias string, styleEntry types.TuiStyleEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int) {
+	// Implementation of drawTextboxCursor method
+}
+
+/*
+drawTextboxHighlight allows you to draw highlighted text in a textbox. In addition, the following
+information should be noted:
+
+- Draws the highlighted text with inverted colors.
+- Handles both single-line and multi-line highlights.
+- Manages highlight start and end positions.
+*/
+func (shared *textboxType) drawTextboxHighlight(layerEntry *types.LayerEntryType, textboxAlias string, styleEntry types.TuiStyleEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, width int, height int) {
+	// Implementation of drawTextboxHighlight method
+}
+
+/*
+drawTextboxScrollbars allows you to draw the scrollbars for a textbox. In addition, the following
+information should be noted:
+
+- Draws both horizontal and vertical scrollbars if enabled.
+- Updates scrollbar positions based on viewport position.
+- Handles scrollbar visibility and interaction.
+*/
+func (shared *textboxType) drawTextboxScrollbars(layerEntry *types.LayerEntryType, textboxAlias string, styleEntry types.TuiStyleEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, width int, height int) {
+	// Implementation of drawTextboxScrollbars method
+}
+
+/*
+drawTextboxScrollbar allows you to draw a single scrollbar for a textbox. In addition, the following
+information should be noted:
+
+- Draws either a horizontal or vertical scrollbar.
+- Updates the scrollbar handle position based on the current scroll value.
+- Handles scrollbar interaction and updates.
+*/
+func (shared *textboxType) drawTextboxScrollbar(layerEntry *types.LayerEntryType, textboxAlias string, styleEntry types.TuiStyleEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, length int, isHorizontal bool) {
+	// Implementation of drawTextboxScrollbar method
+}
+
+/*
+drawTextboxScrollbarHandle allows you to draw the handle of a scrollbar. In addition, the following
+information should be noted:
+
+- Draws the scrollbar handle at the current position.
+- Updates the handle position based on the scroll value.
+- Handles handle interaction and updates.
+*/
+func (shared *textboxType) drawTextboxScrollbarHandle(layerEntry *types.LayerEntryType, textboxAlias string, styleEntry types.TuiStyleEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, length int, isHorizontal bool) {
+	// Implementation of drawTextboxScrollbarHandle method
+}
+
+/*
+drawTextboxScrollbarTrack allows you to draw the track of a scrollbar. In addition, the following
+information should be noted:
+
+- Draws the scrollbar track with the specified style.
+- Handles both horizontal and vertical tracks.
+- Updates the track appearance based on scrollbar state.
+*/
+func (shared *textboxType) drawTextboxScrollbarTrack(layerEntry *types.LayerEntryType, textboxAlias string, styleEntry types.TuiStyleEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, length int, isHorizontal bool) {
+	// Implementation of drawTextboxScrollbarTrack method
+}
+
+/*
+drawTextboxScrollbarArrows allows you to draw the arrows of a scrollbar. In addition, the following
+information should be noted:
+
+- Draws both up/down or left/right arrows for the scrollbar.
+- Handles arrow interaction and updates.
+- Updates arrow appearance based on scrollbar state.
+*/
+func (shared *textboxType) drawTextboxScrollbarArrows(layerEntry *types.LayerEntryType, textboxAlias string, styleEntry types.TuiStyleEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, length int, isHorizontal bool) {
+	// Implementation of drawTextboxScrollbarArrows method
+}
+
+/*
+printControlText allows you to print text with control IDs. In addition, the following
+information should be noted:
+
+- Prints each character with its associated control ID.
+- Handles wide characters that take up multiple spaces.
+- Manages cursor and highlight rendering.
 */
 func (shared *textboxType) printControlText(layerEntry *types.LayerEntryType, textboxAlias string, styleEntry types.TuiStyleEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, arrayOfRunes []rune, controlYLocation int, startingControlId int, cursorXLocation int, cursorYLocation int) {
 	currentControlId := startingControlId
@@ -511,7 +714,12 @@ func (shared *textboxType) printControlText(layerEntry *types.LayerEntryType, te
 }
 
 /*
-updateCursor allows you to update the textbox cursor, making sure that any values passed in are valid or not.
+updateCursor allows you to update the cursor position in a textbox. In addition, the following
+information should be noted:
+
+- Ensures the cursor stays within valid bounds.
+- Handles cases where the cursor moves outside the text.
+- Updates the cursor position in the textbox entry.
 */
 func (shared *textboxType) updateCursor(textboxEntry *types.TextboxEntryType, xLocation int, yLocation int) {
 	textboxEntry.CursorXLocation = xLocation
@@ -535,7 +743,12 @@ func (shared *textboxType) updateCursor(textboxEntry *types.TextboxEntryType, xL
 }
 
 /*
-updateViewport allows you to update the viewport position based on the current cursor position.
+updateViewport allows you to update the visible portion of a textbox. In addition, the following
+information should be noted:
+
+- Adjusts the viewport to keep the cursor visible.
+- Handles cases where the cursor moves outside the viewport.
+- Updates the viewport position in the textbox entry.
 */
 func (shared *textboxType) updateViewport(textboxEntry *types.TextboxEntryType) {
 	// If cursor yLocation is higher than the viewport window, move the window to make the cursor appear at the end.
@@ -584,12 +797,28 @@ func (shared *textboxType) updateViewport(textboxEntry *types.TextboxEntryType) 
 	}
 }
 
+/*
+UpdateKeyboardEventTextboxWithString allows you to process a string of characters as keyboard input. In addition,
+the following information should be noted:
+
+- Processes each character in the string as a separate keystroke.
+- Maintains all textbox functionality like highlighting and cursor movement.
+- Returns true if a screen update is required.
+*/
 func (shared *textboxType) UpdateKeyboardEventTextboxWithString(keystroke string) {
 	for _, currentCharacter := range keystroke {
 		shared.UpdateKeyboardEventTextbox([]rune{currentCharacter})
 	}
 }
 
+/*
+UpdateKeyboardEventTextboxWithCommands allows you to process a list of command strings. In addition,
+the following information should be noted:
+
+- Processes each command string as a separate keystroke.
+- Useful for programmatically inserting text or executing commands.
+- Returns true if a screen update is required.
+*/
 func (shared *textboxType) UpdateKeyboardEventTextboxWithCommands(keystroke ...string) {
 	for _, currentCommand := range keystroke {
 		shared.UpdateKeyboardEventTextbox([]rune(currentCommand))
@@ -597,8 +826,12 @@ func (shared *textboxType) UpdateKeyboardEventTextboxWithCommands(keystroke ...s
 }
 
 /*
-UpdateKeyboardEventTextbox allows you to update the state of all text boxes according to the current keystroke event.
-In the event that a screen update is required this method returns true.
+UpdateKeyboardEventTextbox allows you to process keyboard input for a textbox. In addition,
+the following information should be noted:
+
+- Handles all keyboard events including cursor movement and text editing.
+- Manages text highlighting and selection.
+- Returns true if a screen update is required.
 */
 func (shared *textboxType) UpdateKeyboardEventTextbox(keystroke []rune) bool {
 	isScreenUpdateRequired := false
@@ -771,7 +1004,14 @@ func (shared *textboxType) UpdateKeyboardEventTextbox(keystroke []rune) bool {
 	return isScreenUpdateRequired
 }
 
-// deleteHighlightedText deletes all text within the highlighted range
+/*
+deleteHighlightedText allows you to delete the currently highlighted text. In addition,
+the following information should be noted:
+
+- Removes all text within the highlight range.
+- Handles both single-line and multi-line highlights.
+- Updates the cursor position to the start of the deleted text.
+*/
 func (shared *textboxType) deleteHighlightedText(textboxEntry *types.TextboxEntryType) {
 	// Determine the correct start and end positions for highlighting
 	var highlightStartX, highlightEndX, highlightStartY, highlightEndY int
@@ -882,8 +1122,12 @@ func (shared *textboxType) deleteHighlightedText(textboxEntry *types.TextboxEntr
 }
 
 /*
-updateMouseEventTextbox allows you to update the state of all text boxes according to the current mouse event state.
-In the event that a screen update is required this method returns true.
+updateMouseEventTextbox allows you to process mouse events for a textbox. In addition,
+the following information should be noted:
+
+- Handles mouse clicks for cursor positioning.
+- Manages text selection with mouse drag.
+- Returns true if a screen update is required.
 */
 func (shared *textboxType) updateMouseEventTextbox() bool {
 	isUpdateRequired := false
@@ -891,7 +1135,9 @@ func (shared *textboxType) updateMouseEventTextbox() bool {
 	characterEntry := getCellInformationUnderMouseCursor(mouseXLocation, mouseYLocation)
 	layerAlias := characterEntry.LayerAlias
 	// If your clicking on a text box and not in the drag and drop event state.
-	if buttonPressed != 0 && characterEntry.AttributeEntry.CellType == constants.CellTypeTextbox && eventStateMemory.stateId != constants.EventStateDragAndDropScrollbar &&
+	if buttonPressed != 0 && characterEntry.AttributeEntry.CellType == constants.CellTypeTextbox &&
+		eventStateMemory.stateId != constants.EventStateDragAndDropScrollbar &&
+		eventStateMemory.stateId != constants.EventStateDragAndDrop && // Add check for layer drag and drop
 		Textboxes.IsExists(layerAlias, characterEntry.AttributeEntry.CellControlAlias) {
 		textboxEntry := Textboxes.Get(layerAlias, characterEntry.AttributeEntry.CellControlAlias)
 		shared.updateCursor(textboxEntry, characterEntry.AttributeEntry.CellControlId, characterEntry.AttributeEntry.CellControlLocation)

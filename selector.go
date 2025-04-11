@@ -2,6 +2,7 @@ package consolizer
 
 import (
 	"fmt"
+
 	"supercom32.net/consolizer/constants"
 	"supercom32.net/consolizer/internal/memory"
 	"supercom32.net/consolizer/internal/stringformat"
@@ -70,10 +71,25 @@ func GetSelector(layerAlias string, selectorAlias string) *types.SelectorEntryTy
 // REGULAR ENTRY
 // ============================================================================
 
+/*
+AddToTabIndex allows you to add a selector to the tab index. This enables keyboard navigation
+between controls using the tab key. In addition, the following information should be noted:
+
+- The selector will be added to the tab order based on the order in which it was created.
+- The tab index is used to determine which control receives focus when the tab key is pressed.
+*/
 func (shared *selectorInstanceType) AddToTabIndex() {
 	addTabIndex(shared.layerAlias, shared.controlAlias, constants.CellTypeSelectorItem)
 }
 
+/*
+Delete allows you to remove a selector from a text layer. In addition, the following
+information should be noted:
+
+- If you attempt to delete a selector which does not exist, then the request
+will simply be ignored.
+- All memory associated with the selector will be freed.
+*/
 func (shared *selectorInstanceType) Delete() *selectorInstanceType {
 	if Selectors.IsExists(shared.layerAlias, shared.controlAlias) {
 		Selectors.Remove(shared.layerAlias, shared.controlAlias)
@@ -82,8 +98,13 @@ func (shared *selectorInstanceType) Delete() *selectorInstanceType {
 }
 
 /*
-GetSelected allows you to retrieve the currently selected item. If the Selector instance
-no longer exists, then an empty result is always returned.
+GetSelected allows you to retrieve the currently selected item from a selector. In addition,
+the following information should be noted:
+
+  - Returns both the alias and index of the selected item.
+  - If the selector does not exist, returns an empty string and -1.
+  - The alias is typically used for display purposes, while the index is used for
+    programmatic access to the selection.
 */
 func (shared *selectorInstanceType) GetSelected() (string, int) {
 	if Selectors.IsExists(shared.layerAlias, shared.controlAlias) {
@@ -96,8 +117,12 @@ func (shared *selectorInstanceType) GetSelected() (string, int) {
 }
 
 /*
-setViewport allows you to specify the current viewport index for a given Selector. If the Selector instance
-no longer exists, then no operation occurs.
+setViewport allows you to specify the current viewport index for a given selector. In addition,
+the following information should be noted:
+
+- The viewport determines which items are currently visible in the selector.
+- If the selector does not exist, no operation occurs.
+- The viewport position is automatically adjusted when navigating through items.
 */
 func (shared *selectorInstanceType) setViewport(viewportPosition int) {
 	if Selectors.IsExists(shared.layerAlias, shared.controlAlias) {
@@ -108,7 +133,7 @@ func (shared *selectorInstanceType) setViewport(viewportPosition int) {
 }
 
 /*
-Add allows you to add a Selector to a given text layer. Once called, an instance of your control is returned
+Add allows you to add a selector to a given text layer. Once called, an instance of your control is returned
 which will allow you to read or manipulate the properties for it. The Style of the Selector
 will be determined by the style entry passed in. If you wish to remove a Selector from a text layer, simply
 call 'DeleteSelector'. In addition, the following information should be noted:
@@ -170,16 +195,31 @@ func (shared *selectorType) Add(layerAlias string, selectorAlias string, styleEn
 	return selectorInstance
 }
 
+/*
+DeleteSelector allows you to remove a selector from a text layer. In addition, the following
+information should be noted:
+
+- If you attempt to delete a selector which does not exist, then the request
+will simply be ignored.
+- All memory associated with the selector will be freed.
+*/
 func (shared *selectorType) DeleteSelector(layerAlias string, selectorAlias string) {
 	Selectors.Remove(layerAlias, selectorAlias)
 }
 
+/*
+DeleteAllSelectors allows you to remove all selectors from a text layer. In addition, the following
+information should be noted:
+
+- This operation cannot be undone.
+- All memory associated with the selectors will be freed.
+*/
 func (shared *selectorType) DeleteAllSelectors(layerAlias string) {
 	Selectors.RemoveAll(layerAlias)
 }
 
 /*
-drawSelector allows you to draw a Selector on a given text layer. The
+drawSelector allows you to draw a selector on a given text layer. The
 Style of the Selector will be determined by the style entry passed in. In
 addition, the following information should be noted:
 
@@ -235,7 +275,12 @@ func (shared *selectorType) drawSelector(selectorAlias string, layerEntry *types
 }
 
 /*
-drawSelectorsOnLayer allows you to draw all selectors on a given text layer.
+drawSelectorsOnLayer allows you to draw all selectors on a given text layer. In addition,
+the following information should be noted:
+
+- Selectors are drawn in alphabetical order by their alias.
+- This ensures consistent rendering order across multiple frames.
+- Internally generated selectors (like those used by dropdowns) are drawn last.
 */
 func (shared *selectorType) drawSelectorsOnLayer(layerEntry types.LayerEntryType) {
 	layerAlias := layerEntry.LayerAlias
@@ -251,22 +296,24 @@ func (shared *selectorType) drawSelectorsOnLayer(layerEntry types.LayerEntryType
 	}
 }
 
-/*
-updateKeyboardEventSelector allows you to update the state of all selectors according to the current keystroke event.
-In the event that a screen update is required this method returns true.
-*/
-func (shared *selectorType) updateKeyboardEventSelector(keystroke []rune) bool {
+func (shared *selectorType) updateKeyboardEventForSelector(layerAlias string, selectorAlias string, keystroke []rune) bool {
 	keystrokeAsString := string(keystroke)
 	isScreenUpdateRequired := false
-	if eventStateMemory.currentlyFocusedControl.controlType != constants.CellTypeSelectorItem || !Selectors.IsExists(eventStateMemory.currentlyFocusedControl.layerAlias, eventStateMemory.currentlyFocusedControl.controlAlias) {
-		return isScreenUpdateRequired
-	}
-	selectorEntry := Selectors.Get(eventStateMemory.currentlyFocusedControl.layerAlias, eventStateMemory.currentlyFocusedControl.controlAlias)
+	selectorEntry := Selectors.Get(layerAlias, selectorAlias)
 	if keystrokeAsString == "down" {
 		// remainder := selectorEntry.ItemHighlighted % selectorEntry.NumberOfColumns
 		selectorEntry.ItemHighlighted = selectorEntry.ItemHighlighted + selectorEntry.NumberOfColumns
 		if selectorEntry.ItemHighlighted >= len(selectorEntry.SelectionEntry.SelectionAlias) {
 			selectorEntry.ItemHighlighted = selectorEntry.ItemHighlighted - selectorEntry.NumberOfColumns
+		}
+		// Adjust viewport if highlighted item is outside visible range
+		if selectorEntry.ItemHighlighted >= selectorEntry.ViewportPosition+(selectorEntry.Height*selectorEntry.NumberOfColumns) {
+			selectorEntry.ViewportPosition = selectorEntry.ItemHighlighted - (selectorEntry.Height * selectorEntry.NumberOfColumns) + selectorEntry.NumberOfColumns
+			// Update associated scrollbar
+			if scrollBarEntry := ScrollBars.Get(layerAlias, selectorEntry.ScrollbarAlias); scrollBarEntry != nil {
+				scrollBarEntry.ScrollValue = selectorEntry.ViewportPosition
+				scrollbar.computeScrollbarHandlePositionByScrollValue(layerAlias, selectorEntry.ScrollbarAlias)
+			}
 		}
 		isScreenUpdateRequired = true
 	}
@@ -274,6 +321,15 @@ func (shared *selectorType) updateKeyboardEventSelector(keystroke []rune) bool {
 		selectorEntry.ItemHighlighted = selectorEntry.ItemHighlighted - selectorEntry.NumberOfColumns
 		if selectorEntry.ItemHighlighted < 0 {
 			selectorEntry.ItemHighlighted = selectorEntry.ItemHighlighted + selectorEntry.NumberOfColumns
+		}
+		// Adjust viewport if highlighted item is outside visible range
+		if selectorEntry.ItemHighlighted < selectorEntry.ViewportPosition {
+			selectorEntry.ViewportPosition = selectorEntry.ItemHighlighted
+			// Update associated scrollbar
+			if scrollBarEntry := ScrollBars.Get(layerAlias, selectorEntry.ScrollbarAlias); scrollBarEntry != nil {
+				scrollBarEntry.ScrollValue = selectorEntry.ViewportPosition
+				scrollbar.computeScrollbarHandlePositionByScrollValue(layerAlias, selectorEntry.ScrollbarAlias)
+			}
 		}
 		isScreenUpdateRequired = true
 	}
@@ -303,8 +359,28 @@ func (shared *selectorType) updateKeyboardEventSelector(keystroke []rune) bool {
 }
 
 /*
+updateKeyboardEventSelector allows you to update the state of all selectors according to the current keystroke event.
+In the event that a screen update is required this method returns true. In addition, the following information should be noted:
+
+- Handles navigation keys (up, down, left, right) to move between items.
+- Enter key selects the currently highlighted item.
+- Returns true if the screen needs to be updated due to state changes.
+*/
+func (shared *selectorType) updateKeyboardEventSelector(keystroke []rune) bool {
+	isScreenUpdateRequired := false
+	if eventStateMemory.currentlyFocusedControl.controlType != constants.CellTypeSelectorItem || !Selectors.IsExists(eventStateMemory.currentlyFocusedControl.layerAlias, eventStateMemory.currentlyFocusedControl.controlAlias) {
+		return isScreenUpdateRequired
+	}
+	return shared.updateKeyboardEventForSelector(eventStateMemory.currentlyFocusedControl.layerAlias, eventStateMemory.currentlyFocusedControl.controlAlias, keystroke)
+}
+
+/*
 updateMouseEventSelector allows you to update the state of all selectors according to the current mouse event state.
-In the event that a screen update is required this method returns true.
+In the event that a screen update is required this method returns true. In addition, the following information should be noted:
+
+- Handles mouse clicks to select items.
+- Manages scrollbar synchronization for selectors with many items.
+- Returns true if the screen needs to be updated due to state changes.
 */
 func (shared *selectorType) updateMouseEventSelector() bool {
 	isScreenUpdateRequired := false
@@ -321,6 +397,18 @@ func (shared *selectorType) updateMouseEventSelector() bool {
 			selectorEntry := Selectors.Get(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias)
 			selectorEntry.ItemHighlighted = characterEntry.AttributeEntry.CellControlId
 		}
+		// Check if this selector belongs to a dropdown
+		for _, currentDropdownEntry := range Dropdowns.GetAllEntries(characterEntry.LayerAlias) {
+			dropdownEntry := currentDropdownEntry
+			if dropdownEntry.SelectorAlias == characterEntry.AttributeEntry.CellControlAlias {
+				// If it belongs to a dropdown, set the dropdown as the focused control
+				setFocusedControl(characterEntry.LayerAlias, dropdownEntry.Alias, constants.CellTypeDropdown)
+				setPreviouslyHighlightedControl(characterEntry.LayerAlias, dropdownEntry.Alias, constants.CellTypeDropdown)
+				isScreenUpdateRequired = true
+				return isScreenUpdateRequired
+			}
+		}
+		// If not part of a dropdown, set the selector as the focused control
 		setFocusedControl(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias, constants.CellTypeSelectorItem)
 		setPreviouslyHighlightedControl(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias, constants.CellTypeSelectorItem)
 		isScreenUpdateRequired = true

@@ -14,6 +14,96 @@ type DropdownInstanceType struct {
 
 type dropdownType struct{}
 
+/*
+updateKeyboardEventDropdown allows you to update the state of all dropdowns according to the
+current keyboard event. In addition, the following information should be noted:
+
+- Handles Enter key to open/close the dropdown.
+- Handles Up/Down keys to navigate through dropdown options when open.
+- Returns true if the screen needs to be updated due to state changes.
+*/
+func (shared *dropdownType) updateKeyboardEventDropdown(keystroke []rune) bool {
+	keystrokeAsString := string(keystroke)
+	isScreenUpdateRequired := false
+	focusedLayerAlias := eventStateMemory.currentlyFocusedControl.layerAlias
+	focusedControlAlias := eventStateMemory.currentlyFocusedControl.controlAlias
+	focusedControlType := eventStateMemory.currentlyFocusedControl.controlType
+
+	// Only process if a dropdown is focused
+	if focusedControlType != constants.CellTypeDropdown || !Dropdowns.IsExists(focusedLayerAlias, focusedControlAlias) {
+		return isScreenUpdateRequired
+	}
+
+	dropdownEntry := Dropdowns.Get(focusedLayerAlias, focusedControlAlias)
+
+	// If dropdown is open but focus is on the dropdown itself (not the selector),
+	// move focus to the selector for keyboard navigation
+	if dropdownEntry.IsTrayOpen && focusedControlType == constants.CellTypeDropdown {
+		isScreenUpdateRequired = Selector.updateKeyboardEventForSelector(focusedLayerAlias, dropdownEntry.SelectorAlias, keystroke)
+	}
+
+	// Handle Enter key to open/close dropdown
+	if keystrokeAsString == "enter" || keystrokeAsString == "esc" {
+		if dropdownEntry.IsTrayOpen {
+			// Close dropdown and apply selection
+			selectorEntry := Selectors.Get(focusedLayerAlias, dropdownEntry.SelectorAlias)
+			scrollBarEntry := ScrollBars.Get(focusedLayerAlias, dropdownEntry.ScrollbarAlias)
+			scrollBarEntry.ScrollValue = selectorEntry.ItemSelected
+			// Update selected item if changed
+			if dropdownEntry.ItemSelected != selectorEntry.ItemSelected {
+				dropdownEntry.ItemSelected = selectorEntry.ItemSelected
+			}
+
+			// Hide dropdown components
+			selectorEntry.IsVisible = false
+			scrollBarEntry.IsVisible = false
+			dropdownEntry.IsTrayOpen = false
+
+			// Reset focus to the dropdown itself
+			setFocusedControl(focusedLayerAlias, focusedControlAlias, constants.CellTypeDropdown)
+			eventStateMemory.stateId = constants.EventStateNone
+		} else {
+			// Open dropdown
+			shared.closeAllOpenDropdowns(focusedLayerAlias) // Close any other open dropdowns first
+			dropdownEntry.IsTrayOpen = true
+
+			// Show dropdown components
+			selectorEntry := Selectors.Get(focusedLayerAlias, dropdownEntry.SelectorAlias)
+			selectorEntry.IsVisible = true
+			selectorEntry.ItemHighlighted = dropdownEntry.ItemSelected // Highlight current selection
+
+			// Set focus to the selector for keyboard navigation
+			//setFocusedControl(focusedLayerAlias, dropdownEntry.SelectorAlias, constants.CellTypeSelectorItem)
+
+			// Show scrollbar if needed
+			scrollBarEntry := ScrollBars.Get(focusedLayerAlias, dropdownEntry.ScrollbarAlias)
+			if scrollBarEntry.IsEnabled {
+				scrollBarEntry.IsVisible = true
+			}
+		}
+		isScreenUpdateRequired = true
+	}
+
+	// Handle Escape key to close dropdown without changing selection
+	if keystrokeAsString == "escape" && dropdownEntry.IsTrayOpen {
+		// Close dropdown without applying selection
+		selectorEntry := Selectors.Get(focusedLayerAlias, dropdownEntry.SelectorAlias)
+		scrollBarEntry := ScrollBars.Get(focusedLayerAlias, dropdownEntry.ScrollbarAlias)
+
+		// Hide dropdown components
+		selectorEntry.IsVisible = false
+		scrollBarEntry.IsVisible = false
+		dropdownEntry.IsTrayOpen = false
+
+		// Reset focus to the dropdown itself
+		setFocusedControl(focusedLayerAlias, focusedControlAlias, constants.CellTypeDropdown)
+		eventStateMemory.stateId = constants.EventStateNone
+		isScreenUpdateRequired = true
+	}
+
+	return isScreenUpdateRequired
+}
+
 var Dropdown dropdownType
 var Dropdowns = memory.NewControlMemoryManager[types.DropdownEntryType]()
 
@@ -21,6 +111,14 @@ var Dropdowns = memory.NewControlMemoryManager[types.DropdownEntryType]()
 // REGULAR ENTRY
 // ============================================================================
 
+/*
+Delete allows you to remove a dropdown from a text layer. In addition, the following
+information should be noted:
+
+- If you attempt to delete a dropdown which does not exist, then the request
+will simply be ignored.
+- All memory associated with the dropdown will be freed.
+*/
 func (shared *DropdownInstanceType) Delete() *DropdownInstanceType {
 	if Dropdowns.IsExists(shared.layerAlias, shared.controlAlias) {
 		Dropdowns.Remove(shared.layerAlias, shared.controlAlias)
@@ -28,37 +126,50 @@ func (shared *DropdownInstanceType) Delete() *DropdownInstanceType {
 	return nil
 }
 
+/*
+AddToTabIndex allows you to add a dropdown to the tab index. This enables keyboard navigation
+between controls using the tab key. In addition, the following information should be noted:
+
+- The dropdown will be added to the tab order based on the order in which it was created.
+- The tab index is used to determine which control receives focus when the tab key is pressed.
+*/
 func (shared *DropdownInstanceType) AddToTabIndex() {
 	addTabIndex(shared.layerAlias, shared.controlAlias, constants.CellTypeDropdown)
 }
 
+/*
+GetValue allows you to retrieve the currently selected value from a dropdown. In addition,
+the following information should be noted:
+
+- Returns the display value of the currently selected item.
+- If the dropdown does not exist, returns an empty string.
+*/
 func (shared *DropdownInstanceType) GetValue() string {
 	dropdownEntry := Dropdowns.Get(shared.layerAlias, shared.controlAlias)
 	return dropdownEntry.SelectionEntry.SelectionValue[dropdownEntry.ItemSelected]
 }
 
+/*
+GetAlias allows you to retrieve the currently selected alias from a dropdown. In addition,
+the following information should be noted:
+
+- Returns the internal alias of the currently selected item.
+- If the dropdown does not exist, returns an empty string.
+- The alias is typically used for programmatic access to the selection.
+*/
 func (shared *DropdownInstanceType) GetAlias() string {
 	dropdownEntry := Dropdowns.Get(shared.layerAlias, shared.controlAlias)
 	return dropdownEntry.SelectionEntry.SelectionAlias[dropdownEntry.ItemSelected]
 }
 
 /*
-Add allows you to add a Dropdown to a given text layer. Once called, an instance of
-your control is returned which will allow you to read or manipulate the properties for it.
-The Style of the Dropdown will be determined by the style entry passed in. If you wish to
-remove a Dropdown from a text layer, simply call 'DeleteDropdown'. In addition, the
-following information should be noted:
+Add allows you to create a new dropdown control on a text layer. In addition, the following
+information should be noted:
 
-- Dropdowns are not drawn physically to the text layer provided. Instead,
-they are rendered to the terminal at the same time when the text layer is
-rendered. This allows you to create dropdowns without actually overwriting
-the text layer data under it.
-
-- If the Dropdown to be drawn falls outside the range of the provided layer,
-then only the visible portion of the Checkbox will be drawn.
-
-- If the number of selections available is smaller or equal to the Selector height,
-then no scrollbars will be drawn.
+- The dropdown consists of a main control and an associated selector for the dropdown tray.
+- A scrollbar is automatically added if the number of items exceeds the selector height.
+- The dropdown tray is initially hidden and only shown when the dropdown is clicked.
+- The default selected item can be specified when creating the dropdown.
 */
 func (shared *dropdownType) Add(layerAlias string, dropdownAlias string, styleEntry types.TuiStyleEntryType, selectionEntry types.SelectionEntryType, xLocation int, yLocation int, selectorHeight int, itemWidth int, defaultItemSelected int) DropdownInstanceType {
 	// TODO: AddLayer validation to the default item selected.
@@ -100,16 +211,36 @@ func (shared *dropdownType) Add(layerAlias string, dropdownAlias string, styleEn
 	return dropdownInstance
 }
 
+/*
+DeleteDropdown allows you to remove a dropdown from a text layer. In addition, the following
+information should be noted:
+
+- If you attempt to delete a dropdown which does not exist, then the request
+will simply be ignored.
+- All memory associated with the dropdown will be freed.
+*/
 func (shared *dropdownType) DeleteDropdown(layerAlias string, dropdownAlias string) {
 	Dropdowns.Remove(layerAlias, dropdownAlias)
 }
 
+/*
+DeleteAllDropdowns allows you to remove all dropdowns from a text layer. In addition, the following
+information should be noted:
+
+- This operation cannot be undone.
+- All memory associated with the dropdowns will be freed.
+*/
 func (shared *dropdownType) DeleteAllDropdowns(layerAlias string) {
 	Dropdowns.RemoveAll(layerAlias)
 }
 
 /*
-drawDropdownsOnLayer allows you to draw all dropdowns on a given text layer.
+drawDropdownsOnLayer allows you to draw all dropdowns on a given text layer. In addition,
+the following information should be noted:
+
+- Dropdowns are drawn in alphabetical order by their alias.
+- This ensures consistent rendering order across multiple frames.
+- The dropdown tray (selector) is only drawn when the dropdown is open.
 */
 func (shared *dropdownType) drawDropdownsOnLayer(layerEntry types.LayerEntryType) {
 	layerAlias := layerEntry.LayerAlias
@@ -119,17 +250,12 @@ func (shared *dropdownType) drawDropdownsOnLayer(layerEntry types.LayerEntryType
 }
 
 /*
-drawDropdown allows you to draw A Dropdown on a given text layer. The
-Style of the Dropdown will be determined by the style entry passed in. In
-addition, the following information should be noted:
+drawDropdown allows you to draw a single dropdown on a given text layer. In addition, the following
+information should be noted:
 
-- dropdowns are not drawn physically to the text layer provided. Instead,
-they are rendered to the terminal at the same time when the text layer is
-rendered. This allows you to create dropdowns without actually overwriting
-the text layer data under it.
-
-- If the Dropdown to be drawn falls outside the range of the provided layer,
-then only the visible portion of the Dropdown will be drawn.
+- The dropdown is drawn with a border and a down arrow indicator.
+- The selected item text is formatted according to the specified width and alignment.
+- The dropdown uses the style entry's foreground and background colors for rendering.
 */
 func (shared *dropdownType) drawDropdown(layerEntry *types.LayerEntryType, dropdownAlias string) {
 	layerAlias := layerEntry.LayerAlias
@@ -153,7 +279,11 @@ func (shared *dropdownType) drawDropdown(layerEntry *types.LayerEntryType, dropd
 
 /*
 updateDropdownStateMouse allows you to update the state of all dropdowns according to the current mouse event state.
-In the event that a screen update is required this method returns true.
+In the event that a screen update is required this method returns true. In addition, the following information should be noted:
+
+- Handles mouse clicks to open/close dropdowns.
+- Manages scrollbar synchronization for dropdowns with many items.
+- Returns true if the screen needs to be updated due to state changes.
 */
 func (shared *dropdownType) updateDropdownStateMouse() bool {
 	isUpdateRequired := false
@@ -176,7 +306,7 @@ func (shared *dropdownType) updateDropdownStateMouse() bool {
 				selectorEntry.ViewportPosition = scrollBarEntry.ScrollValue
 				isUpdateRequired = true
 			}
-			if isControlCurrentlyFocused(layerAlias, dropdownEntry.ScrollbarAlias, constants.CellTypeScrollbar) {
+			if isControlCurrentlyFocused(layerAlias, dropdownEntry.Alias, constants.CellTypeDropdown) {
 				isMatchFound = true
 				break // If the current scrollbar being dragged and dropped matches, don't process more dropdowns.
 			}
@@ -197,7 +327,7 @@ func (shared *dropdownType) updateDropdownStateMouse() bool {
 		scrollBarEntry := ScrollBars.Get(layerAlias, dropdownEntry.ScrollbarAlias)
 		if scrollBarEntry.IsEnabled {
 			scrollBarEntry.IsVisible = true
-			setFocusedControl(layerAlias, selectorEntry.ScrollbarAlias, constants.CellTypeScrollbar)
+			setFocusedControl(layerAlias, dropdownEntry.Alias, constants.CellTypeDropdown)
 		}
 		isUpdateRequired = true
 		return isUpdateRequired
@@ -227,7 +357,12 @@ func (shared *dropdownType) updateDropdownStateMouse() bool {
 }
 
 /*
-closeAllOpenDropdowns allows you to close all dropdowns for a given layer alias.
+closeAllOpenDropdowns allows you to close all dropdowns for a given layer alias. In addition,
+the following information should be noted:
+
+- This method is called when clicking outside of any dropdown.
+- All open dropdown trays are closed and their scrollbars are hidden.
+- The selected item is updated if it was changed while the dropdown was open.
 */
 func (shared *dropdownType) closeAllOpenDropdowns(layerAlias string) {
 	for _, currentDropdownEntry := range Dropdowns.GetAllEntries(layerAlias) {
@@ -246,4 +381,40 @@ func (shared *dropdownType) closeAllOpenDropdowns(layerAlias string) {
 			eventStateMemory.stateId = constants.EventStateNone
 		}
 	}
+}
+
+/*
+Get allows you to retrieve a dropdown entry from the control memory manager. In addition, the following
+information should be noted:
+
+- Returns a pointer to the dropdown entry if it exists, nil otherwise.
+- The dropdown entry contains all properties and state information for the control.
+- This method is used internally by other dropdown methods to access control data.
+*/
+func (shared *dropdownType) Get(layerAlias string, dropdownAlias string) *types.DropdownEntryType {
+	return Dropdowns.Get(layerAlias, dropdownAlias)
+}
+
+/*
+IsExists allows you to check if a dropdown exists in the control memory manager. In addition, the following
+information should be noted:
+
+- Returns true if the dropdown exists, false otherwise.
+- This method is used to validate dropdown existence before performing operations.
+- Useful for preventing null pointer exceptions when accessing dropdown properties.
+*/
+func (shared *dropdownType) IsExists(layerAlias string, dropdownAlias string) bool {
+	return Dropdowns.IsExists(layerAlias, dropdownAlias)
+}
+
+/*
+GetAllEntries allows you to retrieve all dropdown entries for a given layer. In addition, the following
+information should be noted:
+
+- Returns a slice of all dropdown entries for the specified layer.
+- The entries are returned in alphabetical order by their alias.
+- This method is useful for iterating over all dropdowns on a layer.
+*/
+func (shared *dropdownType) GetAllEntries(layerAlias string) []*types.DropdownEntryType {
+	return Dropdowns.GetAllEntries(layerAlias)
 }
