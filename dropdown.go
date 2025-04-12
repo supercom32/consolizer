@@ -181,6 +181,7 @@ func (shared *dropdownType) Add(layerAlias string, dropdownAlias string, styleEn
 	newDropdownEntry.YLocation = yLocation
 	newDropdownEntry.ItemWidth = itemWidth
 	newDropdownEntry.ItemSelected = defaultItemSelected
+	newDropdownEntry.TooltipAlias = stringformat.GetLastSortedUUID()
 
 	// Use the ControlMemoryManager to add the dropdown entry
 	Dropdowns.Add(layerAlias, dropdownAlias, &newDropdownEntry)
@@ -205,6 +206,15 @@ func (shared *dropdownType) Add(layerAlias string, dropdownAlias string, styleEn
 	if len(selectionEntry.SelectionValue) <= selectorHeight {
 		scrollBarEntry.IsEnabled = false
 	}
+
+	// Create associated tooltip (always created but disabled by default)
+	Tooltip.Add(layerAlias, dropdownEntry.TooltipAlias, "", styleEntry,
+		dropdownEntry.XLocation, dropdownEntry.YLocation,
+		dropdownEntry.ItemWidth, 1,
+		dropdownEntry.XLocation, dropdownEntry.YLocation+2,
+		dropdownEntry.ItemWidth, 3,
+		false, true, constants.DefaultTooltipHoverTime)
+
 	var dropdownInstance DropdownInstanceType
 	dropdownInstance.layerAlias = layerAlias
 	dropdownInstance.controlAlias = dropdownAlias

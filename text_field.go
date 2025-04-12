@@ -135,6 +135,16 @@ func (shared *textFieldType) Add(layerAlias string, textFieldAlias string, style
 	textFieldEntry.CurrentValue = []rune(defaultValueWithTrailingBlank)
 	textFieldEntry.DefaultValue = defaultValueWithTrailingBlank
 	textFieldEntry.IsEnabled = isEnabled
+	textFieldEntry.TooltipAlias = stringformat.GetLastSortedUUID()
+
+	// Create associated tooltip (always created but disabled by default)
+	Tooltip.Add(layerAlias, textFieldEntry.TooltipAlias, "", styleEntry,
+		textFieldEntry.XLocation, textFieldEntry.YLocation,
+		textFieldEntry.Width, 1,
+		textFieldEntry.XLocation, textFieldEntry.YLocation+1,
+		textFieldEntry.Width, 3,
+		false, true, constants.DefaultTooltipHoverTime)
+
 	// Use the generic memory manager to add the text field entry
 	TextFields.Add(layerAlias, textFieldAlias, &textFieldEntry)
 

@@ -30,6 +30,15 @@ func AddTextbox(layerAlias string, textboxAlias string, styleEntry types.TuiStyl
 	textboxEntry.Width = width
 	textboxEntry.Height = height
 	textboxEntry.IsBorderDrawn = isBorderDrawn
+	textboxEntry.TooltipAlias = stringformat.GetLastSortedUUID()
+
+	// Create associated tooltip (always created but disabled by default)
+	Tooltip.Add(layerAlias, textboxEntry.TooltipAlias, "", styleEntry,
+		textboxEntry.XLocation, textboxEntry.YLocation,
+		textboxEntry.Width, textboxEntry.Height,
+		textboxEntry.XLocation, textboxEntry.YLocation+textboxEntry.Height+1,
+		textboxEntry.Width, 3,
+		false, true, constants.DefaultTooltipHoverTime)
 
 	// Use the generic memory manager to add the textbox entry
 	Textboxes.Add(layerAlias, textboxAlias, &textboxEntry)

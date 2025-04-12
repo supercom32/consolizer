@@ -118,6 +118,16 @@ func (shared *radioButtonType) Add(layerAlias string, radioButtonAlias string, r
 	radioButtonEntry.YLocation = yLocation
 	radioButtonEntry.GroupId = groupId
 	radioButtonEntry.IsSelected = isSelected
+	radioButtonEntry.TooltipAlias = stringformat.GetLastSortedUUID()
+
+	// Create associated tooltip (always created but disabled by default)
+	Tooltip.Add(layerAlias, radioButtonEntry.TooltipAlias, "", styleEntry,
+		radioButtonEntry.XLocation, radioButtonEntry.YLocation,
+		len(radioButtonLabel)+2, 1,
+		radioButtonEntry.XLocation, radioButtonEntry.YLocation+1,
+		len(radioButtonLabel)+2, 3,
+		false, true, constants.DefaultTooltipHoverTime)
+
 	// Use the ControlMemoryManager to add the radio button entry
 	RadioButtons.Add(layerAlias, radioButtonAlias, &radioButtonEntry)
 	var radioButtonInstance RadioButtonInstanceType

@@ -218,3 +218,12 @@ func (shared *TooltipInstanceType) SetTabIndex(index int) *TooltipInstanceType {
 	}
 	return shared
 }
+
+// SetEnabled enables or disables the tooltip
+func (shared *TooltipInstanceType) SetEnabled(enabled bool) *TooltipInstanceType {
+	tooltipEntry := Tooltips.Get(shared.layerAlias, shared.controlAlias)
+	if tooltipEntry != nil {
+		tooltipEntry.IsEnabled = enabled
+	}
+	return shared
+}

@@ -86,6 +86,16 @@ func (shared *checkboxType) Add(layerAlias string, checkboxAlias string, checkbo
 	checkboxEntry.YLocation = yLocation
 	checkboxEntry.IsSelected = isSelected
 	checkboxEntry.IsEnabled = isEnabled
+	checkboxEntry.TooltipAlias = stringformat.GetLastSortedUUID()
+
+	// Create associated tooltip (always created but disabled by default)
+	Tooltip.Add(layerAlias, checkboxEntry.TooltipAlias, "", styleEntry,
+		checkboxEntry.XLocation, checkboxEntry.YLocation,
+		len(checkboxLabel)+2, 1,
+		checkboxEntry.XLocation, checkboxEntry.YLocation+1,
+		len(checkboxLabel)+2, 3,
+		false, true, constants.DefaultTooltipHoverTime)
+
 	// Use the ControlMemoryManager to add the checkbox entry
 	Checkboxes.Add(layerAlias, checkboxAlias, &checkboxEntry)
 	var checkboxInstance CheckboxInstanceType
