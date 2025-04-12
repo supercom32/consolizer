@@ -839,6 +839,7 @@ func UpdateDisplay(isRefreshForced bool) {
 	sortedLayerAliasSlice := layer.GetSortedLayerMemoryAliasSlice()
 	baseLayerEntry := types.NewLayerEntry("", "", commonResource.terminalWidth, commonResource.terminalHeight)
 	baseLayerEntry = renderLayers(&baseLayerEntry, sortedLayerAliasSlice)
+	Tooltip.renderAllTooltips(baseLayerEntry)
 	DrawLayerToScreen(&baseLayerEntry, isRefreshForced)
 	commonResource.screenLayer = baseLayerEntry
 }
@@ -906,7 +907,7 @@ func renderControls(currentLayerEntry types.LayerEntryType) {
 	radioButton.drawRadioButtonsOnLayer(currentLayerEntry)
 	ProgressBar.drawProgressBarsOnLayer(currentLayerEntry)
 	Label.drawLabelsOnLayer(currentLayerEntry)
-	Tooltip.drawTooltipsOnLayer(currentLayerEntry)
+	Tooltip.drawTooltipHotspotZonesOnLayer(currentLayerEntry)
 }
 
 /*

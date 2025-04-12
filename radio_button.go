@@ -121,13 +121,14 @@ func (shared *radioButtonType) Add(layerAlias string, radioButtonAlias string, r
 	radioButtonEntry.TooltipAlias = stringformat.GetLastSortedUUID()
 
 	// Create associated tooltip (always created but disabled by default)
-	Tooltip.Add(layerAlias, radioButtonEntry.TooltipAlias, "", styleEntry,
+	tooltipInstance := Tooltip.Add(layerAlias, radioButtonEntry.TooltipAlias, "", styleEntry,
 		radioButtonEntry.XLocation, radioButtonEntry.YLocation,
 		len(radioButtonLabel)+2, 1,
 		radioButtonEntry.XLocation, radioButtonEntry.YLocation+1,
 		len(radioButtonLabel)+2, 3,
 		false, true, constants.DefaultTooltipHoverTime)
-
+	tooltipInstance.SetEnabled(false)
+	tooltipInstance.setParentControlAlias(radioButtonAlias)
 	// Use the ControlMemoryManager to add the radio button entry
 	RadioButtons.Add(layerAlias, radioButtonAlias, &radioButtonEntry)
 	var radioButtonInstance RadioButtonInstanceType
@@ -295,15 +296,6 @@ func (shared *RadioButtonInstanceType) SetStyle(style types.TuiStyleEntryType) *
 	radioButtonEntry := RadioButtons.Get(shared.layerAlias, shared.controlAlias)
 	if radioButtonEntry != nil {
 		radioButtonEntry.StyleEntry = style
-	}
-	return shared
-}
-
-// SetTabIndex sets the tab order of the radio button
-func (shared *RadioButtonInstanceType) SetTabIndex(index int) *RadioButtonInstanceType {
-	radioButtonEntry := RadioButtons.Get(shared.layerAlias, shared.controlAlias)
-	if radioButtonEntry != nil {
-		radioButtonEntry.TabIndex = index
 	}
 	return shared
 }

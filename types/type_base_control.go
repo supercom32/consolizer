@@ -14,7 +14,6 @@ type BaseControlType struct {
 	Height           int
 	IsEnabled        bool
 	IsVisible        bool
-	TabIndex         int
 	Label            string
 	IsBorderDrawn    bool
 	TooltipAlias     string
@@ -42,7 +41,6 @@ func NewBaseControl() BaseControlType {
 	baseControl.Height = 0
 	baseControl.IsEnabled = true
 	baseControl.IsVisible = true
-	baseControl.TabIndex = 0
 	baseControl.Label = ""
 	baseControl.IsBorderDrawn = false
 	baseControl.TooltipAlias = ""
@@ -122,44 +120,4 @@ information should be noted:
 */
 func (shared *BaseControlType) SetStyle(style TuiStyleEntryType) {
 	shared.StyleEntry = style
-}
-
-/*
-SetTabIndex allows you to set the tab order of a control. In addition, the following
-information should be noted:
-
-- Determines the order in which controls receive focus when tabbing.
-- Lower values receive focus before higher values.
-- A value of 0 means the control will not receive focus via tabbing.
-*/
-func (shared *BaseControlType) SetTabIndex(index int) {
-	shared.TabIndex = index
-}
-
-/*
-Lock allows you to acquire the control's mutex. In addition, the following
-information should be noted:
-
-- Ensures thread-safe access to the control's properties.
-- Blocks if the mutex is already locked by another goroutine.
-- Should be paired with Unlock in a defer statement.
-*/
-func (shared *BaseControlType) Lock() {
-	if shared.Mutex != nil {
-		shared.Mutex.Lock()
-	}
-}
-
-/*
-Unlock allows you to release the control's mutex. In addition, the following
-information should be noted:
-
-- Releases the lock acquired by Lock.
-- Allows other goroutines to access the control's properties.
-- Should be called after Lock when the critical section is complete.
-*/
-func (shared *BaseControlType) Unlock() {
-	if shared.Mutex != nil {
-		shared.Mutex.Unlock()
-	}
 }

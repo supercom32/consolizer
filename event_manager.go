@@ -183,7 +183,9 @@ func nextTabIndex() {
 	if eventStateMemory.currentTabIndex >= len(eventStateMemory.tabIndexMemory) {
 		eventStateMemory.currentTabIndex = 0
 	}
-	eventStateMemory.currentlyFocusedControl = eventStateMemory.tabIndexMemory[eventStateMemory.currentTabIndex]
+	if len(eventStateMemory.tabIndexMemory) != 0 {
+		eventStateMemory.currentlyFocusedControl = eventStateMemory.tabIndexMemory[eventStateMemory.currentTabIndex]
+	}
 }
 
 func setFocusedControl(layerAlias string, controlAlias string, controlType int) {

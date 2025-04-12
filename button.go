@@ -118,7 +118,7 @@ func (shared *buttonType) Add(layerAlias string, buttonAlias string, buttonLabel
 	buttonEntry.Label = buttonLabel
 	buttonEntry.XLocation = xLocation
 	buttonEntry.YLocation = yLocation
-	buttonEntry.IsEnabled = true
+	buttonEntry.IsEnabled = isEnabled
 	buttonEntry.Width = width
 	buttonEntry.Height = height
 	buttonEntry.TooltipAlias = stringformat.GetLastSortedUUID()
@@ -126,13 +126,14 @@ func (shared *buttonType) Add(layerAlias string, buttonAlias string, buttonLabel
 	Buttons.Add(layerAlias, buttonAlias, &buttonEntry)
 
 	// Create associated tooltip (always created but disabled by default)
-	Tooltip.Add(layerAlias, buttonEntry.TooltipAlias, "", styleEntry,
+	tooltipInstance := Tooltip.Add(layerAlias, buttonEntry.TooltipAlias, "", styleEntry,
 		buttonEntry.XLocation, buttonEntry.YLocation,
 		buttonEntry.Width, buttonEntry.Height,
 		buttonEntry.XLocation, buttonEntry.YLocation+buttonEntry.Height+1,
 		buttonEntry.Width, 3,
 		false, true, constants.DefaultTooltipHoverTime)
-
+	tooltipInstance.SetEnabled(false)
+	tooltipInstance.setParentControlAlias(buttonAlias)
 	var buttonInstance ButtonInstanceType
 	buttonInstance.layerAlias = layerAlias
 	buttonInstance.controlAlias = buttonAlias
@@ -336,15 +337,6 @@ func (shared *ButtonInstanceType) SetStyle(style types.TuiStyleEntryType) *Butto
 	buttonEntry := Buttons.Get(shared.layerAlias, shared.controlAlias)
 	if buttonEntry != nil {
 		buttonEntry.StyleEntry = style
-	}
-	return shared
-}
-
-// SetTabIndex sets the tab order of the button
-func (shared *ButtonInstanceType) SetTabIndex(index int) *ButtonInstanceType {
-	buttonEntry := Buttons.Get(shared.layerAlias, shared.controlAlias)
-	if buttonEntry != nil {
-		buttonEntry.TabIndex = index
 	}
 	return shared
 }

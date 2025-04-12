@@ -70,7 +70,6 @@ func NewLabelEntry(existingLabelEntry ...*LabelEntryType) LabelEntryType {
 		labelEntry.Width = existingLabelEntry[0].Width
 		labelEntry.IsEnabled = existingLabelEntry[0].IsEnabled
 		labelEntry.IsVisible = existingLabelEntry[0].IsVisible
-		labelEntry.TabIndex = existingLabelEntry[0].TabIndex
 	}
 	return labelEntry
 }

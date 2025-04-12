@@ -169,6 +169,14 @@ func (shared *selectorType) Add(layerAlias string, selectorAlias string, styleEn
 	Selectors.Add(layerAlias, selectorAlias, &newSelectorEntry)
 	// TODO: AddLayer verification to ensure no item can be 0 length/number.
 
+	tooltipInstance := Tooltip.Add(layerAlias, newSelectorEntry.TooltipAlias, "", styleEntry,
+		newSelectorEntry.XLocation, newSelectorEntry.YLocation,
+		newSelectorEntry.ItemWidth*newSelectorEntry.NumberOfColumns+2, 1,
+		newSelectorEntry.XLocation, newSelectorEntry.YLocation+1,
+		newSelectorEntry.ItemWidth*newSelectorEntry.NumberOfColumns+2, 3,
+		false, true, constants.DefaultTooltipHoverTime)
+	tooltipInstance.SetEnabled(false)
+	tooltipInstance.setParentControlAlias(selectorAlias)
 	selectorEntry := Selectors.Get(layerAlias, selectorAlias)
 	selectorEntry.ScrollbarAlias = stringformat.GetLastSortedUUID()
 	scrollBarMaxValue := len(selectionEntry.SelectionValue) - (selectorHeight * numberOfColumns) + 1
@@ -500,15 +508,6 @@ func (shared *selectorInstanceType) SetStyle(style types.TuiStyleEntryType) *sel
 	selectorEntry := Selectors.Get(shared.layerAlias, shared.controlAlias)
 	if selectorEntry != nil {
 		selectorEntry.StyleEntry = style
-	}
-	return shared
-}
-
-// SetTabIndex sets the tab order of the selector
-func (shared *selectorInstanceType) SetTabIndex(index int) *selectorInstanceType {
-	selectorEntry := Selectors.Get(shared.layerAlias, shared.controlAlias)
-	if selectorEntry != nil {
-		selectorEntry.TabIndex = index
 	}
 	return shared
 }

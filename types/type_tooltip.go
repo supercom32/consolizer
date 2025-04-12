@@ -9,7 +9,7 @@ import (
 type TooltipEntryType struct {
 	BaseControlType
 	Text               string
-	Value              string
+	ParentControlAlias string
 	HotspotXLocation   int
 	HotspotYLocation   int
 	HotspotWidth       int
@@ -50,7 +50,7 @@ func (shared TooltipEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
 		BaseControlType
 		Text               string
-		Value              string
+		ParentControlAlias string
 		HotspotXLocation   int
 		HotspotYLocation   int
 		HotspotWidth       int
@@ -68,7 +68,7 @@ func (shared TooltipEntryType) MarshalJSON() ([]byte, error) {
 	}{
 		BaseControlType:    shared.BaseControlType,
 		Text:               shared.Text,
-		Value:              shared.Value,
+		ParentControlAlias: shared.ParentControlAlias,
 		HotspotXLocation:   shared.HotspotXLocation, // The location and area where a hotspot is drawn
 		HotspotYLocation:   shared.HotspotYLocation,
 		HotspotWidth:       shared.HotspotWidth,
@@ -133,7 +133,7 @@ func NewTooltipEntry(existingButtonEntry ...*TooltipEntryType) TooltipEntryType 
 	if existingButtonEntry != nil {
 		tooltipEntry.BaseControlType = existingButtonEntry[0].BaseControlType
 		tooltipEntry.Text = existingButtonEntry[0].Text
-		tooltipEntry.Value = existingButtonEntry[0].Value
+		tooltipEntry.ParentControlAlias = existingButtonEntry[0].ParentControlAlias
 		tooltipEntry.HotspotXLocation = existingButtonEntry[0].HotspotXLocation
 		tooltipEntry.HotspotYLocation = existingButtonEntry[0].HotspotYLocation
 		tooltipEntry.HotspotWidth = existingButtonEntry[0].HotspotWidth
@@ -159,7 +159,7 @@ information should be noted:
 func IsTooltipEntryEqual(sourceTooltipEntry *TooltipEntryType, targetTooltipEntry *TooltipEntryType) bool {
 	if sourceTooltipEntry.BaseControlType == targetTooltipEntry.BaseControlType &&
 		sourceTooltipEntry.Text == targetTooltipEntry.Text &&
-		sourceTooltipEntry.Value == targetTooltipEntry.Value &&
+		sourceTooltipEntry.ParentControlAlias == targetTooltipEntry.ParentControlAlias &&
 		sourceTooltipEntry.HotspotXLocation == targetTooltipEntry.HotspotXLocation &&
 		sourceTooltipEntry.HotspotYLocation == targetTooltipEntry.HotspotYLocation &&
 		sourceTooltipEntry.HotspotWidth == targetTooltipEntry.HotspotWidth &&

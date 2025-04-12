@@ -94,13 +94,14 @@ func (shared *progressBarType) Add(layerAlias string, progressBarAlias string, p
 	progressBarEntry.TooltipAlias = stringformat.GetLastSortedUUID()
 
 	// Create associated tooltip (always created but disabled by default)
-	Tooltip.Add(layerAlias, progressBarEntry.TooltipAlias, "", styleEntry,
+	tooltipInstance := Tooltip.Add(layerAlias, progressBarEntry.TooltipAlias, "", styleEntry,
 		progressBarEntry.XLocation, progressBarEntry.YLocation,
 		progressBarEntry.Width, progressBarEntry.Height,
 		progressBarEntry.XLocation, progressBarEntry.YLocation+progressBarEntry.Height+1,
 		progressBarEntry.Width, 3,
 		false, true, constants.DefaultTooltipHoverTime)
-
+	tooltipInstance.SetEnabled(false)
+	tooltipInstance.setParentControlAlias(progressBarAlias)
 	// Use the ControlMemoryManager to add the progress bar entry
 	ProgressBars.Add(layerAlias, progressBarAlias, &progressBarEntry)
 	var progressBarInstance ProgressBarInstanceType
@@ -206,15 +207,6 @@ func (shared *ProgressBarInstanceType) SetStyle(style types.TuiStyleEntryType) *
 	progressBarEntry := ProgressBars.Get(shared.layerAlias, shared.controlAlias)
 	if progressBarEntry != nil {
 		progressBarEntry.StyleEntry = style
-	}
-	return shared
-}
-
-// SetTabIndex sets the tab order of the progress bar
-func (shared *ProgressBarInstanceType) SetTabIndex(index int) *ProgressBarInstanceType {
-	progressBarEntry := ProgressBars.Get(shared.layerAlias, shared.controlAlias)
-	if progressBarEntry != nil {
-		progressBarEntry.TabIndex = index
 	}
 	return shared
 }

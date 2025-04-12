@@ -47,8 +47,18 @@ func (shared *labelType) Add(layerAlias string, labelAlias string, labelValue st
 	labelEntry.XLocation = xLocation
 	labelEntry.YLocation = yLocation
 	labelEntry.Width = width
+	labelEntry.TooltipAlias = stringformat.GetLastSortedUUID()
 	// Use the ControlMemoryManager to add the label entry
 	Labels.Add(layerAlias, labelAlias, &labelEntry)
+
+	tooltipInstance := Tooltip.Add(layerAlias, labelEntry.TooltipAlias, "", styleEntry,
+		labelEntry.XLocation, labelEntry.YLocation,
+		labelEntry.Width+2, 1,
+		labelEntry.XLocation, labelEntry.YLocation+1,
+		labelEntry.Width+2, 3,
+		false, true, constants.DefaultTooltipHoverTime)
+	tooltipInstance.SetEnabled(false)
+	tooltipInstance.setParentControlAlias(labelAlias)
 	var labelInstance LabelInstanceType
 	labelInstance.layerAlias = layerAlias
 	labelInstance.controlAlias = labelAlias
@@ -133,15 +143,6 @@ func (shared *LabelInstanceType) SetStyle(style types.TuiStyleEntryType) *LabelI
 	labelEntry := Labels.Get(shared.layerAlias, shared.controlAlias)
 	if labelEntry != nil {
 		labelEntry.StyleEntry = style
-	}
-	return shared
-}
-
-// SetTabIndex sets the tab order of the label
-func (shared *LabelInstanceType) SetTabIndex(index int) *LabelInstanceType {
-	labelEntry := Labels.Get(shared.layerAlias, shared.controlAlias)
-	if labelEntry != nil {
-		labelEntry.TabIndex = index
 	}
 	return shared
 }

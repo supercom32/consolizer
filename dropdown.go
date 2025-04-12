@@ -208,13 +208,14 @@ func (shared *dropdownType) Add(layerAlias string, dropdownAlias string, styleEn
 	}
 
 	// Create associated tooltip (always created but disabled by default)
-	Tooltip.Add(layerAlias, dropdownEntry.TooltipAlias, "", styleEntry,
+	tooltipInstance := Tooltip.Add(layerAlias, dropdownEntry.TooltipAlias, "", styleEntry,
 		dropdownEntry.XLocation, dropdownEntry.YLocation,
 		dropdownEntry.ItemWidth, 1,
 		dropdownEntry.XLocation, dropdownEntry.YLocation+2,
 		dropdownEntry.ItemWidth, 3,
 		false, true, constants.DefaultTooltipHoverTime)
-
+	tooltipInstance.SetEnabled(false)
+	tooltipInstance.setParentControlAlias(dropdownAlias)
 	var dropdownInstance DropdownInstanceType
 	dropdownInstance.layerAlias = layerAlias
 	dropdownInstance.controlAlias = dropdownAlias
@@ -472,33 +473,6 @@ func (shared *DropdownInstanceType) SetStyle(style types.TuiStyleEntryType) *Dro
 	dropdownEntry := Dropdowns.Get(shared.layerAlias, shared.controlAlias)
 	if dropdownEntry != nil {
 		dropdownEntry.StyleEntry = style
-	}
-	return shared
-}
-
-// SetTabIndex sets the tab order of the dropdown
-func (shared *DropdownInstanceType) SetTabIndex(index int) *DropdownInstanceType {
-	dropdownEntry := Dropdowns.Get(shared.layerAlias, shared.controlAlias)
-	if dropdownEntry != nil {
-		dropdownEntry.TabIndex = index
-	}
-	return shared
-}
-
-// Lock locks the dropdown for thread-safe operations
-func (shared *DropdownInstanceType) Lock() *DropdownInstanceType {
-	dropdownEntry := Dropdowns.Get(shared.layerAlias, shared.controlAlias)
-	if dropdownEntry != nil {
-		dropdownEntry.Lock()
-	}
-	return shared
-}
-
-// Unlock unlocks the dropdown after thread-safe operations
-func (shared *DropdownInstanceType) Unlock() *DropdownInstanceType {
-	dropdownEntry := Dropdowns.Get(shared.layerAlias, shared.controlAlias)
-	if dropdownEntry != nil {
-		dropdownEntry.Unlock()
 	}
 	return shared
 }

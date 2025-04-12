@@ -89,13 +89,14 @@ func (shared *checkboxType) Add(layerAlias string, checkboxAlias string, checkbo
 	checkboxEntry.TooltipAlias = stringformat.GetLastSortedUUID()
 
 	// Create associated tooltip (always created but disabled by default)
-	Tooltip.Add(layerAlias, checkboxEntry.TooltipAlias, "", styleEntry,
+	tooltipInstance := Tooltip.Add(layerAlias, checkboxEntry.TooltipAlias, "", styleEntry,
 		checkboxEntry.XLocation, checkboxEntry.YLocation,
 		len(checkboxLabel)+2, 1,
 		checkboxEntry.XLocation, checkboxEntry.YLocation+1,
 		len(checkboxLabel)+2, 3,
 		false, true, constants.DefaultTooltipHoverTime)
-
+	tooltipInstance.SetEnabled(false)
+	tooltipInstance.setParentControlAlias(checkboxAlias)
 	// Use the ControlMemoryManager to add the checkbox entry
 	Checkboxes.Add(layerAlias, checkboxAlias, &checkboxEntry)
 	var checkboxInstance CheckboxInstanceType
@@ -237,15 +238,6 @@ func (shared *CheckboxInstanceType) SetStyle(style types.TuiStyleEntryType) *Che
 	checkboxEntry := Checkboxes.Get(shared.layerAlias, shared.controlAlias)
 	if checkboxEntry != nil {
 		checkboxEntry.StyleEntry = style
-	}
-	return shared
-}
-
-// SetTabIndex sets the tab order of the checkbox
-func (shared *CheckboxInstanceType) SetTabIndex(index int) *CheckboxInstanceType {
-	checkboxEntry := Checkboxes.Get(shared.layerAlias, shared.controlAlias)
-	if checkboxEntry != nil {
-		checkboxEntry.TabIndex = index
 	}
 	return shared
 }

@@ -1,8 +1,18 @@
 package consolizer
 
 import (
+	"fmt"
 	"time"
+
+	"supercom32.net/consolizer/internal/memory"
+	"supercom32.net/consolizer/types"
 )
+
+var Timers *memory.MemoryManager[types.TimerEntryType]
+
+func InitializeTimerMemory() {
+	Timers = memory.NewMemoryManager[types.TimerEntryType]()
+}
 
 type TimerType struct {
 	timerAlias string
@@ -11,7 +21,11 @@ type TimerType struct {
 // AddTimer creates and returns a new TimerType instance with a generated UUID.
 func AddTimer(lengthOfTimerInMilliseconds int64, isTimerEnabled bool) *TimerType {
 	timer := &TimerType{timerAlias: getUUID()}
-	Timers.Add(timer.timerAlias, lengthOfTimerInMilliseconds, isTimerEnabled)
+	timerEntry := types.NewTimerEntry()
+	timerEntry.IsTimerEnabled = isTimerEnabled
+	timerEntry.StartTime = GetCurrentTimeInMilliseconds()
+	timerEntry.TimerLength = lengthOfTimerInMilliseconds
+	Timers.Add(timer.timerAlias, &timerEntry)
 	return timer
 }
 
@@ -22,6 +36,9 @@ In order to activate the timer again, simply call 'StartTimer'.
 */
 func (shared *TimerType) IsExpired() bool {
 	timerEntry := Timers.Get(shared.timerAlias)
+	if timerEntry == nil {
+		panic(fmt.Sprintf("The requested timer with alias '%s' could not be returned since it does not exist.", shared.timerAlias))
+	}
 	if timerEntry.IsTimerEnabled {
 		timeElapsed := GetCurrentTimeInMilliseconds() - timerEntry.StartTime
 		if timeElapsed > timerEntry.TimerLength {
@@ -39,6 +56,9 @@ to begin.
 */
 func (shared *TimerType) SetTimer(durationInMilliseconds int64, isEnabled bool) {
 	timerEntry := Timers.Get(shared.timerAlias)
+	if timerEntry == nil {
+		panic(fmt.Sprintf("The requested timer with alias '%s' could not be returned since it does not exist.", shared.timerAlias))
+	}
 	timerEntry.StartTime = GetCurrentTimeInMilliseconds()
 	timerEntry.TimerLength = durationInMilliseconds
 	timerEntry.IsTimerEnabled = isEnabled
@@ -53,6 +73,9 @@ generated to fail as fast as possible.
 */
 func (shared *TimerType) Start() {
 	timerEntry := Timers.Get(shared.timerAlias)
+	if timerEntry == nil {
+		panic(fmt.Sprintf("The requested timer with alias '%s' could not be returned since it does not exist.", shared.timerAlias))
+	}
 	timerEntry.StartTime = GetCurrentTimeInMilliseconds()
 	timerEntry.IsTimerEnabled = true
 }
@@ -88,4 +111,17 @@ time in milliseconds.
 */
 func GetCurrentTimeInMilliseconds() int64 {
 	return time.Now().UnixNano() / int64(time.Millisecond)
+}
+
+// Utility functions for direct timer management
+func IsTimerExists(timerAlias string) bool {
+	return Timers.IsExists(timerAlias)
+}
+
+func GetAllTimers() map[string]*types.TimerEntryType {
+	return Timers.GetAllEntriesWithKeys()
+}
+
+func RemoveAllTimers() {
+	Timers.RemoveAll()
 }

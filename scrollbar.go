@@ -432,12 +432,3 @@ func (shared *ScrollbarInstanceType) SetStyle(style types.TuiStyleEntryType) *Sc
 	}
 	return shared
 }
-
-// SetTabIndex sets the tab order of the scrollbar
-func (shared *ScrollbarInstanceType) SetTabIndex(index int) *ScrollbarInstanceType {
-	scrollbarEntry := ScrollBars.Get(shared.layerAlias, shared.controlAlias)
-	if scrollbarEntry != nil {
-		scrollbarEntry.TabIndex = index
-	}
-	return shared
-}

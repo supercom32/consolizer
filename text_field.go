@@ -138,13 +138,14 @@ func (shared *textFieldType) Add(layerAlias string, textFieldAlias string, style
 	textFieldEntry.TooltipAlias = stringformat.GetLastSortedUUID()
 
 	// Create associated tooltip (always created but disabled by default)
-	Tooltip.Add(layerAlias, textFieldEntry.TooltipAlias, "", styleEntry,
+	tooltipInstance := Tooltip.Add(layerAlias, textFieldEntry.TooltipAlias, "", styleEntry,
 		textFieldEntry.XLocation, textFieldEntry.YLocation,
 		textFieldEntry.Width, 1,
 		textFieldEntry.XLocation, textFieldEntry.YLocation+1,
 		textFieldEntry.Width, 3,
 		false, true, constants.DefaultTooltipHoverTime)
-
+	tooltipInstance.SetEnabled(false)
+	tooltipInstance.setParentControlAlias(textFieldAlias)
 	// Use the generic memory manager to add the text field entry
 	TextFields.Add(layerAlias, textFieldAlias, &textFieldEntry)
 
@@ -906,13 +907,4 @@ func (shared *textFieldInstanceType) GetBounds() (int, int, int, int) {
 		return 0, 0, 0, 0
 	}
 	return textFieldEntry.XLocation, textFieldEntry.YLocation, textFieldEntry.Width, textFieldEntry.Height
-}
-
-// SetTabIndex sets the tab order of the text field
-func (shared *textFieldInstanceType) SetTabIndex(index int) *textFieldInstanceType {
-	textFieldEntry := TextFields.Get(shared.layerAlias, shared.controlAlias)
-	if textFieldEntry != nil {
-		textFieldEntry.TabIndex = index
-	}
-	return shared
 }

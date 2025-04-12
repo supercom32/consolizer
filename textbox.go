@@ -409,6 +409,16 @@ func (shared *textboxType) AddTextbox(layerAlias string, textboxAlias string, st
 	newTextboxEntry.Width = width
 	newTextboxEntry.Height = height
 	newTextboxEntry.IsBorderDrawn = isBorderDrawn
+	newTextboxEntry.TooltipAlias = stringformat.GetLastSortedUUID()
+
+	tooltipInstance := Tooltip.Add(layerAlias, newTextboxEntry.TooltipAlias, "", styleEntry,
+		newTextboxEntry.XLocation, newTextboxEntry.YLocation,
+		newTextboxEntry.Width, newTextboxEntry.Height,
+		newTextboxEntry.XLocation, newTextboxEntry.YLocation+1,
+		newTextboxEntry.Width, newTextboxEntry.Height,
+		false, true, constants.DefaultTooltipHoverTime)
+	tooltipInstance.SetEnabled(false)
+	tooltipInstance.setParentControlAlias(textboxAlias)
 	// Use the generic memory manager to add the textbox entry
 	Textboxes.Add(layerAlias, textboxAlias, &newTextboxEntry)
 	textboxEntry := Textboxes.Get(layerAlias, textboxAlias)
@@ -1232,33 +1242,6 @@ func (shared *TextboxInstanceType) SetStyle(style types.TuiStyleEntryType) *Text
 	textboxEntry := Textboxes.Get(shared.layerAlias, shared.controlAlias)
 	if textboxEntry != nil {
 		textboxEntry.StyleEntry = style
-	}
-	return shared
-}
-
-// SetTabIndex sets the tab order of the textbox
-func (shared *TextboxInstanceType) SetTabIndex(index int) *TextboxInstanceType {
-	textboxEntry := Textboxes.Get(shared.layerAlias, shared.controlAlias)
-	if textboxEntry != nil {
-		textboxEntry.TabIndex = index
-	}
-	return shared
-}
-
-// Lock locks the textbox for thread-safe operations
-func (shared *TextboxInstanceType) Lock() *TextboxInstanceType {
-	textboxEntry := Textboxes.Get(shared.layerAlias, shared.controlAlias)
-	if textboxEntry != nil {
-		textboxEntry.Lock()
-	}
-	return shared
-}
-
-// Unlock unlocks the textbox after thread-safe operations
-func (shared *TextboxInstanceType) Unlock() *TextboxInstanceType {
-	textboxEntry := Textboxes.Get(shared.layerAlias, shared.controlAlias)
-	if textboxEntry != nil {
-		textboxEntry.Unlock()
 	}
 	return shared
 }
