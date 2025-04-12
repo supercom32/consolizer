@@ -5,41 +5,20 @@ import (
 )
 
 type RadioButtonEntryType struct {
-	StyleEntry TuiStyleEntryType
-	Alias      string
-	Label      string
-	XLocation  int
-	YLocation  int
+	BaseControlType
 	IsSelected bool
-	IsEnabled  bool
-	IsVisible  bool
 	GroupId    int
-	TabIndex   int
 }
 
 func (shared RadioButtonEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
-		StyleEntry TuiStyleEntryType
-		Alias      string
-		Label      string
-		XLocation  int
-		YLocation  int
+		BaseControlType
 		IsSelected bool
-		IsEnabled  bool
-		IsVisible  bool
 		GroupId    int
-		TabIndex   int
 	}{
-		StyleEntry: shared.StyleEntry,
-		Alias:      shared.Alias,
-		Label:      shared.Label,
-		XLocation:  shared.XLocation,
-		YLocation:  shared.YLocation,
-		IsSelected: shared.IsSelected,
-		IsEnabled:  shared.IsEnabled,
-		IsVisible:  shared.IsVisible,
-		GroupId:    shared.GroupId,
-		TabIndex:   shared.TabIndex,
+		BaseControlType: shared.BaseControlType,
+		IsSelected:      shared.IsSelected,
+		GroupId:         shared.GroupId,
 	})
 	if err != nil {
 		return nil, err
@@ -55,32 +34,25 @@ func (shared RadioButtonEntryType) GetEntryAsJsonDump() string {
 	return string(j)
 }
 
-// ☐ ☑ U+2610, U+2611
+// ○ ● U+25CB, U+25CF
 func NewRadioButtonEntry(existingRadioButtonEntry ...*RadioButtonEntryType) RadioButtonEntryType {
 	var radioButtonEntry RadioButtonEntryType
+	radioButtonEntry.BaseControlType = NewBaseControl()
+	radioButtonEntry.IsSelected = false
+	radioButtonEntry.GroupId = 0
+
 	if existingRadioButtonEntry != nil {
-		radioButtonEntry.StyleEntry = NewTuiStyleEntry(&existingRadioButtonEntry[0].StyleEntry)
-		radioButtonEntry.Alias = existingRadioButtonEntry[0].Alias
-		radioButtonEntry.Label = existingRadioButtonEntry[0].Label
-		radioButtonEntry.XLocation = existingRadioButtonEntry[0].XLocation
-		radioButtonEntry.YLocation = existingRadioButtonEntry[0].YLocation
+		radioButtonEntry.BaseControlType = existingRadioButtonEntry[0].BaseControlType
 		radioButtonEntry.IsSelected = existingRadioButtonEntry[0].IsSelected
-		radioButtonEntry.IsEnabled = existingRadioButtonEntry[0].IsEnabled
-		radioButtonEntry.IsVisible = existingRadioButtonEntry[0].IsVisible
-		radioButtonEntry.TabIndex = existingRadioButtonEntry[0].TabIndex
+		radioButtonEntry.GroupId = existingRadioButtonEntry[0].GroupId
 	}
 	return radioButtonEntry
 }
 
-func IsRadioButtonEqual(sourceCheckboxEntry *RadioButtonEntryType, targetCheckboxEntry *RadioButtonEntryType) bool {
-	if sourceCheckboxEntry.StyleEntry == targetCheckboxEntry.StyleEntry &&
-		sourceCheckboxEntry.Label == targetCheckboxEntry.Label &&
-		sourceCheckboxEntry.XLocation == targetCheckboxEntry.XLocation &&
-		sourceCheckboxEntry.YLocation == targetCheckboxEntry.YLocation &&
-		sourceCheckboxEntry.IsSelected == targetCheckboxEntry.IsSelected &&
-		sourceCheckboxEntry.IsEnabled == targetCheckboxEntry.IsEnabled &&
-		sourceCheckboxEntry.IsVisible == targetCheckboxEntry.IsVisible &&
-		sourceCheckboxEntry.TabIndex == targetCheckboxEntry.TabIndex {
+func IsRadioButtonEqual(sourceRadioButtonEntry *RadioButtonEntryType, targetRadioButtonEntry *RadioButtonEntryType) bool {
+	if sourceRadioButtonEntry.BaseControlType == targetRadioButtonEntry.BaseControlType &&
+		sourceRadioButtonEntry.IsSelected == targetRadioButtonEntry.IsSelected &&
+		sourceRadioButtonEntry.GroupId == targetRadioButtonEntry.GroupId {
 		return true
 	}
 	return false
