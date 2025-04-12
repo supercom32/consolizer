@@ -16,7 +16,6 @@ type BaseControlType struct {
 	IsVisible        bool
 	TabIndex         int
 	Label            string
-	IsSelected       bool
 	IsBorderDrawn    bool
 	TooltipAlias     string
 	IsTooltipEnabled bool
@@ -45,7 +44,6 @@ func NewBaseControl() BaseControlType {
 	baseControl.IsVisible = true
 	baseControl.TabIndex = 0
 	baseControl.Label = ""
-	baseControl.IsSelected = false
 	baseControl.IsBorderDrawn = false
 	baseControl.TooltipAlias = ""
 	baseControl.IsTooltipEnabled = false
