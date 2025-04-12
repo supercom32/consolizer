@@ -200,3 +200,5 @@ const EventStateDragAndDropScrollbar = 2
 const NullControlType = 0
 
 const NullScrollbarValue = -1
+
+const DefaultTooltipHoverTime = 1000

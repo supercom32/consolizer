@@ -121,8 +121,18 @@ func (shared *buttonType) Add(layerAlias string, buttonAlias string, buttonLabel
 	buttonEntry.IsEnabled = true
 	buttonEntry.Width = width
 	buttonEntry.Height = height
+	buttonEntry.TooltipAlias = stringformat.GetLastSortedUUID()
 	// Use the ControlMemoryManager to handle button entries
 	Buttons.Add(layerAlias, buttonAlias, &buttonEntry)
+
+	// Create associated tooltip (always created but disabled by default)
+	Tooltip.Add(layerAlias, buttonEntry.TooltipAlias, "", styleEntry,
+		buttonEntry.XLocation, buttonEntry.YLocation,
+		buttonEntry.Width, buttonEntry.Height,
+		buttonEntry.XLocation, buttonEntry.YLocation+buttonEntry.Height+1,
+		buttonEntry.Width, 3,
+		false, true, constants.DefaultTooltipHoverTime)
+
 	var buttonInstance ButtonInstanceType
 	buttonInstance.layerAlias = layerAlias
 	buttonInstance.controlAlias = buttonAlias

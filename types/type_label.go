@@ -4,11 +4,10 @@ import (
 	"encoding/json"
 )
 
-// func DrawButton(LayerAlias string, Value string, StyleEntry TuiStyleEntryType, IsPressed bool, IsSelected bool, XLocation int, YLocation int, Width int, Height int) {
+// func DrawButton(LayerAlias string, Text string, StyleEntry TuiStyleEntryType, IsPressed bool, IsSelected bool, XLocation int, YLocation int, Width int, Height int) {
 type LabelEntryType struct {
 	BaseControlType
-	Label                   string
-	Value                   string
+	Text                    string
 	IsBackgroundTransparent bool
 }
 
@@ -26,7 +25,7 @@ func (shared LabelEntryType) MarshalJSON() ([]byte, error) {
 		LabelValue string
 	}{
 		BaseControlType: shared.BaseControlType,
-		LabelValue:      shared.Value,
+		LabelValue:      shared.Text,
 	})
 	if err != nil {
 		return nil, err
@@ -65,7 +64,7 @@ func NewLabelEntry(existingLabelEntry ...*LabelEntryType) LabelEntryType {
 	if existingLabelEntry != nil {
 		labelEntry.StyleEntry = NewTuiStyleEntry(&existingLabelEntry[0].StyleEntry)
 		labelEntry.Alias = existingLabelEntry[0].Alias
-		labelEntry.Value = existingLabelEntry[0].Value
+		labelEntry.Text = existingLabelEntry[0].Text
 		labelEntry.XLocation = existingLabelEntry[0].XLocation
 		labelEntry.YLocation = existingLabelEntry[0].YLocation
 		labelEntry.Width = existingLabelEntry[0].Width
@@ -87,7 +86,7 @@ information should be noted:
 func IsLabelEntryEqual(sourceButtonEntry *LabelEntryType, targetButtonEntry *LabelEntryType) bool {
 	if sourceButtonEntry.StyleEntry == targetButtonEntry.StyleEntry &&
 		sourceButtonEntry.Alias == targetButtonEntry.Alias &&
-		sourceButtonEntry.Value == targetButtonEntry.Value &&
+		sourceButtonEntry.Text == targetButtonEntry.Text &&
 		sourceButtonEntry.XLocation == targetButtonEntry.XLocation &&
 		sourceButtonEntry.YLocation == targetButtonEntry.YLocation &&
 		sourceButtonEntry.Width == targetButtonEntry.Width {

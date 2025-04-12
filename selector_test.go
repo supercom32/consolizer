@@ -9,10 +9,10 @@ import (
 func TestSelectorRandomSelection(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	selectionEntry := NewSelectionEntry()
-	selectionEntry.Add("Selection Alias 1", "Selection Value 1")
-	selectionEntry.Add("Selection Alias 2", "Selection Value 2")
-	selectionEntry.Add("Selection Alias 3", "Selection Value 3")
-	selectionEntry.Add("Selection Alias 4", "Selection Value 4")
+	selectionEntry.Add("Selection Alias 1", "Selection Text 1")
+	selectionEntry.Add("Selection Alias 2", "Selection Text 2")
+	selectionEntry.Add("Selection Alias 3", "Selection Text 3")
+	selectionEntry.Add("Selection Alias 4", "Selection Text 4")
 	// If a selector is empty, then you need to do somethingt to handle it. Also, this hangs if run via a test because
 	// terminating consolizer causes it to wait for events channel to finish when not even launched.
 	selectorFieldInstance := layer1.AddSelector(styleEntry, selectionEntry, 2, 2, 4, 25, 1, 0, 1, true)
@@ -27,14 +27,14 @@ func TestSelectorRandomSelection(test *testing.T) {
 func TestSelectorLongList(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	selectionEntry := NewSelectionEntry()
-	selectionEntry.Add("Selection Alias 1", "Selection Value 1")
-	selectionEntry.Add("Selection Alias 2", "Selection Value 2")
-	selectionEntry.Add("Selection Alias 3", "Selection Value 3")
-	selectionEntry.Add("Selection Alias 4", "Selection Value 4")
-	selectionEntry.Add("Selection Alias 5", "Selection Value 5")
-	selectionEntry.Add("Selection Alias 6", "Selection Value 6")
-	selectionEntry.Add("Selection Alias 7", "Selection Value 7")
-	selectionEntry.Add("Selection Alias 8", "Selection Value 8")
+	selectionEntry.Add("Selection Alias 1", "Selection Text 1")
+	selectionEntry.Add("Selection Alias 2", "Selection Text 2")
+	selectionEntry.Add("Selection Alias 3", "Selection Text 3")
+	selectionEntry.Add("Selection Alias 4", "Selection Text 4")
+	selectionEntry.Add("Selection Alias 5", "Selection Text 5")
+	selectionEntry.Add("Selection Alias 6", "Selection Text 6")
+	selectionEntry.Add("Selection Alias 7", "Selection Text 7")
+	selectionEntry.Add("Selection Alias 8", "Selection Text 8")
 	// If a selector is empty, then you need to do somethingt to handle it. Also, this hangs if run via a test because
 	// terminating consolizer causes it to wait for events channel to finish when not even launched.
 	selectorFieldInstance := layer1.AddSelector(styleEntry, selectionEntry, 2, 2, 4, 25, 1, 0, 0, true)

@@ -5,19 +5,21 @@ import (
 )
 
 type BaseControlType struct {
-	Mutex         *sync.Mutex
-	StyleEntry    TuiStyleEntryType
-	Alias         string
-	XLocation     int
-	YLocation     int
-	Width         int
-	Height        int
-	IsEnabled     bool
-	IsVisible     bool
-	TabIndex      int
-	Label         string
-	IsSelected    bool
-	IsBorderDrawn bool
+	Mutex            *sync.Mutex
+	StyleEntry       TuiStyleEntryType
+	Alias            string
+	XLocation        int
+	YLocation        int
+	Width            int
+	Height           int
+	IsEnabled        bool
+	IsVisible        bool
+	TabIndex         int
+	Label            string
+	IsSelected       bool
+	IsBorderDrawn    bool
+	TooltipAlias     string
+	IsTooltipEnabled bool
 }
 
 /*
@@ -45,6 +47,8 @@ func NewBaseControl() BaseControlType {
 	baseControl.Label = ""
 	baseControl.IsSelected = false
 	baseControl.IsBorderDrawn = false
+	baseControl.TooltipAlias = ""
+	baseControl.IsTooltipEnabled = false
 	return baseControl
 }
 

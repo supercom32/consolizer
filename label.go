@@ -29,7 +29,7 @@ func (shared *LabelInstanceType) AddToTabIndex() {
 
 func (shared *LabelInstanceType) SetLabelValue(value string) {
 	labelEntry := Labels.Get(shared.layerAlias, shared.controlAlias)
-	labelEntry.Value = value
+	labelEntry.Text = value
 }
 
 func (shared *LabelInstanceType) Delete() *LabelInstanceType {
@@ -43,7 +43,7 @@ func (shared *labelType) Add(layerAlias string, labelAlias string, labelValue st
 	labelEntry := types.NewLabelEntry()
 	labelEntry.StyleEntry = styleEntry
 	labelEntry.Alias = labelAlias
-	labelEntry.Value = labelValue
+	labelEntry.Text = labelValue
 	labelEntry.XLocation = xLocation
 	labelEntry.YLocation = yLocation
 	labelEntry.Width = width
@@ -70,7 +70,7 @@ func (shared *labelType) drawLabelsOnLayer(layerEntry types.LayerEntryType) {
 	layerAlias := layerEntry.LayerAlias
 	for _, currentLabelEntry := range Labels.GetAllEntries(layerAlias) {
 		labelEntry := currentLabelEntry
-		drawLabel(&layerEntry, labelEntry.Alias, labelEntry.Value, labelEntry.StyleEntry, labelEntry.XLocation, labelEntry.YLocation, labelEntry.Width)
+		drawLabel(&layerEntry, labelEntry.Alias, labelEntry.Text, labelEntry.StyleEntry, labelEntry.XLocation, labelEntry.YLocation, labelEntry.Width)
 	}
 }
 

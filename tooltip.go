@@ -38,9 +38,9 @@ func (shared *TooltipInstanceType) Delete() string {
 SetTooltipValue allows you to set the value of the tooltip associated with the TooltipInstanceType.
 This function updates the value of the tooltip label identified by the layerAlias and tooltipAlias fields.
 */
-func (shared *TooltipInstanceType) SetTooltipValue(value string) {
+func (shared *TooltipInstanceType) SetTooltipValue(text string) {
 	labelEntry := Labels.Get(shared.layerAlias, shared.controlAlias)
-	labelEntry.Value = value
+	labelEntry.Text = text
 }
 
 func (shared *tooltipType) Add(layerAlias string, tooltipAlias string, tooltipValue string, styleEntry types.TuiStyleEntryType, hotspotXLocation int, hotspotYLocation int, hotspotWidth int, hotspotHeight int, tooltipXLocation int, tooltipYLocation int, tooltipWidth int, tooltipHeight int, isLocationAbsolute bool, isBorderDrawn bool, hoverTime int) TooltipInstanceType {

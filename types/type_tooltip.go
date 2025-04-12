@@ -69,7 +69,7 @@ func (shared TooltipEntryType) MarshalJSON() ([]byte, error) {
 		BaseControlType:    shared.BaseControlType,
 		Text:               shared.Text,
 		Value:              shared.Value,
-		HotspotXLocation:   shared.HotspotXLocation,
+		HotspotXLocation:   shared.HotspotXLocation, // The location and area where a hotspot is drawn
 		HotspotYLocation:   shared.HotspotYLocation,
 		HotspotWidth:       shared.HotspotWidth,
 		HotspotHeight:      shared.HotspotHeight,
@@ -80,8 +80,8 @@ func (shared TooltipEntryType) MarshalJSON() ([]byte, error) {
 		IsLocationAbsolute: shared.IsLocationAbsolute,
 		IsDrawn:            shared.IsDrawn,
 		HoverStartTime:     shared.HoverStartTime,
-		HoverXLocation:     shared.HoverXLocation,
-		HoverYLocation:     shared.HoverYLocation,
+		HoverXLocation:     shared.HoverXLocation, // Used to check if mouse is frozen or not.
+		HoverYLocation:     shared.HoverYLocation, // Basically the last mouse position found.
 		HoverDisplayDelay:  shared.HoverDisplayDelay,
 	})
 	if err != nil {
