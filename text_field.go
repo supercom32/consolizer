@@ -793,13 +793,13 @@ information should be noted:
 - The style can be changed at any time, and the display will update immediately.
 - If the style is invalid or not found, the default style will be used.
 */
-func (shared *textFieldInstanceType) SetStyle(styleAlias string) string {
+func (shared *textFieldInstanceType) SetStyle(style types.TuiStyleEntryType) *textFieldInstanceType {
 	if TextFields.IsExists(shared.layerAlias, shared.controlAlias) {
 		validatorTextField(shared.layerAlias, shared.controlAlias)
 		textFieldEntry := TextFields.Get(shared.layerAlias, shared.controlAlias)
-		textFieldEntry.StyleEntry = types.NewTuiStyleEntry()
+		textFieldEntry.StyleEntry = style
 	}
-	return ""
+	return shared
 }
 
 /*
@@ -827,7 +827,7 @@ information should be noted:
 - The text field will be redrawn at the new position immediately.
 - If the new position would place the text field outside the screen bounds, it will be adjusted.
 */
-func (shared *textFieldInstanceType) SetPosition(x int, y int) string {
+func (shared *textFieldInstanceType) SetPosition(x int, y int) *textFieldInstanceType {
 	if TextFields.IsExists(shared.layerAlias, shared.controlAlias) {
 		validatorTextField(shared.layerAlias, shared.controlAlias)
 		validateLayerLocationByLayerAlias(shared.layerAlias, x, y)
@@ -835,7 +835,7 @@ func (shared *textFieldInstanceType) SetPosition(x int, y int) string {
 		textFieldEntry.XLocation = x
 		textFieldEntry.YLocation = y
 	}
-	return ""
+	return shared
 }
 
 /*
@@ -846,13 +846,13 @@ should be noted:
 - If the new size is smaller than the current text, the text will be truncated.
 - The viewport will automatically adjust to show as much text as possible.
 */
-func (shared *textFieldInstanceType) SetSize(width int, height int) string {
+func (shared *textFieldInstanceType) SetSize(width int, height int) *textFieldInstanceType {
 	if TextFields.IsExists(shared.layerAlias, shared.controlAlias) {
 		validatorTextField(shared.layerAlias, shared.controlAlias)
 		textFieldEntry := TextFields.Get(shared.layerAlias, shared.controlAlias)
 		textFieldEntry.Width = width
 	}
-	return ""
+	return shared
 }
 
 /*
@@ -863,13 +863,13 @@ the following information should be noted:
 - The text field can still receive focus and input even when invisible.
 - Setting visibility to true will redraw the text field at its current position.
 */
-func (shared *textFieldInstanceType) SetVisible(isVisible bool) string {
+func (shared *textFieldInstanceType) SetVisible(visible bool) *textFieldInstanceType {
 	if TextFields.IsExists(shared.layerAlias, shared.controlAlias) {
 		validatorTextField(shared.layerAlias, shared.controlAlias)
 		textFieldEntry := TextFields.Get(shared.layerAlias, shared.controlAlias)
-		textFieldEntry.IsEnabled = isVisible
+		textFieldEntry.IsEnabled = visible
 	}
-	return ""
+	return shared
 }
 
 /*
@@ -887,4 +887,22 @@ func (shared *textFieldInstanceType) SetEnabled(isEnabled bool) string {
 		textFieldEntry.IsEnabled = isEnabled
 	}
 	return ""
+}
+
+// GetBounds returns the position and size of the text field
+func (shared *textFieldInstanceType) GetBounds() (int, int, int, int) {
+	textFieldEntry := TextFields.Get(shared.layerAlias, shared.controlAlias)
+	if textFieldEntry == nil {
+		return 0, 0, 0, 0
+	}
+	return textFieldEntry.XLocation, textFieldEntry.YLocation, textFieldEntry.Width, textFieldEntry.Height
+}
+
+// SetTabIndex sets the tab order of the text field
+func (shared *textFieldInstanceType) SetTabIndex(index int) *textFieldInstanceType {
+	textFieldEntry := TextFields.Get(shared.layerAlias, shared.controlAlias)
+	if textFieldEntry != nil {
+		textFieldEntry.TabIndex = index
+	}
+	return shared
 }

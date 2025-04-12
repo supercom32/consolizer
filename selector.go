@@ -456,3 +456,59 @@ func (shared *selectorType) updateMouseEvent() bool {
 	}
 	return isScreenUpdateRequired
 }
+
+// GetBounds returns the position and size of the selector
+func (shared *selectorInstanceType) GetBounds() (int, int, int, int) {
+	selectorEntry := Selectors.Get(shared.layerAlias, shared.controlAlias)
+	if selectorEntry == nil {
+		return 0, 0, 0, 0
+	}
+	return selectorEntry.XLocation, selectorEntry.YLocation, selectorEntry.Width, selectorEntry.Height
+}
+
+// SetPosition sets the position of the selector
+func (shared *selectorInstanceType) SetPosition(x, y int) *selectorInstanceType {
+	selectorEntry := Selectors.Get(shared.layerAlias, shared.controlAlias)
+	if selectorEntry != nil {
+		selectorEntry.XLocation = x
+		selectorEntry.YLocation = y
+	}
+	return shared
+}
+
+// SetSize sets the dimensions of the selector
+func (shared *selectorInstanceType) SetSize(width, height int) *selectorInstanceType {
+	selectorEntry := Selectors.Get(shared.layerAlias, shared.controlAlias)
+	if selectorEntry != nil {
+		selectorEntry.Width = width
+		selectorEntry.Height = height
+	}
+	return shared
+}
+
+// SetVisible shows or hides the selector
+func (shared *selectorInstanceType) SetVisible(visible bool) *selectorInstanceType {
+	selectorEntry := Selectors.Get(shared.layerAlias, shared.controlAlias)
+	if selectorEntry != nil {
+		selectorEntry.IsVisible = visible
+	}
+	return shared
+}
+
+// SetStyle sets the visual style of the selector
+func (shared *selectorInstanceType) SetStyle(style types.TuiStyleEntryType) *selectorInstanceType {
+	selectorEntry := Selectors.Get(shared.layerAlias, shared.controlAlias)
+	if selectorEntry != nil {
+		selectorEntry.StyleEntry = style
+	}
+	return shared
+}
+
+// SetTabIndex sets the tab order of the selector
+func (shared *selectorInstanceType) SetTabIndex(index int) *selectorInstanceType {
+	selectorEntry := Selectors.Get(shared.layerAlias, shared.controlAlias)
+	if selectorEntry != nil {
+		selectorEntry.TabIndex = index
+	}
+	return shared
+}

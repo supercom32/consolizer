@@ -1,11 +1,12 @@
 package consolizer
 
 import (
+	"time"
+
 	"supercom32.net/consolizer/constants"
 	"supercom32.net/consolizer/internal/memory"
 	"supercom32.net/consolizer/internal/stringformat"
 	"supercom32.net/consolizer/types"
-	"time"
 )
 
 type TooltipInstanceType struct {
@@ -160,4 +161,60 @@ func (shared *tooltipType) updateMouseEvent() bool {
 		}
 	}
 	return isScreenUpdateRequired
+}
+
+// GetBounds returns the position and size of the tooltip
+func (shared *TooltipInstanceType) GetBounds() (int, int, int, int) {
+	tooltipEntry := Tooltips.Get(shared.layerAlias, shared.controlAlias)
+	if tooltipEntry == nil {
+		return 0, 0, 0, 0
+	}
+	return tooltipEntry.XLocation, tooltipEntry.YLocation, tooltipEntry.Width, tooltipEntry.Height
+}
+
+// SetPosition sets the position of the tooltip
+func (shared *TooltipInstanceType) SetPosition(x, y int) *TooltipInstanceType {
+	tooltipEntry := Tooltips.Get(shared.layerAlias, shared.controlAlias)
+	if tooltipEntry != nil {
+		tooltipEntry.XLocation = x
+		tooltipEntry.YLocation = y
+	}
+	return shared
+}
+
+// SetSize sets the dimensions of the tooltip
+func (shared *TooltipInstanceType) SetSize(width, height int) *TooltipInstanceType {
+	tooltipEntry := Tooltips.Get(shared.layerAlias, shared.controlAlias)
+	if tooltipEntry != nil {
+		tooltipEntry.Width = width
+		tooltipEntry.Height = height
+	}
+	return shared
+}
+
+// SetVisible shows or hides the tooltip
+func (shared *TooltipInstanceType) SetVisible(visible bool) *TooltipInstanceType {
+	tooltipEntry := Tooltips.Get(shared.layerAlias, shared.controlAlias)
+	if tooltipEntry != nil {
+		tooltipEntry.IsVisible = visible
+	}
+	return shared
+}
+
+// SetStyle sets the visual style of the tooltip
+func (shared *TooltipInstanceType) SetStyle(style types.TuiStyleEntryType) *TooltipInstanceType {
+	tooltipEntry := Tooltips.Get(shared.layerAlias, shared.controlAlias)
+	if tooltipEntry != nil {
+		tooltipEntry.StyleEntry = style
+	}
+	return shared
+}
+
+// SetTabIndex sets the tab order of the tooltip
+func (shared *TooltipInstanceType) SetTabIndex(index int) *TooltipInstanceType {
+	tooltipEntry := Tooltips.Get(shared.layerAlias, shared.controlAlias)
+	if tooltipEntry != nil {
+		tooltipEntry.TabIndex = index
+	}
+	return shared
 }

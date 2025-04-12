@@ -244,3 +244,56 @@ func getSelectedRadioButton(layerAlias string, radioButtonAlias string) string {
 	}
 	return selectedItem
 }
+
+// GetBounds returns the position of the radio button
+func (shared *RadioButtonInstanceType) GetBounds() (int, int, int, int) {
+	radioButtonEntry := RadioButtons.Get(shared.layerAlias, shared.controlAlias)
+	if radioButtonEntry == nil {
+		return 0, 0, 0, 0
+	}
+	// Radio buttons are typically 1x1 in size
+	return radioButtonEntry.XLocation, radioButtonEntry.YLocation, 1, 1
+}
+
+// SetPosition sets the position of the radio button
+func (shared *RadioButtonInstanceType) SetPosition(x, y int) *RadioButtonInstanceType {
+	radioButtonEntry := RadioButtons.Get(shared.layerAlias, shared.controlAlias)
+	if radioButtonEntry != nil {
+		radioButtonEntry.XLocation = x
+		radioButtonEntry.YLocation = y
+	}
+	return shared
+}
+
+// SetSize is not applicable for radio buttons as they are fixed size
+func (shared *RadioButtonInstanceType) SetSize(width, height int) *RadioButtonInstanceType {
+	// Radio buttons are fixed size (1x1)
+	return shared
+}
+
+// SetVisible shows or hides the radio button
+func (shared *RadioButtonInstanceType) SetVisible(visible bool) *RadioButtonInstanceType {
+	radioButtonEntry := RadioButtons.Get(shared.layerAlias, shared.controlAlias)
+	if radioButtonEntry != nil {
+		radioButtonEntry.IsVisible = visible
+	}
+	return shared
+}
+
+// SetStyle sets the visual style of the radio button
+func (shared *RadioButtonInstanceType) SetStyle(style types.TuiStyleEntryType) *RadioButtonInstanceType {
+	radioButtonEntry := RadioButtons.Get(shared.layerAlias, shared.controlAlias)
+	if radioButtonEntry != nil {
+		radioButtonEntry.StyleEntry = style
+	}
+	return shared
+}
+
+// SetTabIndex sets the tab order of the radio button
+func (shared *RadioButtonInstanceType) SetTabIndex(index int) *RadioButtonInstanceType {
+	radioButtonEntry := RadioButtons.Get(shared.layerAlias, shared.controlAlias)
+	if radioButtonEntry != nil {
+		radioButtonEntry.TabIndex = index
+	}
+	return shared
+}

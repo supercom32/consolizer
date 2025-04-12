@@ -254,29 +254,19 @@ func (shared *scrollbarType) computeScrollbarHandlePositionByScrollValue(layerAl
 	}
 }
 
-/*
-updateKeyboardEvent allows you to update the state of all scrollbars according to the current keystroke event.
-In the event that a screen update is required this method returns true.
-*/
-func (shared *scrollbarType) updateKeyboardEvent(keystroke []rune) bool {
+func (shared *scrollbarType) updateKeyboardEventManually(layerAlias string, scrollbarAlias string, keystroke []rune) bool {
 	keystrokeAsString := string(keystroke)
 	isScreenUpdateRequired := false
-	focusedLayerAlias := eventStateMemory.currentlyFocusedControl.layerAlias
-	focusedControlAlias := eventStateMemory.currentlyFocusedControl.controlAlias
-	focusedControlType := eventStateMemory.currentlyFocusedControl.controlType
-	if focusedControlType != constants.CellTypeScrollbar || !ScrollBars.IsExists(focusedLayerAlias, focusedControlAlias) {
-		return isScreenUpdateRequired
-	}
 	// Check for scrollbar input only if the scroll bar is not disabled (not null).
-	scrollbarEntry := ScrollBars.Get(focusedLayerAlias, focusedControlAlias)
+	scrollbarEntry := ScrollBars.Get(layerAlias, scrollbarAlias)
 	if scrollbarEntry.IsEnabled {
 		if keystrokeAsString == "up" || keystrokeAsString == "left" {
 			scrollbarEntry.ScrollValue = scrollbarEntry.ScrollValue - scrollbarEntry.ScrollIncrement
-			shared.computeScrollbarHandlePositionByScrollValue(focusedLayerAlias, focusedControlAlias)
+			shared.computeScrollbarHandlePositionByScrollValue(layerAlias, scrollbarAlias)
 			// Update selector viewport position
-			for _, currentSelectorEntry := range Selectors.GetAllEntries(focusedLayerAlias) {
+			for _, currentSelectorEntry := range Selectors.GetAllEntries(layerAlias) {
 				selectorEntry := currentSelectorEntry
-				if selectorEntry.ScrollbarAlias == focusedControlAlias {
+				if selectorEntry.ScrollbarAlias == scrollbarAlias {
 					selectorEntry.ViewportPosition = scrollbarEntry.ScrollValue
 					isScreenUpdateRequired = true
 					break
@@ -285,11 +275,11 @@ func (shared *scrollbarType) updateKeyboardEvent(keystroke []rune) bool {
 		}
 		if keystrokeAsString == "down" || keystrokeAsString == "right" {
 			scrollbarEntry.ScrollValue = scrollbarEntry.ScrollValue + scrollbarEntry.ScrollIncrement
-			shared.computeScrollbarHandlePositionByScrollValue(focusedLayerAlias, focusedControlAlias)
+			shared.computeScrollbarHandlePositionByScrollValue(layerAlias, scrollbarAlias)
 			// Update selector viewport position
-			for _, currentSelectorEntry := range Selectors.GetAllEntries(focusedLayerAlias) {
+			for _, currentSelectorEntry := range Selectors.GetAllEntries(layerAlias) {
 				selectorEntry := currentSelectorEntry
-				if selectorEntry.ScrollbarAlias == focusedControlAlias {
+				if selectorEntry.ScrollbarAlias == scrollbarAlias {
 					selectorEntry.ViewportPosition = scrollbarEntry.ScrollValue
 					isScreenUpdateRequired = true
 					break
@@ -298,11 +288,11 @@ func (shared *scrollbarType) updateKeyboardEvent(keystroke []rune) bool {
 		}
 		if keystrokeAsString == "pgup" {
 			scrollbarEntry.ScrollValue = scrollbarEntry.ScrollValue - (scrollbarEntry.ScrollIncrement * 3)
-			shared.computeScrollbarHandlePositionByScrollValue(focusedLayerAlias, focusedControlAlias)
+			shared.computeScrollbarHandlePositionByScrollValue(layerAlias, scrollbarAlias)
 			// Update selector viewport position
-			for _, currentSelectorEntry := range Selectors.GetAllEntries(focusedLayerAlias) {
+			for _, currentSelectorEntry := range Selectors.GetAllEntries(layerAlias) {
 				selectorEntry := currentSelectorEntry
-				if selectorEntry.ScrollbarAlias == focusedControlAlias {
+				if selectorEntry.ScrollbarAlias == scrollbarAlias {
 					selectorEntry.ViewportPosition = scrollbarEntry.ScrollValue
 					isScreenUpdateRequired = true
 					break
@@ -311,11 +301,11 @@ func (shared *scrollbarType) updateKeyboardEvent(keystroke []rune) bool {
 		}
 		if keystrokeAsString == "pgdn" {
 			scrollbarEntry.ScrollValue = scrollbarEntry.ScrollValue + (scrollbarEntry.ScrollIncrement * 3)
-			shared.computeScrollbarHandlePositionByScrollValue(focusedLayerAlias, focusedControlAlias)
+			shared.computeScrollbarHandlePositionByScrollValue(layerAlias, scrollbarAlias)
 			// Update selector viewport position
-			for _, currentSelectorEntry := range Selectors.GetAllEntries(focusedLayerAlias) {
+			for _, currentSelectorEntry := range Selectors.GetAllEntries(layerAlias) {
 				selectorEntry := currentSelectorEntry
-				if selectorEntry.ScrollbarAlias == focusedControlAlias {
+				if selectorEntry.ScrollbarAlias == scrollbarAlias {
 					selectorEntry.ViewportPosition = scrollbarEntry.ScrollValue
 					isScreenUpdateRequired = true
 					break
@@ -324,6 +314,20 @@ func (shared *scrollbarType) updateKeyboardEvent(keystroke []rune) bool {
 		}
 	}
 	return isScreenUpdateRequired
+}
+
+/*
+updateKeyboardEvent allows you to update the state of all scrollbars according to the current keystroke event.
+In the event that a screen update is required this method returns true.
+*/
+func (shared *scrollbarType) updateKeyboardEvent(keystroke []rune) bool {
+	focusedLayerAlias := eventStateMemory.currentlyFocusedControl.layerAlias
+	focusedControlAlias := eventStateMemory.currentlyFocusedControl.controlAlias
+	focusedControlType := eventStateMemory.currentlyFocusedControl.controlType
+	if focusedControlType != constants.CellTypeScrollbar || !ScrollBars.IsExists(focusedLayerAlias, focusedControlAlias) {
+		return false
+	}
+	return shared.updateKeyboardEventManually(focusedLayerAlias, focusedControlAlias, keystroke)
 }
 
 /*
@@ -380,4 +384,60 @@ func (shared *scrollbarType) updateMouseEvent() bool {
 		eventStateMemory.stateId = constants.EventStateNone
 	}
 	return isScreenUpdateRequired
+}
+
+// GetBounds returns the position and size of the scrollbar
+func (shared *ScrollbarInstanceType) GetBounds() (int, int, int, int) {
+	scrollbarEntry := ScrollBars.Get(shared.layerAlias, shared.controlAlias)
+	if scrollbarEntry == nil {
+		return 0, 0, 0, 0
+	}
+	return scrollbarEntry.XLocation, scrollbarEntry.YLocation, scrollbarEntry.Width, scrollbarEntry.Height
+}
+
+// SetPosition sets the position of the scrollbar
+func (shared *ScrollbarInstanceType) SetPosition(x, y int) *ScrollbarInstanceType {
+	scrollbarEntry := ScrollBars.Get(shared.layerAlias, shared.controlAlias)
+	if scrollbarEntry != nil {
+		scrollbarEntry.XLocation = x
+		scrollbarEntry.YLocation = y
+	}
+	return shared
+}
+
+// SetSize sets the dimensions of the scrollbar
+func (shared *ScrollbarInstanceType) SetSize(width, height int) *ScrollbarInstanceType {
+	scrollbarEntry := ScrollBars.Get(shared.layerAlias, shared.controlAlias)
+	if scrollbarEntry != nil {
+		scrollbarEntry.Width = width
+		scrollbarEntry.Height = height
+	}
+	return shared
+}
+
+// SetVisible shows or hides the scrollbar
+func (shared *ScrollbarInstanceType) SetVisible(visible bool) *ScrollbarInstanceType {
+	scrollbarEntry := ScrollBars.Get(shared.layerAlias, shared.controlAlias)
+	if scrollbarEntry != nil {
+		scrollbarEntry.IsVisible = visible
+	}
+	return shared
+}
+
+// SetStyle sets the visual style of the scrollbar
+func (shared *ScrollbarInstanceType) SetStyle(style types.TuiStyleEntryType) *ScrollbarInstanceType {
+	scrollbarEntry := ScrollBars.Get(shared.layerAlias, shared.controlAlias)
+	if scrollbarEntry != nil {
+		scrollbarEntry.StyleEntry = style
+	}
+	return shared
+}
+
+// SetTabIndex sets the tab order of the scrollbar
+func (shared *ScrollbarInstanceType) SetTabIndex(index int) *ScrollbarInstanceType {
+	scrollbarEntry := ScrollBars.Get(shared.layerAlias, shared.controlAlias)
+	if scrollbarEntry != nil {
+		scrollbarEntry.TabIndex = index
+	}
+	return shared
 }

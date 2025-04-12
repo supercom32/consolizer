@@ -2,6 +2,7 @@ package consolizer
 
 import (
 	"strings"
+
 	"supercom32.net/consolizer/constants"
 	"supercom32.net/consolizer/internal/memory"
 	"supercom32.net/consolizer/internal/stringformat"
@@ -87,4 +88,60 @@ func drawLabel(layerEntry *types.LayerEntryType, labelAlias string, labelValue s
 	}
 	arrayOfRunes := stringformat.GetRunesFromString(labelValue)
 	printLayer(layerEntry, attributeEntry, xLocation, yLocation, arrayOfRunes)
+}
+
+// GetBounds returns the position and size of the label
+func (shared *LabelInstanceType) GetBounds() (int, int, int, int) {
+	labelEntry := Labels.Get(shared.layerAlias, shared.controlAlias)
+	if labelEntry == nil {
+		return 0, 0, 0, 0
+	}
+	return labelEntry.XLocation, labelEntry.YLocation, labelEntry.Width, labelEntry.Height
+}
+
+// SetPosition sets the position of the label
+func (shared *LabelInstanceType) SetPosition(x, y int) *LabelInstanceType {
+	labelEntry := Labels.Get(shared.layerAlias, shared.controlAlias)
+	if labelEntry != nil {
+		labelEntry.XLocation = x
+		labelEntry.YLocation = y
+	}
+	return shared
+}
+
+// SetSize sets the dimensions of the label
+func (shared *LabelInstanceType) SetSize(width, height int) *LabelInstanceType {
+	labelEntry := Labels.Get(shared.layerAlias, shared.controlAlias)
+	if labelEntry != nil {
+		labelEntry.Width = width
+		labelEntry.Height = height
+	}
+	return shared
+}
+
+// SetVisible shows or hides the label
+func (shared *LabelInstanceType) SetVisible(visible bool) *LabelInstanceType {
+	labelEntry := Labels.Get(shared.layerAlias, shared.controlAlias)
+	if labelEntry != nil {
+		labelEntry.IsVisible = visible
+	}
+	return shared
+}
+
+// SetStyle sets the visual style of the label
+func (shared *LabelInstanceType) SetStyle(style types.TuiStyleEntryType) *LabelInstanceType {
+	labelEntry := Labels.Get(shared.layerAlias, shared.controlAlias)
+	if labelEntry != nil {
+		labelEntry.StyleEntry = style
+	}
+	return shared
+}
+
+// SetTabIndex sets the tab order of the label
+func (shared *LabelInstanceType) SetTabIndex(index int) *LabelInstanceType {
+	labelEntry := Labels.Get(shared.layerAlias, shared.controlAlias)
+	if labelEntry != nil {
+		labelEntry.TabIndex = index
+	}
+	return shared
 }

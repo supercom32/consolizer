@@ -282,3 +282,59 @@ func (shared *buttonType) updateButtonStateMouse() bool {
 	}
 	return isUpdateRequired
 }
+
+// GetBounds returns the position and size of the button
+func (shared *ButtonInstanceType) GetBounds() (int, int, int, int) {
+	buttonEntry := Buttons.Get(shared.layerAlias, shared.controlAlias)
+	if buttonEntry == nil {
+		return 0, 0, 0, 0
+	}
+	return buttonEntry.XLocation, buttonEntry.YLocation, buttonEntry.Width, buttonEntry.Height
+}
+
+// SetPosition sets the position of the button
+func (shared *ButtonInstanceType) SetPosition(x, y int) *ButtonInstanceType {
+	buttonEntry := Buttons.Get(shared.layerAlias, shared.controlAlias)
+	if buttonEntry != nil {
+		buttonEntry.XLocation = x
+		buttonEntry.YLocation = y
+	}
+	return shared
+}
+
+// SetSize sets the dimensions of the button
+func (shared *ButtonInstanceType) SetSize(width, height int) *ButtonInstanceType {
+	buttonEntry := Buttons.Get(shared.layerAlias, shared.controlAlias)
+	if buttonEntry != nil {
+		buttonEntry.Width = width
+		buttonEntry.Height = height
+	}
+	return shared
+}
+
+// SetVisible shows or hides the button
+func (shared *ButtonInstanceType) SetVisible(visible bool) *ButtonInstanceType {
+	buttonEntry := Buttons.Get(shared.layerAlias, shared.controlAlias)
+	if buttonEntry != nil {
+		buttonEntry.IsVisible = visible
+	}
+	return shared
+}
+
+// SetStyle sets the visual style of the button
+func (shared *ButtonInstanceType) SetStyle(style types.TuiStyleEntryType) *ButtonInstanceType {
+	buttonEntry := Buttons.Get(shared.layerAlias, shared.controlAlias)
+	if buttonEntry != nil {
+		buttonEntry.StyleEntry = style
+	}
+	return shared
+}
+
+// SetTabIndex sets the tab order of the button
+func (shared *ButtonInstanceType) SetTabIndex(index int) *ButtonInstanceType {
+	buttonEntry := Buttons.Get(shared.layerAlias, shared.controlAlias)
+	if buttonEntry != nil {
+		buttonEntry.TabIndex = index
+	}
+	return shared
+}

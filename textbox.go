@@ -1179,3 +1179,77 @@ func (shared *textboxType) updateMouseEvent() bool {
 	}
 	return false
 }
+
+// GetBounds returns the position and size of the textbox
+func (shared *TextboxInstanceType) GetBounds() (int, int, int, int) {
+	textboxEntry := Textboxes.Get(shared.layerAlias, shared.controlAlias)
+	if textboxEntry == nil {
+		return 0, 0, 0, 0
+	}
+	return textboxEntry.XLocation, textboxEntry.YLocation, textboxEntry.Width, textboxEntry.Height
+}
+
+// SetPosition sets the position of the textbox
+func (shared *TextboxInstanceType) SetPosition(x, y int) *TextboxInstanceType {
+	textboxEntry := Textboxes.Get(shared.layerAlias, shared.controlAlias)
+	if textboxEntry != nil {
+		textboxEntry.XLocation = x
+		textboxEntry.YLocation = y
+	}
+	return shared
+}
+
+// SetSize sets the dimensions of the textbox
+func (shared *TextboxInstanceType) SetSize(width, height int) *TextboxInstanceType {
+	textboxEntry := Textboxes.Get(shared.layerAlias, shared.controlAlias)
+	if textboxEntry != nil {
+		textboxEntry.Width = width
+		textboxEntry.Height = height
+	}
+	return shared
+}
+
+// SetVisible shows or hides the textbox
+func (shared *TextboxInstanceType) SetVisible(visible bool) *TextboxInstanceType {
+	textboxEntry := Textboxes.Get(shared.layerAlias, shared.controlAlias)
+	if textboxEntry != nil {
+		textboxEntry.IsVisible = visible
+	}
+	return shared
+}
+
+// SetStyle sets the visual style of the textbox
+func (shared *TextboxInstanceType) SetStyle(style types.TuiStyleEntryType) *TextboxInstanceType {
+	textboxEntry := Textboxes.Get(shared.layerAlias, shared.controlAlias)
+	if textboxEntry != nil {
+		textboxEntry.StyleEntry = style
+	}
+	return shared
+}
+
+// SetTabIndex sets the tab order of the textbox
+func (shared *TextboxInstanceType) SetTabIndex(index int) *TextboxInstanceType {
+	textboxEntry := Textboxes.Get(shared.layerAlias, shared.controlAlias)
+	if textboxEntry != nil {
+		textboxEntry.TabIndex = index
+	}
+	return shared
+}
+
+// Lock locks the textbox for thread-safe operations
+func (shared *TextboxInstanceType) Lock() *TextboxInstanceType {
+	textboxEntry := Textboxes.Get(shared.layerAlias, shared.controlAlias)
+	if textboxEntry != nil {
+		textboxEntry.Lock()
+	}
+	return shared
+}
+
+// Unlock unlocks the textbox after thread-safe operations
+func (shared *TextboxInstanceType) Unlock() *TextboxInstanceType {
+	textboxEntry := Textboxes.Get(shared.layerAlias, shared.controlAlias)
+	if textboxEntry != nil {
+		textboxEntry.Unlock()
+	}
+	return shared
+}

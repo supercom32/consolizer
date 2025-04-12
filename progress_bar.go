@@ -2,6 +2,7 @@ package consolizer
 
 import (
 	"fmt"
+
 	"github.com/u2takey/go-utils/strings"
 	"supercom32.net/consolizer/constants"
 	"supercom32.net/consolizer/internal/memory"
@@ -150,4 +151,60 @@ func drawProgressBar(layerEntry *types.LayerEntryType, progressBarAlias string, 
 	attributeEntry.BackgroundColor = styleEntry.ProgressBarTextBackgroundColor
 	attributeEntry.IsBackgroundTransparent = isBackgroundTransparent
 	printLayer(layerEntry, attributeEntry, xLocation+centerXLocation, yLocation+centerYLocation, arrayOfRunes)
+}
+
+// GetBounds returns the position and size of the progress bar
+func (shared *ProgressBarInstanceType) GetBounds() (int, int, int, int) {
+	progressBarEntry := ProgressBars.Get(shared.layerAlias, shared.controlAlias)
+	if progressBarEntry == nil {
+		return 0, 0, 0, 0
+	}
+	return progressBarEntry.XLocation, progressBarEntry.YLocation, progressBarEntry.Width, progressBarEntry.Height
+}
+
+// SetPosition sets the position of the progress bar
+func (shared *ProgressBarInstanceType) SetPosition(x, y int) *ProgressBarInstanceType {
+	progressBarEntry := ProgressBars.Get(shared.layerAlias, shared.controlAlias)
+	if progressBarEntry != nil {
+		progressBarEntry.XLocation = x
+		progressBarEntry.YLocation = y
+	}
+	return shared
+}
+
+// SetSize sets the dimensions of the progress bar
+func (shared *ProgressBarInstanceType) SetSize(width, height int) *ProgressBarInstanceType {
+	progressBarEntry := ProgressBars.Get(shared.layerAlias, shared.controlAlias)
+	if progressBarEntry != nil {
+		progressBarEntry.Width = width
+		progressBarEntry.Height = height
+	}
+	return shared
+}
+
+// SetVisible shows or hides the progress bar
+func (shared *ProgressBarInstanceType) SetVisible(visible bool) *ProgressBarInstanceType {
+	progressBarEntry := ProgressBars.Get(shared.layerAlias, shared.controlAlias)
+	if progressBarEntry != nil {
+		progressBarEntry.IsVisible = visible
+	}
+	return shared
+}
+
+// SetStyle sets the visual style of the progress bar
+func (shared *ProgressBarInstanceType) SetStyle(style types.TuiStyleEntryType) *ProgressBarInstanceType {
+	progressBarEntry := ProgressBars.Get(shared.layerAlias, shared.controlAlias)
+	if progressBarEntry != nil {
+		progressBarEntry.StyleEntry = style
+	}
+	return shared
+}
+
+// SetTabIndex sets the tab order of the progress bar
+func (shared *ProgressBarInstanceType) SetTabIndex(index int) *ProgressBarInstanceType {
+	progressBarEntry := ProgressBars.Get(shared.layerAlias, shared.controlAlias)
+	if progressBarEntry != nil {
+		progressBarEntry.TabIndex = index
+	}
+	return shared
 }

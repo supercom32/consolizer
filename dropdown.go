@@ -418,3 +418,77 @@ information should be noted:
 func (shared *dropdownType) GetAllEntries(layerAlias string) []*types.DropdownEntryType {
 	return Dropdowns.GetAllEntries(layerAlias)
 }
+
+// GetBounds returns the position and size of the dropdown
+func (shared *DropdownInstanceType) GetBounds() (int, int, int, int) {
+	dropdownEntry := Dropdowns.Get(shared.layerAlias, shared.controlAlias)
+	if dropdownEntry == nil {
+		return 0, 0, 0, 0
+	}
+	return dropdownEntry.XLocation, dropdownEntry.YLocation, dropdownEntry.Width, dropdownEntry.Height
+}
+
+// SetPosition sets the position of the dropdown
+func (shared *DropdownInstanceType) SetPosition(x, y int) *DropdownInstanceType {
+	dropdownEntry := Dropdowns.Get(shared.layerAlias, shared.controlAlias)
+	if dropdownEntry != nil {
+		dropdownEntry.XLocation = x
+		dropdownEntry.YLocation = y
+	}
+	return shared
+}
+
+// SetSize sets the dimensions of the dropdown
+func (shared *DropdownInstanceType) SetSize(width, height int) *DropdownInstanceType {
+	dropdownEntry := Dropdowns.Get(shared.layerAlias, shared.controlAlias)
+	if dropdownEntry != nil {
+		dropdownEntry.Width = width
+		dropdownEntry.Height = height
+	}
+	return shared
+}
+
+// SetVisible shows or hides the dropdown
+func (shared *DropdownInstanceType) SetVisible(visible bool) *DropdownInstanceType {
+	dropdownEntry := Dropdowns.Get(shared.layerAlias, shared.controlAlias)
+	if dropdownEntry != nil {
+		dropdownEntry.IsVisible = visible
+	}
+	return shared
+}
+
+// SetStyle sets the visual style of the dropdown
+func (shared *DropdownInstanceType) SetStyle(style types.TuiStyleEntryType) *DropdownInstanceType {
+	dropdownEntry := Dropdowns.Get(shared.layerAlias, shared.controlAlias)
+	if dropdownEntry != nil {
+		dropdownEntry.StyleEntry = style
+	}
+	return shared
+}
+
+// SetTabIndex sets the tab order of the dropdown
+func (shared *DropdownInstanceType) SetTabIndex(index int) *DropdownInstanceType {
+	dropdownEntry := Dropdowns.Get(shared.layerAlias, shared.controlAlias)
+	if dropdownEntry != nil {
+		dropdownEntry.TabIndex = index
+	}
+	return shared
+}
+
+// Lock locks the dropdown for thread-safe operations
+func (shared *DropdownInstanceType) Lock() *DropdownInstanceType {
+	dropdownEntry := Dropdowns.Get(shared.layerAlias, shared.controlAlias)
+	if dropdownEntry != nil {
+		dropdownEntry.Lock()
+	}
+	return shared
+}
+
+// Unlock unlocks the dropdown after thread-safe operations
+func (shared *DropdownInstanceType) Unlock() *DropdownInstanceType {
+	dropdownEntry := Dropdowns.Get(shared.layerAlias, shared.controlAlias)
+	if dropdownEntry != nil {
+		dropdownEntry.Unlock()
+	}
+	return shared
+}

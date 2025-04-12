@@ -2,6 +2,7 @@ package consolizer
 
 import (
 	"fmt"
+
 	"supercom32.net/consolizer/internal/stringformat"
 	"supercom32.net/consolizer/types"
 )
