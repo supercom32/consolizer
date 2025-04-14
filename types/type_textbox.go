@@ -136,8 +136,9 @@ information should be noted:
 - Used for change detection and state synchronization.
 */
 func IsTextboxEntryEqual(sourceTextboxEntry *TextboxEntryType, targetTextboxEntry *TextboxEntryType) bool {
-	if sourceTextboxEntry.BaseControlType == targetTextboxEntry.BaseControlType &&
+	return sourceTextboxEntry.BaseControlType.IsEqual(&targetTextboxEntry.BaseControlType) &&
 		sourceTextboxEntry.HorizontalScrollbarAlias == targetTextboxEntry.HorizontalScrollbarAlias &&
+		sourceTextboxEntry.VerticalScrollbarAlias == targetTextboxEntry.VerticalScrollbarAlias &&
 		reflect.DeepEqual(sourceTextboxEntry.TextData, targetTextboxEntry.TextData) &&
 		sourceTextboxEntry.ViewportXLocation == targetTextboxEntry.ViewportXLocation &&
 		sourceTextboxEntry.ViewportYLocation == targetTextboxEntry.ViewportYLocation &&
@@ -148,10 +149,7 @@ func IsTextboxEntryEqual(sourceTextboxEntry *TextboxEntryType, targetTextboxEntr
 		sourceTextboxEntry.HighlightEndX == targetTextboxEntry.HighlightEndX &&
 		sourceTextboxEntry.HighlightEndY == targetTextboxEntry.HighlightEndY &&
 		sourceTextboxEntry.IsHighlightActive == targetTextboxEntry.IsHighlightActive &&
-		sourceTextboxEntry.IsHighlightModeToggled == targetTextboxEntry.IsHighlightModeToggled {
-		return true
-	}
-	return false
+		sourceTextboxEntry.IsHighlightModeToggled == targetTextboxEntry.IsHighlightModeToggled
 }
 
 /*

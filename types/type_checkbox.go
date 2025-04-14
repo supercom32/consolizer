@@ -45,9 +45,6 @@ func NewCheckboxEntry(existingCheckboxEntry ...*CheckboxEntryType) CheckboxEntry
 }
 
 func IsCheckboxEqual(sourceCheckboxEntry *CheckboxEntryType, targetCheckboxEntry *CheckboxEntryType) bool {
-	if sourceCheckboxEntry.BaseControlType == targetCheckboxEntry.BaseControlType &&
-		sourceCheckboxEntry.IsSelected == targetCheckboxEntry.IsSelected {
-		return true
-	}
-	return false
+	return sourceCheckboxEntry.BaseControlType.IsEqual(&targetCheckboxEntry.BaseControlType) &&
+		sourceCheckboxEntry.IsSelected == targetCheckboxEntry.IsSelected
 }

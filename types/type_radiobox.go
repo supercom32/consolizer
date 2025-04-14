@@ -50,10 +50,7 @@ func NewRadioButtonEntry(existingRadioButtonEntry ...*RadioButtonEntryType) Radi
 }
 
 func IsRadioButtonEqual(sourceRadioButtonEntry *RadioButtonEntryType, targetRadioButtonEntry *RadioButtonEntryType) bool {
-	if sourceRadioButtonEntry.BaseControlType == targetRadioButtonEntry.BaseControlType &&
+	return sourceRadioButtonEntry.BaseControlType.IsEqual(&targetRadioButtonEntry.BaseControlType) &&
 		sourceRadioButtonEntry.IsSelected == targetRadioButtonEntry.IsSelected &&
-		sourceRadioButtonEntry.GroupId == targetRadioButtonEntry.GroupId {
-		return true
-	}
-	return false
+		sourceRadioButtonEntry.GroupId == targetRadioButtonEntry.GroupId
 }

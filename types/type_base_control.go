@@ -1,6 +1,7 @@
 package types
 
 import (
+	"encoding/json"
 	"sync"
 )
 
@@ -120,4 +121,93 @@ information should be noted:
 */
 func (shared *BaseControlType) SetStyle(style TuiStyleEntryType) {
 	shared.StyleEntry = style
+}
+
+/*
+GetAlias allows you to retrieve the alias of a control. In addition, the following
+information should be noted:
+
+- Returns the unique identifier for the control.
+- This alias is used to reference the control in other operations.
+- The alias is set when the control is created.
+*/
+func (shared *BaseControlType) GetAlias() string {
+	return shared.Alias
+}
+
+/*
+MarshalJSON allows you to serialize a control to JSON. In addition, the following
+information should be noted:
+
+- Converts the control's state to a JSON representation.
+- Includes all base control properties.
+- Used for saving and loading control configurations.
+*/
+func (shared BaseControlType) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		StyleEntry       TuiStyleEntryType
+		Alias            string
+		XLocation        int
+		YLocation        int
+		Width            int
+		Height           int
+		IsEnabled        bool
+		IsVisible        bool
+		Label            string
+		IsBorderDrawn    bool
+		TooltipAlias     string
+		IsTooltipEnabled bool
+	}{
+		StyleEntry:       shared.StyleEntry,
+		Alias:            shared.Alias,
+		XLocation:        shared.XLocation,
+		YLocation:        shared.YLocation,
+		Width:            shared.Width,
+		Height:           shared.Height,
+		IsEnabled:        shared.IsEnabled,
+		IsVisible:        shared.IsVisible,
+		Label:            shared.Label,
+		IsBorderDrawn:    shared.IsBorderDrawn,
+		TooltipAlias:     shared.TooltipAlias,
+		IsTooltipEnabled: shared.IsTooltipEnabled,
+	})
+}
+
+/*
+GetEntryAsJsonDump allows you to get a JSON string representation of a control. In addition,
+the following information should be noted:
+
+- Returns a formatted JSON string of the control's state.
+- Useful for debugging and logging purposes.
+- Panics if JSON marshaling fails.
+*/
+func (shared BaseControlType) GetEntryAsJsonDump() string {
+	j, err := json.Marshal(shared)
+	if err != nil {
+		panic(err)
+	}
+	return string(j)
+}
+
+/*
+IsEqual allows you to compare two controls for equality. In addition, the following
+information should be noted:
+
+- Compares all base control properties.
+- Returns true if all properties match, false otherwise.
+- Used for change detection and state synchronization.
+*/
+func (shared *BaseControlType) IsEqual(other *BaseControlType) bool {
+	// Compare all fields except the mutex
+	return shared.Alias == other.Alias &&
+		shared.XLocation == other.XLocation &&
+		shared.YLocation == other.YLocation &&
+		shared.Width == other.Width &&
+		shared.Height == other.Height &&
+		shared.IsEnabled == other.IsEnabled &&
+		shared.IsVisible == other.IsVisible &&
+		shared.Label == other.Label &&
+		shared.IsBorderDrawn == other.IsBorderDrawn &&
+		shared.TooltipAlias == other.TooltipAlias &&
+		shared.IsTooltipEnabled == other.IsTooltipEnabled
 }

@@ -448,31 +448,3 @@ func (shared *DropdownInstanceType) SetPosition(x, y int) *DropdownInstanceType 
 	}
 	return shared
 }
-
-// SetSize sets the dimensions of the dropdown
-func (shared *DropdownInstanceType) SetSize(width, height int) *DropdownInstanceType {
-	dropdownEntry := Dropdowns.Get(shared.layerAlias, shared.controlAlias)
-	if dropdownEntry != nil {
-		dropdownEntry.Width = width
-		dropdownEntry.Height = height
-	}
-	return shared
-}
-
-// SetVisible shows or hides the dropdown
-func (shared *DropdownInstanceType) SetVisible(visible bool) *DropdownInstanceType {
-	dropdownEntry := Dropdowns.Get(shared.layerAlias, shared.controlAlias)
-	if dropdownEntry != nil {
-		dropdownEntry.IsVisible = visible
-	}
-	return shared
-}
-
-// SetStyle sets the visual style of the dropdown
-func (shared *DropdownInstanceType) SetStyle(style types.TuiStyleEntryType) *DropdownInstanceType {
-	dropdownEntry := Dropdowns.Get(shared.layerAlias, shared.controlAlias)
-	if dropdownEntry != nil {
-		dropdownEntry.StyleEntry = style
-	}
-	return shared
-}

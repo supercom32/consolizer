@@ -107,16 +107,13 @@ information should be noted:
 - Used for change detection and state synchronization.
 */
 func IsProgressBarEntryEqual(sourceProgressBarEntry *ProgressBarEntryType, targetProgressBarEntry *ProgressBarEntryType) bool {
-	if sourceProgressBarEntry.BaseControlType == targetProgressBarEntry.BaseControlType &&
+	return sourceProgressBarEntry.BaseControlType.IsEqual(&targetProgressBarEntry.BaseControlType) &&
 		sourceProgressBarEntry.Label == targetProgressBarEntry.Label &&
 		sourceProgressBarEntry.Value == targetProgressBarEntry.Value &&
 		sourceProgressBarEntry.MaxValue == targetProgressBarEntry.MaxValue &&
 		sourceProgressBarEntry.IsBackgroundTransparent == targetProgressBarEntry.IsBackgroundTransparent &&
 		sourceProgressBarEntry.Length == targetProgressBarEntry.Length &&
-		sourceProgressBarEntry.IsHorizontal == targetProgressBarEntry.IsHorizontal {
-		return true
-	}
-	return false
+		sourceProgressBarEntry.IsHorizontal == targetProgressBarEntry.IsHorizontal
 }
 
 /*

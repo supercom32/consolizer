@@ -157,7 +157,7 @@ information should be noted:
 - Used for change detection and state synchronization.
 */
 func IsTooltipEntryEqual(sourceTooltipEntry *TooltipEntryType, targetTooltipEntry *TooltipEntryType) bool {
-	if sourceTooltipEntry.BaseControlType == targetTooltipEntry.BaseControlType &&
+	return sourceTooltipEntry.BaseControlType.IsEqual(&targetTooltipEntry.BaseControlType) &&
 		sourceTooltipEntry.Text == targetTooltipEntry.Text &&
 		sourceTooltipEntry.ParentControlAlias == targetTooltipEntry.ParentControlAlias &&
 		sourceTooltipEntry.HotspotXLocation == targetTooltipEntry.HotspotXLocation &&
@@ -169,8 +169,5 @@ func IsTooltipEntryEqual(sourceTooltipEntry *TooltipEntryType, targetTooltipEntr
 		sourceTooltipEntry.TooltipWidth == targetTooltipEntry.TooltipWidth &&
 		sourceTooltipEntry.TooltipHeight == targetTooltipEntry.TooltipHeight &&
 		sourceTooltipEntry.IsLocationAbsolute == targetTooltipEntry.IsLocationAbsolute &&
-		sourceTooltipEntry.HoverDisplayDelay == targetTooltipEntry.HoverDisplayDelay {
-		return true
-	}
-	return false
+		sourceTooltipEntry.HoverDisplayDelay == targetTooltipEntry.HoverDisplayDelay
 }

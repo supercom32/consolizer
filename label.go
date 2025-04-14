@@ -128,21 +128,3 @@ func (shared *LabelInstanceType) SetSize(width, height int) *LabelInstanceType {
 	}
 	return shared
 }
-
-// SetVisible shows or hides the label
-func (shared *LabelInstanceType) SetVisible(visible bool) *LabelInstanceType {
-	labelEntry := Labels.Get(shared.layerAlias, shared.controlAlias)
-	if labelEntry != nil {
-		labelEntry.IsVisible = visible
-	}
-	return shared
-}
-
-// SetStyle sets the visual style of the label
-func (shared *LabelInstanceType) SetStyle(style types.TuiStyleEntryType) *LabelInstanceType {
-	labelEntry := Labels.Get(shared.layerAlias, shared.controlAlias)
-	if labelEntry != nil {
-		labelEntry.StyleEntry = style
-	}
-	return shared
-}

@@ -82,14 +82,8 @@ information should be noted:
 - Returns true if all properties match, false otherwise.
 - Used for change detection and state synchronization.
 */
-func IsLabelEntryEqual(sourceButtonEntry *LabelEntryType, targetButtonEntry *LabelEntryType) bool {
-	if sourceButtonEntry.StyleEntry == targetButtonEntry.StyleEntry &&
-		sourceButtonEntry.Alias == targetButtonEntry.Alias &&
-		sourceButtonEntry.Text == targetButtonEntry.Text &&
-		sourceButtonEntry.XLocation == targetButtonEntry.XLocation &&
-		sourceButtonEntry.YLocation == targetButtonEntry.YLocation &&
-		sourceButtonEntry.Width == targetButtonEntry.Width {
-		return true
-	}
-	return false
+func IsLabelEntryEqual(sourceLabelEntry *LabelEntryType, targetLabelEntry *LabelEntryType) bool {
+	return sourceLabelEntry.BaseControlType.IsEqual(&targetLabelEntry.BaseControlType) &&
+		sourceLabelEntry.Text == targetLabelEntry.Text &&
+		sourceLabelEntry.IsBackgroundTransparent == targetLabelEntry.IsBackgroundTransparent
 }

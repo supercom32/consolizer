@@ -322,21 +322,3 @@ func (shared *ButtonInstanceType) SetSize(width, height int) *ButtonInstanceType
 	}
 	return shared
 }
-
-// SetVisible shows or hides the button
-func (shared *ButtonInstanceType) SetVisible(visible bool) *ButtonInstanceType {
-	buttonEntry := Buttons.Get(shared.layerAlias, shared.controlAlias)
-	if buttonEntry != nil {
-		buttonEntry.IsVisible = visible
-	}
-	return shared
-}
-
-// SetStyle sets the visual style of the button
-func (shared *ButtonInstanceType) SetStyle(style types.TuiStyleEntryType) *ButtonInstanceType {
-	buttonEntry := Buttons.Get(shared.layerAlias, shared.controlAlias)
-	if buttonEntry != nil {
-		buttonEntry.StyleEntry = style
-	}
-	return shared
-}

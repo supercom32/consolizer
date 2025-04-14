@@ -9,7 +9,7 @@ func TestButtonTypeCreation(test *testing.T) {
 	firstButtonEntry := NewButtonEntry()
 	firstButtonEntry.Height = 10
 	firstButtonEntry.Width = 11
-	firstButtonEntry.ButtonAlias = "MyButton"
+	firstButtonEntry.Alias = "MyButton"
 	firstButtonEntry.IsPressed = true
 	firstButtonEntry.IsSelected = true
 	firstButtonEntry.StyleEntry = NewTuiStyleEntry()
