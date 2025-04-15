@@ -10,8 +10,7 @@ import (
 )
 
 type selectorInstanceType struct {
-	layerAlias   string
-	controlAlias string
+	BaseControlInstanceType
 }
 
 type selectorType struct{}
@@ -199,6 +198,7 @@ func (shared *selectorType) Add(layerAlias string, selectorAlias string, styleEn
 	var selectorInstance selectorInstanceType
 	selectorInstance.layerAlias = layerAlias
 	selectorInstance.controlAlias = selectorAlias
+	selectorInstance.controlType = "selectoritem"
 	setFocusedControl(layerAlias, selectorAlias, constants.CellTypeSelectorItem)
 	return selectorInstance
 }

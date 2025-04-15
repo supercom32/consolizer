@@ -10,8 +10,7 @@ import (
 )
 
 type textFieldInstanceType struct {
-	layerAlias   string
-	controlAlias string
+	BaseControlInstanceType
 }
 
 type textFieldType struct{}
@@ -22,48 +21,6 @@ var TextField textFieldType
 // ============================================================================
 // REGULAR ENTRY
 // ============================================================================
-
-/*
-AddToTabIndex allows you to add a text field to the tab index. This enables keyboard navigation
-between controls using the tab key. In addition, the following information should be noted:
-
-- The text field will be added to the tab order based on the order in which it was created.
-- The tab index is used to determine which control receives focus when the tab key is pressed.
-*/
-func (shared *textFieldInstanceType) AddToTabIndex() {
-	addTabIndex(shared.layerAlias, shared.controlAlias, constants.CellTypeTextField)
-}
-
-/*
-GetFocus allows you to set focus to a text field. Once called, the text field will be ready
-to receive keyboard input. In addition, the following information should be noted:
-
-- If the text field does not exist, no operation takes place.
-- The text field will be validated before receiving focus.
-- The cursor will be positioned at the end of the current text.
-*/
-func (shared *textFieldInstanceType) GetFocus() string {
-	if TextFields.IsExists(shared.layerAlias, shared.controlAlias) {
-		validatorTextField(shared.layerAlias, shared.controlAlias)
-		setFocusedControl(shared.layerAlias, shared.controlAlias, constants.CellTypeTextField)
-	}
-	return ""
-}
-
-/*
-Delete allows you to remove a text field from a text layer. In addition, the following
-information should be noted:
-
-- If you attempt to delete a text field which does not exist, then the request
-will simply be ignored.
-- All memory associated with the text field will be freed.
-*/
-func (shared *textFieldInstanceType) Delete() string {
-	if TextFields.IsExists(shared.layerAlias, shared.controlAlias) {
-		TextFields.Remove(shared.layerAlias, shared.controlAlias)
-	}
-	return ""
-}
 
 /*
 GetValue allows you to get the current value of your text field. In addition, the following
@@ -152,6 +109,7 @@ func (shared *textFieldType) Add(layerAlias string, textFieldAlias string, style
 	var textFieldInstance textFieldInstanceType
 	textFieldInstance.layerAlias = layerAlias
 	textFieldInstance.controlAlias = textFieldAlias
+	textFieldInstance.controlType = "textField"
 	return textFieldInstance
 }
 
@@ -702,13 +660,13 @@ information should be noted:
 - The value will be trimmed of any leading or trailing whitespace before being set.
 - If the text field does not exist, the request will be ignored.
 */
-func (shared *textFieldInstanceType) SetValue(value string) string {
+func (shared *textFieldInstanceType) SetValue(value string) *textFieldInstanceType {
 	if TextFields.IsExists(shared.layerAlias, shared.controlAlias) {
 		validatorTextField(shared.layerAlias, shared.controlAlias)
 		textFieldEntry := TextFields.Get(shared.layerAlias, shared.controlAlias)
 		textFieldEntry.CurrentValue = []rune(value)
 	}
-	return ""
+	return shared
 }
 
 /*
@@ -719,13 +677,13 @@ information should be noted:
 - If the text field is password protected, the default value will be stored but displayed as masked characters.
 - The default value will be trimmed of any leading or trailing whitespace before being set.
 */
-func (shared *textFieldInstanceType) SetDefaultValue(value string) string {
+func (shared *textFieldInstanceType) SetDefaultValue(value string) *textFieldInstanceType {
 	if TextFields.IsExists(shared.layerAlias, shared.controlAlias) {
 		validatorTextField(shared.layerAlias, shared.controlAlias)
 		textFieldEntry := TextFields.Get(shared.layerAlias, shared.controlAlias)
 		textFieldEntry.DefaultValue = value
 	}
-	return ""
+	return shared
 }
 
 /*
@@ -736,13 +694,13 @@ the following information should be noted:
 - Setting the maximum length to 0 or a negative number will remove the length restriction.
 - The maximum length applies to the actual text, not including any masked characters for password fields.
 */
-func (shared *textFieldInstanceType) SetMaxLength(length int) string {
+func (shared *textFieldInstanceType) SetMaxLength(length int) *textFieldInstanceType {
 	if TextFields.IsExists(shared.layerAlias, shared.controlAlias) {
 		validatorTextField(shared.layerAlias, shared.controlAlias)
 		textFieldEntry := TextFields.Get(shared.layerAlias, shared.controlAlias)
 		textFieldEntry.MaxLengthAllowed = length
 	}
-	return ""
+	return shared
 }
 
 /*
@@ -753,13 +711,13 @@ the following information should be noted:
 - The actual value is still stored and can be retrieved using GetValue.
 - This setting can be changed at any time, and the display will update accordingly.
 */
-func (shared *textFieldInstanceType) SetPasswordProtected(isProtected bool) string {
+func (shared *textFieldInstanceType) SetPasswordProtected(isProtected bool) *textFieldInstanceType {
 	if TextFields.IsExists(shared.layerAlias, shared.controlAlias) {
 		validatorTextField(shared.layerAlias, shared.controlAlias)
 		textFieldEntry := TextFields.Get(shared.layerAlias, shared.controlAlias)
 		textFieldEntry.IsPasswordProtected = isProtected
 	}
-	return ""
+	return shared
 }
 
 /*
@@ -770,13 +728,13 @@ the following information should be noted:
 - If the specified position is beyond the length of the text, the cursor will be placed at the end.
 - The viewport will automatically adjust to keep the cursor visible.
 */
-func (shared *textFieldInstanceType) SetCursorPosition(position int) string {
+func (shared *textFieldInstanceType) SetCursorPosition(position int) *textFieldInstanceType {
 	if TextFields.IsExists(shared.layerAlias, shared.controlAlias) {
 		validatorTextField(shared.layerAlias, shared.controlAlias)
 		textFieldEntry := TextFields.Get(shared.layerAlias, shared.controlAlias)
 		textFieldEntry.CursorPosition = position
 	}
-	return ""
+	return shared
 }
 
 /*
@@ -787,124 +745,48 @@ In addition, the following information should be noted:
 - If the specified position is beyond the length of the text, the viewport will be set to the end.
 - The cursor will remain visible within the viewport.
 */
-func (shared *textFieldInstanceType) SetViewportPosition(position int) string {
+func (shared *textFieldInstanceType) SetViewportPosition(position int) *textFieldInstanceType {
 	if TextFields.IsExists(shared.layerAlias, shared.controlAlias) {
 		validatorTextField(shared.layerAlias, shared.controlAlias)
 		textFieldEntry := TextFields.Get(shared.layerAlias, shared.controlAlias)
 		textFieldEntry.ViewportPosition = position
 	}
-	return ""
-}
-
-/*
-SetStyle allows you to set the visual style of the text field. In addition, the following
-information should be noted:
-
-- The style includes foreground and background colors, as well as text attributes.
-- The style can be changed at any time, and the display will update immediately.
-- If the style is invalid or not found, the default style will be used.
-*/
-func (shared *textFieldInstanceType) SetStyle(style types.TuiStyleEntryType) *textFieldInstanceType {
-	if TextFields.IsExists(shared.layerAlias, shared.controlAlias) {
-		validatorTextField(shared.layerAlias, shared.controlAlias)
-		textFieldEntry := TextFields.Get(shared.layerAlias, shared.controlAlias)
-		textFieldEntry.StyleEntry = style
-	}
 	return shared
 }
 
 /*
-SetLayer allows you to change the layer that the text field belongs to. In addition, the following
-information should be noted:
+GetTooltip retrieves the tooltip associated with this text field and returns the text field instance
+for method chaining. In addition, the following information should be noted:
 
-- The text field will be removed from its current layer and added to the new layer.
-- If the new layer does not exist, it will be created automatically.
-- The text field's position and other properties will be preserved.
+- The tooltip is automatically created when the text field is added.
+- Use the returned instance to continue chaining method calls.
+- Follow the same pattern as other controls for consistency.
 */
-func (shared *textFieldInstanceType) SetLayer(layerAlias string) string {
-	if TextFields.IsExists(shared.layerAlias, shared.controlAlias) {
-		validatorTextField(shared.layerAlias, shared.controlAlias)
-		TextFields.Remove(shared.layerAlias, shared.controlAlias)
-		TextFields.Add(layerAlias, shared.controlAlias, TextFields.Get(shared.layerAlias, shared.controlAlias))
-	}
-	return ""
+func (shared *textFieldInstanceType) GetTooltip() *textFieldInstanceType {
+	// No need to retrieve the tooltip, just return self for chaining
+	return shared
 }
 
-/*
-SetPosition allows you to set the position of the text field on the screen. In addition, the following
-information should be noted:
-
-- The position is specified in screen coordinates, where (0,0) is the top-left corner.
-- The text field will be redrawn at the new position immediately.
-- If the new position would place the text field outside the screen bounds, it will be adjusted.
-*/
-func (shared *textFieldInstanceType) SetPosition(x int, y int) *textFieldInstanceType {
+// Add a helper method to set tooltip text
+func (shared *textFieldInstanceType) SetTooltipText(text string) *textFieldInstanceType {
 	if TextFields.IsExists(shared.layerAlias, shared.controlAlias) {
-		validatorTextField(shared.layerAlias, shared.controlAlias)
-		validateLayerLocationByLayerAlias(shared.layerAlias, x, y)
 		textFieldEntry := TextFields.Get(shared.layerAlias, shared.controlAlias)
-		textFieldEntry.XLocation = x
-		textFieldEntry.YLocation = y
+		var tooltipInstance TooltipInstanceType
+		tooltipInstance.layerAlias = shared.layerAlias
+		tooltipInstance.controlAlias = textFieldEntry.TooltipAlias
+		tooltipInstance.SetTooltipValue(text)
 	}
 	return shared
 }
 
-/*
-SetSize allows you to set the size of the text field. In addition, the following information
-should be noted:
-
-- The size is specified in characters, where width is the number of visible characters and height is always 1.
-- If the new size is smaller than the current text, the text will be truncated.
-- The viewport will automatically adjust to show as much text as possible.
-*/
-func (shared *textFieldInstanceType) SetSize(width int, height int) *textFieldInstanceType {
+// Add a helper method to enable/disable the tooltip
+func (shared *textFieldInstanceType) EnableTooltip(enabled bool) *textFieldInstanceType {
 	if TextFields.IsExists(shared.layerAlias, shared.controlAlias) {
-		validatorTextField(shared.layerAlias, shared.controlAlias)
 		textFieldEntry := TextFields.Get(shared.layerAlias, shared.controlAlias)
-		textFieldEntry.Width = width
+		var tooltipInstance TooltipInstanceType
+		tooltipInstance.layerAlias = shared.layerAlias
+		tooltipInstance.controlAlias = textFieldEntry.TooltipAlias
+		tooltipInstance.SetEnabled(enabled)
 	}
 	return shared
-}
-
-/*
-SetVisible allows you to control whether the text field is visible on the screen. In addition,
-the following information should be noted:
-
-- When set to false, the text field will not be drawn but will still maintain its state.
-- The text field can still receive focus and input even when invisible.
-- Setting visibility to true will redraw the text field at its current position.
-*/
-func (shared *textFieldInstanceType) SetVisible(visible bool) *textFieldInstanceType {
-	if TextFields.IsExists(shared.layerAlias, shared.controlAlias) {
-		validatorTextField(shared.layerAlias, shared.controlAlias)
-		textFieldEntry := TextFields.Get(shared.layerAlias, shared.controlAlias)
-		textFieldEntry.IsEnabled = visible
-	}
-	return shared
-}
-
-/*
-SetEnabled allows you to control whether the text field can receive input. In addition, the following
-information should be noted:
-
-- When set to false, the text field will appear grayed out and will not accept input.
-- The text field can still be visible and maintain its state when disabled.
-- Setting enabled to true will restore normal functionality.
-*/
-func (shared *textFieldInstanceType) SetEnabled(isEnabled bool) string {
-	if TextFields.IsExists(shared.layerAlias, shared.controlAlias) {
-		validatorTextField(shared.layerAlias, shared.controlAlias)
-		textFieldEntry := TextFields.Get(shared.layerAlias, shared.controlAlias)
-		textFieldEntry.IsEnabled = isEnabled
-	}
-	return ""
-}
-
-// GetBounds returns the position and size of the text field
-func (shared *textFieldInstanceType) GetBounds() (int, int, int, int) {
-	textFieldEntry := TextFields.Get(shared.layerAlias, shared.controlAlias)
-	if textFieldEntry == nil {
-		return 0, 0, 0, 0
-	}
-	return textFieldEntry.XLocation, textFieldEntry.YLocation, textFieldEntry.Width, textFieldEntry.Height
 }

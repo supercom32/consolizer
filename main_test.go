@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"log"
 	"strconv"
-	"supercom32.net/consolizer/constants"
-	"supercom32.net/consolizer/types"
 	"testing"
 	"time"
+
+	"supercom32.net/consolizer/constants"
+	"supercom32.net/consolizer/types"
 )
 
 func TestMainStub(test *testing.T) {
@@ -17,7 +18,7 @@ func TestMainStub(test *testing.T) {
 	// testDropdown()
 	// testScrollBars()
 	// testSelector()
-	testTextField()
+	//testTextField()
 	//testProgressBar()
 	// testWindowMovement()
 	// testButtonPressAction()
@@ -111,12 +112,12 @@ func testTextboxes() {
 	styleEntry := types.NewTuiStyleEntry()
 	styleEntry.SelectorTextAlignment = 2
 	textBox := layer1.AddTextbox(styleEntry, 2, 2, 20, 5, true)
-	textBox.setText("This is a test 1\nthis is ☑ second line which is very long and big 1\n李克强宣布中国今年经济增长的目标为 third line. 1")
+	textBox.SetText("This is a test 1\nthis is ☑ second line which is very long and big 1\n李克强宣布中国今年经济增长的目标为 third line. 1")
 
 	textBox2 := layer1.AddTextbox(styleEntry, 40, 2, 20, 5, false)
-	textBox2.setText("This is a test\nthis is ☑ second line which is very long and big\nthis is 文字 third line.")
+	textBox2.SetText("This is a test\nthis is ☑ second line which is very long and big\nthis is 文字 third line.")
 	textBox3 := layer1.AddTextbox(styleEntry, 1, 10, 20, 7, true)
-	textBox3.setText("This is a test123456\nThis DDDDtesdfsfsdfsdfsdfsdfsdfsddffdsfdsst123456\nThis is GGGGGst1234\nThis is a ZZZZst123456\nThis is a test123456\nzzzzzzzzz\naaaa\ndddddd\nttttt\n222222\n555555")
+	textBox3.SetText("This is a test123456\nThis DDDDtesdfsfsdfsdfsdfsdfsdfsddffdsfdsst123456\nThis is GGGGGst1234\nThis is a ZZZZst123456\nThis is a test123456\nzzzzzzzzz\naaaa\ndddddd\nttttt\n222222\n555555")
 
 	for {
 		mouseXLocation, mouseYLocation, _, _ := GetMouseStatus()

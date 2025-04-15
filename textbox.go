@@ -12,8 +12,7 @@ import (
 )
 
 type TextboxInstanceType struct {
-	layerAlias   string
-	controlAlias string
+	BaseControlInstanceType
 }
 
 type textboxType struct{}
@@ -81,44 +80,51 @@ func DeleteAllTextboxesFromLayer(layerAlias string) {
 	}
 }
 
-// ============================================================================
-// REGULAR ENTRY
-// ============================================================================
-
 /*
-AddToTabIndex allows you to add a textbox to the tab index. This enables keyboard navigation
-between controls using the tab key. In addition, the following information should be noted:
+GetTooltip retrieves the tooltip associated with this textbox and returns the textbox instance
+for method chaining. In addition, the following information should be noted:
 
-- The textbox will be added to the tab order based on the order in which it was created.
-- The tab index is used to determine which control receives focus when the tab key is pressed.
+- The tooltip is automatically created when the textbox is added.
+- Use the returned instance to continue chaining method calls.
+- Follow the same pattern as other controls for consistency.
 */
-func (shared *TextboxInstanceType) AddToTabIndex() {
-	addTabIndex(shared.layerAlias, shared.controlAlias, constants.CellTypeTextbox)
+func (shared *TextboxInstanceType) GetTooltip() *TextboxInstanceType {
+	// No need to retrieve the tooltip, just return self for chaining
+	return shared
 }
 
-/*
-Delete allows you to remove a textbox from a text layer. In addition, the following
-information should be noted:
-
-- If you attempt to delete a textbox which does not exist, then the request
-will simply be ignored.
-- All memory associated with the textbox will be freed.
-*/
-func (shared *TextboxInstanceType) Delete() string {
+// Add a helper method to set tooltip text
+func (shared *TextboxInstanceType) SetTooltipText(text string) *TextboxInstanceType {
 	if Textboxes.IsExists(shared.layerAlias, shared.controlAlias) {
-		Textboxes.Remove(shared.layerAlias, shared.controlAlias)
+		textboxEntry := Textboxes.Get(shared.layerAlias, shared.controlAlias)
+		var tooltipInstance TooltipInstanceType
+		tooltipInstance.layerAlias = shared.layerAlias
+		tooltipInstance.controlAlias = textboxEntry.TooltipAlias
+		tooltipInstance.SetTooltipValue(text)
 	}
-	return ""
+	return shared
+}
+
+// Add a helper method to enable/disable the tooltip
+func (shared *TextboxInstanceType) EnableTooltip(enabled bool) *TextboxInstanceType {
+	if Textboxes.IsExists(shared.layerAlias, shared.controlAlias) {
+		textboxEntry := Textboxes.Get(shared.layerAlias, shared.controlAlias)
+		var tooltipInstance TooltipInstanceType
+		tooltipInstance.layerAlias = shared.layerAlias
+		tooltipInstance.controlAlias = textboxEntry.TooltipAlias
+		tooltipInstance.SetEnabled(enabled)
+	}
+	return shared
 }
 
 /*
-setText allows you to set the text for a textbox. If the textbox instance
+SetText allows you to set the text for a textbox. If the textbox instance
 no longer exists, then no operation takes place. In addition, the following
 information should be noted:
 
 - Text can be broke up into multiple lines by using the '\n' escape sequence.
 */
-func (shared *TextboxInstanceType) setText(text string) {
+func (shared *TextboxInstanceType) SetText(text string) *TextboxInstanceType {
 	if Textboxes.IsExists(shared.layerAlias, shared.controlAlias) {
 		textData := strings.Split(text, "\n")
 		textboxEntry := Textboxes.Get(shared.layerAlias, shared.controlAlias)
@@ -127,18 +133,20 @@ func (shared *TextboxInstanceType) setText(text string) {
 		}
 		textbox.setTextboxMaxScrollBarValues(shared.layerAlias, shared.controlAlias)
 	}
+	return shared
 }
 
 /*
-setViewport allows you to set the current viewport for a textbox. If the textbox instance
+SetViewport allows you to set the current viewport for a textbox. If the textbox instance
 no longer exists, then no operation takes place.
 */
-func (shared *TextboxInstanceType) setViewport(xLocation int, yLocation int) {
+func (shared *TextboxInstanceType) SetViewport(xLocation int, yLocation int) *TextboxInstanceType {
 	if Textboxes.IsExists(shared.layerAlias, shared.controlAlias) {
 		textboxEntry := Textboxes.Get(shared.layerAlias, shared.controlAlias)
 		textboxEntry.ViewportXLocation = xLocation
 		textboxEntry.ViewportYLocation = yLocation
 	}
+	return shared
 }
 
 /*
@@ -445,6 +453,7 @@ func (shared *textboxType) AddTextbox(layerAlias string, textboxAlias string, st
 	var textboxInstance TextboxInstanceType
 	textboxInstance.layerAlias = layerAlias
 	textboxInstance.controlAlias = textboxAlias
+	textboxInstance.controlType = "textbox"
 	return textboxInstance
 }
 

@@ -7,8 +7,7 @@ import (
 )
 
 type ScrollbarInstanceType struct {
-	layerAlias   string
-	controlAlias string
+	BaseControlInstanceType
 }
 
 type scrollbarType struct{}
@@ -105,6 +104,7 @@ func (shared *scrollbarType) Add(layerAlias string, scrollbarAlias string, style
 	var ScrollbarInstance ScrollbarInstanceType
 	ScrollbarInstance.layerAlias = layerAlias
 	ScrollbarInstance.controlAlias = scrollbarAlias
+	ScrollbarInstance.controlType = "scrollbar"
 	return ScrollbarInstance
 }
 
@@ -384,51 +384,4 @@ func (shared *scrollbarType) updateMouseEvent() bool {
 		eventStateMemory.stateId = constants.EventStateNone
 	}
 	return isScreenUpdateRequired
-}
-
-// GetBounds returns the position and size of the scrollbar
-func (shared *ScrollbarInstanceType) GetBounds() (int, int, int, int) {
-	scrollbarEntry := ScrollBars.Get(shared.layerAlias, shared.controlAlias)
-	if scrollbarEntry == nil {
-		return 0, 0, 0, 0
-	}
-	return scrollbarEntry.XLocation, scrollbarEntry.YLocation, scrollbarEntry.Width, scrollbarEntry.Height
-}
-
-// SetPosition sets the position of the scrollbar
-func (shared *ScrollbarInstanceType) SetPosition(x, y int) *ScrollbarInstanceType {
-	scrollbarEntry := ScrollBars.Get(shared.layerAlias, shared.controlAlias)
-	if scrollbarEntry != nil {
-		scrollbarEntry.XLocation = x
-		scrollbarEntry.YLocation = y
-	}
-	return shared
-}
-
-// SetSize sets the dimensions of the scrollbar
-func (shared *ScrollbarInstanceType) SetSize(width, height int) *ScrollbarInstanceType {
-	scrollbarEntry := ScrollBars.Get(shared.layerAlias, shared.controlAlias)
-	if scrollbarEntry != nil {
-		scrollbarEntry.Width = width
-		scrollbarEntry.Height = height
-	}
-	return shared
-}
-
-// SetVisible shows or hides the scrollbar
-func (shared *ScrollbarInstanceType) SetVisible(visible bool) *ScrollbarInstanceType {
-	scrollbarEntry := ScrollBars.Get(shared.layerAlias, shared.controlAlias)
-	if scrollbarEntry != nil {
-		scrollbarEntry.IsVisible = visible
-	}
-	return shared
-}
-
-// SetStyle sets the visual style of the scrollbar
-func (shared *ScrollbarInstanceType) SetStyle(style types.TuiStyleEntryType) *ScrollbarInstanceType {
-	scrollbarEntry := ScrollBars.Get(shared.layerAlias, shared.controlAlias)
-	if scrollbarEntry != nil {
-		scrollbarEntry.StyleEntry = style
-	}
-	return shared
 }

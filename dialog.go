@@ -90,6 +90,11 @@ func getDialogAttributeEntry(attributeTag string, defaultAttributeEntry types.At
 	var attributeEntry types.AttributeEntryType
 	if attributeTag != "" {
 		textStyleAlias := stringformat.GetSubString(attributeTag, 1, len(attributeTag)-2)
+		// Special case for the closing tag "/"
+		if textStyleAlias == "/" {
+			return defaultAttributeEntry
+		}
+		// Normal case for style tags
 		if IsTextStyleExists(textStyleAlias) {
 			attributeEntry = GetTextStyleAsAttributeEntry(textStyleAlias)
 			return attributeEntry

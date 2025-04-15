@@ -10,8 +10,7 @@ import (
 )
 
 type TooltipInstanceType struct {
-	layerAlias   string
-	controlAlias string
+	BaseControlInstanceType
 }
 
 type tooltipType struct{}
@@ -22,26 +21,6 @@ var Tooltips = memory.NewControlMemoryManager[types.TooltipEntryType]()
 // ============================================================================
 // REGULAR ENTRY
 // ============================================================================
-
-func (shared *TooltipInstanceType) AddToTabIndex() {
-	addTabIndex(shared.layerAlias, shared.controlAlias, constants.CellTypeTooltip)
-}
-
-func (shared *TooltipInstanceType) Delete() string {
-	if Tooltips.IsExists(shared.layerAlias, shared.controlAlias) {
-		Tooltips.Remove(shared.layerAlias, shared.controlAlias)
-	}
-	return ""
-}
-
-/*
-SetTooltipValue allows you to set the value of the tooltip associated with the TooltipInstanceType.
-This function updates the value of the tooltip label identified by the layerAlias and tooltipAlias fields.
-*/
-func (shared *TooltipInstanceType) SetTooltipValue(text string) {
-	labelEntry := Labels.Get(shared.layerAlias, shared.controlAlias)
-	labelEntry.Text = text
-}
 
 func (shared *TooltipInstanceType) SetEnabled(enabled bool) *TooltipInstanceType {
 	tooltipEntry := Tooltips.Get(shared.layerAlias, shared.controlAlias)
@@ -71,6 +50,7 @@ func (shared *tooltipType) Add(layerAlias string, tooltipAlias string, tooltipTe
 	var tooltipInstance TooltipInstanceType
 	tooltipInstance.layerAlias = layerAlias
 	tooltipInstance.controlAlias = tooltipAlias
+	tooltipInstance.controlType = "tooltip"
 	return tooltipInstance
 }
 
@@ -271,4 +251,22 @@ func (shared *TooltipInstanceType) setParentControlAlias(parentControlAlias stri
 		tooltipEntry.ParentControlAlias = parentControlAlias
 	}
 	return shared
+}
+
+/*
+SetTooltipValue allows you to set the value of the tooltip associated with the TooltipInstanceType.
+This function updates the value of the tooltip label identified by the layerAlias and tooltipAlias fields.
+*/
+func (shared *TooltipInstanceType) SetTooltipValue(text string) *TooltipInstanceType {
+	labelEntry := Labels.Get(shared.layerAlias, shared.controlAlias)
+	labelEntry.Text = text
+	return shared
+}
+
+/*
+SetText allows you to set the text of the tooltip. This is an alias for SetTooltipValue
+for consistency with other controls.
+*/
+func (shared *TooltipInstanceType) SetText(text string) *TooltipInstanceType {
+	return shared.SetTooltipValue(text)
 }
