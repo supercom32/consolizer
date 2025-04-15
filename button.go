@@ -15,8 +15,7 @@ type buttonHistoryType struct {
 var buttonHistory buttonHistoryType
 
 type ButtonInstanceType struct {
-	layerAlias   string
-	controlAlias string
+	BaseControlInstanceType
 }
 
 type buttonType struct{}
@@ -86,11 +85,6 @@ func (shared *ButtonInstanceType) IsButtonStatePressed() bool {
 	return false
 }
 
-func (shared *ButtonInstanceType) SetEnabled(isEnabled bool) {
-	buttonEntry := Buttons.Get(shared.layerAlias, shared.controlAlias)
-	buttonEntry.IsEnabled = isEnabled
-}
-
 /*
 Add allows you to add a button to a text layer. Once called, an instance of your control is
 returned which will allow you to read or manipulate the properties for it. The Style of the button
@@ -137,6 +131,7 @@ func (shared *buttonType) Add(layerAlias string, buttonAlias string, buttonLabel
 	var buttonInstance ButtonInstanceType
 	buttonInstance.layerAlias = layerAlias
 	buttonInstance.controlAlias = buttonAlias
+	buttonInstance.controlType = "button"
 	return buttonInstance
 }
 
@@ -292,33 +287,4 @@ func (shared *buttonType) updateButtonStateMouse() bool {
 		}
 	}
 	return isUpdateRequired
-}
-
-// GetBounds returns the position and size of the button
-func (shared *ButtonInstanceType) GetBounds() (int, int, int, int) {
-	buttonEntry := Buttons.Get(shared.layerAlias, shared.controlAlias)
-	if buttonEntry == nil {
-		return 0, 0, 0, 0
-	}
-	return buttonEntry.XLocation, buttonEntry.YLocation, buttonEntry.Width, buttonEntry.Height
-}
-
-// SetPosition sets the position of the button
-func (shared *ButtonInstanceType) SetPosition(x, y int) *ButtonInstanceType {
-	buttonEntry := Buttons.Get(shared.layerAlias, shared.controlAlias)
-	if buttonEntry != nil {
-		buttonEntry.XLocation = x
-		buttonEntry.YLocation = y
-	}
-	return shared
-}
-
-// SetSize sets the dimensions of the button
-func (shared *ButtonInstanceType) SetSize(width, height int) *ButtonInstanceType {
-	buttonEntry := Buttons.Get(shared.layerAlias, shared.controlAlias)
-	if buttonEntry != nil {
-		buttonEntry.Width = width
-		buttonEntry.Height = height
-	}
-	return shared
 }

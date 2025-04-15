@@ -8,8 +8,7 @@ import (
 )
 
 type CheckboxInstanceType struct {
-	layerAlias   string
-	controlAlias string
+	BaseControlInstanceType
 }
 
 type checkboxType struct{}
@@ -102,6 +101,7 @@ func (shared *checkboxType) Add(layerAlias string, checkboxAlias string, checkbo
 	var checkboxInstance CheckboxInstanceType
 	checkboxInstance.layerAlias = layerAlias
 	checkboxInstance.controlAlias = checkboxAlias
+	checkboxInstance.controlType = "checkbox"
 	return checkboxInstance
 }
 
@@ -196,47 +196,4 @@ func (shared *checkboxType) updateMouseEvent() bool {
 		}
 	}
 	return isUpdateRequired
-}
-
-// GetBounds returns the position and size of the checkbox
-func (shared *CheckboxInstanceType) GetBounds() (int, int, int, int) {
-	checkboxEntry := Checkboxes.Get(shared.layerAlias, shared.controlAlias)
-	if checkboxEntry == nil {
-		return 0, 0, 0, 0
-	}
-	return checkboxEntry.XLocation, checkboxEntry.YLocation, 1, 1
-}
-
-// SetPosition sets the position of the checkbox
-func (shared *CheckboxInstanceType) SetPosition(x, y int) *CheckboxInstanceType {
-	checkboxEntry := Checkboxes.Get(shared.layerAlias, shared.controlAlias)
-	if checkboxEntry != nil {
-		checkboxEntry.XLocation = x
-		checkboxEntry.YLocation = y
-	}
-	return shared
-}
-
-// SetSize is not applicable for checkboxes as they are fixed size
-func (shared *CheckboxInstanceType) SetSize(width, height int) *CheckboxInstanceType {
-	// Checkboxes are fixed size (1x1)
-	return shared
-}
-
-// SetVisible shows or hides the checkbox
-func (shared *CheckboxInstanceType) SetVisible(visible bool) *CheckboxInstanceType {
-	checkboxEntry := Checkboxes.Get(shared.layerAlias, shared.controlAlias)
-	if checkboxEntry != nil {
-		checkboxEntry.IsVisible = visible
-	}
-	return shared
-}
-
-// SetStyle sets the visual style of the checkbox
-func (shared *CheckboxInstanceType) SetStyle(style types.TuiStyleEntryType) *CheckboxInstanceType {
-	checkboxEntry := Checkboxes.Get(shared.layerAlias, shared.controlAlias)
-	if checkboxEntry != nil {
-		checkboxEntry.StyleEntry = style
-	}
-	return shared
 }

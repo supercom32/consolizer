@@ -10,8 +10,7 @@ import (
 )
 
 type LabelInstanceType struct {
-	layerAlias   string
-	controlAlias string
+	BaseControlInstanceType
 }
 
 type labelType struct{}
@@ -62,6 +61,7 @@ func (shared *labelType) Add(layerAlias string, labelAlias string, labelValue st
 	var labelInstance LabelInstanceType
 	labelInstance.layerAlias = layerAlias
 	labelInstance.controlAlias = labelAlias
+	labelInstance.controlType = "label"
 	return labelInstance
 }
 
@@ -98,33 +98,4 @@ func drawLabel(layerEntry *types.LayerEntryType, labelAlias string, labelValue s
 	}
 	arrayOfRunes := stringformat.GetRunesFromString(labelValue)
 	printLayer(layerEntry, attributeEntry, xLocation, yLocation, arrayOfRunes)
-}
-
-// GetBounds returns the position and size of the label
-func (shared *LabelInstanceType) GetBounds() (int, int, int, int) {
-	labelEntry := Labels.Get(shared.layerAlias, shared.controlAlias)
-	if labelEntry == nil {
-		return 0, 0, 0, 0
-	}
-	return labelEntry.XLocation, labelEntry.YLocation, labelEntry.Width, labelEntry.Height
-}
-
-// SetPosition sets the position of the label
-func (shared *LabelInstanceType) SetPosition(x, y int) *LabelInstanceType {
-	labelEntry := Labels.Get(shared.layerAlias, shared.controlAlias)
-	if labelEntry != nil {
-		labelEntry.XLocation = x
-		labelEntry.YLocation = y
-	}
-	return shared
-}
-
-// SetSize sets the dimensions of the label
-func (shared *LabelInstanceType) SetSize(width, height int) *LabelInstanceType {
-	labelEntry := Labels.Get(shared.layerAlias, shared.controlAlias)
-	if labelEntry != nil {
-		labelEntry.Width = width
-		labelEntry.Height = height
-	}
-	return shared
 }

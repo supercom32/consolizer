@@ -8,8 +8,7 @@ import (
 )
 
 type DropdownInstanceType struct {
-	layerAlias   string
-	controlAlias string
+	BaseControlInstanceType
 }
 
 type dropdownType struct{}
@@ -219,6 +218,7 @@ func (shared *dropdownType) Add(layerAlias string, dropdownAlias string, styleEn
 	var dropdownInstance DropdownInstanceType
 	dropdownInstance.layerAlias = layerAlias
 	dropdownInstance.controlAlias = dropdownAlias
+	dropdownInstance.controlType = "dropdown"
 	return dropdownInstance
 }
 
@@ -235,7 +235,7 @@ func (shared *dropdownType) DeleteDropdown(layerAlias string, dropdownAlias stri
 }
 
 /*
-DeleteAllDropdowns allows you to remove all dropdowns from a text layer. In addition, the following
+DeleteAllDropdowns allows you to delete all dropdowns from a text layer. In addition, the following
 information should be noted:
 
 - This operation cannot be undone.
@@ -428,23 +428,4 @@ information should be noted:
 */
 func (shared *dropdownType) GetAllEntries(layerAlias string) []*types.DropdownEntryType {
 	return Dropdowns.GetAllEntries(layerAlias)
-}
-
-// GetBounds returns the position and size of the dropdown
-func (shared *DropdownInstanceType) GetBounds() (int, int, int, int) {
-	dropdownEntry := Dropdowns.Get(shared.layerAlias, shared.controlAlias)
-	if dropdownEntry == nil {
-		return 0, 0, 0, 0
-	}
-	return dropdownEntry.XLocation, dropdownEntry.YLocation, dropdownEntry.Width, dropdownEntry.Height
-}
-
-// SetPosition sets the position of the dropdown
-func (shared *DropdownInstanceType) SetPosition(x, y int) *DropdownInstanceType {
-	dropdownEntry := Dropdowns.Get(shared.layerAlias, shared.controlAlias)
-	if dropdownEntry != nil {
-		dropdownEntry.XLocation = x
-		dropdownEntry.YLocation = y
-	}
-	return shared
 }
