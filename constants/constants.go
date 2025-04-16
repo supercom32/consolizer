@@ -9,6 +9,7 @@ type ImageStyle int
 const (
 	ImageStyleHighColor ImageStyle = iota
 	ImageStyleBraille
+	ImageStyleCharacters
 )
 
 type DitheringStyle int
