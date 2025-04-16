@@ -1,7 +1,6 @@
 package consolizer
 
 import (
-	"fmt"
 	"github.com/google/uuid"
 	"github.com/supercom32/consolizer/constants"
 	"github.com/supercom32/consolizer/internal/memory"
@@ -18,12 +17,6 @@ type LayerInstanceType struct {
 func getUUID() string {
 	id := uuid.New()
 	return id.String()
-}
-
-func (shared LayerInstanceType) Clear() {
-	layerEntry := memory.GetLayer(shared.layerAlias)
-	localAttributeEntry := types.NewAttributeEntry()
-	fillArea(layerEntry, localAttributeEntry, "", 0, 0, shared.LayerWidth, shared.LayerHeight, 0)
 }
 
 func (shared LayerInstanceType) DrawImage(fileName string, drawingStyle types.ImageStyleEntryType, xLocation int, yLocation int, widthInCharacters int, heightInCharacters int, blurSigma float64) error {
@@ -47,6 +40,8 @@ func (shared LayerInstanceType) DrawComposedImage(imageComposeEntry ImageCompose
 	baseImage := imageComposeEntry.RenderImage()
 	if drawingStyle.DrawingStyle == constants.ImageStyleHighColor {
 		imageLayer = getImageLayerAsHighColor(baseImage, drawingStyle, widthInCharacters, heightInCharacters, 0)
+	} else if drawingStyle.DrawingStyle == constants.ImageStyleCharacters {
+		imageLayer = GetImageLayerAsAsciiColorArt(baseImage, drawingStyle, widthInCharacters, heightInCharacters, 0)
 	} else {
 		imageLayer = getImageLayerAsBraille(baseImage, drawingStyle, widthInCharacters, heightInCharacters, 0)
 	}
@@ -357,70 +352,6 @@ func (shared LayerInstanceType) IsLayerExists() bool {
 func (shared LayerInstanceType) SetIsVisible(isVisible bool) {
 	validateLayer(shared.layerAlias)
 	setLayerIsVisible(shared.layerAlias, isVisible)
-}
-
-/*
-PrintDialog allows you to write text immediately to the terminal screen via a
-typewriter effect. This is useful for video games or other applications that
-may require printing text in a dialog box. In addition, the following
-information should be noted:
-
-- If you specify a print location outside the range of your specified text
-layer, a panic will be generated to fail as fast as possible.
-
-- If printing has reached the last line of your text layer, printing will
-not advance to the next line. Instead, it will resume and overwrite
-what was already printed on the same line.
-
-- Specifying the width of your text line allows you to control when text
-wrapping occurs. For example, if printing starts at location (2, 2) and you set
-a line width of 10 characters, text wrapping will occur when the printing
-exceeds the text layer location (12, 2). When this happens, text will continue
-to print underneath the previous line at (2, 3).
-
-- When a word is too long to be printed on a text layer line, or the width
-of your line has already exceed its allowed maximum, the word will be pushed
-to the line directly under it. This prevents words from being split across
-two lines.
-
-- When specifying a printing delay, the amount of time to wait is inserted
-between each character printed and does not reflect the overall time to
-print your specified text.
-
-- If the dialog being printed is flagged as skipable, the user can speed up
-printing by pressing the 'enter' key or right mouse button. Otherwise, they
-must wait for the animation to completely finish before execution continues.
-
-- This method supports the use of text styles during printing to add color
-or styles to specific words in your string. All text styles must be enclosed
-around the "{" and "}" characters. If you wish to use the default text
-style, simply omit specifying any text style between your enclosing braces.
-For example:
-
-	// Add a text layer with the alias "ForegroundLayer", at location (0, 0),
-	// with a width and height of 80x20 characters, z order priority of 1,
-	// with no parent layer.
-	dosktop.AddLayer("ForegroundLayer", 0, 0, 80, 20, 1, "")
-	// Obtain a new text style entry.
-	redTextStyle := dosktop.GetTextStyle()
-	// Change the default foreground color of our text style to be red.
-	redTextStyle.ForegroundColor = dosktop.GetRGBColor(255,0,0)
-	// Register our new text style so Dosktop can use it.
-	dosktop.AddTextStyle("red", redTextStyle)
-	// Print some dialog text on the text layer "ForegroundLayer", at location
-	// (0, 0), with a text wrapping location at 30 characters, a 10 millisecond
-	// delay between each character printed, and mark the dialog as skipable.
-	// Inside our string to print, we add the "{red}" tag to switch printing
-	// styles on the fly to "red" and change back to the default style using
-	// "{}".
-	dosktop.PrintDialog("ForegroundLayer", 0, 0, 30, 10, true, "This is some dialog text in {red}red color{}. Only the words 'red color' should be colored.")
-*/
-func (shared LayerInstanceType) PrintDialog(xLocation int, yLocation int, widthOfLineInCharacters int, printDelayInMilliseconds int, isSkipable bool, stringToPrint string) {
-	layerEntry := memory.GetLayer(shared.layerAlias)
-	if xLocation < 0 || xLocation > layerEntry.Width || yLocation < 0 || yLocation > layerEntry.Height {
-		panic(fmt.Sprintf("The specified location (%d, %d) is out of bounds for layer '%s' with a size of (%d, %d).", xLocation, yLocation, layerEntry.LayerAlias, layerEntry.Width, layerEntry.Height))
-	}
-	printDialog(layerEntry, layerEntry.DefaultAttribute, xLocation, yLocation, widthOfLineInCharacters, printDelayInMilliseconds, isSkipable, stringToPrint)
 }
 
 /*

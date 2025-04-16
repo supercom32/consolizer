@@ -12,7 +12,9 @@ import (
 	"image"
 	"image/color"
 	"image/png"
+	"math/rand"
 	"strings"
+	"time"
 )
 
 /*
@@ -297,13 +299,141 @@ func getImageLayerAsHighColor(sourceImageData image.Image, imageStyle types.Imag
 	return layerEntry
 }
 
-/*
-get8BitColorComponents allows you to get red, green, and blue color components
-from a specific color.
-*/
 func get8BitColorComponents(colorEntry color.Color) (int32, int32, int32, uint32) {
 	redIndex, greenIndex, blueIndex, alphaIndex := colorEntry.RGBA()
 	return int32(redIndex) / 257, int32(greenIndex) / 257, int32(blueIndex) / 257, alphaIndex / 257
+}
+
+// Function to calculate the brightness of a pixel
+func calculateBrightness(r, g, b uint8) float64 {
+	// Using a common formula to calculate brightness (perceived luminance)
+	// Scale result to be between 0 and 1
+	return (0.2126*float64(r) + 0.7152*float64(g) + 0.0722*float64(b)) / 255.0
+}
+
+// Function to map brightness to an ASCII character from the bToC_full mapping
+func mapBrightnessToCharacter(brightness float64) rune {
+	// Mapping brightness (0 to 1) to corresponding ASCII character from bToC_full
+	bToC_full := map[float64][]rune{
+		0.0:      {'.'},
+		0.1:      {'.', '`'},
+		0.133333: {'.', '`'},
+		0.155556: {'-'},
+		0.177778: {'\'', ',', '_'},
+		0.266667: {':', '=', '^'},
+		0.311111: {'"', '+', '/', '\\'},
+		0.333333: {'~'},
+		0.355556: {';', '|'},
+		0.4:      {'(', ')', '<', '>'},
+		0.444444: {'%', '?', 'c', 's', '{', '}'},
+		0.488889: {'!', 'I', '[', ']', 'i', 't', 'v', 'x', 'z'},
+		0.511111: {'1', 'r'},
+		0.533333: {'*', 'a', 'e', 'l', 'o'},
+		0.555556: {'n', 'u'},
+		0.577778: {'T', 'f', 'w'},
+		0.6:      {'3', '7'},
+		0.622222: {'J', 'j', 'y'},
+		0.644444: {'5'},
+		0.666667: {'$', '2', '6', '9', 'C', 'L', 'Y', 'm'},
+		0.688889: {'S'},
+		0.711111: {'4', 'g', 'k', 'p', 'q'},
+		0.733333: {'F', 'P', 'b', 'd', 'h'},
+		0.755556: {'G', 'O', 'V', 'X'},
+		0.777778: {'E', 'Z'},
+		0.8:      {'8', 'A', 'U'},
+		0.844444: {'D', 'H', 'K', 'W'},
+		0.888889: {'&', '@', 'R'},
+		0.911111: {'B', 'Q'},
+		0.933333: {'#'},
+		1.0:      {'0', 'M', 'N'},
+	}
+
+	// Find the appropriate character for the brightness level
+	for threshold, characters := range bToC_full {
+		if brightness <= threshold {
+			// Pick a random character from the list at this threshold
+			randomIndex := rand.Intn(len(characters)) // Generates a random index within the range of available characters
+			return characters[randomIndex]
+		}
+	}
+	return ' ' // Default to space if no match
+}
+
+// Function to process the image and convert it to ASCII art
+func GetImageLayerAsAsciiColorArt(sourceImageData image.Image, imageStyle types.ImageStyleEntryType, widthInCharacters int, heightInCharacters int, blurSigma float64) types.LayerEntryType {
+	if widthInCharacters <= 0 && heightInCharacters <= 0 {
+		panic(fmt.Sprintf("The specified width and height of %dx%d for your image is not valid.", widthInCharacters, heightInCharacters))
+	}
+
+	// Seed the random number generator for random character selection
+	rand.Seed(time.Now().UnixNano())
+
+	calculatedPixelWidth := widthInCharacters
+	calculatedPixelHeight := heightInCharacters * 2
+	if widthInCharacters == 0 {
+		calculatedPixelWidth = (heightInCharacters * 2 * sourceImageData.Bounds().Max.X) / sourceImageData.Bounds().Max.Y
+	}
+	if heightInCharacters == 0 {
+		calculatedPixelHeight = (widthInCharacters * sourceImageData.Bounds().Max.Y) / sourceImageData.Bounds().Max.X
+	}
+
+	// Resize the image based on calculated dimensions
+	processedImageData := resizeImage(sourceImageData, uint(calculatedPixelWidth), uint(calculatedPixelHeight))
+
+	// Apply blur if needed
+	if blurSigma > 0 {
+		processedImageData = imaging.Blur(processedImageData, blurSigma)
+	}
+
+	// Convert to grayscale if specified
+	if imageStyle.IsGrayscale {
+		processedImageData = ConvertImageToGrayscale(processedImageData)
+	}
+
+	// Initialize the layer entry for the image
+	calculatedCharacterWidth := calculatedPixelWidth
+	calculatedCharacterHeight := calculatedPixelHeight / 2
+	layerEntry := types.NewLayerEntry("", "", calculatedCharacterWidth, calculatedCharacterHeight)
+
+	// Loop through each character position in the grid
+	for currentYLocation := 0; currentYLocation < calculatedCharacterHeight; currentYLocation++ {
+		for currentXLocation := 0; currentXLocation < calculatedCharacterWidth; currentXLocation++ {
+			currentCharacter := layerEntry.CharacterMemory[currentYLocation][currentXLocation]
+
+			// Get the upper pixel's color (as uint8)
+			upperPixel := processedImageData.At(currentXLocation, currentYLocation*2) // Upper half of the character
+			redColor, greenColor, blueColor, _ := get8BitColorComponents(upperPixel)
+
+			// Calculate brightness based on RGB components
+			brightness := calculateBrightness(uint8(redColor), uint8(greenColor), uint8(blueColor))
+
+			// Map the brightness to an ASCII character using bToC_full mapping
+			asciiCharacter := mapBrightnessToCharacter(brightness)
+
+			// Set the ASCII character
+			currentCharacter.Character = asciiCharacter
+
+			// Set the foreground color based on the pixel color
+			currentCharacter.AttributeEntry.ForegroundColor = GetRGBColor(redColor, greenColor, blueColor)
+
+			// Get the lower pixel's color for the background (if applicable)
+			lowerPixel := processedImageData.At(currentXLocation, currentYLocation*2+1) // Lower half of the character
+			redColor, greenColor, blueColor, _ = get8BitColorComponents(lowerPixel)
+
+			// Set the background color
+			currentCharacter.AttributeEntry.BackgroundColor = GetRGBColor(0, 0, 0)
+
+			// If the alpha value is low, set character to null rune
+			if redColor <= 150 || greenColor <= 150 || blueColor <= 150 {
+				currentCharacter.Character = constants.NullRune
+			}
+
+			// Update the layer entry with the character and its color attributes
+			layerEntry.CharacterMemory[currentYLocation][currentXLocation] = currentCharacter
+		}
+	}
+
+	return layerEntry
 }
 
 /*
