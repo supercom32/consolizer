@@ -93,6 +93,7 @@ func InitializeTerminal(width int, height int) {
 	}
 	commonResource.debugDirectory = "/tmp/"
 	validateTerminalWidthAndHeight(commonResource.terminalWidth, commonResource.terminalHeight)
+	DeleteAllLayers()
 }
 
 func setupPeriodicEventUpdater() {

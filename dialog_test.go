@@ -7,7 +7,6 @@ import (
 
 func TestPrintDialogWithTextStyles(test *testing.T) {
 	commonResource.isDebugEnabled = true
-
 	layerWidth := 40
 	layerHeight := 10
 	textStyleAlias := "redColor"

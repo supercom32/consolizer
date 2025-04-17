@@ -113,6 +113,10 @@ func (shared LayerEntryType) GetBasicAnsiStringAsBase642() string {
 	return stringformat.GetStringAsBase64(ansiString)
 }
 
+func (shared LayerEntryType) GetAnsiStringFromBase64(base64String string) string {
+	return stringformat.GetStringFromBase64(base64String)
+}
+
 func (shared LayerEntryType) GetAnsiForegroundColorString(color constants.ColorType) string {
 	var ansiString string
 	redIndex, greenIndex, blueIndex := shared.GetRGBColorComponents(color)
