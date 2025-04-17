@@ -2,12 +2,12 @@ package consolizer
 
 import (
 	"fmt"
+	"github.com/supercom32/consolizer/memory"
+	"github.com/supercom32/consolizer/stringformat"
 
+	"github.com/supercom32/consolizer/constants"
+	"github.com/supercom32/consolizer/types"
 	"github.com/u2takey/go-utils/strings"
-	"supercom32.net/consolizer/constants"
-	"supercom32.net/consolizer/internal/memory"
-	"supercom32.net/consolizer/internal/stringformat"
-	"supercom32.net/consolizer/types"
 )
 
 type ProgressBarInstanceType struct {
@@ -138,18 +138,18 @@ func (shared *progressBarType) drawProgressBarsOnLayer(layerEntry types.LayerEnt
 
 func drawProgressBar(layerEntry *types.LayerEntryType, progressBarAlias string, progressBarLabel string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, height int, currentValue int, maxValue int, isBackgroundTransparent bool) {
 	attributeEntry := types.NewAttributeEntry()
-	attributeEntry.ForegroundColor = styleEntry.ProgressBarUnfilledForegroundColor
-	attributeEntry.BackgroundColor = styleEntry.ProgressBarUnfilledBackgroundColor
+	attributeEntry.ForegroundColor = styleEntry.ProgressBar.UnfilledForegroundColor
+	attributeEntry.BackgroundColor = styleEntry.ProgressBar.UnfilledBackgroundColor
 	attributeEntry.CellType = constants.CellTypeProgressBar
 	attributeEntry.CellControlAlias = progressBarAlias
 	if height < 1 {
 		height = 1
 	}
-	fillArea(layerEntry, attributeEntry, string(styleEntry.ProgressBarUnfilledPattern), xLocation, yLocation, width, height, constants.CellTypeProgressBar)
+	fillArea(layerEntry, attributeEntry, string(styleEntry.ProgressBar.UnfilledPattern), xLocation, yLocation, width, height, constants.CellTypeProgressBar)
 	progressBarWidth := float64(width) * float64(currentValue) / float64(maxValue)
-	attributeEntry.ForegroundColor = styleEntry.ProgressBarFilledForegroundColor
-	attributeEntry.BackgroundColor = styleEntry.ProgressBarFilledBackgroundColor
-	fillArea(layerEntry, attributeEntry, string(styleEntry.ProgressBarFilledPattern), xLocation, yLocation, int(progressBarWidth), height, constants.CellTypeProgressBar)
+	attributeEntry.ForegroundColor = styleEntry.ProgressBar.FilledForegroundColor
+	attributeEntry.BackgroundColor = styleEntry.ProgressBar.FilledBackgroundColor
+	fillArea(layerEntry, attributeEntry, string(styleEntry.ProgressBar.FilledPattern), xLocation, yLocation, int(progressBarWidth), height, constants.CellTypeProgressBar)
 
 	if len(progressBarLabel) > width {
 		progressBarLabel = strings.ShortenString(progressBarLabel, width-3)
@@ -158,8 +158,8 @@ func drawProgressBar(layerEntry *types.LayerEntryType, progressBarAlias string, 
 	centerXLocation := (width - len(progressBarLabel)) / 2
 	centerYLocation := height / 2
 	arrayOfRunes := stringformat.GetRunesFromString(progressBarLabel)
-	attributeEntry.ForegroundColor = styleEntry.ProgressBarTextForegroundColor
-	attributeEntry.BackgroundColor = styleEntry.ProgressBarTextBackgroundColor
+	attributeEntry.ForegroundColor = styleEntry.ProgressBar.TextForegroundColor
+	attributeEntry.BackgroundColor = styleEntry.ProgressBar.TextBackgroundColor
 	attributeEntry.IsBackgroundTransparent = isBackgroundTransparent
 	printLayer(layerEntry, attributeEntry, xLocation+centerXLocation, yLocation+centerYLocation, arrayOfRunes)
 }

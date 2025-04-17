@@ -3,7 +3,7 @@ package types
 import (
 	"encoding/json"
 
-	"supercom32.net/consolizer/constants"
+	"github.com/supercom32/consolizer/constants"
 )
 
 type AttributeEntryType struct {

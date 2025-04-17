@@ -2,13 +2,13 @@ package consolizer
 
 import (
 	"fmt"
+	"github.com/supercom32/consolizer/memory"
+	"github.com/supercom32/consolizer/stringformat"
 	"math"
 	"strings"
 
-	"supercom32.net/consolizer/constants"
-	"supercom32.net/consolizer/internal/memory"
-	"supercom32.net/consolizer/internal/stringformat"
-	"supercom32.net/consolizer/types"
+	"github.com/supercom32/consolizer/constants"
+	"github.com/supercom32/consolizer/types"
 )
 
 type TextboxInstanceType struct {
@@ -507,8 +507,8 @@ information should be noted:
 func (shared *textboxType) drawTextbox(layerEntry *types.LayerEntryType, textboxAlias string) {
 	t := Textboxes.Get(layerEntry.LayerAlias, textboxAlias)
 	attributeEntry := types.NewAttributeEntry()
-	attributeEntry.ForegroundColor = t.StyleEntry.TextboxForegroundColor
-	attributeEntry.BackgroundColor = t.StyleEntry.TextboxBackgroundColor
+	attributeEntry.ForegroundColor = t.StyleEntry.Textbox.ForegroundColor
+	attributeEntry.BackgroundColor = t.StyleEntry.Textbox.BackgroundColor
 	attributeEntry.CellControlAlias = textboxAlias
 	if t.IsBorderDrawn {
 		drawBorder(layerEntry, t.StyleEntry, attributeEntry, t.XLocation-1, t.YLocation-1, t.Width+2, t.Height+2, false)
@@ -710,21 +710,21 @@ func (shared *textboxType) printControlText(layerEntry *types.LayerEntryType, te
 				}
 
 				if isHighlighted {
-					attributeEntry.ForegroundColor = styleEntry.HighlightForegroundColor
-					attributeEntry.BackgroundColor = styleEntry.HighlightBackgroundColor
+					attributeEntry.ForegroundColor = styleEntry.Textbox.HighlightForegroundColor
+					attributeEntry.BackgroundColor = styleEntry.Textbox.HighlightBackgroundColor
 				} else if cursorXLocation == currentControlId && cursorYLocation == controlYLocation {
-					attributeEntry.ForegroundColor = styleEntry.TextboxCursorForegroundColor
-					attributeEntry.BackgroundColor = styleEntry.TextboxCursorBackgroundColor
+					attributeEntry.ForegroundColor = styleEntry.Textbox.CursorForegroundColor
+					attributeEntry.BackgroundColor = styleEntry.Textbox.CursorBackgroundColor
 				} else {
-					attributeEntry.ForegroundColor = styleEntry.TextboxForegroundColor
-					attributeEntry.BackgroundColor = styleEntry.TextboxBackgroundColor
+					attributeEntry.ForegroundColor = styleEntry.Textbox.ForegroundColor
+					attributeEntry.BackgroundColor = styleEntry.Textbox.BackgroundColor
 				}
 			} else if cursorXLocation == currentControlId && cursorYLocation == controlYLocation {
-				attributeEntry.ForegroundColor = styleEntry.TextboxCursorForegroundColor
-				attributeEntry.BackgroundColor = styleEntry.TextboxCursorBackgroundColor
+				attributeEntry.ForegroundColor = styleEntry.Textbox.CursorForegroundColor
+				attributeEntry.BackgroundColor = styleEntry.Textbox.CursorBackgroundColor
 			} else {
-				attributeEntry.ForegroundColor = styleEntry.TextboxForegroundColor
-				attributeEntry.BackgroundColor = styleEntry.TextboxBackgroundColor
+				attributeEntry.ForegroundColor = styleEntry.Textbox.ForegroundColor
+				attributeEntry.BackgroundColor = styleEntry.Textbox.BackgroundColor
 			}
 		}
 		printLayer(layerEntry, attributeEntry, xLocation+currentXOffset, yLocation, []rune{currentCharacter})

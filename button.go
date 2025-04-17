@@ -1,10 +1,10 @@
 package consolizer
 
 import (
-	"supercom32.net/consolizer/constants"
-	"supercom32.net/consolizer/internal/memory"
-	"supercom32.net/consolizer/internal/stringformat"
-	"supercom32.net/consolizer/types"
+	"github.com/supercom32/consolizer/constants"
+	"github.com/supercom32/consolizer/memory"
+	"github.com/supercom32/consolizer/stringformat"
+	"github.com/supercom32/consolizer/types"
 )
 
 type buttonHistoryType struct {
@@ -180,8 +180,8 @@ then only the visible portion of the button will be drawn.
 func (shared *buttonType) drawButton(layerEntry *types.LayerEntryType, buttonAlias string, buttonLabel string, styleEntry types.TuiStyleEntryType, isPressed bool, isSelected bool, isEnabled bool, xLocation int, yLocation int, width int, height int) {
 	localStyleEntry := types.NewTuiStyleEntry(&styleEntry)
 	attributeEntry := types.NewAttributeEntry()
-	attributeEntry.ForegroundColor = styleEntry.ButtonForegroundColor
-	attributeEntry.BackgroundColor = styleEntry.ButtonBackgroundColor
+	attributeEntry.ForegroundColor = styleEntry.Button.ForegroundColor
+	attributeEntry.BackgroundColor = styleEntry.Button.BackgroundColor
 	attributeEntry.CellType = constants.CellTypeButton
 	attributeEntry.CellControlAlias = buttonAlias
 	if height < 3 {
@@ -190,8 +190,8 @@ func (shared *buttonType) drawButton(layerEntry *types.LayerEntryType, buttonAli
 	if width-2 <= len(buttonLabel) {
 		width = len(buttonLabel) + 2
 	}
-	localStyleEntry.LineDrawingTextForegroundColor = localStyleEntry.ButtonRaisedColor
-	localStyleEntry.LineDrawingTextBackgroundColor = localStyleEntry.ButtonBackgroundColor
+	localStyleEntry.Window.LineDrawingTextForegroundColor = localStyleEntry.Button.RaisedColor
+	localStyleEntry.Window.LineDrawingTextBackgroundColor = localStyleEntry.Button.BackgroundColor
 	fillArea(layerEntry, attributeEntry, " ", xLocation, yLocation, width, height, constants.NullCellControlLocation)
 	if isPressed {
 		drawFrame(layerEntry, localStyleEntry, attributeEntry, constants.FrameStyleSunken, xLocation, yLocation, width, height, false)
@@ -205,7 +205,7 @@ func (shared *buttonType) drawButton(layerEntry *types.LayerEntryType, buttonAli
 		attributeEntry.IsUnderlined = true
 	}
 	if !isEnabled {
-		attributeEntry.ForegroundColor = styleEntry.ButtonLabelDisabledColor
+		attributeEntry.ForegroundColor = styleEntry.Button.LabelDisabledColor
 	}
 	printLayer(layerEntry, attributeEntry, xLocation+centerXLocation, yLocation+centerYLocation, arrayOfRunes)
 }

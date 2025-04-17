@@ -1,12 +1,12 @@
 package consolizer
 
 import (
+	"github.com/supercom32/consolizer/memory"
+	"github.com/supercom32/consolizer/stringformat"
 	"strings"
 
-	"supercom32.net/consolizer/constants"
-	"supercom32.net/consolizer/internal/memory"
-	"supercom32.net/consolizer/internal/stringformat"
-	"supercom32.net/consolizer/types"
+	"github.com/supercom32/consolizer/constants"
+	"github.com/supercom32/consolizer/types"
 )
 
 type textFieldInstanceType struct {
@@ -165,8 +165,8 @@ information should be noted:
 */
 func (shared *textFieldType) drawInputString(layerEntry *types.LayerEntryType, styleEntry types.TuiStyleEntryType, textFieldAlias string, xLocation int, yLocation int, width int, stringPosition int, inputValue []rune) {
 	attributeEntry := types.NewAttributeEntry()
-	attributeEntry.ForegroundColor = styleEntry.TextFieldForegroundColor
-	attributeEntry.BackgroundColor = styleEntry.TextFieldBackgroundColor
+	attributeEntry.ForegroundColor = styleEntry.TextField.ForegroundColor
+	attributeEntry.BackgroundColor = styleEntry.TextField.BackgroundColor
 	attributeEntry.CellType = constants.CellTypeTextField
 	attributeEntry.CellControlAlias = textFieldAlias
 	numberOfCharactersToSafelyPrint := stringformat.GetMaxCharactersThatFitInStringSize(inputValue[stringPosition:], width)
@@ -197,14 +197,14 @@ func (shared *textFieldType) drawInputString(layerEntry *types.LayerEntryType, s
 
 		// Set colors based on state
 		if isCursor {
-			attributeEntry.ForegroundColor = styleEntry.TextFieldCursorForegroundColor
-			attributeEntry.BackgroundColor = styleEntry.TextFieldCursorBackgroundColor
+			attributeEntry.ForegroundColor = styleEntry.TextField.CursorForegroundColor
+			attributeEntry.BackgroundColor = styleEntry.TextField.CursorBackgroundColor
 		} else if isHighlighted {
-			attributeEntry.ForegroundColor = styleEntry.HighlightForegroundColor
-			attributeEntry.BackgroundColor = styleEntry.HighlightBackgroundColor
+			attributeEntry.ForegroundColor = styleEntry.TextField.HighlightForegroundColor
+			attributeEntry.BackgroundColor = styleEntry.TextField.HighlightBackgroundColor
 		} else {
-			attributeEntry.ForegroundColor = styleEntry.TextFieldForegroundColor
-			attributeEntry.BackgroundColor = styleEntry.TextFieldBackgroundColor
+			attributeEntry.ForegroundColor = styleEntry.TextField.ForegroundColor
+			attributeEntry.BackgroundColor = styleEntry.TextField.BackgroundColor
 		}
 
 		attributeEntry.CellControlId = absolutePosition

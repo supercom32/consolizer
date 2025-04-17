@@ -1,14 +1,14 @@
 package consolizer
 
-import "supercom32.net/consolizer/types"
+import "github.com/supercom32/consolizer/types"
 
 func CommonTestSetup() (*LayerInstanceType, *LayerInstanceType, *LayerInstanceType, types.TuiStyleEntryType) {
 	commonResource.isDebugEnabled = true
 	layerWidth := 40
 	layerHeight := 20
 	styleEntry := types.NewTuiStyleEntry()
-	styleEntry.LineDrawingTextForegroundColor = GetRGBColor(255, 0, 255)
-	styleEntry.LineDrawingTextBackgroundColor = GetRGBColor(0, 0, 255)
+	styleEntry.Window.LineDrawingTextForegroundColor = GetRGBColor(255, 0, 255)
+	styleEntry.Window.LineDrawingTextBackgroundColor = GetRGBColor(0, 0, 255)
 	InitializeTerminal(layerWidth, layerHeight)
 	layer1 := AddLayer(0, 0, layerWidth, layerHeight, 1, nil)
 	layer2 := AddLayer(3, 10, layerWidth, layerHeight, 2, nil)

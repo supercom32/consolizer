@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/gdamore/tcell/v2"
-	"supercom32.net/consolizer/constants"
-	"supercom32.net/consolizer/types"
+	"github.com/supercom32/consolizer/constants"
+	"github.com/supercom32/consolizer/types"
 )
 
 type controlIdentifierType struct {

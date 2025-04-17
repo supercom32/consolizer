@@ -3,13 +3,13 @@ package consolizer
 import (
 	"fmt"
 	"github.com/gdamore/tcell/v2"
+	"github.com/supercom32/consolizer/constants"
+	"github.com/supercom32/consolizer/math"
+	"github.com/supercom32/consolizer/stringformat"
+	"github.com/supercom32/consolizer/types"
 	"os"
 	"os/signal"
 	"runtime"
-	"supercom32.net/consolizer/constants"
-	"supercom32.net/consolizer/internal/math"
-	"supercom32.net/consolizer/internal/stringformat"
-	"supercom32.net/consolizer/types"
 	"sync"
 	"syscall"
 )

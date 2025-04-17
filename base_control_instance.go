@@ -1,6 +1,6 @@
 package consolizer
 
-import "supercom32.net/consolizer/types"
+import "github.com/supercom32/consolizer/types"
 
 // BaseControlInstanceType provides common functionality for all control instances.
 // It manages the layer and control aliases and provides common methods that all controls share.

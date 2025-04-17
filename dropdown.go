@@ -1,10 +1,10 @@
 package consolizer
 
 import (
-	"supercom32.net/consolizer/constants"
-	"supercom32.net/consolizer/internal/memory"
-	"supercom32.net/consolizer/internal/stringformat"
-	"supercom32.net/consolizer/types"
+	"github.com/supercom32/consolizer/constants"
+	"github.com/supercom32/consolizer/memory"
+	"github.com/supercom32/consolizer/stringformat"
+	"github.com/supercom32/consolizer/types"
 )
 
 type DropdownInstanceType struct {
@@ -273,18 +273,18 @@ func (shared *dropdownType) drawDropdown(layerEntry *types.LayerEntryType, dropd
 	dropdownEntry := Dropdowns.Get(layerAlias, dropdownAlias)
 	localStyleEntry := types.NewTuiStyleEntry(&dropdownEntry.StyleEntry)
 	attributeEntry := types.NewAttributeEntry()
-	attributeEntry.ForegroundColor = localStyleEntry.SelectorForegroundColor
-	attributeEntry.BackgroundColor = localStyleEntry.SelectorBackgroundColor
+	attributeEntry.ForegroundColor = localStyleEntry.Selector.ForegroundColor
+	attributeEntry.BackgroundColor = localStyleEntry.Selector.BackgroundColor
 	attributeEntry.CellType = constants.CellTypeDropdown
 	attributeEntry.CellControlAlias = dropdownAlias
 	itemSelected := dropdownEntry.SelectionEntry.SelectionValue[dropdownEntry.ItemSelected]
 	// We add +2 to account for the Dropdown border window which will appear. Otherwise, the item name
 	// will appear 2 characters smaller than the popup Dropdown window.
-	formattedItemName := stringformat.GetFormattedString(itemSelected, dropdownEntry.ItemWidth+2, localStyleEntry.SelectorTextAlignment)
+	formattedItemName := stringformat.GetFormattedString(itemSelected, dropdownEntry.ItemWidth+2, localStyleEntry.Selector.TextAlignment)
 	arrayOfRunes := stringformat.GetRunesFromString(formattedItemName)
 	printLayer(layerEntry, attributeEntry, dropdownEntry.XLocation, dropdownEntry.YLocation, arrayOfRunes)
-	attributeEntry.ForegroundColor = localStyleEntry.SelectorBackgroundColor
-	attributeEntry.BackgroundColor = localStyleEntry.SelectorForegroundColor
+	attributeEntry.ForegroundColor = localStyleEntry.Selector.BackgroundColor
+	attributeEntry.BackgroundColor = localStyleEntry.Selector.ForegroundColor
 	printLayer(layerEntry, attributeEntry, dropdownEntry.XLocation+len(arrayOfRunes), dropdownEntry.YLocation, []rune{constants.CharTriangleDown})
 }
 

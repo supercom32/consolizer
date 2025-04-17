@@ -2,9 +2,9 @@ package math
 
 import (
 	"fmt"
+	"github.com/supercom32/consolizer/recast"
 	"math"
 	"strconv"
-	"supercom32.net/consolizer/internal/recast"
 )
 
 func GetAbsoluteValueAsFloat64(number interface{}) float64 {

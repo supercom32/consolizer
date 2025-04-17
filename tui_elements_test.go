@@ -3,9 +3,9 @@ package consolizer
 import (
 	"github.com/gdamore/tcell/v2"
 	"github.com/stretchr/testify/assert"
-	"supercom32.net/consolizer/constants"
-	"supercom32.net/consolizer/internal/recast"
-	"supercom32.net/consolizer/types"
+	"github.com/supercom32/consolizer/constants"
+	"github.com/supercom32/consolizer/recast"
+	"github.com/supercom32/consolizer/types"
 	"testing"
 )
 
@@ -16,14 +16,14 @@ func TestGetDarkenedCharacterEntry(test *testing.T) {
 	redIndex, greenIndex, blueIndex := GetRGBColorComponents(darkenedCharacterEntry.AttributeEntry.ForegroundColor)
 	obtainedResult := recast.GetArrayOfInterfaces(redIndex, greenIndex, blueIndex)
 	expectedResult := recast.GetArrayOfInterfaces(int32(127), int32(127), int32(127))
-	assert.Equalf(test, obtainedResult, expectedResult, "Darkening Character entry foreground color to 50 percent failed!")
+	assert.Equalf(test, obtainedResult, expectedResult, "Darkening Frame entry foreground color to 50 percent failed!")
 
 	characterEntry.AttributeEntry.BackgroundColor = constants.ColorType(tcell.NewRGBColor(int32(127), int32(127), int32(127)))
 	darkenedCharacterEntry = GetDarkenedCharacterEntry(&characterEntry, 0.5)
 	redIndex, greenIndex, blueIndex = GetRGBColorComponents(darkenedCharacterEntry.AttributeEntry.BackgroundColor)
 	obtainedResult = recast.GetArrayOfInterfaces(redIndex, greenIndex, blueIndex)
 	expectedResult = recast.GetArrayOfInterfaces(int32(63), int32(63), int32(63))
-	assert.Equalf(test, obtainedResult, expectedResult, "Darkening Character entry background color to 50 percent failed!")
+	assert.Equalf(test, obtainedResult, expectedResult, "Darkening Frame entry background color to 50 percent failed!")
 }
 
 func TestColorDarkening(test *testing.T) {
@@ -135,9 +135,9 @@ func TestDrawFrameLabel(test *testing.T) {
 	layer1 := AddLayer(0, 0, layerWidth, layerHeight, 1, nil)
 	Color(4, 6)
 	layer1.FillLayer("a1a2a3a4a5")
-	styleEntry.LineDrawingTextForegroundColor = GetRGBColor(62, 128, 128)
-	styleEntry.LineDrawingTextBackgroundColor = GetRGBColor(0, 0, 200)
-	styleEntry.LineDrawingTextLabelColor = GetRGBColor(255, 255, 255)
+	styleEntry.Window.LineDrawingTextForegroundColor = GetRGBColor(62, 128, 128)
+	styleEntry.Window.LineDrawingTextBackgroundColor = GetRGBColor(0, 0, 200)
+	styleEntry.Window.LineDrawingTextLabelColor = GetRGBColor(255, 255, 255)
 	layer1.DrawFrameLabel(styleEntry, "My Frame", 1, 1)
 	layer1.DrawFrameLabel(styleEntry, "My Frame", -7, 3)
 	layer1.DrawFrameLabel(styleEntry, "My Frame", layerWidth-7, 3)
@@ -153,8 +153,8 @@ func TestDrawFrame(test *testing.T) {
 	layerWidth := 40
 	layerHeight := 20
 	styleEntry := types.NewTuiStyleEntry()
-	styleEntry.LineDrawingTextForegroundColor = GetRGBColor(255, 0, 255)
-	styleEntry.LineDrawingTextBackgroundColor = GetRGBColor(0, 0, 255)
+	styleEntry.Window.LineDrawingTextForegroundColor = GetRGBColor(255, 0, 255)
+	styleEntry.Window.LineDrawingTextBackgroundColor = GetRGBColor(0, 0, 255)
 	InitializeTerminal(layerWidth, layerHeight)
 	layer1 := AddLayer(0, 0, layerWidth, layerHeight, 1, nil)
 	Layer(layer1)
@@ -174,8 +174,8 @@ func TestDrawBorder(test *testing.T) {
 	layerWidth := 40
 	layerHeight := 20
 	styleEntry := types.NewTuiStyleEntry()
-	styleEntry.LineDrawingTextForegroundColor = GetRGBColor(255, 0, 255)
-	styleEntry.LineDrawingTextBackgroundColor = GetRGBColor(0, 0, 255)
+	styleEntry.Window.LineDrawingTextForegroundColor = GetRGBColor(255, 0, 255)
+	styleEntry.Window.LineDrawingTextBackgroundColor = GetRGBColor(0, 0, 255)
 	InitializeTerminal(layerWidth, layerHeight)
 	layer1 := AddLayer(0, 0, layerWidth, layerHeight, 1, nil)
 	Layer(layer1)
@@ -194,8 +194,8 @@ func TestDrawWindow(test *testing.T) {
 	layerWidth := 40
 	layerHeight := 20
 	styleEntry := types.NewTuiStyleEntry()
-	styleEntry.LineDrawingTextForegroundColor = GetRGBColor(255, 0, 255)
-	styleEntry.LineDrawingTextBackgroundColor = GetRGBColor(0, 0, 255)
+	styleEntry.Window.LineDrawingTextForegroundColor = GetRGBColor(255, 0, 255)
+	styleEntry.Window.LineDrawingTextBackgroundColor = GetRGBColor(0, 0, 255)
 	InitializeTerminal(layerWidth, layerHeight)
 	layer1 := AddLayer(0, 0, layerWidth, layerHeight, 1, nil)
 	layer2 := AddLayer(2, 2, layerWidth, layerHeight, 2, nil)
@@ -225,8 +225,8 @@ func TestDrawShadow(test *testing.T) {
 	layerWidth := 40
 	layerHeight := 20
 	styleEntry := types.NewTuiStyleEntry()
-	styleEntry.LineDrawingTextForegroundColor = GetRGBColor(255, 0, 255)
-	styleEntry.LineDrawingTextBackgroundColor = GetRGBColor(0, 0, 255)
+	styleEntry.Window.LineDrawingTextForegroundColor = GetRGBColor(255, 0, 255)
+	styleEntry.Window.LineDrawingTextBackgroundColor = GetRGBColor(0, 0, 255)
 	InitializeTerminal(layerWidth, layerHeight)
 	layer1 := AddLayer(0, 0, layerWidth, layerHeight, 1, nil)
 	layer2 := AddLayer(2, 2, layerWidth, layerHeight, 2, nil)
@@ -256,8 +256,8 @@ func TestDrawLines(test *testing.T) {
 	layerWidth := 40
 	layerHeight := 20
 	styleEntry := types.NewTuiStyleEntry()
-	styleEntry.LineDrawingTextForegroundColor = GetRGBColor(255, 0, 255)
-	styleEntry.LineDrawingTextBackgroundColor = GetRGBColor(0, 0, 255)
+	styleEntry.Window.LineDrawingTextForegroundColor = GetRGBColor(255, 0, 255)
+	styleEntry.Window.LineDrawingTextBackgroundColor = GetRGBColor(0, 0, 255)
 	InitializeTerminal(layerWidth, layerHeight)
 	layer1 := AddLayer(0, 0, layerWidth, layerHeight, 1, nil)
 	Layer(layer1)

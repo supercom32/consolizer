@@ -2,8 +2,8 @@ package consolizer
 
 import (
 	"fmt"
-	"supercom32.net/consolizer/internal/memory"
-	"supercom32.net/consolizer/types"
+	"github.com/supercom32/consolizer/memory"
+	"github.com/supercom32/consolizer/types"
 )
 
 var TextStyles = memory.NewControlMemoryManager[types.TextCellStyleEntryType]()

@@ -16,7 +16,7 @@ func TestButtonTypeCreation(test *testing.T) {
 	firstButtonEntry.XLocation = 1
 	firstButtonEntry.YLocation = 2
 	secondButtonEntry := NewButtonEntry()
-	assert.NotEqualf(test, secondButtonEntry, firstButtonEntry, "The second Character object should not be the same as the first, as manipulating it should only effect itself.")
+	assert.NotEqualf(test, secondButtonEntry, firstButtonEntry, "The second Frame object should not be the same as the first, as manipulating it should only effect itself.")
 
 	secondButtonEntry = NewButtonEntry(&firstButtonEntry)
 	assert.Equalf(test, secondButtonEntry, firstButtonEntry, "The first layer is not the same as the second, even though it should be an identical clone.")

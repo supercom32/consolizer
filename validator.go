@@ -2,8 +2,8 @@ package consolizer
 
 import (
 	"fmt"
-	"supercom32.net/consolizer/constants"
-	"supercom32.net/consolizer/types"
+	"github.com/supercom32/consolizer/constants"
+	"github.com/supercom32/consolizer/types"
 )
 
 func validateTextFieldWidth(width int) {

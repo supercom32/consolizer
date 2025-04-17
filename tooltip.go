@@ -1,12 +1,12 @@
 package consolizer
 
 import (
+	"github.com/supercom32/consolizer/memory"
+	"github.com/supercom32/consolizer/stringformat"
 	"time"
 
-	"supercom32.net/consolizer/constants"
-	"supercom32.net/consolizer/internal/memory"
-	"supercom32.net/consolizer/internal/stringformat"
-	"supercom32.net/consolizer/types"
+	"github.com/supercom32/consolizer/constants"
+	"github.com/supercom32/consolizer/types"
 )
 
 type TooltipInstanceType struct {
@@ -86,8 +86,8 @@ func (shared *tooltipType) drawTooltipHotspot(layerEntry *types.LayerEntryType, 
 		return
 	}
 	attributeEntry := types.NewAttributeEntry()
-	attributeEntry.ForegroundColor = tooltipEntry.StyleEntry.TooltipForegroundColor
-	attributeEntry.BackgroundColor = tooltipEntry.StyleEntry.TooltipBackgroundColor
+	attributeEntry.ForegroundColor = tooltipEntry.StyleEntry.Tooltip.ForegroundColor
+	attributeEntry.BackgroundColor = tooltipEntry.StyleEntry.Tooltip.BackgroundColor
 	attributeEntry.CellType = constants.CellTypeTooltip
 	attributeEntry.CellControlAlias = tooltipEntry.Alias
 	if tooltipEntry.ParentControlAlias == "" { // If a parent exists, do not overwrite the parent's attributes.
@@ -110,8 +110,8 @@ func (shared *tooltipType) renderTooltip(layerEntry *types.LayerEntryType, toolt
 		return
 	}
 	attributeEntry := types.NewAttributeEntry()
-	attributeEntry.ForegroundColor = tooltipEntry.StyleEntry.TooltipForegroundColor
-	attributeEntry.BackgroundColor = tooltipEntry.StyleEntry.TooltipBackgroundColor
+	attributeEntry.ForegroundColor = tooltipEntry.StyleEntry.Tooltip.ForegroundColor
+	attributeEntry.BackgroundColor = tooltipEntry.StyleEntry.Tooltip.BackgroundColor
 	attributeEntry.CellType = constants.CellTypeTooltip
 	attributeEntry.CellControlAlias = tooltipEntry.Alias
 	calculatedXLocation := tooltipEntry.TooltipXLocation - 2

@@ -2,8 +2,8 @@ package consolizer
 
 import (
 	"github.com/gdamore/tcell/v2"
-	"supercom32.net/consolizer/constants"
-	"supercom32.net/consolizer/internal/math"
+	"github.com/supercom32/consolizer/constants"
+	"github.com/supercom32/consolizer/math"
 )
 
 /*

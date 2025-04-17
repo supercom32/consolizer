@@ -1,10 +1,10 @@
 package consolizer
 
 import (
-	"supercom32.net/consolizer/constants"
-	"supercom32.net/consolizer/internal/memory"
-	"supercom32.net/consolizer/internal/stringformat"
-	"supercom32.net/consolizer/types"
+	"github.com/supercom32/consolizer/constants"
+	"github.com/supercom32/consolizer/memory"
+	"github.com/supercom32/consolizer/stringformat"
+	"github.com/supercom32/consolizer/types"
 )
 
 type CheckboxInstanceType struct {
@@ -149,17 +149,17 @@ then only the visible portion of the Checkbox will be drawn.
 func (shared *checkboxType) drawCheckbox(layerEntry *types.LayerEntryType, checkboxAlias string, checkboxLabel string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, isSelected bool, isEnabled bool) {
 	localStyleEntry := types.NewTuiStyleEntry(&styleEntry)
 	attributeEntry := types.NewAttributeEntry()
-	attributeEntry.ForegroundColor = localStyleEntry.CheckboxForegroundColor
-	attributeEntry.BackgroundColor = localStyleEntry.CheckboxBackgroundColor
+	attributeEntry.ForegroundColor = localStyleEntry.Checkbox.ForegroundColor
+	attributeEntry.BackgroundColor = localStyleEntry.Checkbox.BackgroundColor
 	attributeEntry.CellType = constants.CellTypeCheckbox
 	attributeEntry.CellControlAlias = checkboxAlias
 
 	var secondArrayOfRunes []rune
 	if isSelected {
-		secondArrayOfRunes = []rune{localStyleEntry.CheckboxSelectedCharacter}
+		secondArrayOfRunes = []rune{localStyleEntry.Checkbox.SelectedCharacter}
 		attributeEntry.CellControlId = constants.CellControlIdChecked
 	} else {
-		secondArrayOfRunes = []rune{localStyleEntry.CheckboxUnselectedCharacter}
+		secondArrayOfRunes = []rune{localStyleEntry.Checkbox.UnselectedCharacter}
 		attributeEntry.CellControlId = constants.CellControlIdUnchecked
 	}
 	printLayer(layerEntry, attributeEntry, xLocation, yLocation, secondArrayOfRunes)

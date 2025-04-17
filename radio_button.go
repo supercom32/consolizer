@@ -1,10 +1,10 @@
 package consolizer
 
 import (
-	"supercom32.net/consolizer/constants"
-	"supercom32.net/consolizer/internal/memory"
-	"supercom32.net/consolizer/internal/stringformat"
-	"supercom32.net/consolizer/types"
+	"github.com/supercom32/consolizer/constants"
+	"github.com/supercom32/consolizer/memory"
+	"github.com/supercom32/consolizer/stringformat"
+	"github.com/supercom32/consolizer/types"
 )
 
 type RadioButtonInstanceType struct {
@@ -156,8 +156,8 @@ then only the visible portion of the radio button will be drawn.
 func (shared *radioButtonType) drawRadioButton(layerEntry *types.LayerEntryType, radioButtonAlias string, radioButtonLabel string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, isSelected bool, isEnabled bool) {
 	localStyleEntry := types.NewTuiStyleEntry(&styleEntry)
 	attributeEntry := types.NewAttributeEntry()
-	attributeEntry.ForegroundColor = localStyleEntry.RadioButtonForegroundColor
-	attributeEntry.BackgroundColor = localStyleEntry.RadioButtonBackgroundColor
+	attributeEntry.ForegroundColor = localStyleEntry.RadioButton.ForegroundColor
+	attributeEntry.BackgroundColor = localStyleEntry.RadioButton.BackgroundColor
 	attributeEntry.CellType = constants.CellTypeRadioButton
 	attributeEntry.CellControlAlias = radioButtonAlias
 	firstArrayOfRunes := stringformat.GetRunesFromString(radioButtonLabel)
@@ -166,10 +166,10 @@ func (shared *radioButtonType) drawRadioButton(layerEntry *types.LayerEntryType,
 	printLayer(layerEntry, attributeEntry, xLocation, yLocation, firstArrayOfRunes)
 	var secondArrayOfRunes []rune
 	if isSelected {
-		secondArrayOfRunes = []rune{localStyleEntry.RadioButtonSelectedCharacter}
+		secondArrayOfRunes = []rune{localStyleEntry.RadioButton.SelectedCharacter}
 		attributeEntry.CellControlId = constants.CellControlIdChecked
 	} else {
-		secondArrayOfRunes = []rune{localStyleEntry.RadioButtonUnselectedCharacter}
+		secondArrayOfRunes = []rune{localStyleEntry.RadioButton.UnselectedCharacter}
 		attributeEntry.CellControlId = constants.CellControlIdUnchecked
 	}
 	printLayer(layerEntry, attributeEntry, xLocation+numberOfSpacesUsed, yLocation, secondArrayOfRunes)

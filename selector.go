@@ -2,11 +2,11 @@ package consolizer
 
 import (
 	"fmt"
+	"github.com/supercom32/consolizer/memory"
+	"github.com/supercom32/consolizer/stringformat"
 
-	"supercom32.net/consolizer/constants"
-	"supercom32.net/consolizer/internal/memory"
-	"supercom32.net/consolizer/internal/stringformat"
-	"supercom32.net/consolizer/types"
+	"github.com/supercom32/consolizer/constants"
+	"github.com/supercom32/consolizer/types"
 )
 
 type selectorInstanceType struct {
@@ -190,7 +190,7 @@ func (shared *selectorType) Add(layerAlias string, selectorAlias string, styleEn
 	scrollbar.Add(layerAlias, selectorEntry.ScrollbarAlias, styleEntry, scrollBarXLocation, scrollBarYLocation, scrollBarHeight, scrollBarMaxValue, 0, numberOfColumns, false)
 	scrollBarEntry := ScrollBars.Get(layerAlias, selectorEntry.ScrollbarAlias)
 	selectorWidth := itemWidth
-	if len(selectionEntry.SelectionValue) <= selectorHeight*numberOfColumns || styleEntry.SelectorTextAlignment == constants.AlignmentNoPadding {
+	if len(selectionEntry.SelectionValue) <= selectorHeight*numberOfColumns || styleEntry.Selector.TextAlignment == constants.AlignmentNoPadding {
 		scrollBarEntry.IsEnabled = false
 		scrollBarEntry.IsVisible = false
 		selectorWidth = selectorWidth + 1
@@ -245,15 +245,15 @@ func (shared *selectorType) drawSelector(selectorAlias string, layerEntry *types
 		return
 	}
 	menuAttributeEntry := types.NewAttributeEntry()
-	menuAttributeEntry.ForegroundColor = styleEntry.SelectorForegroundColor
-	menuAttributeEntry.BackgroundColor = styleEntry.SelectorBackgroundColor
+	menuAttributeEntry.ForegroundColor = styleEntry.Selector.ForegroundColor
+	menuAttributeEntry.BackgroundColor = styleEntry.Selector.BackgroundColor
 	if selectorEntry.IsBorderDrawn {
 		fillArea(layerEntry, menuAttributeEntry, " ", xLocation-1, yLocation-1, itemWidth+2, selectorHeight+2, constants.NullCellControlLocation)
 		drawBorder(layerEntry, styleEntry, menuAttributeEntry, xLocation-1, yLocation-1, itemWidth+2, selectorHeight+2, false)
 	}
 	highlightAttributeEntry := types.NewAttributeEntry()
-	highlightAttributeEntry.ForegroundColor = styleEntry.HighlightForegroundColor
-	highlightAttributeEntry.BackgroundColor = styleEntry.HighlightBackgroundColor
+	highlightAttributeEntry.ForegroundColor = styleEntry.Selector.HighlightForegroundColor
+	highlightAttributeEntry.BackgroundColor = styleEntry.Selector.HighlightBackgroundColor
 	currentYLocation := yLocation
 	currentMenuItemIndex := viewportPosition
 	currentXOffset := 0
@@ -264,7 +264,7 @@ func (shared *selectorType) drawSelector(selectorAlias string, layerEntry *types
 		if currentMenuItemIndex == itemHighlighted {
 			attributeEntry = highlightAttributeEntry
 		}
-		menuItemName := stringformat.GetFormattedString(selectionEntry.SelectionValue[currentMenuItemIndex], itemWidth, styleEntry.SelectorTextAlignment)
+		menuItemName := stringformat.GetFormattedString(selectionEntry.SelectionValue[currentMenuItemIndex], itemWidth, styleEntry.Selector.TextAlignment)
 		arrayOfRunes := stringformat.GetRunesFromString(menuItemName)
 		attributeEntry.CellControlId = currentMenuItemIndex
 		attributeEntry.CellControlAlias = selectorAlias

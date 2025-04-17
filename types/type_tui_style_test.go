@@ -2,44 +2,44 @@ package types
 
 import (
 	"github.com/stretchr/testify/assert"
-	"supercom32.net/consolizer/constants"
-	"supercom32.net/consolizer/internal/recast"
+	"github.com/supercom32/consolizer/constants"
+	"github.com/supercom32/consolizer/recast"
 	"testing"
 )
 
 func TestStyleTypeCreation(test *testing.T) {
 	firstStyleEntry := NewTuiStyleEntry()
-	firstStyleEntry.UpperLeftCorner = 'a'
-	firstStyleEntry.UpperRightCorner = 'b'
-	firstStyleEntry.HorizontalLine = 'c'
-	firstStyleEntry.LeftSideTConnector = 'd'
-	firstStyleEntry.RightSideTConnector = 'e'
-	firstStyleEntry.UpSideTConnector = 'f'
-	firstStyleEntry.DownSideTConnector = 'g'
-	firstStyleEntry.VerticalLine = 'g'
-	firstStyleEntry.LowerRightCorner = 'h'
-	firstStyleEntry.LowerLeftCorner = 'i'
-	firstStyleEntry.CrossConnector = 'j'
-	firstStyleEntry.DesktopPattern = 'k'
-	firstStyleEntry.ProgressBarUnfilledPattern = 'l'
-	firstStyleEntry.ProgressBarFilledPattern = 'm'
-	firstStyleEntry.LineDrawingTextForegroundColor = constants.AnsiColorByIndex[1]
-	firstStyleEntry.LineDrawingTextBackgroundColor = constants.AnsiColorByIndex[2]
-	firstStyleEntry.TextFieldForegroundColor = constants.AnsiColorByIndex[3]
-	firstStyleEntry.TextFieldBackgroundColor = constants.AnsiColorByIndex[4]
-	firstStyleEntry.TextboxCursorForegroundColor = constants.AnsiColorByIndex[5]
-	firstStyleEntry.TextboxCursorBackgroundColor = constants.AnsiColorByIndex[6]
-	firstStyleEntry.SelectorForegroundColor = constants.AnsiColorByIndex[7]
-	firstStyleEntry.SelectorBackgroundColor = constants.AnsiColorByIndex[8]
-	firstStyleEntry.HighlightForegroundColor = constants.AnsiColorByIndex[9]
-	firstStyleEntry.HighlightBackgroundColor = constants.AnsiColorByIndex[10]
-	firstStyleEntry.ButtonRaisedColor = constants.AnsiColorByIndex[11]
-	firstStyleEntry.ButtonForegroundColor = constants.AnsiColorByIndex[12]
-	firstStyleEntry.ButtonBackgroundColor = constants.AnsiColorByIndex[13]
-	firstStyleEntry.IsSquareFont = true
-	firstStyleEntry.IsWindowFooterDrawn = true
-	firstStyleEntry.IsWindowHeaderDrawn = true
-	firstStyleEntry.SelectorTextAlignment = constants.AlignmentLeft
+	firstStyleEntry.Frame.UpperLeftCorner = 'a'
+	firstStyleEntry.Frame.UpperRightCorner = 'b'
+	firstStyleEntry.Frame.HorizontalLine = 'c'
+	firstStyleEntry.Frame.LeftSideTConnector = 'd'
+	firstStyleEntry.Frame.RightSideTConnector = 'e'
+	firstStyleEntry.Frame.UpSideTConnector = 'f'
+	firstStyleEntry.Frame.DownSideTConnector = 'g'
+	firstStyleEntry.Frame.VerticalLine = 'g'
+	firstStyleEntry.Frame.LowerRightCorner = 'h'
+	firstStyleEntry.Frame.LowerLeftCorner = 'i'
+	firstStyleEntry.Frame.CrossConnector = 'j'
+	firstStyleEntry.Frame.DesktopPattern = 'k'
+	firstStyleEntry.ProgressBar.UnfilledPattern = 'l'
+	firstStyleEntry.ProgressBar.FilledPattern = 'm'
+	firstStyleEntry.Window.LineDrawingTextForegroundColor = constants.AnsiColorByIndex[1]
+	firstStyleEntry.Window.LineDrawingTextBackgroundColor = constants.AnsiColorByIndex[2]
+	firstStyleEntry.TextField.ForegroundColor = constants.AnsiColorByIndex[3]
+	firstStyleEntry.TextField.BackgroundColor = constants.AnsiColorByIndex[4]
+	firstStyleEntry.Textbox.CursorForegroundColor = constants.AnsiColorByIndex[5]
+	firstStyleEntry.Textbox.CursorBackgroundColor = constants.AnsiColorByIndex[6]
+	firstStyleEntry.Selector.ForegroundColor = constants.AnsiColorByIndex[7]
+	firstStyleEntry.Selector.BackgroundColor = constants.AnsiColorByIndex[8]
+	firstStyleEntry.Textbox.HighlightForegroundColor = constants.AnsiColorByIndex[9]
+	firstStyleEntry.Textbox.HighlightBackgroundColor = constants.AnsiColorByIndex[10]
+	firstStyleEntry.Button.RaisedColor = constants.AnsiColorByIndex[11]
+	firstStyleEntry.Button.ForegroundColor = constants.AnsiColorByIndex[12]
+	firstStyleEntry.Button.BackgroundColor = constants.AnsiColorByIndex[13]
+	firstStyleEntry.Misc.IsSquareFont = true
+	firstStyleEntry.Window.IsFooterDrawn = true
+	firstStyleEntry.Window.IsHeaderDrawn = true
+	firstStyleEntry.Selector.TextAlignment = constants.AlignmentLeft
 	secondStyleEntry := NewTuiStyleEntry()
 	firstResult := recast.GetArrayOfInterfaces(firstStyleEntry)
 	secondResult := recast.GetArrayOfInterfaces(secondStyleEntry)

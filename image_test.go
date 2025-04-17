@@ -3,9 +3,9 @@ package consolizer_test
 import (
 	"testing"
 
+	"consolizer"
 	"github.com/stretchr/testify/assert"
-	"supercom32.net/consolizer"
-	"supercom32.net/consolizer/types"
+	"github.com/supercom32/consolizer/types"
 )
 
 func setupTest() {

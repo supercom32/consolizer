@@ -1,10 +1,9 @@
 package consolizer
 
 import (
+	"constants"
 	"testing"
-
-	"supercom32.net/consolizer/constants"
-	"supercom32.net/consolizer/types"
+	"types"
 )
 
 func TestLayerInitialization(t *testing.T) {
@@ -649,14 +648,14 @@ func TestComplexInterleavedOperations(t *testing.T) {
 
 	// Create style entries with unique properties
 	styleEntry1 := types.NewTuiStyleEntry()
-	styleEntry1.ButtonForegroundColor = constants.ColorRed
-	styleEntry1.ButtonBackgroundColor = constants.ColorBlue
-	styleEntry1.ButtonRaisedColor = constants.ColorGreen
+	styleEntry1.Button.ForegroundColor = constants.ColorRed
+	styleEntry1.Button.BackgroundColor = constants.ColorBlue
+	styleEntry1.Button.RaisedColor = constants.ColorGreen
 
 	styleEntry2 := types.NewTuiStyleEntry()
-	styleEntry2.ButtonForegroundColor = constants.ColorYellow
-	styleEntry2.ButtonBackgroundColor = constants.ColorMagenta
-	styleEntry2.ButtonRaisedColor = constants.ColorCyan
+	styleEntry2.Button.ForegroundColor = constants.ColorYellow
+	styleEntry2.Button.BackgroundColor = constants.ColorMagenta
+	styleEntry2.Button.RaisedColor = constants.ColorCyan
 
 	selectionEntry1 := types.NewSelectionEntry()
 	selectionEntry1.SelectionValue = []string{"Option A", "Option B", "Option C"}
@@ -701,7 +700,7 @@ func TestComplexInterleavedOperations(t *testing.T) {
 
 	// Verify child2 controls after creation
 	child2ButtonEntry := Buttons.Get(child2Layer.layerAlias, child2Button.controlAlias)
-	if child2ButtonEntry.StyleEntry.ButtonForegroundColor != constants.ColorYellow {
+	if child2ButtonEntry.StyleEntry.Button.ForegroundColor != constants.ColorYellow {
 		t.Error("Child2 button should maintain its yellow foreground color")
 	}
 	child2CheckboxEntry := Checkboxes.Get(child2Layer.layerAlias, child2Checkbox.controlAlias)
@@ -771,7 +770,7 @@ func TestComplexInterleavedOperations(t *testing.T) {
 
 	// Verify control properties after moving layers
 	root1ButtonEntry := Buttons.Get(root1Layer.layerAlias, root1Button.controlAlias)
-	if root1ButtonEntry.StyleEntry.ButtonForegroundColor != constants.ColorRed {
+	if root1ButtonEntry.StyleEntry.Button.ForegroundColor != constants.ColorRed {
 		t.Error("Root1 button should maintain its red foreground color after move")
 	}
 	root1CheckboxEntry := Checkboxes.Get(root1Layer.layerAlias, root1Checkbox.controlAlias)
@@ -813,7 +812,7 @@ func TestComplexInterleavedOperations(t *testing.T) {
 	}
 
 	root3ButtonEntry := Buttons.Get(root3Layer.layerAlias, root3Button.controlAlias)
-	if root3ButtonEntry.StyleEntry.ButtonForegroundColor != constants.ColorYellow {
+	if root3ButtonEntry.StyleEntry.Button.ForegroundColor != constants.ColorYellow {
 		t.Error("Root3 button should maintain its yellow foreground color")
 	}
 	root3CheckboxEntry := Checkboxes.Get(root3Layer.layerAlias, root3Checkbox.controlAlias)
@@ -839,7 +838,7 @@ func TestComplexInterleavedOperations(t *testing.T) {
 
 	// Verify root3Child2 controls after creation
 	root3Child2ButtonEntry := Buttons.Get(root3Child2.layerAlias, root3Child2Button.controlAlias)
-	if root3Child2ButtonEntry.StyleEntry.ButtonForegroundColor != constants.ColorYellow {
+	if root3Child2ButtonEntry.StyleEntry.Button.ForegroundColor != constants.ColorYellow {
 		t.Error("Root3 Child2 button should have yellow foreground color")
 	}
 	root3Child2CheckboxEntry := Checkboxes.Get(root3Child2.layerAlias, root3Child2Checkbox.controlAlias)
@@ -862,11 +861,11 @@ func TestComplexInterleavedOperations(t *testing.T) {
 
 	// Verify root3 and root3Child2 controls still have correct properties
 	root3ButtonEntry = Buttons.Get(root3Layer.layerAlias, root3Button.controlAlias)
-	if root3ButtonEntry.StyleEntry.ButtonForegroundColor != constants.ColorYellow {
+	if root3ButtonEntry.StyleEntry.Button.ForegroundColor != constants.ColorYellow {
 		t.Error("Root3 button should maintain its yellow foreground color after child deletion")
 	}
 	root3Child2ButtonEntry = Buttons.Get(root3Child2.layerAlias, root3Child2Button.controlAlias)
-	if root3Child2ButtonEntry.StyleEntry.ButtonForegroundColor != constants.ColorYellow {
+	if root3Child2ButtonEntry.StyleEntry.Button.ForegroundColor != constants.ColorYellow {
 		t.Error("Root3 Child2 button should maintain its yellow foreground color after sibling deletion")
 	}
 

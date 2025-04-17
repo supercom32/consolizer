@@ -1,8 +1,8 @@
 package types
 
 import (
+	"github.com/supercom32/consolizer/constants"
 	"image"
-	"supercom32.net/consolizer/constants"
 )
 
 type ImageComposerEntryType struct {

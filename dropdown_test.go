@@ -3,8 +3,8 @@ package consolizer
 import (
 	"fmt"
 	"github.com/stretchr/testify/assert"
-	"supercom32.net/consolizer/constants"
-	"supercom32.net/consolizer/types"
+	"github.com/supercom32/consolizer/constants"
+	"github.com/supercom32/consolizer/types"
 	"testing"
 )
 

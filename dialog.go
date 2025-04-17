@@ -2,9 +2,9 @@ package consolizer
 
 import (
 	"fmt"
+	"github.com/supercom32/consolizer/stringformat"
 
-	"supercom32.net/consolizer/internal/stringformat"
-	"supercom32.net/consolizer/types"
+	"github.com/supercom32/consolizer/types"
 )
 
 /*

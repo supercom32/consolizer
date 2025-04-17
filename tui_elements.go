@@ -3,9 +3,9 @@ package consolizer
 import (
 	"fmt"
 	"github.com/gdamore/tcell/v2"
-	"supercom32.net/consolizer/constants"
-	"supercom32.net/consolizer/internal/stringformat"
-	"supercom32.net/consolizer/types"
+	"github.com/supercom32/consolizer/constants"
+	"github.com/supercom32/consolizer/stringformat"
+	"github.com/supercom32/consolizer/types"
 )
 
 /*
@@ -133,37 +133,37 @@ will be returned instead.
 */
 func getConnectorIndexByCharacter(sourceCharacter rune, styleEntry types.TuiStyleEntryType) int {
 	connectorIndex := -1
-	if sourceCharacter == styleEntry.HorizontalLine {
+	if sourceCharacter == styleEntry.Frame.HorizontalLine {
 		connectorIndex = horizontalConnector
 	}
-	if sourceCharacter == styleEntry.VerticalLine {
+	if sourceCharacter == styleEntry.Frame.VerticalLine {
 		connectorIndex = verticalConnector
 	}
-	if sourceCharacter == styleEntry.UpperLeftCorner {
+	if sourceCharacter == styleEntry.Frame.UpperLeftCorner {
 		connectorIndex = upperLeftConnector
 	}
-	if sourceCharacter == styleEntry.UpperRightCorner {
+	if sourceCharacter == styleEntry.Frame.UpperRightCorner {
 		connectorIndex = upperRightConnector
 	}
-	if sourceCharacter == styleEntry.LowerLeftCorner {
+	if sourceCharacter == styleEntry.Frame.LowerLeftCorner {
 		connectorIndex = lowerLeftConnector
 	}
-	if sourceCharacter == styleEntry.LowerRightCorner {
+	if sourceCharacter == styleEntry.Frame.LowerRightCorner {
 		connectorIndex = lowerRightConnector
 	}
-	if sourceCharacter == styleEntry.RightSideTConnector {
+	if sourceCharacter == styleEntry.Frame.RightSideTConnector {
 		connectorIndex = rightTConnector
 	}
-	if sourceCharacter == styleEntry.LeftSideTConnector {
+	if sourceCharacter == styleEntry.Frame.LeftSideTConnector {
 		connectorIndex = leftTConnector
 	}
-	if sourceCharacter == styleEntry.UpSideTConnector {
+	if sourceCharacter == styleEntry.Frame.UpSideTConnector {
 		connectorIndex = upTConnector
 	}
-	if sourceCharacter == styleEntry.DownSideTConnector {
+	if sourceCharacter == styleEntry.Frame.DownSideTConnector {
 		connectorIndex = downTConnector
 	}
-	if sourceCharacter == styleEntry.CrossConnector {
+	if sourceCharacter == styleEntry.Frame.CrossConnector {
 		connectorIndex = crossConnector
 	}
 	return connectorIndex
@@ -217,37 +217,37 @@ will be returned instead.
 func getConnectorCharacterByIndex(connectorIndex int, styleEntry types.TuiStyleEntryType) rune {
 	characterToReturn := constants.NullRune
 	if connectorIndex == horizontalConnector {
-		characterToReturn = styleEntry.HorizontalLine
+		characterToReturn = styleEntry.Frame.HorizontalLine
 	}
 	if connectorIndex == verticalConnector {
-		characterToReturn = styleEntry.VerticalLine
+		characterToReturn = styleEntry.Frame.VerticalLine
 	}
 	if connectorIndex == upperLeftConnector {
-		characterToReturn = styleEntry.UpperLeftCorner
+		characterToReturn = styleEntry.Frame.UpperLeftCorner
 	}
 	if connectorIndex == upperRightConnector {
-		characterToReturn = styleEntry.UpperRightCorner
+		characterToReturn = styleEntry.Frame.UpperRightCorner
 	}
 	if connectorIndex == lowerLeftConnector {
-		characterToReturn = styleEntry.LowerLeftCorner
+		characterToReturn = styleEntry.Frame.LowerLeftCorner
 	}
 	if connectorIndex == lowerRightConnector {
-		characterToReturn = styleEntry.LowerRightCorner
+		characterToReturn = styleEntry.Frame.LowerRightCorner
 	}
 	if connectorIndex == rightTConnector {
-		characterToReturn = styleEntry.RightSideTConnector
+		characterToReturn = styleEntry.Frame.RightSideTConnector
 	}
 	if connectorIndex == leftTConnector {
-		characterToReturn = styleEntry.LeftSideTConnector
+		characterToReturn = styleEntry.Frame.LeftSideTConnector
 	}
 	if connectorIndex == downTConnector {
-		characterToReturn = styleEntry.DownSideTConnector
+		characterToReturn = styleEntry.Frame.DownSideTConnector
 	}
 	if connectorIndex == upTConnector {
-		characterToReturn = styleEntry.UpSideTConnector
+		characterToReturn = styleEntry.Frame.UpSideTConnector
 	}
 	if connectorIndex == crossConnector {
-		characterToReturn = styleEntry.CrossConnector
+		characterToReturn = styleEntry.Frame.CrossConnector
 	}
 	return characterToReturn
 }
@@ -298,17 +298,17 @@ specified, then only the visible portion of the line will be drawn.
 */
 func drawVerticalLine(layerEntry *types.LayerEntryType, styleEntry types.TuiStyleEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, height int, isConnectorsDrawn bool) {
 	localAttributeEntry := types.NewAttributeEntry(&attributeEntry)
-	localAttributeEntry.ForegroundColor = styleEntry.LineDrawingTextForegroundColor
-	localAttributeEntry.BackgroundColor = styleEntry.LineDrawingTextBackgroundColor
+	localAttributeEntry.ForegroundColor = styleEntry.Window.LineDrawingTextForegroundColor
+	localAttributeEntry.BackgroundColor = styleEntry.Window.LineDrawingTextBackgroundColor
 	for currentRow := 0; currentRow < height; currentRow++ {
 		if yLocation+currentRow >= 0 && xLocation >= 0 && yLocation+currentRow < layerEntry.Height && xLocation < layerEntry.Width {
 			characterToDraw := constants.NullRune
 			if isConnectorsDrawn && currentRow == 0 {
-				characterToDraw = styleEntry.DownSideTConnector
+				characterToDraw = styleEntry.Frame.DownSideTConnector
 			} else if isConnectorsDrawn && currentRow == height-1 {
-				characterToDraw = styleEntry.UpSideTConnector
+				characterToDraw = styleEntry.Frame.UpSideTConnector
 			} else {
-				characterToDraw = styleEntry.VerticalLine
+				characterToDraw = styleEntry.Frame.VerticalLine
 			}
 			runeOnLayer := getRuneOnLayer(layerEntry, xLocation, yLocation+currentRow)
 			stringToPrint := string(getConnectorCharacter(characterToDraw, runeOnLayer, styleEntry))
@@ -332,8 +332,8 @@ specified, then only the visible portion of the line will be drawn.
 */
 func drawHorizontalLine(layerEntry *types.LayerEntryType, styleEntry types.TuiStyleEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, width int, isConnectorsDrawn bool) {
 	localAttributeEntry := types.NewAttributeEntry(&attributeEntry)
-	localAttributeEntry.ForegroundColor = styleEntry.LineDrawingTextForegroundColor
-	localAttributeEntry.BackgroundColor = styleEntry.LineDrawingTextBackgroundColor
+	localAttributeEntry.ForegroundColor = styleEntry.Window.LineDrawingTextForegroundColor
+	localAttributeEntry.BackgroundColor = styleEntry.Window.LineDrawingTextBackgroundColor
 	for currentCharacter := 0; currentCharacter < width; currentCharacter++ {
 		if yLocation < layerEntry.Height && xLocation+currentCharacter < layerEntry.Width {
 			if yLocation < 0 || xLocation+currentCharacter < 0 || yLocation > layerEntry.Height || xLocation+currentCharacter > layerEntry.Width {
@@ -341,11 +341,11 @@ func drawHorizontalLine(layerEntry *types.LayerEntryType, styleEntry types.TuiSt
 			}
 			characterToDraw := constants.NullRune
 			if isConnectorsDrawn && currentCharacter == 0 {
-				characterToDraw = styleEntry.RightSideTConnector
+				characterToDraw = styleEntry.Frame.RightSideTConnector
 			} else if isConnectorsDrawn && currentCharacter == width-1 {
-				characterToDraw = styleEntry.LeftSideTConnector
+				characterToDraw = styleEntry.Frame.LeftSideTConnector
 			} else {
-				characterToDraw = styleEntry.HorizontalLine
+				characterToDraw = styleEntry.Frame.HorizontalLine
 			}
 			runeOnLayer := getRuneOnLayer(layerEntry, xLocation+currentCharacter, yLocation)
 			stringToPrint := string(getConnectorCharacter(characterToDraw, runeOnLayer, styleEntry))
@@ -387,12 +387,12 @@ drawn.
 */
 func drawFrameLabel(layerEntry *types.LayerEntryType, styleEntry types.TuiStyleEntryType, label string, xLocation int, yLocation int) {
 	attributeEntry := types.NewAttributeEntry()
-	attributeEntry.ForegroundColor = styleEntry.LineDrawingTextForegroundColor
-	attributeEntry.BackgroundColor = styleEntry.LineDrawingTextBackgroundColor
+	attributeEntry.ForegroundColor = styleEntry.Window.LineDrawingTextForegroundColor
+	attributeEntry.BackgroundColor = styleEntry.Window.LineDrawingTextBackgroundColor
 	printLayer(layerEntry, attributeEntry, xLocation, yLocation, []rune("[ "))
 	printLayer(layerEntry, attributeEntry, xLocation+2+len(label), yLocation, []rune(" ]"))
-	attributeEntry.ForegroundColor = styleEntry.LineDrawingTextLabelColor
-	attributeEntry.BackgroundColor = styleEntry.LineDrawingTextBackgroundColor
+	attributeEntry.ForegroundColor = styleEntry.Window.LineDrawingTextLabelColor
+	attributeEntry.BackgroundColor = styleEntry.Window.LineDrawingTextBackgroundColor
 	printLayer(layerEntry, attributeEntry, xLocation+2, yLocation, []rune(label))
 }
 
@@ -411,8 +411,8 @@ the window itself.
 */
 func drawFrame(layerEntry *types.LayerEntryType, styleEntry types.TuiStyleEntryType, attributeEntry types.AttributeEntryType, frameStyle int, xLocation int, yLocation int, width int, height int, isInteractive bool) {
 	localAttributeEntry := types.NewAttributeEntry(&attributeEntry)
-	localAttributeEntry.ForegroundColor = styleEntry.LineDrawingTextForegroundColor
-	localAttributeEntry.BackgroundColor = styleEntry.LineDrawingTextBackgroundColor
+	localAttributeEntry.ForegroundColor = styleEntry.Window.LineDrawingTextForegroundColor
+	localAttributeEntry.BackgroundColor = styleEntry.Window.LineDrawingTextBackgroundColor
 	for currentRow := 0; currentRow < height; currentRow++ {
 		for currentCharacter := 0; currentCharacter < width; currentCharacter++ {
 			if yLocation+currentRow >= 0 || xLocation+currentCharacter >= 0 ||
@@ -425,17 +425,17 @@ func drawFrame(layerEntry *types.LayerEntryType, styleEntry types.TuiStyleEntryT
 						currentAttributeEntry.CellType = constants.CellTypeFrameTop
 					}
 					if currentCharacter == 0 {
-						characterToDraw = styleEntry.UpperLeftCorner
+						characterToDraw = styleEntry.Frame.UpperLeftCorner
 						if frameStyle == constants.FrameStyleSunken {
 							currentAttributeEntry.ForegroundColor = constants.AnsiColorByIndex[0]
 						}
 					} else if currentCharacter == width-1 {
-						characterToDraw = styleEntry.UpperRightCorner
+						characterToDraw = styleEntry.Frame.UpperRightCorner
 						if frameStyle == constants.FrameStyleRaised {
 							currentAttributeEntry.ForegroundColor = constants.AnsiColorByIndex[0]
 						}
 					} else {
-						characterToDraw = styleEntry.HorizontalLine
+						characterToDraw = styleEntry.Frame.HorizontalLine
 						if frameStyle == constants.FrameStyleSunken {
 							currentAttributeEntry.ForegroundColor = constants.AnsiColorByIndex[0]
 						}
@@ -446,30 +446,30 @@ func drawFrame(layerEntry *types.LayerEntryType, styleEntry types.TuiStyleEntryT
 						currentAttributeEntry.CellType = 0
 					}
 					if currentCharacter == 0 {
-						characterToDraw = styleEntry.LowerLeftCorner
+						characterToDraw = styleEntry.Frame.LowerLeftCorner
 						if frameStyle == constants.FrameStyleSunken {
 							currentAttributeEntry.ForegroundColor = constants.AnsiColorByIndex[0]
 						}
 					} else if currentCharacter == width-1 {
-						characterToDraw = styleEntry.LowerRightCorner
+						characterToDraw = styleEntry.Frame.LowerRightCorner
 						if frameStyle == constants.FrameStyleRaised {
 							currentAttributeEntry.ForegroundColor = constants.AnsiColorByIndex[0]
 						}
 					} else {
-						characterToDraw = styleEntry.HorizontalLine
+						characterToDraw = styleEntry.Frame.HorizontalLine
 						if frameStyle == constants.FrameStyleRaised {
 							currentAttributeEntry.ForegroundColor = constants.AnsiColorByIndex[0]
 						}
 					}
 				} else {
 					if currentCharacter == 0 {
-						characterToDraw = styleEntry.VerticalLine
+						characterToDraw = styleEntry.Frame.VerticalLine
 						if frameStyle == constants.FrameStyleSunken {
 							currentAttributeEntry.ForegroundColor = constants.AnsiColorByIndex[0]
 						}
 					}
 					if currentCharacter == width-1 {
-						characterToDraw = styleEntry.VerticalLine
+						characterToDraw = styleEntry.Frame.VerticalLine
 						if frameStyle == constants.FrameStyleRaised {
 							currentAttributeEntry.ForegroundColor = constants.AnsiColorByIndex[0]
 						}
@@ -501,19 +501,19 @@ the window itself.
 */
 func drawWindow(layerEntry *types.LayerEntryType, styleEntry types.TuiStyleEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, width int, height int, isInteractive bool) {
 	localAttributeEntry := types.NewAttributeEntry(&attributeEntry)
-	localAttributeEntry.ForegroundColor = styleEntry.LineDrawingTextForegroundColor
-	localAttributeEntry.BackgroundColor = styleEntry.LineDrawingTextBackgroundColor
-	if styleEntry.IsSquareFont {
+	localAttributeEntry.ForegroundColor = styleEntry.Window.LineDrawingTextForegroundColor
+	localAttributeEntry.BackgroundColor = styleEntry.Window.LineDrawingTextBackgroundColor
+	if styleEntry.Frame.IsSquareFont {
 		drawShadow(layerEntry, localAttributeEntry, xLocation+1, yLocation+1, width, height, 0.5)
 	} else {
 		drawShadow(layerEntry, localAttributeEntry, xLocation+2, yLocation+1, width, height, 0.5)
 	}
 	fillArea(layerEntry, localAttributeEntry, " ", xLocation, yLocation, width, height, constants.NullCellControlLocation)
 	drawBorder(layerEntry, styleEntry, localAttributeEntry, xLocation, yLocation, width, height, isInteractive)
-	if styleEntry.IsWindowHeaderDrawn {
+	if styleEntry.Window.IsHeaderDrawn {
 		drawHorizontalLine(layerEntry, styleEntry, localAttributeEntry, xLocation, yLocation+2, width, true)
 	}
-	if styleEntry.IsWindowFooterDrawn {
+	if styleEntry.Window.IsFooterDrawn {
 		drawHorizontalLine(layerEntry, styleEntry, localAttributeEntry, xLocation, yLocation+height-3, width, true)
 	}
 }

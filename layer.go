@@ -2,12 +2,12 @@ package consolizer
 
 import (
 	"fmt"
+	"github.com/supercom32/consolizer/memory"
 	"sort"
 
 	"github.com/google/uuid"
-	"supercom32.net/consolizer/constants"
-	"supercom32.net/consolizer/internal/memory"
-	"supercom32.net/consolizer/types"
+	"github.com/supercom32/consolizer/constants"
+	"github.com/supercom32/consolizer/types"
 )
 
 type layerType struct{}

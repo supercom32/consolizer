@@ -1,12 +1,12 @@
 package consolizer
 
 import (
+	"github.com/supercom32/consolizer/memory"
+	"github.com/supercom32/consolizer/stringformat"
 	"strings"
 
-	"supercom32.net/consolizer/constants"
-	"supercom32.net/consolizer/internal/memory"
-	"supercom32.net/consolizer/internal/stringformat"
-	"supercom32.net/consolizer/types"
+	"github.com/supercom32/consolizer/constants"
+	"github.com/supercom32/consolizer/types"
 )
 
 type LabelInstanceType struct {
@@ -86,8 +86,8 @@ func (shared *labelType) drawLabelsOnLayer(layerEntry types.LayerEntryType) {
 
 func drawLabel(layerEntry *types.LayerEntryType, labelAlias string, labelValue string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int) {
 	attributeEntry := types.NewAttributeEntry()
-	attributeEntry.ForegroundColor = styleEntry.LabelForegroundColor
-	attributeEntry.BackgroundColor = styleEntry.LabelBackgroundColor
+	attributeEntry.ForegroundColor = styleEntry.Label.ForegroundColor
+	attributeEntry.BackgroundColor = styleEntry.Label.BackgroundColor
 	attributeEntry.CellType = constants.CellTypeLabel
 	attributeEntry.CellControlAlias = labelAlias
 	emptyString := strings.Repeat(" ", width)

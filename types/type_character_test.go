@@ -17,7 +17,7 @@ func TestCharacterTypeCreation(test *testing.T) {
 	firstCharacterObject.Character = rune('A')
 	firstCharacterObject.AttributeEntry = firstColorObject
 	secondCharacterObject := NewCharacterEntry(&firstCharacterObject)
-	assert.Equalf(test, secondCharacterObject, firstCharacterObject, "The second Character object should be the same as the first, as it was created as a copy")
+	assert.Equalf(test, secondCharacterObject, firstCharacterObject, "The second Frame object should be the same as the first, as it was created as a copy")
 
 	secondCharacterObject.Character = rune('Z')
 	secondCharacterObject.AttributeEntry.ForegroundColor = 1234
@@ -26,5 +26,5 @@ func TestCharacterTypeCreation(test *testing.T) {
 	secondCharacterObject.AttributeEntry.IsBold = false
 	secondCharacterObject.AttributeEntry.IsReversed = true
 	secondCharacterObject.AttributeEntry.IsUnderlined = false
-	assert.NotEqualf(test, secondCharacterObject, firstCharacterObject, "The second Character object should not be the same as the first, as manipulating it should only effect itself.")
+	assert.NotEqualf(test, secondCharacterObject, firstCharacterObject, "The second Frame object should not be the same as the first, as manipulating it should only effect itself.")
 }

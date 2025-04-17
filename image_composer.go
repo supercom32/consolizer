@@ -3,6 +3,8 @@ package consolizer
 import (
 	"fmt"
 	"github.com/disintegration/imaging"
+	"github.com/supercom32/consolizer/constants"
+	"github.com/supercom32/consolizer/types"
 	"image"
 	"image/color"
 	"image/draw"
@@ -10,8 +12,6 @@ import (
 	"math"
 	"os"
 	"sort"
-	"supercom32.net/consolizer/constants"
-	"supercom32.net/consolizer/types"
 )
 
 type ImageComposerEntryType struct {

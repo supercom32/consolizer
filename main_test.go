@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"supercom32.net/consolizer/constants"
-	"supercom32.net/consolizer/types"
+	"github.com/supercom32/consolizer/constants"
+	"github.com/supercom32/consolizer/types"
 )
 
 func TestMainStub(test *testing.T) {
@@ -35,8 +35,8 @@ func testProgressBar() {
 	layer2.FillLayer("@")
 	Locate(0, 0)
 	styleEntry := types.NewTuiStyleEntry()
-	styleEntry.SelectorTextAlignment = 0
-	styleEntry.ProgressBarUnfilledBackgroundColor = constants.ColorBrightGreen
+	styleEntry.Selector.TextAlignment = 0
+	styleEntry.ProgressBar.UnfilledBackgroundColor = constants.ColorBrightGreen
 	layer1.AddProgressBar("Any Label", styleEntry, 21, 5, 40, 3, 10, 20, true)
 
 	for {
@@ -71,7 +71,7 @@ func testRadioButtons() {
 
 	Print("Enable ☑ Enable ○ ● (U+25CB, U+25CF) ▾☒♪")
 	styleEntry := types.NewTuiStyleEntry()
-	styleEntry.SelectorTextAlignment = 0
+	styleEntry.Selector.TextAlignment = 0
 	radioButton := layer1.AddRadioButton("Enable 文字 Feature 1", styleEntry, 2, 2, 0, true)
 	layer1.AddRadioButton("Enable 文字 Feature 2", styleEntry, 2, 3, 0, false)
 	layer1.AddRadioButton("Enable 文字 Feature 3", styleEntry, 2, 4, 0, false)
@@ -110,7 +110,7 @@ func testTextboxes() {
 	Locate(0, 0)
 	Print("Enable ☑ Enable ○ ● (U+25CB, U+25CF)")
 	styleEntry := types.NewTuiStyleEntry()
-	styleEntry.SelectorTextAlignment = 2
+	styleEntry.Selector.TextAlignment = 2
 	textBox := layer1.AddTextbox(styleEntry, 2, 2, 20, 5, true)
 	textBox.SetText("This is a test 1\nthis is ☑ second line which is very long and big 1\n李克强宣布中国今年经济增长的目标为 third line. 1")
 
@@ -157,7 +157,7 @@ func testCheckboxes() {
 
 	Print("Enable ☑ Enable ○ ● (U+25CB, U+25CF) ▾☒♪")
 	styleEntry := types.NewTuiStyleEntry()
-	styleEntry.SelectorTextAlignment = 0
+	styleEntry.Selector.TextAlignment = 0
 	layer1.AddCheckbox("Enable 文字 Feature", styleEntry, 2, 2, true, true)
 	for {
 		UpdateDisplay(false)
@@ -184,7 +184,7 @@ func testDropdown() {
 	Locate(0, 0)
 	Print("Enable ☑ Enable ○ ● (U+25CB, U+25CF)")
 	styleEntry := types.NewTuiStyleEntry()
-	styleEntry.SelectorTextAlignment = 0
+	styleEntry.Selector.TextAlignment = 0
 	selectionEntry := types.NewSelectionEntry()
 	selectionEntry.Add("1", "")
 	selectionEntry.Add("2", "Enabl文e ○ ●")
@@ -205,7 +205,7 @@ func testDropdown() {
 	layer1.AddSelector(styleEntry, selectionEntry, 6, 10, 4, 7, 3, 0, -1, false)
 	layer1.AddSelector(styleEntry, selectionEntry, 10, 20, 4, 7, 1, 0, -1, false)
 
-	styleEntry.SelectorTextAlignment = constants.AlignmentNoPadding
+	styleEntry.Selector.TextAlignment = constants.AlignmentNoPadding
 	layer1.AddSelector(styleEntry, selectionEntry, 6, 30, 4, 7, 1, 0, -1, false)
 	for {
 		UpdateDisplay(false)
@@ -235,7 +235,7 @@ func testScrollBars() {
 	layer1.FillLayer("#")
 	layer2.FillLayer("@")
 	styleEntry := types.NewTuiStyleEntry()
-	styleEntry.SelectorTextAlignment = 0
+	styleEntry.Selector.TextAlignment = 0
 	selectionEntry := types.NewSelectionEntry()
 	selectionEntry.Add("1", "OK")
 	selectionEntry.Add("2", "CANCEL")
@@ -279,7 +279,7 @@ func testSelector() {
 	layer1.FillLayer("#")
 	layer2.FillLayer("@")
 	styleEntry := types.NewTuiStyleEntry()
-	styleEntry.SelectorTextAlignment = 0
+	styleEntry.Selector.TextAlignment = 0
 	selectionEntry := types.NewSelectionEntry()
 	selectionEntry.Add("1", "OK")
 	selectionEntry.Add("2", "CANCEL")

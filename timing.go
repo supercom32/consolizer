@@ -2,10 +2,10 @@ package consolizer
 
 import (
 	"fmt"
+	"github.com/supercom32/consolizer/memory"
 	"time"
 
-	"supercom32.net/consolizer/internal/memory"
-	"supercom32.net/consolizer/types"
+	"github.com/supercom32/consolizer/types"
 )
 
 var Timers *memory.MemoryManager[types.TimerEntryType]

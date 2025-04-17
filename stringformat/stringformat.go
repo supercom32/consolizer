@@ -4,10 +4,10 @@ import (
 	"encoding/base64"
 	"fmt"
 	"github.com/google/uuid"
+	"github.com/supercom32/consolizer/constants"
+	"github.com/supercom32/consolizer/recast"
 	"github.com/supercom32/filesystem"
 	"golang.org/x/text/width"
-	"supercom32.net/consolizer/constants"
-	"supercom32.net/consolizer/internal/recast"
 	"time"
 )
 
