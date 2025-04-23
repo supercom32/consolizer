@@ -545,7 +545,17 @@ func (shared *textFieldType) updateKeyboardEventManually(layerAlias string, text
 		}
 
 		// Handle Shift+Arrow keys for highlighting
-		if strings.HasPrefix(keystrokeAsString, "shift+") {
+		// Only process specific shift+key combinations for highlighting
+		// This prevents shift+character combinations from being treated as special commands
+		if strings.HasPrefix(keystrokeAsString, "shift+") && 
+		   (strings.Contains(keystrokeAsString, "left") || 
+		    strings.Contains(keystrokeAsString, "right") || 
+		    strings.Contains(keystrokeAsString, "up") || 
+		    strings.Contains(keystrokeAsString, "down") || 
+		    strings.Contains(keystrokeAsString, "home") || 
+		    strings.Contains(keystrokeAsString, "end") || 
+		    strings.Contains(keystrokeAsString, "pgup") || 
+		    strings.Contains(keystrokeAsString, "pgdn")) {
 			if !textFieldEntry.IsHighlightActive {
 				textFieldEntry.HighlightStart = textFieldEntry.CursorPosition
 				textFieldEntry.IsHighlightActive = true

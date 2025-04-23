@@ -80,6 +80,22 @@ func (shared *BaseControlInstanceType) SetPosition(x, y int) *BaseControlInstanc
 	return shared
 }
 
+// GetPosition returns the X and Y position of the control
+func (shared *BaseControlInstanceType) GetPosition() (int, int) {
+	if control := shared.getBaseControl(); control != nil {
+		return control.XLocation, control.YLocation
+	}
+	return 0, 0
+}
+
+// GetSize returns the width and height of the control
+func (shared *BaseControlInstanceType) GetSize() (int, int) {
+	if control := shared.getBaseControl(); control != nil {
+		return control.Width, control.Height
+	}
+	return 0, 0
+}
+
 // SetSize sets the dimensions of the control
 func (shared *BaseControlInstanceType) SetSize(width, height int) *BaseControlInstanceType {
 	if control := shared.getBaseControl(); control != nil {
@@ -191,22 +207,6 @@ func (shared *BaseControlInstanceType) IsEnabled() bool {
 		return control.IsEnabled
 	}
 	return false
-}
-
-// GetPosition returns the position of the control
-func (shared *BaseControlInstanceType) GetPosition() (int, int) {
-	if control := shared.getBaseControl(); control != nil {
-		return control.XLocation, control.YLocation
-	}
-	return 0, 0
-}
-
-// GetSize returns the dimensions of the control
-func (shared *BaseControlInstanceType) GetSize() (int, int) {
-	if control := shared.getBaseControl(); control != nil {
-		return control.Width, control.Height
-	}
-	return 0, 0
 }
 
 // GetStyle returns the visual style of the control

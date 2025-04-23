@@ -161,6 +161,18 @@ func (shared *DropdownInstanceType) GetAlias() string {
 	return dropdownEntry.SelectionEntry.SelectionAlias[dropdownEntry.ItemSelected]
 }
 
+func (shared *DropdownInstanceType) GetSelectedItemIndex() int {
+	dropdownEntry := Dropdowns.Get(shared.layerAlias, shared.controlAlias)
+	return dropdownEntry.ItemSelected
+}
+
+func (shared *DropdownInstanceType) SetSelectedItemIndex(itemIndex int) {
+	dropdownEntry := Dropdowns.Get(shared.layerAlias, shared.controlAlias)
+	if itemIndex < len(dropdownEntry.SelectionEntry.SelectionValue) {
+		dropdownEntry.ItemSelected = itemIndex
+	}
+}
+
 /*
 Add allows you to create a new dropdown control on a text layer. In addition, the following
 information should be noted:

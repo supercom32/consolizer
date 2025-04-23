@@ -61,6 +61,13 @@ func (shared *CheckboxInstanceType) IsCheckboxSelected() bool {
 	return false
 }
 
+func (shared *CheckboxInstanceType) SetCheckboxState(isChecked bool) {
+	if Checkboxes.IsExists(shared.layerAlias, shared.controlAlias) {
+		checkboxEntry := Checkboxes.Get(shared.layerAlias, shared.controlAlias)
+		checkboxEntry.IsSelected = isChecked
+	}
+}
+
 /*
 Add allows you to add a Checkbox to a given text layer. Once called, an instance
 of your control is returned which will allow you to read or manipulate the properties for it.
