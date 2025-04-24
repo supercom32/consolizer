@@ -15,6 +15,7 @@ import (
 	"math"
 	"math/rand"
 	"os"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -582,116 +583,165 @@ func getImageLayerAsBlockElements(sourceImageData image.Image, imageStyle types.
 	calculatedCharacterHeight := calculatedPixelHeight / 8
 	layerEntry := types.NewLayerEntry("", "", calculatedCharacterWidth, calculatedCharacterHeight)
 
-	// Loop through each character position in the grid
-	for currentYLocation := 0; currentYLocation < calculatedCharacterHeight; currentYLocation++ {
-		for currentXLocation := 0; currentXLocation < calculatedCharacterWidth; currentXLocation++ {
-			currentCharacter := layerEntry.CharacterMemory[currentYLocation][currentXLocation]
+	// Pre-compute all block element patterns for faster lookup
+	blockPatterns := make(map[rune]uint64, len(blockElementRunes))
+	for _, element := range blockElementRunes {
+		blockPatterns[element] = getBlockElementPattern(element)
+	}
 
-			// For each 8x8 pixel block, we find the best block element to represent it,
-			// given the available colors.
-			var (
-				minMSE float64 = math.MaxFloat64 // Mean squared error.
-				bestElement rune
-				bestFg, bestBg constants.ColorType
-			)
-
-			// Try each block element
-			for _, element := range blockElementRunes {
-				// Get the bit pattern for this element
-				bits := getBlockElementPattern(element)
-
-				// Calculate the average color for the pixels covered by the set
-				// bits and unset bits.
-				var (
-					fg, bg           [3]float64
-					setBits          float64
-					bit              uint64 = 1
-				)
-				for y := 0; y < 8; y++ {
-					for x := 0; x < 8; x++ {
-						pixelX := currentXLocation*8 + x
-						pixelY := currentYLocation*8 + y
-
-						// Get the pixel color
-						pixel := processedImageData.At(pixelX, pixelY)
-						r, g, b, _ := get8BitColorComponents(pixel)
-
-						if bits&bit != 0 {
-							fg[0] += float64(r) / 255.0
-							fg[1] += float64(g) / 255.0
-							fg[2] += float64(b) / 255.0
-							setBits++
-						} else {
-							bg[0] += float64(r) / 255.0
-							bg[1] += float64(g) / 255.0
-							bg[2] += float64(b) / 255.0
-						}
-						bit <<= 1
-					}
-				}
-
-				// Normalize the colors
-				for ch := 0; ch < 3; ch++ {
-					if setBits > 0 {
-						fg[ch] /= setBits
-					}
-					if (64 - setBits) > 0 {
-						bg[ch] /= (64 - setBits)
-					}
-				}
-
-				// Calculate the error
-				var mse float64
-				bit = 1
-				for y := 0; y < 8; y++ {
-					for x := 0; x < 8; x++ {
-						pixelX := currentXLocation*8 + x
-						pixelY := currentYLocation*8 + y
-
-						// Get the pixel color
-						pixel := processedImageData.At(pixelX, pixelY)
-						r, g, b, _ := get8BitColorComponents(pixel)
-
-						// Calculate the error
-						var targetColor [3]float64
-						if bits&bit != 0 {
-							targetColor = fg
-						} else {
-							targetColor = bg
-						}
-
-						err := math.Pow(float64(r)/255.0-targetColor[0], 2) +
-							math.Pow(float64(g)/255.0-targetColor[1], 2) +
-							math.Pow(float64(b)/255.0-targetColor[2], 2)
-						mse += err
-
-						bit <<= 1
-					}
-				}
-
-				// Normalize the error
-				mse /= 64
-
-				// Check if this is the best match so far
-				if mse < minMSE {
-					minMSE = mse
-					bestElement = element
-					bestFg = GetRGBColor(int32(fg[0]*255), int32(fg[1]*255), int32(fg[2]*255))
-					bestBg = GetRGBColor(int32(bg[0]*255), int32(bg[1]*255), int32(bg[2]*255))
-				}
-			}
-
-			// Set the character and colors
-			currentCharacter.Character = bestElement
-			currentCharacter.AttributeEntry.ForegroundColor = bestFg
-			currentCharacter.AttributeEntry.BackgroundColor = bestBg
-
-			// Update the layer entry with the character and its color attributes
-			layerEntry.CharacterMemory[currentYLocation][currentXLocation] = currentCharacter
+	// Create a cache for pixel values to avoid redundant calculations
+	pixelCache := make([][][3]int32, calculatedCharacterHeight)
+	for y := 0; y < calculatedCharacterHeight; y++ {
+		pixelCache[y] = make([][3]int32, calculatedCharacterWidth)
+		for x := 0; x < calculatedCharacterWidth; x++ {
+			pixelCache[y][x] = [3]int32{-1, -1, -1} // Initialize with invalid values
 		}
 	}
 
+	// Process rows in parallel
+	var waitGroup sync.WaitGroup
+	numWorkers := runtime.NumCPU()
+	rowsPerWorker := (calculatedCharacterHeight + numWorkers - 1) / numWorkers
+
+	for worker := 0; worker < numWorkers; worker++ {
+		waitGroup.Add(1)
+		go func(workerID int) {
+			defer waitGroup.Done()
+			startRow := workerID * rowsPerWorker
+			endRow := (workerID + 1) * rowsPerWorker
+			if endRow > calculatedCharacterHeight {
+				endRow = calculatedCharacterHeight
+			}
+
+			// Process assigned rows
+			for currentYLocation := startRow; currentYLocation < endRow; currentYLocation++ {
+				processRow(currentYLocation, calculatedCharacterWidth, processedImageData, layerEntry, blockPatterns, pixelCache)
+			}
+		}(worker)
+	}
+
+	waitGroup.Wait()
 	return layerEntry
+}
+
+// processRow handles the processing of a single row of character cells
+func processRow(currentYLocation int, calculatedCharacterWidth int, processedImageData image.Image, layerEntry types.LayerEntryType, blockPatterns map[rune]uint64, pixelCache [][][3]int32) {
+	// Cache the pixel values for this 8x8 block
+	pixelValues := make([][][][3]float64, calculatedCharacterWidth)
+
+	for currentXLocation := 0; currentXLocation < calculatedCharacterWidth; currentXLocation++ {
+		pixelValues[currentXLocation] = make([][][3]float64, 8)
+		for y := 0; y < 8; y++ {
+			pixelValues[currentXLocation][y] = make([][3]float64, 8)
+			for x := 0; x < 8; x++ {
+				pixelX := currentXLocation*8 + x
+				pixelY := currentYLocation*8 + y
+
+				// Get the pixel color
+				pixel := processedImageData.At(pixelX, pixelY)
+				r, g, b, _ := get8BitColorComponents(pixel)
+				pixelValues[currentXLocation][y][x] = [3]float64{float64(r) / 255.0, float64(g) / 255.0, float64(b) / 255.0}
+			}
+		}
+	}
+
+	for currentXLocation := 0; currentXLocation < calculatedCharacterWidth; currentXLocation++ {
+		currentCharacter := layerEntry.CharacterMemory[currentYLocation][currentXLocation]
+
+		// For each 8x8 pixel block, we find the best block element to represent it,
+		// given the available colors.
+		var (
+			minMSE         float64 = math.MaxFloat64 // Mean squared error.
+			bestElement    rune
+			bestFg, bestBg constants.ColorType
+		)
+
+		// Try each block element
+		for _, element := range blockElementRunes {
+			// Get the bit pattern for this element
+			bits := blockPatterns[element]
+
+			// Calculate the average color for the pixels covered by the set
+			// bits and unset bits.
+			var (
+				fg, bg  [3]float64
+				setBits float64
+				bit     uint64 = 1
+			)
+
+			// First pass: calculate average colors
+			for y := 0; y < 8; y++ {
+				for x := 0; x < 8; x++ {
+					pixelColor := pixelValues[currentXLocation][y][x]
+
+					if bits&bit != 0 {
+						fg[0] += pixelColor[0]
+						fg[1] += pixelColor[1]
+						fg[2] += pixelColor[2]
+						setBits++
+					} else {
+						bg[0] += pixelColor[0]
+						bg[1] += pixelColor[1]
+						bg[2] += pixelColor[2]
+					}
+					bit <<= 1
+				}
+			}
+
+			// Normalize the colors
+			for ch := 0; ch < 3; ch++ {
+				if setBits > 0 {
+					fg[ch] /= setBits
+				}
+				if (64 - setBits) > 0 {
+					bg[ch] /= (64 - setBits)
+				}
+			}
+
+			// Second pass: calculate MSE
+			var mse float64
+			bit = 1
+			for y := 0; y < 8; y++ {
+				for x := 0; x < 8; x++ {
+					pixelColor := pixelValues[currentXLocation][y][x]
+
+					// Calculate the error
+					var targetColor [3]float64
+					if bits&bit != 0 {
+						targetColor = fg
+					} else {
+						targetColor = bg
+					}
+
+					err := math.Pow(pixelColor[0]-targetColor[0], 2) +
+						math.Pow(pixelColor[1]-targetColor[1], 2) +
+						math.Pow(pixelColor[2]-targetColor[2], 2)
+					mse += err
+
+					bit <<= 1
+				}
+			}
+
+			// Normalize the error
+			mse /= 64
+
+			// Check if this is the best match so far
+			if mse < minMSE {
+				minMSE = mse
+				bestElement = element
+				bestFg = GetRGBColor(int32(fg[0]*255), int32(fg[1]*255), int32(fg[2]*255))
+				bestBg = GetRGBColor(int32(bg[0]*255), int32(bg[1]*255), int32(bg[2]*255))
+			}
+		}
+
+		// Set the character and colors
+		currentCharacter.Character = bestElement
+		currentCharacter.AttributeEntry.ForegroundColor = bestFg
+		currentCharacter.AttributeEntry.BackgroundColor = bestBg
+
+		// Update the layer entry with the character and its color attributes
+		layerEntry.CharacterMemory[currentYLocation][currentXLocation] = currentCharacter
+	}
 }
 
 /*
@@ -825,7 +875,7 @@ func getBlockElementPattern(r rune) uint64 {
 	case r >= constants.BlockLeftOneEighthBlock && r <= constants.BlockLeftSevenEighthsBlock:
 		// Calculate how many columns of 8 pixels should be filled (1-7)
 		// Note: BlockLeftSevenEighthsBlock is the smallest value, BlockLeftOneEighthBlock is the largest
-		cols := 8 - int(r - constants.BlockLeftOneEighthBlock)
+		cols := 8 - int(r-constants.BlockLeftOneEighthBlock)
 		var pattern uint64
 		// Fill the appropriate number of columns from the left
 		for row := 0; row < 8; row++ {
