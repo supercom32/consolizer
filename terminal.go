@@ -1077,3 +1077,16 @@ func DrawLayerToScreen(layerEntry *types.LayerEntryType, isForcedRefreshRequired
 		commonResource.screen.Show()
 	}
 }
+
+func GetOs() string {
+	switch runtime.GOOS {
+	case "windows":
+		return constants.OS_WINDOWS
+	case "linux":
+		return constants.OS_LINUX
+	case "darwin":
+		return constants.OS_MAC
+	default:
+		return constants.OS_OTHER
+	}
+}

@@ -337,12 +337,20 @@ func (shared *textFieldType) updateKeyboardEventManually(layerAlias string, text
 		return false
 	}
 
-	if IsShiftPressed() {
+	// Windows Quirk: On Linux, the Shift key is only reported as "pressed" when used with non-character keys
+	// (e.g., Shift+Delete). For regular character input like capital letters or symbols (e.g., Shift+A or Shift+;),
+	// only the resulting character is passed, not the Shift key state.
+	//
+	// On Windows, however, the Shift key is reported as pressed with every key event, including single characters.
+	// To prevent unintended behaviors like text highlighting, we ignore the Shift state on Windows when the key event
+	// corresponds to a single printable character.
+	if IsShiftPressed() && len(keystroke) != 1 {
 		if !textFieldEntry.IsHighlightModeToggled {
 			// Start new highlight when toggling on
 			textFieldEntry.IsHighlightModeToggled = true
 			textFieldEntry.IsHighlightActive = true
 			textFieldEntry.HighlightStart = textFieldEntry.CursorPosition
+			textFieldEntry.HighlightEnd = textFieldEntry.CursorPosition
 		}
 	} else {
 		textFieldEntry.IsHighlightModeToggled = false
@@ -373,7 +381,7 @@ func (shared *textFieldType) updateKeyboardEventManually(layerAlias string, text
 			if start > end {
 				start, end = end, start
 			}
-			// Include cursor position in the deletion
+			// Include the cursor position in the deletion
 			if textFieldEntry.CursorPosition > end {
 				end = textFieldEntry.CursorPosition
 			} else if textFieldEntry.CursorPosition < start {
@@ -400,7 +408,7 @@ func (shared *textFieldType) updateKeyboardEventManually(layerAlias string, text
 			if start > end {
 				start, end = end, start
 			}
-			// Include cursor position in the deletion
+			// Include the cursor position in the deletion
 			if textFieldEntry.CursorPosition > end {
 				end = textFieldEntry.CursorPosition
 			} else if textFieldEntry.CursorPosition < start {
@@ -451,7 +459,7 @@ func (shared *textFieldType) updateKeyboardEventManually(layerAlias string, text
 			if start > end {
 				start, end = end, start
 			}
-			// Include cursor position in the deletion
+			// Include the cursor position in the deletion
 			if textFieldEntry.CursorPosition > end {
 				end = textFieldEntry.CursorPosition
 			} else if textFieldEntry.CursorPosition < start {
@@ -505,21 +513,18 @@ func (shared *textFieldType) updateKeyboardEventManually(layerAlias string, text
 		isScreenUpdateRequired = true
 
 	default:
-		if textFieldEntry.IsHighlightModeToggled == false {
-			textFieldEntry.IsHighlightActive = false
-		}
 		// Handle regular character input
 		if len(keystroke) == 1 {
 			// Check if character limit is under max length allowed
 			if len(textFieldEntry.CurrentValue) < textFieldEntry.MaxLengthAllowed+1 {
-				if textFieldEntry.IsHighlightActive {
-					// Delete highlighted text before inserting new character
+				if textFieldEntry.IsHighlightActive && !IsShiftPressed() {
+					// Delete highlighted text before inserting a new character
 					start := textFieldEntry.HighlightStart
 					end := textFieldEntry.HighlightEnd
 					if start > end {
 						start, end = end, start
 					}
-					// Include cursor position in the deletion
+					// Include the cursor position in the deletion
 					if textFieldEntry.CursorPosition > end {
 						end = textFieldEntry.CursorPosition
 					} else if textFieldEntry.CursorPosition < start {
@@ -543,19 +548,11 @@ func (shared *textFieldType) updateKeyboardEventManually(layerAlias string, text
 				isScreenUpdateRequired = true
 			}
 		}
-
+		if textFieldEntry.IsHighlightModeToggled == false {
+			textFieldEntry.IsHighlightActive = false
+		}
 		// Handle Shift+Arrow keys for highlighting
-		// Only process specific shift+key combinations for highlighting
-		// This prevents shift+character combinations from being treated as special commands
-		if strings.HasPrefix(keystrokeAsString, "shift+") && 
-		   (strings.Contains(keystrokeAsString, "left") || 
-		    strings.Contains(keystrokeAsString, "right") || 
-		    strings.Contains(keystrokeAsString, "up") || 
-		    strings.Contains(keystrokeAsString, "down") || 
-		    strings.Contains(keystrokeAsString, "home") || 
-		    strings.Contains(keystrokeAsString, "end") || 
-		    strings.Contains(keystrokeAsString, "pgup") || 
-		    strings.Contains(keystrokeAsString, "pgdn")) {
+		if strings.HasPrefix(keystrokeAsString, "shift+") {
 			if !textFieldEntry.IsHighlightActive {
 				textFieldEntry.HighlightStart = textFieldEntry.CursorPosition
 				textFieldEntry.IsHighlightActive = true

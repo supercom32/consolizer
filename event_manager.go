@@ -1,12 +1,11 @@
 package consolizer
 
 import (
-	"strings"
-	"time"
-
 	"github.com/gdamore/tcell/v2"
 	"github.com/supercom32/consolizer/constants"
 	"github.com/supercom32/consolizer/types"
+	"strings"
+	"time"
 )
 
 type controlIdentifierType struct {

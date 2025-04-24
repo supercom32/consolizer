@@ -12,7 +12,9 @@ import (
 	"image/color"
 	"image/draw"
 	"image/png"
+	"math"
 	"math/rand"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -544,6 +546,154 @@ func GetImageLayerAsAsciiColorArt(sourceImageData image.Image, imageStyle types.
 	return layerEntry
 }
 
+// getImageLayerAsBlockElements renders an image using block elements.
+// It divides each character cell into an 8x8 grid and finds the best block element
+// to represent the image in that cell.
+func getImageLayerAsBlockElements(sourceImageData image.Image, imageStyle types.ImageStyleEntryType, widthInCharacters int, heightInCharacters int, blurSigma float64) types.LayerEntryType {
+	if widthInCharacters <= 0 && heightInCharacters <= 0 {
+		panic(fmt.Sprintf("The specified width and height of %dx%d for your image is not valid.", widthInCharacters, heightInCharacters))
+	}
+
+	// Calculate the pixel dimensions
+	calculatedPixelWidth := widthInCharacters * 8
+	calculatedPixelHeight := heightInCharacters * 8
+	if widthInCharacters == 0 {
+		calculatedPixelWidth = (heightInCharacters * 8 * sourceImageData.Bounds().Max.X) / sourceImageData.Bounds().Max.Y
+	}
+	if heightInCharacters == 0 {
+		calculatedPixelHeight = (widthInCharacters * 8 * sourceImageData.Bounds().Max.Y) / sourceImageData.Bounds().Max.X
+	}
+
+	// Resize the image based on calculated dimensions
+	processedImageData := resizeImage(sourceImageData, uint(calculatedPixelWidth), uint(calculatedPixelHeight), imageStyle.IsWidthAspectRatioPreserved, imageStyle.IsHeightAspectRatioPreserved)
+
+	// Apply blur if needed
+	if blurSigma > 0 {
+		processedImageData = imaging.Blur(processedImageData, blurSigma)
+	}
+
+	// Convert to grayscale if specified
+	if imageStyle.IsGrayscale {
+		processedImageData = ConvertImageToGrayscale(processedImageData)
+	}
+
+	// Initialize the layer entry for the image
+	calculatedCharacterWidth := calculatedPixelWidth / 8
+	calculatedCharacterHeight := calculatedPixelHeight / 8
+	layerEntry := types.NewLayerEntry("", "", calculatedCharacterWidth, calculatedCharacterHeight)
+
+	// Loop through each character position in the grid
+	for currentYLocation := 0; currentYLocation < calculatedCharacterHeight; currentYLocation++ {
+		for currentXLocation := 0; currentXLocation < calculatedCharacterWidth; currentXLocation++ {
+			currentCharacter := layerEntry.CharacterMemory[currentYLocation][currentXLocation]
+
+			// For each 8x8 pixel block, we find the best block element to represent it,
+			// given the available colors.
+			var (
+				minMSE float64 = math.MaxFloat64 // Mean squared error.
+				bestElement rune
+				bestFg, bestBg constants.ColorType
+			)
+
+			// Try each block element
+			for _, element := range blockElementRunes {
+				// Get the bit pattern for this element
+				bits := getBlockElementPattern(element)
+
+				// Calculate the average color for the pixels covered by the set
+				// bits and unset bits.
+				var (
+					fg, bg           [3]float64
+					setBits          float64
+					bit              uint64 = 1
+				)
+				for y := 0; y < 8; y++ {
+					for x := 0; x < 8; x++ {
+						pixelX := currentXLocation*8 + x
+						pixelY := currentYLocation*8 + y
+
+						// Get the pixel color
+						pixel := processedImageData.At(pixelX, pixelY)
+						r, g, b, _ := get8BitColorComponents(pixel)
+
+						if bits&bit != 0 {
+							fg[0] += float64(r) / 255.0
+							fg[1] += float64(g) / 255.0
+							fg[2] += float64(b) / 255.0
+							setBits++
+						} else {
+							bg[0] += float64(r) / 255.0
+							bg[1] += float64(g) / 255.0
+							bg[2] += float64(b) / 255.0
+						}
+						bit <<= 1
+					}
+				}
+
+				// Normalize the colors
+				for ch := 0; ch < 3; ch++ {
+					if setBits > 0 {
+						fg[ch] /= setBits
+					}
+					if (64 - setBits) > 0 {
+						bg[ch] /= (64 - setBits)
+					}
+				}
+
+				// Calculate the error
+				var mse float64
+				bit = 1
+				for y := 0; y < 8; y++ {
+					for x := 0; x < 8; x++ {
+						pixelX := currentXLocation*8 + x
+						pixelY := currentYLocation*8 + y
+
+						// Get the pixel color
+						pixel := processedImageData.At(pixelX, pixelY)
+						r, g, b, _ := get8BitColorComponents(pixel)
+
+						// Calculate the error
+						var targetColor [3]float64
+						if bits&bit != 0 {
+							targetColor = fg
+						} else {
+							targetColor = bg
+						}
+
+						err := math.Pow(float64(r)/255.0-targetColor[0], 2) +
+							math.Pow(float64(g)/255.0-targetColor[1], 2) +
+							math.Pow(float64(b)/255.0-targetColor[2], 2)
+						mse += err
+
+						bit <<= 1
+					}
+				}
+
+				// Normalize the error
+				mse /= 64
+
+				// Check if this is the best match so far
+				if mse < minMSE {
+					minMSE = mse
+					bestElement = element
+					bestFg = GetRGBColor(int32(fg[0]*255), int32(fg[1]*255), int32(fg[2]*255))
+					bestBg = GetRGBColor(int32(bg[0]*255), int32(bg[1]*255), int32(bg[2]*255))
+				}
+			}
+
+			// Set the character and colors
+			currentCharacter.Character = bestElement
+			currentCharacter.AttributeEntry.ForegroundColor = bestFg
+			currentCharacter.AttributeEntry.BackgroundColor = bestBg
+
+			// Update the layer entry with the character and its color attributes
+			layerEntry.CharacterMemory[currentYLocation][currentXLocation] = currentCharacter
+		}
+	}
+
+	return layerEntry
+}
+
 /*
 DrawImageToLayer allows you to draw a loaded image to the specified layer.
 In addition, the following information should be noted:
@@ -585,10 +735,185 @@ func DrawImageToLayer(layerAlias string, imageAlias string, imageStyle types.Ima
 	drawImageToLayer(layerAlias, imageLayer, xLocation, yLocation)
 }
 
+// blockElementRunes is a slice of all block element runes used for image rendering.
+// This is more memory-efficient than storing a map with all bit patterns.
+var blockElementRunes = []rune{
+	constants.BlockLowerOneEighthBlock,
+	constants.BlockLowerOneQuarterBlock,
+	constants.BlockLowerThreeEighthsBlock,
+	constants.BlockLowerHalfBlock,
+	constants.BlockLowerFiveEighthsBlock,
+	constants.BlockLowerThreeQuartersBlock,
+	constants.BlockLowerSevenEighthsBlock,
+	constants.BlockLeftSevenEighthsBlock,
+	constants.BlockLeftThreeQuartersBlock,
+	constants.BlockLeftFiveEighthsBlock,
+	constants.BlockLeftHalfBlock,
+	constants.BlockLeftThreeEighthsBlock,
+	constants.BlockLeftOneQuarterBlock,
+	constants.BlockLeftOneEighthBlock,
+	constants.BlockQuadrantLowerLeft,
+	constants.BlockQuadrantLowerRight,
+	constants.BlockQuadrantUpperLeft,
+	constants.BlockQuadrantUpperRight,
+	constants.BlockQuadrantUpperLeftAndLowerRight,
+}
+
+// originalBlockElements contains the original hardcoded bit patterns for verification purposes.
+// This map is only used for testing and validation, not in the actual rendering code.
+var originalBlockElements = map[rune]uint64{
+	constants.BlockLowerOneEighthBlock:            0b1111111100000000000000000000000000000000000000000000000000000000,
+	constants.BlockLowerOneQuarterBlock:           0b1111111111111111000000000000000000000000000000000000000000000000,
+	constants.BlockLowerThreeEighthsBlock:         0b1111111111111111111111110000000000000000000000000000000000000000,
+	constants.BlockLowerHalfBlock:                 0b1111111111111111111111111111111100000000000000000000000000000000,
+	constants.BlockLowerFiveEighthsBlock:          0b1111111111111111111111111111111111111111000000000000000000000000,
+	constants.BlockLowerThreeQuartersBlock:        0b1111111111111111111111111111111111111111111111110000000000000000,
+	constants.BlockLowerSevenEighthsBlock:         0b1111111111111111111111111111111111111111111111111111111100000000,
+	constants.BlockLeftSevenEighthsBlock:          0b0111111101111111011111110111111101111111011111110111111101111111,
+	constants.BlockLeftThreeQuartersBlock:         0b0011111100111111001111110011111100111111001111110011111100111111,
+	constants.BlockLeftFiveEighthsBlock:           0b0001111100011111000111110001111100011111000111110001111100011111,
+	constants.BlockLeftHalfBlock:                  0b0000111100001111000011110000111100001111000011110000111100001111,
+	constants.BlockLeftThreeEighthsBlock:          0b0000011100000111000001110000011100000111000001110000011100000111,
+	constants.BlockLeftOneQuarterBlock:            0b0000001100000011000000110000001100000011000000110000001100000011,
+	constants.BlockLeftOneEighthBlock:             0b0000000100000001000000010000000100000001000000010000000100000001,
+	constants.BlockQuadrantLowerLeft:              0b0000111100001111000011110000111100000000000000000000000000000000,
+	constants.BlockQuadrantLowerRight:             0b1111000011110000111100001111000000000000000000000000000000000000,
+	constants.BlockQuadrantUpperLeft:              0b0000000000000000000000000000000000001111000011110000111100001111,
+	constants.BlockQuadrantUpperRight:             0b0000000000000000000000000000000011110000111100001111000011110000,
+	constants.BlockQuadrantUpperLeftAndLowerRight: 0b1111000011110000111100001111000000001111000011110000111100001111,
+}
+
+// verifyBlockElementPatterns checks that the programmatically generated patterns
+// match the original hardcoded values. This ensures that our optimization
+// doesn't change the behavior of the code.
+func init() {
+	// Only run verification in debug/test mode
+	if os.Getenv("CONSOLIZER_DEBUG") == "1" {
+		for r, originalPattern := range originalBlockElements {
+			generatedPattern := getBlockElementPattern(r)
+			if generatedPattern != originalPattern {
+				panic(fmt.Sprintf("Block element pattern mismatch for rune %U: original=%064b, generated=%064b",
+					r, originalPattern, generatedPattern))
+			}
+		}
+	}
+}
+
+// getBlockElementPattern returns the bit pattern for a given block element rune.
+// A 1 bit represents a pixel that is drawn, a 0 bit represents a pixel that is not drawn.
+// The least significant bit is the top left pixel, the most significant bit is the bottom
+// right pixel, moving row by row from left to right, top to bottom.
+func getBlockElementPattern(r rune) uint64 {
+	// Generate patterns programmatically based on the block element type
+	switch {
+	// Lower blocks (horizontal)
+	case r >= constants.BlockLowerOneEighthBlock && r <= constants.BlockLowerSevenEighthsBlock:
+		// Calculate how many rows of 8 pixels should be filled (1-7)
+		rows := int(r - constants.BlockLowerOneEighthBlock + 1)
+		var pattern uint64
+		// Fill the appropriate number of rows from the bottom
+		for row := 0; row < rows; row++ {
+			// Each row is 8 bits, starting from the bottom (highest bits)
+			startBit := 56 - (row * 8) // 56 is the bit position of the first bit in the bottom row
+			for bit := 0; bit < 8; bit++ {
+				pattern |= 1 << (startBit + bit)
+			}
+		}
+		return pattern
+
+	// Left blocks (vertical)
+	case r >= constants.BlockLeftOneEighthBlock && r <= constants.BlockLeftSevenEighthsBlock:
+		// Calculate how many columns of 8 pixels should be filled (1-7)
+		// Note: BlockLeftSevenEighthsBlock is the smallest value, BlockLeftOneEighthBlock is the largest
+		cols := 8 - int(r - constants.BlockLeftOneEighthBlock)
+		var pattern uint64
+		// Fill the appropriate number of columns from the left
+		for row := 0; row < 8; row++ {
+			for col := 0; col < cols; col++ {
+				// Calculate bit position: row * 8 + col
+				bitPos := row*8 + col
+				pattern |= 1 << bitPos
+			}
+		}
+		return pattern
+
+	// Quadrant blocks
+	case r == constants.BlockQuadrantLowerLeft:
+		// Lower left quadrant (bottom 4 rows, left 4 columns)
+		var pattern uint64
+		for row := 4; row < 8; row++ {
+			for col := 0; col < 4; col++ {
+				bitPos := row*8 + col
+				pattern |= 1 << bitPos
+			}
+		}
+		return pattern
+
+	case r == constants.BlockQuadrantLowerRight:
+		// Lower right quadrant (bottom 4 rows, right 4 columns)
+		var pattern uint64
+		for row := 4; row < 8; row++ {
+			for col := 4; col < 8; col++ {
+				bitPos := row*8 + col
+				pattern |= 1 << bitPos
+			}
+		}
+		return pattern
+
+	case r == constants.BlockQuadrantUpperLeft:
+		// Upper left quadrant (top 4 rows, left 4 columns)
+		var pattern uint64
+		for row := 0; row < 4; row++ {
+			for col := 0; col < 4; col++ {
+				bitPos := row*8 + col
+				pattern |= 1 << bitPos
+			}
+		}
+		return pattern
+
+	case r == constants.BlockQuadrantUpperRight:
+		// Upper right quadrant (top 4 rows, right 4 columns)
+		var pattern uint64
+		for row := 0; row < 4; row++ {
+			for col := 4; col < 8; col++ {
+				bitPos := row*8 + col
+				pattern |= 1 << bitPos
+			}
+		}
+		return pattern
+
+	case r == constants.BlockQuadrantUpperLeftAndLowerRight:
+		// Upper left and lower right quadrants
+		var pattern uint64
+		// Upper left
+		for row := 0; row < 4; row++ {
+			for col := 0; col < 4; col++ {
+				bitPos := row*8 + col
+				pattern |= 1 << bitPos
+			}
+		}
+		// Lower right
+		for row := 4; row < 8; row++ {
+			for col := 4; col < 8; col++ {
+				bitPos := row*8 + col
+				pattern |= 1 << bitPos
+			}
+		}
+		return pattern
+
+	default:
+		return 0
+	}
+}
+
 func getImageLayer(sourceImageData image.Image, imageStyle types.ImageStyleEntryType, widthInCharacters int, heightInCharacters int, blurSigma float64) types.LayerEntryType {
 	imageLayer := types.NewLayerEntry("", "", widthInCharacters, heightInCharacters)
 	if imageStyle.DrawingStyle == constants.ImageStyleHighColor {
 		imageLayer = getImageLayerAsHighColor(sourceImageData, imageStyle, widthInCharacters, heightInCharacters, blurSigma)
+	} else if imageStyle.DrawingStyle == constants.ImageStyleCharacters {
+		imageLayer = GetImageLayerAsAsciiColorArt(sourceImageData, imageStyle, widthInCharacters, heightInCharacters, blurSigma)
+	} else if imageStyle.DrawingStyle == constants.ImageStyleBlockElements {
+		imageLayer = getImageLayerAsBlockElements(sourceImageData, imageStyle, widthInCharacters, heightInCharacters, blurSigma)
 	} else {
 		imageLayer = getImageLayerAsBraille(sourceImageData, imageStyle, widthInCharacters, heightInCharacters, blurSigma)
 	}

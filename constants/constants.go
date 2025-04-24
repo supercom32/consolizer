@@ -7,9 +7,17 @@ import (
 type ImageStyle int
 
 const (
+	OS_WINDOWS = "windows"
+	OS_LINUX   = "linux"
+	OS_MAC     = "darwin"
+	OS_OTHER   = "other"
+)
+
+const (
 	ImageStyleHighColor ImageStyle = iota
 	ImageStyleBraille
 	ImageStyleCharacters
+	ImageStyleBlockElements
 )
 
 type DitheringStyle int
@@ -73,6 +81,32 @@ const (
 	CharBlockDense                 = '\u2593'
 	CharBlockMedium                = '\u2592'
 	CharBlockSparce                = '\u2591'
+
+	// Block elements for image rendering
+	BlockLowerOneEighthBlock            = '\u2581'
+	BlockLowerOneQuarterBlock           = '\u2582'
+	BlockLowerThreeEighthsBlock         = '\u2583'
+	BlockLowerHalfBlock                 = '\u2584'
+	BlockLowerFiveEighthsBlock          = '\u2585'
+	BlockLowerThreeQuartersBlock        = '\u2586'
+	BlockLowerSevenEighthsBlock         = '\u2587'
+	BlockFullBlock                      = '\u2588'
+	BlockLeftSevenEighthsBlock          = '\u2589'
+	BlockLeftThreeQuartersBlock         = '\u258A'
+	BlockLeftFiveEighthsBlock           = '\u258B'
+	BlockLeftHalfBlock                  = '\u258C'
+	BlockLeftThreeEighthsBlock          = '\u258D'
+	BlockLeftOneQuarterBlock            = '\u258E'
+	BlockLeftOneEighthBlock             = '\u258F'
+	BlockQuadrantLowerLeft              = '\u2596'
+	BlockQuadrantLowerRight             = '\u2597'
+	BlockQuadrantUpperLeft              = '\u2598'
+	BlockQuadrantUpperRight             = '\u2599'
+	BlockQuadrantUpperLeftAndLowerRight = '\u259A'
+	BlockLightShade                     = '\u2591'
+	BlockMediumShade                    = '\u2592'
+	BlockDarkShade                      = '\u2593'
+	BlockUpperHalf                      = '\u2580'
 	CharSingleLineHorizontal       = CharHLine
 	CharDoubleLineHorizontal       = '\u2550'
 	CharSingleLineVertical         = '\u2502'

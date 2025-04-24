@@ -862,7 +862,7 @@ func (shared *textboxType) UpdateKeyboardEventManually(layerAlias string, textbo
 	oldCursorX := textboxEntry.CursorXLocation
 	oldCursorY := textboxEntry.CursorYLocation
 
-	if IsShiftPressed() {
+	if IsShiftPressed() && len(keystroke) != 1 {
 		if !textboxEntry.IsHighlightModeToggled {
 			// Start new highlight when toggling on
 			textboxEntry.IsHighlightModeToggled = true
@@ -997,18 +997,22 @@ func (shared *textboxType) UpdateKeyboardEventManually(layerAlias string, textbo
 
 	default:
 		if len(keystroke) == 1 { // If a regular char is entered
+			if textboxEntry.IsHighlightActive {
+				shared.deleteHighlightedText(textboxEntry)
+				textboxEntry.IsHighlightActive = false
+				shared.updateCursor(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
+			}
 			shared.insertCharacterUsingAbsoluteCoordinates(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation, []rune(keystrokeAsString)[0])
 			isScreenUpdateRequired = true
 		}
 	}
 
-	// Update highlight end position if highlight mode is toggled on
+	// Update the highlight end position if highlight mode is toggled on
 	if textboxEntry.IsHighlightActive {
 		textboxEntry.HighlightEndX = textboxEntry.CursorXLocation
 		textboxEntry.HighlightEndY = textboxEntry.CursorYLocation
 		isScreenUpdateRequired = true
 	}
-
 	// Update cursor position and viewport
 	shared.updateCursor(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
 	shared.updateViewport(textboxEntry)
