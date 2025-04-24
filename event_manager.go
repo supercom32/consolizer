@@ -113,6 +113,8 @@ func UpdateEventQueues() {
 		bringLayerToFrontIfRequired()
 		if moveLayerIfRequired() {
 			isScreenUpdateRequired = true
+			// Don't accept any new mouse manipulations if you're in drag-and-drop mode.
+			return
 		}
 		if Tooltip.updateMouseEvent() {
 			isScreenUpdateRequired = true

@@ -14,7 +14,6 @@ import (
 	"image/png"
 	"math"
 	"math/rand"
-	"os"
 	"runtime"
 	"strings"
 	"sync"
@@ -554,7 +553,6 @@ func getImageLayerAsBlockElements(sourceImageData image.Image, imageStyle types.
 	if widthInCharacters <= 0 && heightInCharacters <= 0 {
 		panic(fmt.Sprintf("The specified width and height of %dx%d for your image is not valid.", widthInCharacters, heightInCharacters))
 	}
-
 	// Calculate the pixel dimensions
 	calculatedPixelWidth := widthInCharacters * 8
 	calculatedPixelHeight := heightInCharacters * 8
@@ -564,45 +562,29 @@ func getImageLayerAsBlockElements(sourceImageData image.Image, imageStyle types.
 	if heightInCharacters == 0 {
 		calculatedPixelHeight = (widthInCharacters * 8 * sourceImageData.Bounds().Max.Y) / sourceImageData.Bounds().Max.X
 	}
-
 	// Resize the image based on calculated dimensions
 	processedImageData := resizeImage(sourceImageData, uint(calculatedPixelWidth), uint(calculatedPixelHeight), imageStyle.IsWidthAspectRatioPreserved, imageStyle.IsHeightAspectRatioPreserved)
-
 	// Apply blur if needed
 	if blurSigma > 0 {
 		processedImageData = imaging.Blur(processedImageData, blurSigma)
 	}
-
 	// Convert to grayscale if specified
 	if imageStyle.IsGrayscale {
 		processedImageData = ConvertImageToGrayscale(processedImageData)
 	}
-
 	// Initialize the layer entry for the image
 	calculatedCharacterWidth := calculatedPixelWidth / 8
 	calculatedCharacterHeight := calculatedPixelHeight / 8
 	layerEntry := types.NewLayerEntry("", "", calculatedCharacterWidth, calculatedCharacterHeight)
-
 	// Pre-compute all block element patterns for faster lookup
-	blockPatterns := make(map[rune]uint64, len(blockElementRunes))
-	for _, element := range blockElementRunes {
+	blockPatterns := make(map[rune]uint64, len(constants.BlockElementRunes))
+	for _, element := range constants.BlockElementRunes {
 		blockPatterns[element] = getBlockElementPattern(element)
 	}
-
-	// Create a cache for pixel values to avoid redundant calculations
-	pixelCache := make([][][3]int32, calculatedCharacterHeight)
-	for y := 0; y < calculatedCharacterHeight; y++ {
-		pixelCache[y] = make([][3]int32, calculatedCharacterWidth)
-		for x := 0; x < calculatedCharacterWidth; x++ {
-			pixelCache[y][x] = [3]int32{-1, -1, -1} // Initialize with invalid values
-		}
-	}
-
 	// Process rows in parallel
 	var waitGroup sync.WaitGroup
 	numWorkers := runtime.NumCPU()
 	rowsPerWorker := (calculatedCharacterHeight + numWorkers - 1) / numWorkers
-
 	for worker := 0; worker < numWorkers; worker++ {
 		waitGroup.Add(1)
 		go func(workerID int) {
@@ -615,20 +597,18 @@ func getImageLayerAsBlockElements(sourceImageData image.Image, imageStyle types.
 
 			// Process assigned rows
 			for currentYLocation := startRow; currentYLocation < endRow; currentYLocation++ {
-				processRow(currentYLocation, calculatedCharacterWidth, processedImageData, layerEntry, blockPatterns, pixelCache)
+				processRow(currentYLocation, calculatedCharacterWidth, processedImageData, layerEntry, blockPatterns)
 			}
 		}(worker)
 	}
-
 	waitGroup.Wait()
 	return layerEntry
 }
 
 // processRow handles the processing of a single row of character cells
-func processRow(currentYLocation int, calculatedCharacterWidth int, processedImageData image.Image, layerEntry types.LayerEntryType, blockPatterns map[rune]uint64, pixelCache [][][3]int32) {
+func processRow(currentYLocation int, calculatedCharacterWidth int, processedImageData image.Image, layerEntry types.LayerEntryType, blockPatterns map[rune]uint64) {
 	// Cache the pixel values for this 8x8 block
 	pixelValues := make([][][][3]float64, calculatedCharacterWidth)
-
 	for currentXLocation := 0; currentXLocation < calculatedCharacterWidth; currentXLocation++ {
 		pixelValues[currentXLocation] = make([][][3]float64, 8)
 		for y := 0; y < 8; y++ {
@@ -636,109 +616,93 @@ func processRow(currentYLocation int, calculatedCharacterWidth int, processedIma
 			for x := 0; x < 8; x++ {
 				pixelX := currentXLocation*8 + x
 				pixelY := currentYLocation*8 + y
-
 				// Get the pixel color
 				pixel := processedImageData.At(pixelX, pixelY)
-				r, g, b, _ := get8BitColorComponents(pixel)
-				pixelValues[currentXLocation][y][x] = [3]float64{float64(r) / 255.0, float64(g) / 255.0, float64(b) / 255.0}
+				redIntensity, greenIntensity, blueIntensity, _ := get8BitColorComponents(pixel)
+				pixelValues[currentXLocation][y][x] = [3]float64{float64(redIntensity) / 255.0, float64(greenIntensity) / 255.0, float64(blueIntensity) / 255.0}
 			}
 		}
 	}
-
 	for currentXLocation := 0; currentXLocation < calculatedCharacterWidth; currentXLocation++ {
 		currentCharacter := layerEntry.CharacterMemory[currentYLocation][currentXLocation]
-
 		// For each 8x8 pixel block, we find the best block element to represent it,
 		// given the available colors.
 		var (
-			minMSE         float64 = math.MaxFloat64 // Mean squared error.
-			bestElement    rune
-			bestFg, bestBg constants.ColorType
+			minimumMeanSquaredError                  float64 = math.MaxFloat64 // Mean squared error.
+			bestElement                              rune
+			bestForegroundColor, bestBackgroundColor constants.ColorType
 		)
-
 		// Try each block element
-		for _, element := range blockElementRunes {
+		for _, element := range constants.BlockElementRunes {
 			// Get the bit pattern for this element
-			bits := blockPatterns[element]
-
+			bitPattern := blockPatterns[element]
 			// Calculate the average color for the pixels covered by the set
 			// bits and unset bits.
 			var (
-				fg, bg  [3]float64
-				setBits float64
-				bit     uint64 = 1
+				foregroundColorValues, backgroundColorValues [3]float64
+				setPixelBits                                 float64
+				currentBit                                   uint64 = 1
 			)
-
 			// First pass: calculate average colors
 			for y := 0; y < 8; y++ {
 				for x := 0; x < 8; x++ {
-					pixelColor := pixelValues[currentXLocation][y][x]
-
-					if bits&bit != 0 {
-						fg[0] += pixelColor[0]
-						fg[1] += pixelColor[1]
-						fg[2] += pixelColor[2]
-						setBits++
+					pixelColorValues := pixelValues[currentXLocation][y][x]
+					if bitPattern&currentBit != 0 {
+						foregroundColorValues[0] += pixelColorValues[0]
+						foregroundColorValues[1] += pixelColorValues[1]
+						foregroundColorValues[2] += pixelColorValues[2]
+						setPixelBits++
 					} else {
-						bg[0] += pixelColor[0]
-						bg[1] += pixelColor[1]
-						bg[2] += pixelColor[2]
+						backgroundColorValues[0] += pixelColorValues[0]
+						backgroundColorValues[1] += pixelColorValues[1]
+						backgroundColorValues[2] += pixelColorValues[2]
 					}
-					bit <<= 1
+					currentBit <<= 1
 				}
 			}
-
 			// Normalize the colors
-			for ch := 0; ch < 3; ch++ {
-				if setBits > 0 {
-					fg[ch] /= setBits
+			for channel := 0; channel < 3; channel++ {
+				if setPixelBits > 0 {
+					foregroundColorValues[channel] /= setPixelBits
 				}
-				if (64 - setBits) > 0 {
-					bg[ch] /= (64 - setBits)
+				if (64 - setPixelBits) > 0 {
+					backgroundColorValues[channel] /= (64 - setPixelBits)
 				}
 			}
-
-			// Second pass: calculate MSE
-			var mse float64
-			bit = 1
+			// Second pass: calculate mean squared error
+			var meanSquaredError float64
+			currentBit = 1
 			for y := 0; y < 8; y++ {
 				for x := 0; x < 8; x++ {
-					pixelColor := pixelValues[currentXLocation][y][x]
-
+					pixelColorValues := pixelValues[currentXLocation][y][x]
 					// Calculate the error
-					var targetColor [3]float64
-					if bits&bit != 0 {
-						targetColor = fg
+					var targetColorValues [3]float64
+					if bitPattern&currentBit != 0 {
+						targetColorValues = foregroundColorValues
 					} else {
-						targetColor = bg
+						targetColorValues = backgroundColorValues
 					}
-
-					err := math.Pow(pixelColor[0]-targetColor[0], 2) +
-						math.Pow(pixelColor[1]-targetColor[1], 2) +
-						math.Pow(pixelColor[2]-targetColor[2], 2)
-					mse += err
-
-					bit <<= 1
+					colorError := math.Pow(pixelColorValues[0]-targetColorValues[0], 2) +
+						math.Pow(pixelColorValues[1]-targetColorValues[1], 2) +
+						math.Pow(pixelColorValues[2]-targetColorValues[2], 2)
+					meanSquaredError += colorError
+					currentBit <<= 1
 				}
 			}
-
 			// Normalize the error
-			mse /= 64
-
+			meanSquaredError /= 64
 			// Check if this is the best match so far
-			if mse < minMSE {
-				minMSE = mse
+			if meanSquaredError < minimumMeanSquaredError {
+				minimumMeanSquaredError = meanSquaredError
 				bestElement = element
-				bestFg = GetRGBColor(int32(fg[0]*255), int32(fg[1]*255), int32(fg[2]*255))
-				bestBg = GetRGBColor(int32(bg[0]*255), int32(bg[1]*255), int32(bg[2]*255))
+				bestForegroundColor = GetRGBColor(int32(foregroundColorValues[0]*255), int32(foregroundColorValues[1]*255), int32(foregroundColorValues[2]*255))
+				bestBackgroundColor = GetRGBColor(int32(backgroundColorValues[0]*255), int32(backgroundColorValues[1]*255), int32(backgroundColorValues[2]*255))
 			}
 		}
-
 		// Set the character and colors
 		currentCharacter.Character = bestElement
-		currentCharacter.AttributeEntry.ForegroundColor = bestFg
-		currentCharacter.AttributeEntry.BackgroundColor = bestBg
-
+		currentCharacter.AttributeEntry.ForegroundColor = bestForegroundColor
+		currentCharacter.AttributeEntry.BackgroundColor = bestBackgroundColor
 		// Update the layer entry with the character and its color attributes
 		layerEntry.CharacterMemory[currentYLocation][currentXLocation] = currentCharacter
 	}
@@ -785,81 +749,16 @@ func DrawImageToLayer(layerAlias string, imageAlias string, imageStyle types.Ima
 	drawImageToLayer(layerAlias, imageLayer, xLocation, yLocation)
 }
 
-// blockElementRunes is a slice of all block element runes used for image rendering.
-// This is more memory-efficient than storing a map with all bit patterns.
-var blockElementRunes = []rune{
-	constants.BlockLowerOneEighthBlock,
-	constants.BlockLowerOneQuarterBlock,
-	constants.BlockLowerThreeEighthsBlock,
-	constants.BlockLowerHalfBlock,
-	constants.BlockLowerFiveEighthsBlock,
-	constants.BlockLowerThreeQuartersBlock,
-	constants.BlockLowerSevenEighthsBlock,
-	constants.BlockLeftSevenEighthsBlock,
-	constants.BlockLeftThreeQuartersBlock,
-	constants.BlockLeftFiveEighthsBlock,
-	constants.BlockLeftHalfBlock,
-	constants.BlockLeftThreeEighthsBlock,
-	constants.BlockLeftOneQuarterBlock,
-	constants.BlockLeftOneEighthBlock,
-	constants.BlockQuadrantLowerLeft,
-	constants.BlockQuadrantLowerRight,
-	constants.BlockQuadrantUpperLeft,
-	constants.BlockQuadrantUpperRight,
-	constants.BlockQuadrantUpperLeftAndLowerRight,
-}
-
-// originalBlockElements contains the original hardcoded bit patterns for verification purposes.
-// This map is only used for testing and validation, not in the actual rendering code.
-var originalBlockElements = map[rune]uint64{
-	constants.BlockLowerOneEighthBlock:            0b1111111100000000000000000000000000000000000000000000000000000000,
-	constants.BlockLowerOneQuarterBlock:           0b1111111111111111000000000000000000000000000000000000000000000000,
-	constants.BlockLowerThreeEighthsBlock:         0b1111111111111111111111110000000000000000000000000000000000000000,
-	constants.BlockLowerHalfBlock:                 0b1111111111111111111111111111111100000000000000000000000000000000,
-	constants.BlockLowerFiveEighthsBlock:          0b1111111111111111111111111111111111111111000000000000000000000000,
-	constants.BlockLowerThreeQuartersBlock:        0b1111111111111111111111111111111111111111111111110000000000000000,
-	constants.BlockLowerSevenEighthsBlock:         0b1111111111111111111111111111111111111111111111111111111100000000,
-	constants.BlockLeftSevenEighthsBlock:          0b0111111101111111011111110111111101111111011111110111111101111111,
-	constants.BlockLeftThreeQuartersBlock:         0b0011111100111111001111110011111100111111001111110011111100111111,
-	constants.BlockLeftFiveEighthsBlock:           0b0001111100011111000111110001111100011111000111110001111100011111,
-	constants.BlockLeftHalfBlock:                  0b0000111100001111000011110000111100001111000011110000111100001111,
-	constants.BlockLeftThreeEighthsBlock:          0b0000011100000111000001110000011100000111000001110000011100000111,
-	constants.BlockLeftOneQuarterBlock:            0b0000001100000011000000110000001100000011000000110000001100000011,
-	constants.BlockLeftOneEighthBlock:             0b0000000100000001000000010000000100000001000000010000000100000001,
-	constants.BlockQuadrantLowerLeft:              0b0000111100001111000011110000111100000000000000000000000000000000,
-	constants.BlockQuadrantLowerRight:             0b1111000011110000111100001111000000000000000000000000000000000000,
-	constants.BlockQuadrantUpperLeft:              0b0000000000000000000000000000000000001111000011110000111100001111,
-	constants.BlockQuadrantUpperRight:             0b0000000000000000000000000000000011110000111100001111000011110000,
-	constants.BlockQuadrantUpperLeftAndLowerRight: 0b1111000011110000111100001111000000001111000011110000111100001111,
-}
-
-// verifyBlockElementPatterns checks that the programmatically generated patterns
-// match the original hardcoded values. This ensures that our optimization
-// doesn't change the behavior of the code.
-func init() {
-	// Only run verification in debug/test mode
-	if os.Getenv("CONSOLIZER_DEBUG") == "1" {
-		for r, originalPattern := range originalBlockElements {
-			generatedPattern := getBlockElementPattern(r)
-			if generatedPattern != originalPattern {
-				panic(fmt.Sprintf("Block element pattern mismatch for rune %U: original=%064b, generated=%064b",
-					r, originalPattern, generatedPattern))
-			}
-		}
-	}
-}
-
 // getBlockElementPattern returns the bit pattern for a given block element rune.
 // A 1 bit represents a pixel that is drawn, a 0 bit represents a pixel that is not drawn.
 // The least significant bit is the top left pixel, the most significant bit is the bottom
 // right pixel, moving row by row from left to right, top to bottom.
 func getBlockElementPattern(r rune) uint64 {
-	// Generate patterns programmatically based on the block element type
 	switch {
 	// Lower blocks (horizontal)
-	case r >= constants.BlockLowerOneEighthBlock && r <= constants.BlockLowerSevenEighthsBlock:
+	case r >= constants.CharBlockLowerOneEighth && r <= constants.CharBlockLowerSevenEighths:
 		// Calculate how many rows of 8 pixels should be filled (1-7)
-		rows := int(r - constants.BlockLowerOneEighthBlock + 1)
+		rows := int(r - constants.CharBlockLowerOneEighth + 1)
 		var pattern uint64
 		// Fill the appropriate number of rows from the bottom
 		for row := 0; row < rows; row++ {
@@ -872,10 +771,10 @@ func getBlockElementPattern(r rune) uint64 {
 		return pattern
 
 	// Left blocks (vertical)
-	case r >= constants.BlockLeftOneEighthBlock && r <= constants.BlockLeftSevenEighthsBlock:
+	case r >= constants.CharBlockLeftOneEighth && r <= constants.CharBlockLeftSevenEighths:
 		// Calculate how many columns of 8 pixels should be filled (1-7)
-		// Note: BlockLeftSevenEighthsBlock is the smallest value, BlockLeftOneEighthBlock is the largest
-		cols := 8 - int(r-constants.BlockLeftOneEighthBlock)
+		// Note: CharBlockLeftSevenEighths is the smallest value, CharBlockLeftOneEighth is the largest
+		cols := 8 - int(r-constants.CharBlockLeftOneEighth)
 		var pattern uint64
 		// Fill the appropriate number of columns from the left
 		for row := 0; row < 8; row++ {
@@ -888,7 +787,7 @@ func getBlockElementPattern(r rune) uint64 {
 		return pattern
 
 	// Quadrant blocks
-	case r == constants.BlockQuadrantLowerLeft:
+	case r == constants.CharBlockQuadrantLowerLeft:
 		// Lower left quadrant (bottom 4 rows, left 4 columns)
 		var pattern uint64
 		for row := 4; row < 8; row++ {
@@ -899,7 +798,7 @@ func getBlockElementPattern(r rune) uint64 {
 		}
 		return pattern
 
-	case r == constants.BlockQuadrantLowerRight:
+	case r == constants.CharBlockQuadrantLowerRight:
 		// Lower right quadrant (bottom 4 rows, right 4 columns)
 		var pattern uint64
 		for row := 4; row < 8; row++ {
@@ -910,7 +809,7 @@ func getBlockElementPattern(r rune) uint64 {
 		}
 		return pattern
 
-	case r == constants.BlockQuadrantUpperLeft:
+	case r == constants.CharBlockQuadrantUpperLeft:
 		// Upper left quadrant (top 4 rows, left 4 columns)
 		var pattern uint64
 		for row := 0; row < 4; row++ {
@@ -921,7 +820,7 @@ func getBlockElementPattern(r rune) uint64 {
 		}
 		return pattern
 
-	case r == constants.BlockQuadrantUpperRight:
+	case r == constants.CharBlockQuadrantUpperRight:
 		// Upper right quadrant (top 4 rows, right 4 columns)
 		var pattern uint64
 		for row := 0; row < 4; row++ {
@@ -932,7 +831,7 @@ func getBlockElementPattern(r rune) uint64 {
 		}
 		return pattern
 
-	case r == constants.BlockQuadrantUpperLeftAndLowerRight:
+	case r == constants.CharBlockQuadrantUpperLeftAndLowerRight:
 		// Upper left and lower right quadrants
 		var pattern uint64
 		// Upper left
