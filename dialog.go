@@ -31,8 +31,8 @@ func printDialog(layerEntry *types.LayerEntryType, attributeEntry types.Attribut
 		if currentCharacter == " " {
 			lengthOfNextWord = getLengthOfNextWord(textToPrint, currentCharacterIndex+1)
 		}
-		nextCharacter := stringformat.GetSubString(textToPrint, currentCharacterIndex+1, 1)
-		if nextCharacter == "{" {
+		nextCharacter := stringformat.GetSubString(textToPrint, currentCharacterIndex+1, 2)
+		if nextCharacter == "{{" {
 			attributeTag := getAttributeTag(textToPrint, currentCharacterIndex+1)
 			currentAttributeEntry = getDialogAttributeEntry(attributeTag, attributeEntry)
 			currentCharacterIndex += len(attributeTag)
@@ -63,7 +63,7 @@ func printDialog(layerEntry *types.LayerEntryType, attributeEntry types.Attribut
 
 /*
 getAttributeTag allows you to obtain an attribute tag from a given text string.
-Attributes are always surrounded by "{" and "}" characters.  In addition, the
+Attributes are always surrounded by "{{" and "}}" characters.  In addition, the
 following information should be noted:
 
 - If no attribute tag could be detected at the given string location, then
@@ -71,10 +71,10 @@ an empty string will be returned instead.
 */
 func getAttributeTag(stringToParse string, startingCharacterIndex int) string {
 	var lengthOfAttributeTag int
-	for currentCharacterIndex := startingCharacterIndex; currentCharacterIndex < len(stringToParse); currentCharacterIndex++ {
+	for currentCharacterIndex := startingCharacterIndex; currentCharacterIndex < len(stringToParse)-1; currentCharacterIndex++ {
 		lengthOfAttributeTag++
-		if stringformat.GetSubString(stringToParse, currentCharacterIndex, 1) == "}" {
-			return stringformat.GetSubString(stringToParse, startingCharacterIndex, lengthOfAttributeTag)
+		if stringformat.GetSubString(stringToParse, currentCharacterIndex, 2) == "}}" {
+			return stringformat.GetSubString(stringToParse, startingCharacterIndex, lengthOfAttributeTag+1)
 		}
 	}
 	return ""
@@ -89,7 +89,7 @@ will be returned instead.
 func getDialogAttributeEntry(attributeTag string, defaultAttributeEntry types.AttributeEntryType) types.AttributeEntryType {
 	var attributeEntry types.AttributeEntryType
 	if attributeTag != "" {
-		textStyleAlias := stringformat.GetSubString(attributeTag, 1, len(attributeTag)-2)
+		textStyleAlias := stringformat.GetSubString(attributeTag, 2, len(attributeTag)-4)
 		// Special case for the closing tag "/"
 		if textStyleAlias == "/" {
 			return defaultAttributeEntry
@@ -116,4 +116,44 @@ func getLengthOfNextWord(stringToParse string, startingCharacterIndex int) int {
 		lengthOfNextWord++
 	}
 	return lengthOfNextWord
+}
+
+/*
+printMarkup allows you to write text to the terminal screen with word wrapping
+and attribute tags. This is similar to printDialog but without the typewriter
+effect and printing delay.
+*/
+func printMarkup(layerEntry *types.LayerEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, widthOfLineInCharacters int, stringToPrint string) {
+	if xLocation < 0 || xLocation > layerEntry.Width || yLocation < 0 || yLocation > layerEntry.Height {
+		panic(fmt.Sprintf("The specified location (%d, %d) is out of bounds for the layer with a size of (%d, %d).", xLocation, yLocation, layerEntry.Width, layerEntry.Height))
+	}
+	arrayOfRunes := stringformat.GetRunesFromString(stringToPrint)
+	layerWidth := layerEntry.Width
+	layerHeight := layerEntry.Height
+	cursorXLocation := xLocation
+	cursorYLocation := yLocation
+	currentAttributeEntry := attributeEntry
+	for currentCharacterIndex := 0; currentCharacterIndex < len(arrayOfRunes); currentCharacterIndex++ {
+		currentCharacter := stringformat.GetSubString(stringToPrint, currentCharacterIndex, 1)
+		printLayer(layerEntry, currentAttributeEntry, cursorXLocation, cursorYLocation, []rune{arrayOfRunes[currentCharacterIndex]})
+		cursorXLocation++
+		lengthOfNextWord := 0
+		if currentCharacter == " " {
+			lengthOfNextWord = getLengthOfNextWord(stringToPrint, currentCharacterIndex+1)
+		}
+		nextCharacter := stringformat.GetSubString(stringToPrint, currentCharacterIndex+1, 2)
+		if nextCharacter == "{{" {
+			attributeTag := getAttributeTag(stringToPrint, currentCharacterIndex+1)
+			currentAttributeEntry = getDialogAttributeEntry(attributeTag, attributeEntry)
+			currentCharacterIndex += len(attributeTag)
+		}
+		if cursorXLocation+lengthOfNextWord-xLocation >= widthOfLineInCharacters || cursorXLocation+lengthOfNextWord >= layerWidth {
+			cursorXLocation = xLocation
+			cursorYLocation++
+			if cursorYLocation >= layerHeight {
+				cursorYLocation--
+			}
+		}
+	}
+	UpdateDisplay(false)
 }

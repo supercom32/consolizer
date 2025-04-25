@@ -664,6 +664,60 @@ func (shared *LayerInstanceType) PrintDialog(xLocation int, yLocation int, width
 }
 
 /*
+PrintMarkup allows you to write text immediately to the terminal screen with word wrapping
+and attribute tags. This is similar to PrintDialog but without the typewriter
+effect and printing delay. In addition, the following information should be noted:
+
+- If you specify a print location outside the range of your specified text
+layer, a panic will be generated to fail as fast as possible.
+
+- If printing has reached the last line of your text layer, printing will
+not advance to the next line. Instead, it will resume and overwrite
+what was already printed on the same line.
+
+- Specifying the width of your text line allows you to control when text
+wrapping occurs. For example, if printing starts at location (2, 2) and you set
+a line width of 10 characters, text wrapping will occur when the printing
+exceeds the text layer location (12, 2). When this happens, text will continue
+to print underneath the previous line at (2, 3).
+
+- When a word is too long to be printed on a text layer line, or the width
+of your line has already exceeded its allowed maximum, the word will be pushed
+to the line directly under it. This prevents words from being split across
+two lines.
+
+- This method supports the use of text styles during printing to add color
+or styles to specific words in your string. All text styles must be enclosed
+around the "{" and "}" characters. If you wish to use the default text
+style, simply omit specifying any text style between your enclosing braces.
+For example:
+
+	// AddLayer a text layer with the alias "ForegroundLayer", at location (0, 0),
+	// with a width and height of 80x20 characters, z order priority of 1,
+	// with no parent layer.
+	dosktop.AddLayer("ForegroundLayer", 0, 0, 80, 20, 1, "")
+	// Obtain a new text style entry.
+	redTextStyle := dosktop.GetTextStyle()
+	// Change the default foreground color of our text style to be red.
+	redTextStyle.ForegroundColor = dosktop.GetRGBColor(255,0,0)
+	// Register our new text style so Dosktop can use it.
+	dosktop.AddTextStyle("red", redTextStyle)
+	// Print some text on the text layer "ForegroundLayer", at location
+	// (0, 0), with a text wrapping location at 30 characters.
+	// Inside our string to print, we add the "{red}" tag to switch printing
+	// styles on the fly to "red" and change back to the default style using
+	// "{}".
+	dosktop.PrintMarkup("ForegroundLayer", 0, 0, 30, "This is some text with {red}red color{}. Only the words 'red color' should be colored.")
+*/
+func (shared *LayerInstanceType) PrintMarkup(xLocation int, yLocation int, widthOfLineInCharacters int, stringToPrint string) {
+	layerEntry := Layers.Get(shared.layerAlias)
+	if xLocation < 0 || xLocation > layerEntry.Width || yLocation < 0 || yLocation > layerEntry.Height {
+		panic(fmt.Sprintf("The specified location (%d, %d) is out of bounds for layer '%s' with a size of (%d, %d).", xLocation, yLocation, layerEntry.LayerAlias, layerEntry.Width, layerEntry.Height))
+	}
+	printMarkup(layerEntry, layerEntry.DefaultAttribute, xLocation, yLocation, widthOfLineInCharacters, stringToPrint)
+}
+
+/*
 AddLayer allows you to add a text layer to the current terminal display. You
 can add as many layers as you wish to suite your applications needs. Text
 layers are useful for setting up windows, modal dialogs, viewports, game
