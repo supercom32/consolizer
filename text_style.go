@@ -6,23 +6,26 @@ import (
 	"github.com/supercom32/consolizer/types"
 )
 
-var TextStyles = memory.NewControlMemoryManager[types.TextCellStyleEntryType]()
+var TextStyles *memory.MemoryManager[types.TextCellStyleEntryType]
+
+func init() {
+	TextStyles = memory.NewMemoryManager[types.TextCellStyleEntryType]()
+}
 
 func GetTextStyle(textStyleAlias string) *types.TextCellStyleEntryType {
 	// Use the generic memory manager to retrieve the text style entry
-	textStyleEntry := TextStyles.Get("", textStyleAlias)
-	if textStyleEntry == nil {
+	if !TextStyles.IsExists(textStyleAlias) {
 		panic(fmt.Sprintf("The requested text style with alias '%s' could not be returned since it does not exist.", textStyleAlias))
 	}
-	return textStyleEntry
+	return TextStyles.Get(textStyleAlias)
 }
 
 func GetTextStyleAsAttributeEntry(textStyleAlias string) types.AttributeEntryType {
 	// Use the generic memory manager to retrieve the text style entry
-	textStyleEntry := TextStyles.Get("", textStyleAlias)
-	if textStyleEntry == nil {
+	if !TextStyles.IsExists(textStyleAlias) {
 		panic(fmt.Sprintf("The requested text style with alias '%s' could not be returned since it does not exist.", textStyleAlias))
 	}
+	textStyleEntry := TextStyles.Get(textStyleAlias)
 
 	// Convert to AttributeEntryType
 	attributeEntry := types.NewAttributeEntry()
@@ -38,5 +41,5 @@ func GetTextStyleAsAttributeEntry(textStyleAlias string) types.AttributeEntryTyp
 
 func IsTextStyleExists(textStyleAlias string) bool {
 	// Use the generic memory manager to check if the text style exists
-	return TextStyles.Get("", textStyleAlias) != nil
+	return TextStyles.IsExists(textStyleAlias)
 }

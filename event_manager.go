@@ -159,6 +159,9 @@ func UpdateEventQueues() {
 			isScreenUpdateRequired = true
 		}
 		// LogInfo("mouse event radio" + time.Now().String())
+		if viewport.updateMouseEvent() {
+			isScreenUpdateRequired = true
+		}
 		// This is done last so that it can update itself if a Selector or scroll bar change was detected.
 		if Dropdown.updateDropdownStateMouse() {
 			isScreenUpdateRequired = true

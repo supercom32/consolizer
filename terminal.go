@@ -230,7 +230,7 @@ options available for your text style and can be configured easily
 by setting each attribute accordingly.
 */
 func AddTextStyle(textStyleAlias string, textStyleEntry types.TextCellStyleEntryType) {
-	TextStyles.Add("", textStyleAlias, &textStyleEntry)
+	TextStyles.Add(textStyleAlias, &textStyleEntry)
 }
 
 /*
@@ -242,7 +242,7 @@ will be performed.
 */
 func DeleteTextStyle(textStyleAlias string) {
 	validateTextStyleExists(textStyleAlias)
-	TextStyles.Remove("", textStyleAlias)
+	TextStyles.Remove(textStyleAlias)
 }
 
 /*
@@ -909,6 +909,7 @@ func renderControls(currentLayerEntry types.LayerEntryType) {
 	ProgressBar.drawProgressBarsOnLayer(currentLayerEntry)
 	Label.drawLabelsOnLayer(currentLayerEntry)
 	Tooltip.drawTooltipHotspotZonesOnLayer(currentLayerEntry)
+	viewport.drawViewportsOnLayer(currentLayerEntry)
 }
 
 /*

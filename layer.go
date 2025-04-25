@@ -299,6 +299,27 @@ func (shared *LayerInstanceType) AddTooltip(tooltipValue string, styleEntry type
 }
 
 /*
+AddViewport allows you to add a viewport to a given text layer. A viewport is a read-only
+text display control that can show text with markup codes for colorization. It supports
+scrollback history and text wrapping. In addition, the following information should be noted:
+
+- If vertical scrollbars are enabled, the viewport will maintain scrollback history up to
+the specified maxHistoryLines.
+- If vertical scrollbars are not enabled, then no history is needed and only memory for
+the visible display is required.
+- If isLinesWrapped is enabled, text printed to screen will wrap text cleanly
+like dialog.go's printMarkup method and no horizontal scrollbars will be shown.
+- If isLinesWrapped is disabled, lines will remain on the same line and horizontal
+scrollbars will be rendered if needed.
+- Text can be added to the viewport using the Print method.
+*/
+func (shared *LayerInstanceType) AddViewport(styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, height int, isLinesWrapped bool, isBorderDrawn bool, maxHistoryLines int) ViewportInstanceType {
+	viewportAlias := getUUID()
+	viewportInstance := AddViewport(shared.layerAlias, viewportAlias, styleEntry, xLocation, yLocation, width, height, isLinesWrapped, isBorderDrawn, maxHistoryLines)
+	return viewportInstance
+}
+
+/*
 DrawVerticalLine allows you to draw a vertical line on a text layer. This
 method also has the ability to draw connectors in case the line intersects
 with other lines that have already been drawn. In addition, the following
