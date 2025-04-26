@@ -54,6 +54,7 @@ func UpdateEventQueues() {
 		commonResource.screen.Sync()
 	case *tcell.EventKey:
 		isScreenUpdateRequired := false
+		isKeystrokeConsumed := false
 		var keystroke []rune
 
 		// Update modifier key state
@@ -68,26 +69,35 @@ func UpdateEventQueues() {
 			nextTabIndex()
 			keystroke = nil
 			isScreenUpdateRequired = true
+			isKeystrokeConsumed = true
 		}
 		if scrollbar.updateKeyboardEvent(keystroke) {
 			isScreenUpdateRequired = true
+			isKeystrokeConsumed = true
 		}
 		if TextField.updateKeyboardEvent(keystroke) {
 			isScreenUpdateRequired = true
+			isKeystrokeConsumed = true
 		}
 		if textbox.UpdateKeyboardEvent(keystroke) {
 			isScreenUpdateRequired = true
+			isKeystrokeConsumed = true
 		}
 		if Selector.updateKeyboardEvent(keystroke) {
 			isScreenUpdateRequired = true
+			isKeystrokeConsumed = true
 		}
 		if Dropdown.updateKeyboardEvent(keystroke) {
 			isScreenUpdateRequired = true
+			isKeystrokeConsumed = true
 		}
 		if isScreenUpdateRequired == true {
 			UpdateDisplay(false)
 		}
-		KeyboardMemory.AddKeystrokeToKeyboardBuffer(keystroke)
+		// Only add keystroke to buffer if it wasn't consumed by a control
+		if !isKeystrokeConsumed && keystroke != nil {
+			KeyboardMemory.AddKeystrokeToKeyboardBuffer(keystroke)
+		}
 
 	case *tcell.EventMouse:
 		mouseXLocation, mouseYLocation := event.Position()

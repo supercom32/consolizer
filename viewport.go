@@ -301,7 +301,7 @@ func (shared *viewportType) setViewportMaxScrollBarValues(layerAlias string, vie
 		return
 	}
 
-	// Calculate effective width and height (accounting for border if present)
+	// Calculate initial effective width and height (accounting for border if present)
 	effectiveWidth := viewportEntry.Width
 	effectiveHeight := viewportEntry.Height
 	if viewportEntry.IsBorderDrawn {
@@ -309,41 +309,95 @@ func (shared *viewportType) setViewportMaxScrollBarValues(layerAlias string, vie
 		effectiveHeight -= 2
 	}
 
-	// Set vertical scrollbar max value
+	// Get scrollbar entries if they exist
+	var vScrollBarEntry *types.ScrollbarEntryType
+	var hScrollBarEntry *types.ScrollbarEntryType
+
 	if viewportEntry.VerticalScrollbarAlias != "" && ScrollBars.IsExists(layerAlias, viewportEntry.VerticalScrollbarAlias) {
-		scrollbarEntry := ScrollBars.Get(layerAlias, viewportEntry.VerticalScrollbarAlias)
-		maxScrollValue := 0
-		if len(viewportEntry.TextData) > effectiveHeight {
-			maxScrollValue = len(viewportEntry.TextData) - effectiveHeight
-			scrollbarEntry.IsEnabled = true
-			scrollbarEntry.IsVisible = true
-		} else {
-			scrollbarEntry.IsEnabled = false
-			scrollbarEntry.IsVisible = false
-		}
-		scrollbarEntry.MaxScrollValue = maxScrollValue
+		vScrollBarEntry = ScrollBars.Get(layerAlias, viewportEntry.VerticalScrollbarAlias)
 	}
 
-	// Set horizontal scrollbar max value
 	if viewportEntry.HorizontalScrollbarAlias != "" && ScrollBars.IsExists(layerAlias, viewportEntry.HorizontalScrollbarAlias) {
-		scrollbarEntry := ScrollBars.Get(layerAlias, viewportEntry.HorizontalScrollbarAlias)
-		maxWidth := shared.getMaxHorizontalTextValue(layerAlias, viewportAlias)
-		maxScrollValue := 0
+		hScrollBarEntry = ScrollBars.Get(layerAlias, viewportEntry.HorizontalScrollbarAlias)
+	}
 
-		// If lines are wrapped, always disable horizontal scrollbar
-		if viewportEntry.IsLinesWrapped {
-			scrollbarEntry.IsEnabled = false
-			scrollbarEntry.IsVisible = false
-		} else if maxWidth > effectiveWidth {
-			// Only show horizontal scrollbar if lines are not wrapped and content is wider than viewport
-			maxScrollValue = maxWidth - effectiveWidth
-			scrollbarEntry.IsEnabled = true
-			scrollbarEntry.IsVisible = true
-		} else {
-			scrollbarEntry.IsEnabled = false
-			scrollbarEntry.IsVisible = false
+	// Initial state - assume no scrollbars are visible
+	isVerticalScrollbarVisible := false
+	isHorizontalScrollbarVisible := false
+
+	// Get content dimensions
+	contentHeight := len(viewportEntry.TextData)
+	contentWidth := shared.getMaxHorizontalTextValue(layerAlias, viewportAlias)
+
+	// First pass - check if scrollbars are needed based on full content area
+	if vScrollBarEntry != nil {
+		if contentHeight > effectiveHeight {
+			isVerticalScrollbarVisible = true
 		}
-		scrollbarEntry.MaxScrollValue = maxScrollValue
+	}
+
+	if hScrollBarEntry != nil && !viewportEntry.IsLinesWrapped {
+		if contentWidth > effectiveWidth {
+			isHorizontalScrollbarVisible = true
+		}
+	}
+
+	// Second pass - adjust effective area if scrollbars are visible and recheck
+	if isVerticalScrollbarVisible {
+		// Vertical scrollbar takes up 1 column of width
+		effectiveWidth--
+
+		// Recheck horizontal scrollbar with reduced width
+		if hScrollBarEntry != nil && !viewportEntry.IsLinesWrapped && !isHorizontalScrollbarVisible {
+			if contentWidth > effectiveWidth {
+				isHorizontalScrollbarVisible = true
+			}
+		}
+	}
+
+	if isHorizontalScrollbarVisible {
+		// Horizontal scrollbar takes up 1 row of height
+		effectiveHeight--
+
+		// Recheck vertical scrollbar with reduced height
+		if vScrollBarEntry != nil && !isVerticalScrollbarVisible {
+			if contentHeight > effectiveHeight {
+				isVerticalScrollbarVisible = true
+				// Vertical scrollbar now appears, reduce width
+				effectiveWidth--
+			}
+		}
+	}
+
+	// Set vertical scrollbar properties
+	if vScrollBarEntry != nil {
+		maxScrollValue := 0
+		if isVerticalScrollbarVisible {
+			maxScrollValue = contentHeight - effectiveHeight
+			vScrollBarEntry.IsEnabled = true
+			vScrollBarEntry.IsVisible = true
+		} else {
+			vScrollBarEntry.IsEnabled = false
+			vScrollBarEntry.IsVisible = false
+		}
+		vScrollBarEntry.MaxScrollValue = maxScrollValue
+	}
+
+	// Set horizontal scrollbar properties
+	if hScrollBarEntry != nil {
+		maxScrollValue := 0
+		if viewportEntry.IsLinesWrapped {
+			hScrollBarEntry.IsEnabled = false
+			hScrollBarEntry.IsVisible = false
+		} else if isHorizontalScrollbarVisible {
+			maxScrollValue = contentWidth - effectiveWidth
+			hScrollBarEntry.IsEnabled = true
+			hScrollBarEntry.IsVisible = true
+		} else {
+			hScrollBarEntry.IsEnabled = false
+			hScrollBarEntry.IsVisible = false
+		}
+		hScrollBarEntry.MaxScrollValue = maxScrollValue
 	}
 }
 
@@ -371,25 +425,41 @@ func (shared *viewportType) AddViewport(layerAlias string, viewportAlias string,
 	horizontalScrollbarAlias := viewportAlias + "_hscroll"
 	scrollbarStyleEntry := styleEntry
 
-	// Calculate scrollbar position and length
+	// Calculate scrollbar positions and lengths
+	// For horizontal scrollbar - position it inside the frame at the bottom
 	scrollbarXLocation := xLocation
-	scrollbarYLocation := yLocation + height
-	scrollbarLength := width
-
+	if isBorderDrawn {
+		scrollbarXLocation++
+	}
+	scrollbarYLocation := yLocation + height - 1
+	if isBorderDrawn {
+		scrollbarYLocation--
+	}
+	horizontalScrollbarLength := width
+	if isBorderDrawn {
+		horizontalScrollbarLength -= 2
+	}
 	// Add horizontal scrollbar
-	scrollbar.Add(layerAlias, horizontalScrollbarAlias, scrollbarStyleEntry, scrollbarXLocation, scrollbarYLocation, scrollbarLength, 0, 0, 1, true)
+	scrollbar.Add(layerAlias, horizontalScrollbarAlias, scrollbarStyleEntry, scrollbarXLocation, scrollbarYLocation, horizontalScrollbarLength, 0, 0, 1, true)
 	viewportEntry.HorizontalScrollbarAlias = horizontalScrollbarAlias
 
-	// For vertical scrollbar
+	// For vertical scrollbar - position it inside the frame on the right
 	verticalScrollbarAlias := viewportAlias + "_vscroll"
 
-	// Calculate scrollbar position and length
-	scrollbarXLocation = xLocation + width
+	scrollbarXLocation = xLocation + width - 1
+	if isBorderDrawn {
+		scrollbarXLocation--
+	}
 	scrollbarYLocation = yLocation
-	scrollbarLength = height
-
+	if isBorderDrawn {
+		scrollbarYLocation++
+	}
+	verticalScrollbarLength := height
+	if isBorderDrawn {
+		verticalScrollbarLength -= 2
+	}
 	// Add vertical scrollbar
-	scrollbar.Add(layerAlias, verticalScrollbarAlias, scrollbarStyleEntry, scrollbarXLocation, scrollbarYLocation, scrollbarLength, 0, 0, 1, false)
+	scrollbar.Add(layerAlias, verticalScrollbarAlias, scrollbarStyleEntry, scrollbarXLocation, scrollbarYLocation, verticalScrollbarLength, 0, 0, 1, false)
 	viewportEntry.VerticalScrollbarAlias = verticalScrollbarAlias
 
 	// Set up the viewport instance
@@ -497,6 +567,21 @@ func (shared *viewportType) drawViewportContent(layerEntry *types.LayerEntryType
 		contentHeight -= 2
 	}
 
+	// Further adjust content area for scrollbars inside the frame
+	if viewportEntry.VerticalScrollbarAlias != "" && ScrollBars.IsExists(layerEntry.LayerAlias, viewportEntry.VerticalScrollbarAlias) {
+		scrollbarEntry := ScrollBars.Get(layerEntry.LayerAlias, viewportEntry.VerticalScrollbarAlias)
+		if scrollbarEntry.IsVisible {
+			contentWidth-- // Reduce width by 1 for vertical scrollbar
+		}
+	}
+
+	if viewportEntry.HorizontalScrollbarAlias != "" && ScrollBars.IsExists(layerEntry.LayerAlias, viewportEntry.HorizontalScrollbarAlias) {
+		scrollbarEntry := ScrollBars.Get(layerEntry.LayerAlias, viewportEntry.HorizontalScrollbarAlias)
+		if scrollbarEntry.IsVisible {
+			contentHeight-- // Reduce height by 1 for horizontal scrollbar
+		}
+	}
+
 	// Set the attribute entry for the viewport
 	localAttributeEntry := types.NewAttributeEntry(&attributeEntry)
 	localAttributeEntry.CellType = constants.CellTypeTextbox // Use textbox type for viewport
@@ -572,14 +657,70 @@ func (shared *viewportType) drawViewportScrollbars(layerEntry *types.LayerEntryT
 		return
 	}
 
-	// Draw horizontal scrollbar if it exists
+	// Check if scrollbars exist and are visible
+	var hScrollbarEntry, vScrollbarEntry *types.ScrollbarEntryType
+	var isHorizontalScrollbarVisible, isVerticalScrollbarVisible bool
+
 	if viewportEntry.HorizontalScrollbarAlias != "" && ScrollBars.IsExists(layerEntry.LayerAlias, viewportEntry.HorizontalScrollbarAlias) {
-		// The scrollbar will be drawn by the scrollbar drawing code
+		hScrollbarEntry = ScrollBars.Get(layerEntry.LayerAlias, viewportEntry.HorizontalScrollbarAlias)
+		isHorizontalScrollbarVisible = hScrollbarEntry.IsVisible
 	}
 
-	// Draw vertical scrollbar if it exists
 	if viewportEntry.VerticalScrollbarAlias != "" && ScrollBars.IsExists(layerEntry.LayerAlias, viewportEntry.VerticalScrollbarAlias) {
-		// The scrollbar will be drawn by the scrollbar drawing code
+		vScrollbarEntry = ScrollBars.Get(layerEntry.LayerAlias, viewportEntry.VerticalScrollbarAlias)
+		isVerticalScrollbarVisible = vScrollbarEntry.IsVisible
+	}
+
+	// If both scrollbars are visible, adjust their lengths and fill the corner
+	if isHorizontalScrollbarVisible && isVerticalScrollbarVisible {
+		// Adjust horizontal scrollbar length
+		if hScrollbarEntry != nil {
+			if viewportEntry.IsBorderDrawn {
+				hScrollbarEntry.Length = viewportEntry.Width - 3 // -2 for border, -1 for corner
+			} else {
+				hScrollbarEntry.Length = viewportEntry.Width - 1 // -1 for corner
+			}
+		}
+
+		// Adjust vertical scrollbar length
+		if vScrollbarEntry != nil {
+			if viewportEntry.IsBorderDrawn {
+				vScrollbarEntry.Length = viewportEntry.Height - 3 // -2 for border, -1 for corner
+			} else {
+				vScrollbarEntry.Length = viewportEntry.Height - 1 // -1 for corner
+			}
+		}
+
+		// Fill the corner with the background color
+		// Calculate the corner position
+		cornerX := xLocation + width - 1
+		cornerY := yLocation + height - 1
+		if viewportEntry.IsBorderDrawn {
+			cornerX--
+			cornerY--
+		}
+
+		// Draw a space character with the background color in the corner
+		localAttributeEntry := types.NewAttributeEntry()
+		localAttributeEntry.BackgroundColor = styleEntry.Textbox.BackgroundColor
+		spaceChar := []rune{' '}
+		printLayer(layerEntry, localAttributeEntry, cornerX, cornerY, spaceChar)
+	} else {
+		// Restore original lengths if only one scrollbar is visible
+		if hScrollbarEntry != nil && isHorizontalScrollbarVisible && !isVerticalScrollbarVisible {
+			if viewportEntry.IsBorderDrawn {
+				hScrollbarEntry.Length = viewportEntry.Width - 2 // -2 for border
+			} else {
+				hScrollbarEntry.Length = viewportEntry.Width
+			}
+		}
+		if vScrollbarEntry != nil && isVerticalScrollbarVisible && !isHorizontalScrollbarVisible {
+			if viewportEntry.IsBorderDrawn {
+				vScrollbarEntry.Length = viewportEntry.Height - 2 // -2 for border
+			} else {
+				vScrollbarEntry.Length = viewportEntry.Height
+			}
+		}
 	}
 }
 
@@ -653,7 +794,7 @@ func (shared *viewportType) updateMouseEvent() bool {
 				} else if wheelState == "Right" && viewportEntry.HorizontalScrollbarAlias != "" {
 					// Scroll right
 					maxWidth := shared.getMaxHorizontalTextValue(layerAlias, viewportAlias)
-					if viewportEntry.ViewportXLocation < maxWidth - viewportEntry.Width {
+					if viewportEntry.ViewportXLocation < maxWidth-viewportEntry.Width {
 						viewportEntry.ViewportXLocation++
 						shared.updateScrollbarBasedOnViewportViewport(layerAlias, viewportAlias)
 						isScreenUpdateRequired = true

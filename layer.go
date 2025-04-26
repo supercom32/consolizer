@@ -225,8 +225,12 @@ func (shared *LayerInstanceType) DrawComposedImage(imageComposeEntry ImageCompos
 		imageLayer = getImageLayerAsHighColor(baseImage, drawingStyle, widthInCharacters, heightInCharacters, drawingStyle.BlurSigmaIntensity)
 	} else if drawingStyle.DrawingStyle == constants.ImageStyleCharacters {
 		imageLayer = GetImageLayerAsAsciiColorArt(baseImage, drawingStyle, widthInCharacters, heightInCharacters, drawingStyle.BlurSigmaIntensity)
-	} else {
+	} else if drawingStyle.DrawingStyle == constants.ImageStyleBlockElements {
+		imageLayer = getImageLayerAsBlockElements(baseImage, drawingStyle, widthInCharacters, heightInCharacters, drawingStyle.BlurSigmaIntensity)
+	} else if drawingStyle.DrawingStyle == constants.ImageStyleBraille {
 		imageLayer = getImageLayerAsBraille(baseImage, drawingStyle, widthInCharacters, heightInCharacters, drawingStyle.BlurSigmaIntensity)
+	} else {
+		safeSttyPanic("Invalid image style rendering type!")
 	}
 	drawImageToLayer(shared.layerAlias, imageLayer, xLocation, yLocation)
 	return err
