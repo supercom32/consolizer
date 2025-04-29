@@ -67,6 +67,7 @@ type ProgressBarStyle struct {
 	FilledBackgroundColor   constants.ColorType
 	TextForegroundColor     constants.ColorType
 	TextBackgroundColor     constants.ColorType
+	IsHighResolution        bool
 }
 
 // TextFieldStyle contains styles for text fields
@@ -195,9 +196,10 @@ func NewTuiStyleEntry(existingStyleEntry ...*TuiStyleEntryType) TuiStyleEntryTyp
 		styleEntry.ProgressBar.UnfilledForegroundColor = constants.AnsiColorByIndex[15]
 		styleEntry.ProgressBar.UnfilledBackgroundColor = constants.AnsiColorByIndex[0]
 		styleEntry.ProgressBar.FilledForegroundColor = constants.AnsiColorByIndex[3]
-		styleEntry.ProgressBar.FilledBackgroundColor = constants.AnsiColorByIndex[3]
+		styleEntry.ProgressBar.FilledBackgroundColor = constants.AnsiColorByIndex[0]
 		styleEntry.ProgressBar.TextForegroundColor = constants.AnsiColorByIndex[15]
 		styleEntry.ProgressBar.TextBackgroundColor = constants.AnsiColorByIndex[0]
+		styleEntry.ProgressBar.IsHighResolution = false
 
 		styleEntry.TextField.ForegroundColor = constants.AnsiColorByIndex[15]
 		styleEntry.TextField.BackgroundColor = constants.AnsiColorByIndex[0]

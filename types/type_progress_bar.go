@@ -12,7 +12,7 @@ type ProgressBarEntryType struct {
 	MaxValue                int
 	IsBackgroundTransparent bool
 	Length                  int
-	IsHorizontal            bool
+	IsVertical              bool
 }
 
 /*
@@ -44,7 +44,7 @@ func (shared ProgressBarEntryType) MarshalJSON() ([]byte, error) {
 		IsBackgroundTransparent bool
 		Length                  int
 		CurrentValue            int
-		IsHorizontal            bool
+		IsVertical              bool
 	}{
 		BaseControlType:         shared.BaseControlType,
 		Label:                   shared.Label,
@@ -52,7 +52,7 @@ func (shared ProgressBarEntryType) MarshalJSON() ([]byte, error) {
 		MaxValue:                shared.MaxValue,
 		IsBackgroundTransparent: shared.IsBackgroundTransparent,
 		Length:                  shared.Length,
-		IsHorizontal:            shared.IsHorizontal,
+		IsVertical:              shared.IsVertical,
 	})
 	if err != nil {
 		return nil, err
@@ -93,7 +93,7 @@ func NewProgressBarEntry(ExistingProgressBarEntry ...*ProgressBarEntryType) Prog
 		progressBarEntry.MaxValue = ExistingProgressBarEntry[0].MaxValue
 		progressBarEntry.IsBackgroundTransparent = ExistingProgressBarEntry[0].IsBackgroundTransparent
 		progressBarEntry.Length = ExistingProgressBarEntry[0].Length
-		progressBarEntry.IsHorizontal = ExistingProgressBarEntry[0].IsHorizontal
+		progressBarEntry.IsVertical = ExistingProgressBarEntry[0].IsVertical
 	}
 	return progressBarEntry
 }
@@ -113,7 +113,7 @@ func IsProgressBarEntryEqual(sourceProgressBarEntry *ProgressBarEntryType, targe
 		sourceProgressBarEntry.MaxValue == targetProgressBarEntry.MaxValue &&
 		sourceProgressBarEntry.IsBackgroundTransparent == targetProgressBarEntry.IsBackgroundTransparent &&
 		sourceProgressBarEntry.Length == targetProgressBarEntry.Length &&
-		sourceProgressBarEntry.IsHorizontal == targetProgressBarEntry.IsHorizontal
+		sourceProgressBarEntry.IsVertical == targetProgressBarEntry.IsVertical
 }
 
 /*

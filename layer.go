@@ -260,9 +260,9 @@ func (shared *LayerInstanceType) AddLabel(labelValue string, styleEntry types.Tu
 	return labelInstance
 }
 
-func (shared *LayerInstanceType) AddProgressBar(progressBarLabel string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, height int, value int, maxValue int, isBackgroundTransparent bool) ProgressBarInstanceType {
+func (shared *LayerInstanceType) AddProgressBar(progressBarLabel string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, height int, isVertical bool, value int, maxValue int, isBackgroundTransparent bool) ProgressBarInstanceType {
 	progressBarAlias := getUUID()
-	progressBarInstance := ProgressBar.Add(shared.layerAlias, progressBarAlias, progressBarLabel, styleEntry, xLocation, yLocation, width, height, value, maxValue, isBackgroundTransparent)
+	progressBarInstance := ProgressBar.Add(shared.layerAlias, progressBarAlias, progressBarLabel, styleEntry, xLocation, yLocation, width, height, isVertical, value, maxValue, isBackgroundTransparent)
 	return progressBarInstance
 }
 
@@ -947,7 +947,6 @@ func DeleteAllLayers() {
 	}
 	layer.ReInitializeScreenMemory()
 }
-
 
 func isLayerExists(layerAlias string) bool {
 	if Layers.IsExists(layerAlias) {

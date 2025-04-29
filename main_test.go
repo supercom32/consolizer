@@ -2,7 +2,6 @@ package consolizer
 
 import (
 	"fmt"
-	"log"
 	"strconv"
 	"testing"
 	"time"
@@ -37,17 +36,44 @@ func testProgressBar() {
 	styleEntry := types.NewTuiStyleEntry()
 	styleEntry.Selector.TextAlignment = 0
 	styleEntry.ProgressBar.UnfilledBackgroundColor = constants.ColorBrightGreen
-	layer1.AddProgressBar("Any Label", styleEntry, 21, 5, 40, 3, 10, 20, true)
+
+	// Create a horizontal progress bar (default)
+	horizontalProgressBar := layer1.AddProgressBar("Horizontal Progress Bar", styleEntry, 21, 5, 40, 3, 10, 20, true)
+
+	// Create a vertical progress bar
+	verticalProgressBar := layer1.AddProgressBar("Vertical Progress Bar", styleEntry, 21, 10, 3, 20, true, 10, 20, true)
+
+	// Print instructions
+	Locate(0, 0)
+	Print("Press 'h' to increment horizontal bar")
+	Locate(0, 1)
+	Print("Press 'v' to increment vertical bar")
+	Locate(0, 2)
+	Print("Press 'q' to quit")
 
 	for {
 		UpdateDisplay(false)
 		key := string(Inkey())
-		if key == "w" {
-			log.Printf("TESTING")
-			Locate(0, 0)
+		if key == "h" {
+			// Increment horizontal progress bar
+			horizontalProgressBar.IncrementProgressBarValue()
+			Locate(0, 3)
+			Print("Horizontal: " + horizontalProgressBar.GetProgressBarValueAsPercent() + "%  ")
 		}
-		if key == "a" {
-			RefreshDisplay()
+		if key == "v" {
+			// Increment vertical progress bar
+			verticalProgressBar.IncrementProgressBarValue()
+			Locate(0, 4)
+			Print("Vertical: " + verticalProgressBar.GetProgressBarValueAsPercent() + "%  ")
+		}
+		if key == "r" {
+			// Reset progress bars
+			horizontalProgressBar.SetProgressBarValue(0)
+			verticalProgressBar.SetProgressBarValue(0)
+			Locate(0, 3)
+			Print("Horizontal: 0%  ")
+			Locate(0, 4)
+			Print("Vertical: 0%  ")
 		}
 		if key == "q" {
 			break
