@@ -2,7 +2,9 @@ package consolizer
 
 import (
 	"bytes"
+	"compress/gzip"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"github.com/disintegration/imaging"
 	"github.com/nfnt/resize"
@@ -12,6 +14,7 @@ import (
 	"image/color"
 	"image/draw"
 	"image/png"
+	"io"
 	"math"
 	"math/rand"
 	"runtime"
@@ -1090,4 +1093,174 @@ func HistogramEqualization(inputImage *image.Gray) *image.Gray {
 		}
 	}
 	return outputImage
+}
+
+/*
+SaveLayer allows you to save a pre-rendered layer to disk. This is useful for caching
+complex layers that take time to render, such as image layers. The layer is saved in a
+compressed format to minimize disk space usage. In addition, the following information
+should be noted:
+
+- The file extension ".clayer" is automatically appended to the filename if not provided.
+- The layer is saved using gzip compression to minimize disk space.
+- If the file cannot be written, an error is returned.
+*/
+func SaveLayer(layerAlias string, filePath string) error {
+	validateLayer(layerAlias)
+	layerEntry := Layers.Get(layerAlias)
+
+	// Ensure the file has the correct extension
+	if len(filePath) < 7 || filePath[len(filePath)-7:] != ".clayer" {
+		filePath += ".clayer"
+	}
+
+	// Marshal the layer to JSON
+	jsonData, err := json.Marshal(layerEntry)
+	if err != nil {
+		return fmt.Errorf("failed to marshal layer: %w", err)
+	}
+
+	// Compress the JSON data
+	var compressedData bytes.Buffer
+	gzipWriter := gzip.NewWriter(&compressedData)
+	_, err = gzipWriter.Write(jsonData)
+	if err != nil {
+		return fmt.Errorf("failed to compress layer data: %w", err)
+	}
+
+	// Close the gzip writer to flush any remaining data
+	if err = gzipWriter.Close(); err != nil {
+		return fmt.Errorf("failed to finalize compression: %w", err)
+	}
+
+	// Write the compressed data to file system (local only, as virtual file systems are read-only)
+	err = writeFileDataToFileSystem(filePath, compressedData.Bytes(), 0644)
+	if err != nil {
+		return fmt.Errorf("failed to write layer to file: %w", err)
+	}
+
+	return nil
+}
+
+/*
+LoadLayer allows you to load a pre-rendered layer from disk. This is useful for quickly
+loading complex layers that were previously saved, such as image layers. The layer is
+loaded from a compressed format that was created by SaveLayer. In addition, the following
+information should be noted:
+
+- The file extension ".clayer" is automatically appended to the filename if not provided.
+- If the file cannot be read or is not a valid layer file, an error is returned.
+- The loaded layer is returned and can be added to the layer system as needed.
+*/
+func LoadLayer(filePath string) (types.LayerEntryType, error) {
+	var layerEntry types.LayerEntryType
+
+	// Ensure the file has the correct extension
+	if len(filePath) < 7 || filePath[len(filePath)-7:] != ".clayer" {
+		filePath += ".clayer"
+	}
+
+	// Read the compressed data from file system (local or virtual)
+	compressedData, err := getFileDataFromFileSystem(filePath)
+	if err != nil {
+		return layerEntry, fmt.Errorf("failed to read layer file: %w", err)
+	}
+
+	// Create a reader for the compressed data
+	gzipReader, err := gzip.NewReader(bytes.NewReader(compressedData))
+	if err != nil {
+		return layerEntry, fmt.Errorf("failed to decompress layer data: %w", err)
+	}
+	defer gzipReader.Close()
+
+	// Read all the decompressed data
+	jsonData, err := io.ReadAll(gzipReader)
+	if err != nil {
+		return layerEntry, fmt.Errorf("failed to read decompressed data: %w", err)
+	}
+
+	// Unmarshal the JSON data into a layer entry
+	err = json.Unmarshal(jsonData, &layerEntry)
+	if err != nil {
+		return layerEntry, fmt.Errorf("failed to unmarshal layer data: %w", err)
+	}
+
+	return layerEntry, nil
+}
+
+/*
+LoadLayerFromFile allows you to load a pre-rendered layer from disk and add it to the layer system.
+This is useful for quickly loading complex layers that were previously saved, such as image layers.
+The layer is loaded from a compressed format that was created by SaveLayer. In addition, the following
+information should be noted:
+
+- The file extension ".clayer" is automatically appended to the filename if not provided.
+- If the file cannot be read or is not a valid layer file, an error is returned.
+- The loaded layer is added to the layer system with the specified alias, position, and z-order.
+- The function returns a LayerInstanceType that can be used to manipulate the loaded layer.
+*/
+func LoadLayerFromFile(layerAlias string, xLocation int, yLocation int, zOrderPriority int, parentAlias string, filePath string) (LayerInstanceType, error) {
+	// Load the layer from file
+	layerEntry, err := LoadLayer(filePath)
+	if err != nil {
+		return LayerInstanceType{}, err
+	}
+
+	// Add the loaded layer to the layer system
+	layer.Add(layerAlias, xLocation, yLocation, layerEntry.Width, layerEntry.Height, zOrderPriority, parentAlias)
+
+	// Get the layer entry from the layer system
+	newLayerEntry := Layers.Get(layerAlias)
+
+	// Copy the character memory from the loaded layer to the new layer
+	for y := 0; y < layerEntry.Height; y++ {
+		for x := 0; x < layerEntry.Width; x++ {
+			newLayerEntry.CharacterMemory[y][x] = layerEntry.CharacterMemory[y][x]
+			newLayerEntry.CharacterMemory[y][x].LayerAlias = layerAlias
+			newLayerEntry.CharacterMemory[y][x].ParentAlias = parentAlias
+		}
+	}
+
+	// Create and return a LayerInstanceType for the new layer
+	layerInstance := LayerInstanceType{
+		layerAlias:  layerAlias,
+		parentAlias: parentAlias,
+		LayerWidth:  layerEntry.Width,
+		LayerHeight: layerEntry.Height,
+	}
+
+	return layerInstance, nil
+}
+
+/*
+LoadPreRenderedLayerImage allows you to load a pre-rendered layer image directly into image memory.
+This is different from loading an image and pre-rendering it afterwards, as it directly loads
+a layer that has already been rendered. This is useful for quickly loading complex images
+that have been pre-processed and saved as layers. In addition, the following information
+should be noted:
+
+- The file extension ".clayer" is automatically appended to the filename if not provided.
+- If the file cannot be read or is not a valid layer file, an error is returned.
+- The loaded layer is added to the image system with the specified alias.
+*/
+func LoadPreRenderedLayerImage(filePath string, imageAlias string) error {
+	// Load the layer from file
+	layerEntry, err := LoadLayer(filePath)
+	if err != nil {
+		return err
+	}
+
+	// Create a new image entry
+	imageEntry := types.NewImageEntry()
+
+	// Store the layer in the image entry
+	imageEntry.LayerEntry = layerEntry
+
+	// Set ImageData to nil since we're using a pre-rendered layer
+	imageEntry.ImageData = nil
+
+	// Add the image to the image system
+	AddImage(imageAlias, imageEntry)
+
+	return nil
 }

@@ -403,3 +403,25 @@ func getFileDataFromRarArchive(fileName string) ([]byte, error) {
 	}
 	return fileData, err
 }
+
+/*
+writeFileDataToFileSystem allows you to write data to a file in the file system.
+If a virtual file system is mounted, the file will be written to the local file system
+since virtual file systems are read-only. In addition, the following information should be noted:
+
+- If the file does not already exist, it will be created with the specified permissions.
+- If the file already exists, it will be overwritten.
+- If the permissions parameter is 0, the default value of 0644 will be used.
+*/
+func writeFileDataToFileSystem(fileName string, data []byte, permissions int) error {
+	// Virtual file systems are read-only, so always write to the local file system
+	if permissions == 0 {
+		permissions = 0644
+	}
+	perm := os.FileMode(permissions)
+	err := ioutil.WriteFile(fileName, data, perm)
+	if err != nil {
+		err = errors.New(fmt.Sprintf("Could not write data to the file '%s': %s", fileName, err.Error()))
+	}
+	return err
+}

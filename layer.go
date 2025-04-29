@@ -566,6 +566,62 @@ func (shared *LayerInstanceType) SetIsVisible(isVisible bool) {
 }
 
 /*
+LoadLayerFromFile allows you to load a pre-rendered layer from disk and add it to the layer system.
+This is useful for quickly loading complex layers that were previously saved, such as image layers.
+The layer is loaded from a compressed format that was created by SaveLayer. In addition, the following
+information should be noted:
+
+- The file extension ".clayer" is automatically appended to the filename if not provided.
+- If the file cannot be read or is not a valid layer file, an error is returned.
+- The loaded layer is added to the layer system with the specified alias, position, and z-order.
+- The function returns a LayerInstanceType that can be used to manipulate the loaded layer.
+*/
+func (shared *LayerInstanceType) LoadLayerFromFile(xLocation int, yLocation int, zOrderPriority int, filePath string) error {
+	// Load the layer from file using the image.go function
+	layerInstance, err := LoadLayerFromFile(shared.layerAlias, xLocation, yLocation, zOrderPriority, shared.parentAlias, filePath)
+	if err != nil {
+		return err
+	}
+
+	// Update the current instance with the loaded layer's properties
+	shared.LayerWidth = layerInstance.LayerWidth
+	shared.LayerHeight = layerInstance.LayerHeight
+
+	return nil
+}
+
+/*
+LoadPreRenderedLayerImage allows you to load a pre-rendered layer image directly into image memory.
+This is different from loading an image and pre-rendering it afterwards, as it directly loads
+a layer that has already been rendered. This is useful for quickly loading complex images
+that have been pre-processed and saved as layers. In addition, the following information
+should be noted:
+
+- The file extension ".clayer" is automatically appended to the filename if not provided.
+- If the file cannot be read or is not a valid layer file, an error is returned.
+- The loaded layer is added to the image system with the specified alias.
+*/
+func (shared *LayerInstanceType) LoadPreRenderedLayerImage(filePath string, imageAlias string) error {
+	// Load the pre-rendered layer image using the image.go function
+	return LoadPreRenderedLayerImage(filePath, imageAlias)
+}
+
+/*
+SaveLayer allows you to save the current layer to disk. This is useful for caching
+complex layers that take time to render, such as image layers. The layer is saved in a
+compressed format to minimize disk space usage. In addition, the following information
+should be noted:
+
+- The file extension ".clayer" is automatically appended to the filename if not provided.
+- The layer is saved using gzip compression to minimize disk space.
+- If the file cannot be written, an error is returned.
+*/
+func (shared *LayerInstanceType) SaveLayer(filePath string) error {
+	validateLayer(shared.layerAlias)
+	return SaveLayer(shared.layerAlias, filePath)
+}
+
+/*
 Color24Bit allows you to color a layer using a 24-bit color expressed as
 an int32. This is useful for when you have colors which are already defined.
 */
@@ -891,6 +947,7 @@ func DeleteAllLayers() {
 	}
 	layer.ReInitializeScreenMemory()
 }
+
 
 func isLayerExists(layerAlias string) bool {
 	if Layers.IsExists(layerAlias) {

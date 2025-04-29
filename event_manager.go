@@ -41,6 +41,11 @@ func UpdatePeriodicEvents() {
 			UpdateDisplay(false)
 		}
 	}
+
+	// Clear key states periodically to handle key releases
+	// This is done more frequently than other periodic events
+	// to ensure responsive keyboard input
+	KeyboardMemory.ClearKeyStates()
 }
 
 /*
