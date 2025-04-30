@@ -21,6 +21,10 @@ type TextboxEntryType struct {
 	HighlightEndY          int
 	IsHighlightActive      bool
 	IsHighlightModeToggled bool
+	// Text wrapping
+	IsWordWrapEnabled bool
+	// Auto-indent
+	IsAutoIndentEnabled bool
 }
 
 /*
@@ -59,6 +63,8 @@ func (shared TextboxEntryType) MarshalJSON() ([]byte, error) {
 		HighlightEndY            int
 		IsHighlightActive        bool
 		IsHighlightModeToggled   bool
+		IsWordWrapEnabled        bool
+		IsAutoIndentEnabled      bool
 	}{
 		BaseControlType:          shared.BaseControlType,
 		HorizontalScrollbarAlias: shared.HorizontalScrollbarAlias,
@@ -74,6 +80,8 @@ func (shared TextboxEntryType) MarshalJSON() ([]byte, error) {
 		HighlightEndY:            shared.HighlightEndY,
 		IsHighlightActive:        shared.IsHighlightActive,
 		IsHighlightModeToggled:   shared.IsHighlightModeToggled,
+		IsWordWrapEnabled:        shared.IsWordWrapEnabled,
+		IsAutoIndentEnabled:      shared.IsAutoIndentEnabled,
 	})
 	if err != nil {
 		return nil, err
@@ -109,9 +117,14 @@ func NewTexboxEntry(existingTextboxEntry ...*TextboxEntryType) TextboxEntryType 
 	var textboxEntry TextboxEntryType
 	textboxEntry.BaseControlType = NewBaseControl()
 
+	// Initialize new fields with default values
+	textboxEntry.IsWordWrapEnabled = false
+	textboxEntry.IsAutoIndentEnabled = false
+
 	if existingTextboxEntry != nil {
 		textboxEntry.BaseControlType = existingTextboxEntry[0].BaseControlType
 		textboxEntry.HorizontalScrollbarAlias = existingTextboxEntry[0].HorizontalScrollbarAlias
+		textboxEntry.VerticalScrollbarAlias = existingTextboxEntry[0].VerticalScrollbarAlias
 		textboxEntry.TextData = existingTextboxEntry[0].TextData
 		textboxEntry.ViewportXLocation = existingTextboxEntry[0].ViewportXLocation
 		textboxEntry.ViewportYLocation = existingTextboxEntry[0].ViewportYLocation
@@ -123,6 +136,9 @@ func NewTexboxEntry(existingTextboxEntry ...*TextboxEntryType) TextboxEntryType 
 		textboxEntry.HighlightEndY = existingTextboxEntry[0].HighlightEndY
 		textboxEntry.IsHighlightActive = existingTextboxEntry[0].IsHighlightActive
 		textboxEntry.IsHighlightModeToggled = existingTextboxEntry[0].IsHighlightModeToggled
+
+		textboxEntry.IsWordWrapEnabled = existingTextboxEntry[0].IsWordWrapEnabled
+		textboxEntry.IsAutoIndentEnabled = existingTextboxEntry[0].IsAutoIndentEnabled
 	}
 	return textboxEntry
 }
@@ -149,7 +165,9 @@ func IsTextboxEntryEqual(sourceTextboxEntry *TextboxEntryType, targetTextboxEntr
 		sourceTextboxEntry.HighlightEndX == targetTextboxEntry.HighlightEndX &&
 		sourceTextboxEntry.HighlightEndY == targetTextboxEntry.HighlightEndY &&
 		sourceTextboxEntry.IsHighlightActive == targetTextboxEntry.IsHighlightActive &&
-		sourceTextboxEntry.IsHighlightModeToggled == targetTextboxEntry.IsHighlightModeToggled
+		sourceTextboxEntry.IsHighlightModeToggled == targetTextboxEntry.IsHighlightModeToggled &&
+		sourceTextboxEntry.IsWordWrapEnabled == targetTextboxEntry.IsWordWrapEnabled &&
+		sourceTextboxEntry.IsAutoIndentEnabled == targetTextboxEntry.IsAutoIndentEnabled
 }
 
 /*

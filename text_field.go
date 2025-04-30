@@ -1,6 +1,7 @@
 package consolizer
 
 import (
+	"github.com/atotto/clipboard"
 	"github.com/supercom32/consolizer/memory"
 	"github.com/supercom32/consolizer/stringformat"
 	"strings"
@@ -364,23 +365,58 @@ func (shared *textFieldType) updateKeyboardEventManually(layerAlias string, text
 		textFieldEntry.IsHighlightActive = true
 		isScreenUpdateRequired = true
 
-	case "ctrl+c":
+	case "ctrl+c", "ctrl+insert": // Copy
 		// Copy highlighted text
 		if textFieldEntry.IsHighlightActive {
-			// TODO: Implement clipboard functionality
-			// highlightedText := textFieldEntry.CurrentValue[textFieldEntry.HighlightStart:textFieldEntry.HighlightEnd+1]
-		}
-
-	case "ctrl+x":
-		// Cut highlighted text
-		if textFieldEntry.IsHighlightActive {
-			// TODO: Implement clipboard functionality
-			// highlightedText := textFieldEntry.CurrentValue[textFieldEntry.HighlightStart:textFieldEntry.HighlightEnd+1]
 			start := textFieldEntry.HighlightStart
 			end := textFieldEntry.HighlightEnd
 			if start > end {
 				start, end = end, start
 			}
+
+			// Ensure we don't exceed array bounds
+			if end >= len(textFieldEntry.CurrentValue) {
+				end = len(textFieldEntry.CurrentValue) - 1
+			}
+			if start < 0 {
+				start = 0
+			}
+
+			highlightedText := string(textFieldEntry.CurrentValue[start : end+1])
+			err := clipboard.WriteAll(highlightedText)
+			if err != nil {
+				panic(1)
+				// Handle clipboard write error (could log it)
+				// fmt.Println("Clipboard write error:", err)
+			}
+		}
+		isScreenUpdateRequired = true
+
+	case "ctrl+x": // Cut
+		// Cut highlighted text
+		if textFieldEntry.IsHighlightActive {
+			start := textFieldEntry.HighlightStart
+			end := textFieldEntry.HighlightEnd
+			if start > end {
+				start, end = end, start
+			}
+
+			// Ensure we don't exceed array bounds
+			if end >= len(textFieldEntry.CurrentValue) {
+				end = len(textFieldEntry.CurrentValue) - 1
+			}
+			if start < 0 {
+				start = 0
+			}
+
+			// Copy to clipboard before deleting
+			highlightedText := string(textFieldEntry.CurrentValue[start : end+1])
+			err := clipboard.WriteAll(highlightedText)
+			if err != nil {
+				// Handle clipboard write error (could log it)
+				// fmt.Println("Clipboard write error:", err)
+			}
+
 			// Include the cursor position in the deletion
 			if textFieldEntry.CursorPosition > end {
 				end = textFieldEntry.CursorPosition
@@ -399,6 +435,60 @@ func (shared *textFieldType) updateKeyboardEventManually(layerAlias string, text
 			textFieldEntry.IsHighlightActive = false
 			isScreenUpdateRequired = true
 		}
+
+	case "ctrl+v", "shift+insert": // Paste
+		// If there's highlighted text, delete it first
+		if textFieldEntry.IsHighlightActive {
+			start := textFieldEntry.HighlightStart
+			end := textFieldEntry.HighlightEnd
+			if start > end {
+				start, end = end, start
+			}
+
+			// Include the cursor position in the deletion
+			if textFieldEntry.CursorPosition > end {
+				end = textFieldEntry.CursorPosition
+			} else if textFieldEntry.CursorPosition < start {
+				start = textFieldEntry.CursorPosition
+			}
+
+			// Preserve the trailing blank character
+			if end == len(textFieldEntry.CurrentValue)-1 {
+				// If we're deleting up to the end, keep the trailing blank
+				textFieldEntry.CurrentValue = append(textFieldEntry.CurrentValue[:start], ' ')
+			} else {
+				// Otherwise, delete the highlighted text
+				textFieldEntry.CurrentValue = append(textFieldEntry.CurrentValue[:start], textFieldEntry.CurrentValue[end+1:]...)
+			}
+			textFieldEntry.CursorPosition = start
+			textFieldEntry.IsHighlightActive = false
+		}
+
+		// Get text from clipboard
+		clipboardText, err := clipboard.ReadAll()
+		if err != nil {
+			// Handle clipboard read error (could log it)
+			// fmt.Println("Clipboard read error:", err)
+		} else {
+			// Insert clipboard text at cursor position
+			// For text fields, we only insert the first line (no newlines)
+			clipboardLine := strings.Split(clipboardText, "\n")[0]
+
+			// Check if adding the clipboard text would exceed the max length
+			if len(textFieldEntry.CurrentValue)+len(clipboardLine) <= textFieldEntry.MaxLengthAllowed+1 {
+				// Insert the clipboard text at the cursor position
+				newValue := append([]rune{}, textFieldEntry.CurrentValue[:textFieldEntry.CursorPosition]...)
+				newValue = append(newValue, []rune(clipboardLine)...)
+				newValue = append(newValue, textFieldEntry.CurrentValue[textFieldEntry.CursorPosition:]...)
+				textFieldEntry.CurrentValue = newValue
+
+				// Move cursor to after the inserted text
+				textFieldEntry.CursorPosition += len(clipboardLine)
+				shared.updateTextFieldCursor(textFieldEntry)
+				shared.updateTextFieldViewport(textFieldEntry)
+			}
+		}
+		isScreenUpdateRequired = true
 
 	case "delete", "shift+delete":
 		if textFieldEntry.IsHighlightActive {

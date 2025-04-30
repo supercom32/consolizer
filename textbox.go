@@ -2,10 +2,12 @@ package consolizer
 
 import (
 	"fmt"
+	"github.com/atotto/clipboard"
 	"github.com/supercom32/consolizer/memory"
 	"github.com/supercom32/consolizer/stringformat"
 	"math"
 	"strings"
+	"unicode"
 
 	"github.com/supercom32/consolizer/constants"
 	"github.com/supercom32/consolizer/types"
@@ -150,6 +152,50 @@ func (shared *TextboxInstanceType) SetViewport(xLocation int, yLocation int) *Te
 }
 
 /*
+SetWordWrap allows you to enable or disable word wrapping for a textbox. If the textbox instance
+no longer exists, then no operation takes place. In addition, the following information should be noted:
+
+- When word wrapping is enabled, text will automatically wrap at word boundaries.
+- The horizontal scrollbar will be hidden when word wrapping is enabled.
+- Returns the textbox instance for method chaining.
+*/
+func (shared *TextboxInstanceType) SetWordWrap(enabled bool) *TextboxInstanceType {
+	if Textboxes.IsExists(shared.layerAlias, shared.controlAlias) {
+		textboxEntry := Textboxes.Get(shared.layerAlias, shared.controlAlias)
+		textboxEntry.IsWordWrapEnabled = enabled
+
+		// Update scrollbar visibility
+		if enabled {
+			// Hide horizontal scrollbar when word wrap is enabled
+			hScrollBarEntry := ScrollBars.Get(shared.layerAlias, textboxEntry.HorizontalScrollbarAlias)
+			if hScrollBarEntry != nil {
+				hScrollBarEntry.IsVisible = false
+				hScrollBarEntry.IsEnabled = false
+			}
+		} else {
+			// Show horizontal scrollbar when word wrap is disabled (if needed)
+			textbox.setTextboxMaxScrollBarValues(shared.layerAlias, shared.controlAlias)
+		}
+	}
+	return shared
+}
+
+/*
+SetAutoIndent allows you to enable or disable auto-indentation for a textbox. If the textbox instance
+no longer exists, then no operation takes place. In addition, the following information should be noted:
+
+- When auto-indent is enabled, new lines will inherit the indentation of the previous line.
+- Returns the textbox instance for method chaining.
+*/
+func (shared *TextboxInstanceType) SetAutoIndent(enabled bool) *TextboxInstanceType {
+	if Textboxes.IsExists(shared.layerAlias, shared.controlAlias) {
+		textboxEntry := Textboxes.Get(shared.layerAlias, shared.controlAlias)
+		textboxEntry.IsAutoIndentEnabled = enabled
+	}
+	return shared
+}
+
+/*
 getTextboxClickCoordinates converts a cell ID to x and y coordinates within a textbox.
 The conversion is based on the table width, where:
 - x coordinate is calculated as cellId modulo tableWidth
@@ -179,6 +225,7 @@ the following information should be noted:
 - The text after the insertion point is shifted right.
 - The cursor position is updated to after the inserted character.
 */
+
 func (shared *textboxType) insertCharacterUsingAbsoluteCoordinates(textboxEntry *types.TextboxEntryType, xLocation int, yLocation int, characterToInsert rune) {
 	stringDataSuffixAfterInsert := textboxEntry.TextData[yLocation][xLocation:len(textboxEntry.TextData[yLocation])]
 	textboxEntry.TextData[yLocation] = append([]rune{}, textboxEntry.TextData[yLocation][:xLocation]...)
@@ -201,12 +248,15 @@ func (shared *textboxType) backspaceCharacterUsingRelativeCoordinates(textboxEnt
 		return
 	} else if textboxEntry.CursorXLocation == 0 {
 		// If at the beginning of a line, move cursor the previous line ending.
+
 		textboxEntry.CursorXLocation = len(textboxEntry.TextData[textboxEntry.CursorYLocation-1]) - 1
 		shared.moveRemainingTextToPreviousLine(textboxEntry, textboxEntry.CursorYLocation)
 		textboxEntry.CursorYLocation--
 		return
 	}
+
 	// Otherwise, just backspace a single character.
+
 	textboxEntry.CursorXLocation--
 	shared.deleteCharacterUsingAbsoluteCoordinates(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
 }
@@ -224,17 +274,24 @@ func (shared *textboxType) deleteCharacterUsingAbsoluteCoordinates(textboxEntry 
 	if yLocation >= len(textboxEntry.TextData) {
 		return
 	}
+
 	// If cursor xLocation is at/out of bounds, move previous line to current line and position.
 	if xLocation >= len(textboxEntry.TextData[yLocation])-1 {
 		if len(textboxEntry.TextData)-1 == yLocation && (len(textboxEntry.TextData[yLocation]) <= 1 || xLocation >= len(textboxEntry.TextData[yLocation])-1) {
 			return
 		}
+
+		// This is a complex operation that joins lines
+
 		textboxEntry.TextData[yLocation] = textboxEntry.TextData[yLocation][:len(textboxEntry.TextData[yLocation])-1]
 		textboxEntry.TextData[yLocation] = append(textboxEntry.TextData[yLocation], textboxEntry.TextData[yLocation+1]...)
 		copy(textboxEntry.TextData[yLocation+1:], textboxEntry.TextData[yLocation+2:])
 		textboxEntry.TextData = textboxEntry.TextData[:len(textboxEntry.TextData)-1]
 		return
 	}
+
+	// Record the character being deleted for undo
+
 	// Remove the current character.
 	stringDataSuffixAfterInsert := textboxEntry.TextData[yLocation][xLocation+1 : len(textboxEntry.TextData[yLocation])]
 	textboxEntry.TextData[yLocation] = append([]rune{}, textboxEntry.TextData[yLocation][:xLocation]...)
@@ -302,19 +359,55 @@ the following information should be noted:
 - Maintains proper text formatting and cursor visibility.
 */
 func (shared *textboxType) moveTextAfterCursorToNextLine(textboxEntry *types.TextboxEntryType, yLocation int) {
+	// Record operation for undo - this is a complex operation that splits a line
+	lineText := make([]rune, len(textboxEntry.TextData[yLocation]))
+	copy(lineText, textboxEntry.TextData[yLocation])
+
 	// Create a new line with our default ' ' rune.
 	textboxEntry.TextData = shared.insertLine(textboxEntry.TextData, []rune{' '}, yLocation+1)
+
 	// Copy everything past our cursor on the current line.
 	charactersToCopy := textboxEntry.TextData[textboxEntry.CursorYLocation][textboxEntry.CursorXLocation:]
 	copyOfCharacters := make([]rune, len(textboxEntry.TextData[textboxEntry.CursorYLocation][textboxEntry.CursorXLocation:]))
 	copy(copyOfCharacters, charactersToCopy)
+
 	// Make our current line = everything up to our cursor + ' ' ending.
 	textboxEntry.TextData[textboxEntry.CursorYLocation] = append(textboxEntry.TextData[textboxEntry.CursorYLocation][:textboxEntry.CursorXLocation], ' ')
-	// Paste the copied text to our new line.
+
+	// Move to the next line
 	textboxEntry.CursorYLocation++
 	textboxEntry.CursorXLocation = 0
-	textboxEntry.TextData[textboxEntry.CursorYLocation] = make([]rune, len(copyOfCharacters))
-	copy(textboxEntry.TextData[textboxEntry.CursorYLocation], copyOfCharacters)
+
+	// Apply auto-indentation if enabled
+	if textboxEntry.IsAutoIndentEnabled {
+		// Get the indentation from the previous line
+		indentation := []rune{}
+		for _, char := range textboxEntry.TextData[textboxEntry.CursorYLocation-1] {
+			if unicode.IsSpace(char) {
+				indentation = append(indentation, char)
+			} else {
+				break
+			}
+		}
+
+		// Apply the indentation to the new line
+		if len(indentation) > 0 {
+			// Create a new line with indentation + copied text
+			newLine := make([]rune, len(indentation)+len(copyOfCharacters))
+			copy(newLine, indentation)
+			copy(newLine[len(indentation):], copyOfCharacters)
+			textboxEntry.TextData[textboxEntry.CursorYLocation] = newLine
+			textboxEntry.CursorXLocation = len(indentation)
+		} else {
+			// No indentation, just use the copied text
+			textboxEntry.TextData[textboxEntry.CursorYLocation] = make([]rune, len(copyOfCharacters))
+			copy(textboxEntry.TextData[textboxEntry.CursorYLocation], copyOfCharacters)
+		}
+	} else {
+		// No auto-indent, just paste the copied text
+		textboxEntry.TextData[textboxEntry.CursorYLocation] = make([]rune, len(copyOfCharacters))
+		copy(textboxEntry.TextData[textboxEntry.CursorYLocation], copyOfCharacters)
+	}
 }
 
 /*
@@ -504,6 +597,72 @@ information should be noted:
 - Manages cursor and highlight rendering.
 - Adjusts the viewport to show the correct portion of text.
 */
+/*
+wrapTextToWidth wraps text to fit within a specified width.
+It breaks lines at word boundaries when possible.
+*/
+func (shared *textboxType) wrapTextToWidth(text [][]rune, width int) [][]rune {
+	if width <= 0 {
+		return text
+	}
+
+	result := make([][]rune, 0)
+
+	for _, line := range text {
+		if len(line) <= width {
+			// Line fits, no wrapping needed
+			result = append(result, line)
+			continue
+		}
+
+		// Line needs wrapping
+		currentPos := 0
+		for currentPos < len(line) {
+			// Determine end position for this segment
+			endPos := currentPos + width
+			if endPos > len(line) {
+				endPos = len(line)
+			} else {
+				// Try to break at word boundary
+				for endPos > currentPos && !unicode.IsSpace(line[endPos-1]) {
+					// Look for a space to break at
+					foundSpace := false
+					for i := endPos - 1; i > currentPos && i > endPos-width/4; i-- {
+						if unicode.IsSpace(line[i]) {
+							endPos = i + 1 // Break after the space
+							foundSpace = true
+							break
+						}
+					}
+					if foundSpace {
+						break
+					} else {
+						// If no good break point, just use the full width
+						endPos = currentPos + width
+						if endPos > len(line) {
+							endPos = len(line)
+						}
+						break
+					}
+				}
+			}
+
+			// Add this segment as a new line
+			segment := make([]rune, endPos-currentPos)
+			copy(segment, line[currentPos:endPos])
+			result = append(result, segment)
+
+			// Move to next segment, skipping spaces at the beginning
+			currentPos = endPos
+			for currentPos < len(line) && unicode.IsSpace(line[currentPos]) {
+				currentPos++
+			}
+		}
+	}
+
+	return result
+}
+
 func (shared *textboxType) drawTextbox(layerEntry *types.LayerEntryType, textboxAlias string) {
 	t := Textboxes.Get(layerEntry.LayerAlias, textboxAlias)
 	attributeEntry := types.NewAttributeEntry()
@@ -516,28 +675,39 @@ func (shared *textboxType) drawTextbox(layerEntry *types.LayerEntryType, textbox
 	attributeEntry.CellType = constants.CellTypeTextbox
 	fillArea(layerEntry, attributeEntry, " ", t.XLocation, t.YLocation, t.Width, t.Height, t.ViewportYLocation)
 	attributeEntry.CellControlAlias = textboxAlias
+
+	// Apply word wrapping if enabled
+	var displayText [][]rune
+	if t.IsWordWrapEnabled {
+		displayText = shared.wrapTextToWidth(t.TextData, t.Width)
+	} else {
+		displayText = t.TextData
+	}
+
 	for currentLine := 0; currentLine < t.Height; currentLine++ {
 		var arrayOfRunes []rune
-		if t.ViewportYLocation+currentLine < len(t.TextData) && t.ViewportYLocation+currentLine >= 0 {
-			arrayOfRunes = t.TextData[t.ViewportYLocation+currentLine]
-			if t.ViewportXLocation < len(arrayOfRunes) && t.ViewportXLocation >= 0 {
-				if t.ViewportXLocation+t.Width < len(arrayOfRunes) {
-					arrayOfRunes = arrayOfRunes[t.ViewportXLocation : t.ViewportXLocation+t.Width]
+		if t.ViewportYLocation+currentLine < len(displayText) && t.ViewportYLocation+currentLine >= 0 {
+			arrayOfRunes = displayText[t.ViewportYLocation+currentLine]
+			if !t.IsWordWrapEnabled {
+				// Only apply horizontal scrolling if word wrap is disabled
+				if t.ViewportXLocation < len(arrayOfRunes) && t.ViewportXLocation >= 0 {
+					if t.ViewportXLocation+t.Width < len(arrayOfRunes) {
+						arrayOfRunes = arrayOfRunes[t.ViewportXLocation : t.ViewportXLocation+t.Width]
+					} else {
+						arrayOfRunes = arrayOfRunes[t.ViewportXLocation:]
+					}
 				} else {
-					arrayOfRunes = arrayOfRunes[t.ViewportXLocation:]
+					// If scrolled too far right and there are no column text to print, just show blanks.
+					// If scrolled too far left (negative value) then show blanks. Note: This case should never happen really.
+					arrayOfRunes = []rune{}
 				}
-			} else {
-				// If scrolled too far right and there are no column text to print, just show blanks.
-				// If scrolled too far left (negative value) then show blanks. Note: This case should never happen really.
-				arrayOfRunes = []rune{}
 			}
-			// arrayOfRunes = stringformat.GetFormattedRuneArray(arrayOfRunes, t.Width, constants.AlignmentLeft)
+
 			arrayOfRunes = stringformat.GetMaxCharactersThatFitInStringSize(arrayOfRunes, t.Width)
 			shared.printControlText(layerEntry, textboxAlias, t.StyleEntry, attributeEntry, t.XLocation, t.YLocation+currentLine, arrayOfRunes, t.ViewportYLocation+currentLine, t.ViewportXLocation, t.CursorXLocation, t.CursorYLocation)
 		} else {
 			// If scrolled too far down and there are no more rows to print, just show blanks.
 			// If scrolled too far up and there are no rows to print, just print blanks. Note: This case should never happen really.
-			// arrayOfRunes = stringformat.GetFormattedRuneArray([]rune{}, t.Width, constants.AlignmentLeft)
 			shared.printControlText(layerEntry, textboxAlias, t.StyleEntry, attributeEntry, t.XLocation, t.YLocation+currentLine, arrayOfRunes, t.ViewportYLocation+currentLine, t.ViewportXLocation, t.CursorXLocation, t.CursorYLocation)
 		}
 	}
@@ -877,6 +1047,87 @@ func (shared *textboxType) UpdateKeyboardEventManually(layerAlias string, textbo
 
 	// Handle cursor movement and text modification
 	switch keystrokeAsString {
+	// Clipboard operations
+	case "ctrl+c", "ctrl+insert": // Copy
+		if textboxEntry.IsHighlightActive {
+			// Get highlighted text and copy to clipboard
+			clipboardText := shared.getHighlightedText(textboxEntry)
+			err := clipboard.WriteAll(clipboardText)
+			if err != nil {
+				RestoreTerminalSettings()
+				fmt.Println("Clipboard write error:", err)
+				panic(err)
+				// Handle clipboard write error (could log it)
+				// fmt.Println("Clipboard write error:", err)
+			}
+		}
+		isScreenUpdateRequired = true
+
+	case "ctrl+x": // Cut
+		if textboxEntry.IsHighlightActive {
+			// Get highlighted text, copy to clipboard, then delete
+			clipboardText := shared.getHighlightedText(textboxEntry)
+			err := clipboard.WriteAll(clipboardText)
+			if err != nil {
+				// Handle clipboard write error (could log it)
+				// fmt.Println("Clipboard write error:", err)
+			}
+			shared.deleteHighlightedText(textboxEntry)
+			textboxEntry.IsHighlightActive = false
+		}
+		isScreenUpdateRequired = true
+
+	case "ctrl+v", "shift+insert": // Paste
+		if textboxEntry.IsHighlightActive {
+			shared.deleteHighlightedText(textboxEntry)
+			textboxEntry.IsHighlightActive = false
+		}
+		clipboardText, err := clipboard.ReadAll()
+		if err != nil {
+			// Handle clipboard read error (could log it)
+			// fmt.Println("Clipboard read error:", err)
+		} else {
+			for _, char := range clipboardText {
+				if char == '\n' {
+					shared.moveTextAfterCursorToNextLine(textboxEntry, textboxEntry.CursorYLocation)
+				} else {
+					shared.insertCharacterUsingAbsoluteCoordinates(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation, char)
+				}
+			}
+		}
+		isScreenUpdateRequired = true
+
+	case "ctrl+left", "ctrl+shift+left": // Word-based navigation left
+		if textboxEntry.IsHighlightModeToggled == false {
+			textboxEntry.IsHighlightActive = false
+		}
+		// Move cursor to beginning of current/previous word
+		if textboxEntry.CursorYLocation < len(textboxEntry.TextData) {
+			currentLine := textboxEntry.TextData[textboxEntry.CursorYLocation]
+			pos := textboxEntry.CursorXLocation
+
+			// If at the beginning of the line and not the first line, move to end of previous line
+			if pos == 0 && textboxEntry.CursorYLocation > 0 {
+				textboxEntry.CursorYLocation--
+				textboxEntry.CursorXLocation = len(textboxEntry.TextData[textboxEntry.CursorYLocation]) - 1
+				isScreenUpdateRequired = true
+				break
+			}
+
+			// Skip spaces backward
+			for pos > 0 && unicode.IsSpace(currentLine[pos-1]) {
+				pos--
+			}
+
+			// Skip word backward
+			for pos > 0 && !unicode.IsSpace(currentLine[pos-1]) {
+				pos--
+			}
+
+			textboxEntry.CursorXLocation = pos
+		}
+		isScreenUpdateRequired = true
+
 	case "left", "shift+left":
 		if textboxEntry.IsHighlightModeToggled == false {
 			textboxEntry.IsHighlightActive = false
@@ -889,6 +1140,38 @@ func (shared *textboxType) UpdateKeyboardEventManually(layerAlias string, textbo
 			} else {
 				textboxEntry.CursorXLocation = 0
 			}
+		}
+		isScreenUpdateRequired = true
+
+	case "ctrl+right", "ctrl+shift+right": // Word-based navigation right
+		if textboxEntry.IsHighlightModeToggled == false {
+			textboxEntry.IsHighlightActive = false
+		}
+		// Move cursor to end of current/next word
+		if textboxEntry.CursorYLocation < len(textboxEntry.TextData) {
+			currentLine := textboxEntry.TextData[textboxEntry.CursorYLocation]
+			pos := textboxEntry.CursorXLocation
+			lineLen := len(currentLine)
+
+			// If at the end of the line and not the last line, move to beginning of next line
+			if pos >= lineLen-1 && textboxEntry.CursorYLocation < len(textboxEntry.TextData)-1 {
+				textboxEntry.CursorYLocation++
+				textboxEntry.CursorXLocation = 0
+				isScreenUpdateRequired = true
+				break
+			}
+
+			// Skip current word
+			for pos < lineLen-1 && !unicode.IsSpace(currentLine[pos]) {
+				pos++
+			}
+
+			// Skip spaces forward
+			for pos < lineLen-1 && unicode.IsSpace(currentLine[pos]) {
+				pos++
+			}
+
+			textboxEntry.CursorXLocation = pos
 		}
 		isScreenUpdateRequired = true
 
@@ -933,14 +1216,51 @@ func (shared *textboxType) UpdateKeyboardEventManually(layerAlias string, textbo
 		}
 		isScreenUpdateRequired = true
 
-	case "home", "shift+home":
+	case "ctrl+w": // Toggle word wrap
+		textboxEntry.IsWordWrapEnabled = !textboxEntry.IsWordWrapEnabled
+
+		// Update scrollbar visibility
+		if textboxEntry.IsWordWrapEnabled {
+			// Hide horizontal scrollbar when word wrap is enabled
+			hScrollBarEntry := ScrollBars.Get(layerAlias, textboxEntry.HorizontalScrollbarAlias)
+			if hScrollBarEntry != nil {
+				hScrollBarEntry.IsVisible = false
+				hScrollBarEntry.IsEnabled = false
+			}
+		} else {
+			// Show horizontal scrollbar when word wrap is disabled (if needed)
+			shared.setTextboxMaxScrollBarValues(layerAlias, textboxAlias)
+		}
+		isScreenUpdateRequired = true
+
+	case "ctrl+i": // Toggle auto-indent
+		textboxEntry.IsAutoIndentEnabled = !textboxEntry.IsAutoIndentEnabled
+		isScreenUpdateRequired = true
+
+	case "ctrl+home", "ctrl+shift+home": // Move to beginning of document
+		if textboxEntry.IsHighlightModeToggled == false {
+			textboxEntry.IsHighlightActive = false
+		}
+		textboxEntry.CursorYLocation = 0
+		textboxEntry.CursorXLocation = 0
+		isScreenUpdateRequired = true
+
+	case "ctrl+end", "ctrl+shift+end": // Move to end of document
+		if textboxEntry.IsHighlightModeToggled == false {
+			textboxEntry.IsHighlightActive = false
+		}
+		textboxEntry.CursorYLocation = len(textboxEntry.TextData) - 1
+		textboxEntry.CursorXLocation = len(textboxEntry.TextData[textboxEntry.CursorYLocation]) - 1
+		isScreenUpdateRequired = true
+
+	case "home", "shift+home": // Move to beginning of line
 		if textboxEntry.IsHighlightModeToggled == false {
 			textboxEntry.IsHighlightActive = false
 		}
 		textboxEntry.CursorXLocation = 0
 		isScreenUpdateRequired = true
 
-	case "end", "shift+end":
+	case "end", "shift+end": // Move to end of line
 		if textboxEntry.IsHighlightModeToggled == false {
 			textboxEntry.IsHighlightActive = false
 		}
@@ -1047,6 +1367,89 @@ the following information should be noted:
 - Handles both single-line and multi-line highlights.
 - Updates the cursor position to the start of the deleted text.
 */
+/*
+getHighlightedText returns the text that is currently highlighted in the textbox.
+This is used for clipboard operations like copy and cut.
+*/
+func (shared *textboxType) getHighlightedText(textboxEntry *types.TextboxEntryType) string {
+	if !textboxEntry.IsHighlightActive {
+		return ""
+	}
+
+	// Determine the correct start and end positions for highlighting
+	var highlightStartX, highlightEndX, highlightStartY, highlightEndY int
+
+	// If cursor is to the left of the start position
+	if textboxEntry.CursorYLocation < textboxEntry.HighlightStartY ||
+		(textboxEntry.CursorYLocation == textboxEntry.HighlightStartY &&
+			textboxEntry.CursorXLocation < textboxEntry.HighlightStartX) {
+		// Cursor is before the highlight start, so swap the positions
+		highlightStartX = textboxEntry.CursorXLocation
+		highlightStartY = textboxEntry.CursorYLocation
+		highlightEndX = textboxEntry.HighlightStartX
+		highlightEndY = textboxEntry.HighlightStartY
+	} else {
+		// Cursor is after or at the highlight start
+		highlightStartX = textboxEntry.HighlightStartX
+		highlightStartY = textboxEntry.HighlightStartY
+		highlightEndX = textboxEntry.CursorXLocation
+		highlightEndY = textboxEntry.CursorYLocation
+	}
+
+	// Ensure we don't exceed array bounds
+	if highlightStartY >= len(textboxEntry.TextData) {
+		highlightStartY = len(textboxEntry.TextData) - 1
+	}
+	if highlightEndY >= len(textboxEntry.TextData) {
+		highlightEndY = len(textboxEntry.TextData) - 1
+	}
+
+	// Build the highlighted text
+	var result strings.Builder
+
+	// If the highlight is on a single line
+	if highlightStartY == highlightEndY {
+		// Ensure we don't exceed line bounds
+		if highlightStartX >= len(textboxEntry.TextData[highlightStartY]) {
+			highlightStartX = len(textboxEntry.TextData[highlightStartY]) - 1
+		}
+		if highlightEndX >= len(textboxEntry.TextData[highlightStartY]) {
+			highlightEndX = len(textboxEntry.TextData[highlightStartY]) - 1
+		}
+
+		// Get the highlighted portion of the line
+		line := textboxEntry.TextData[highlightStartY]
+		if highlightStartX < len(line) && highlightEndX < len(line) {
+			result.WriteString(string(line[highlightStartX : highlightEndX+1]))
+		}
+	} else {
+		// Multi-line highlight
+
+		// First line
+		if highlightStartY < len(textboxEntry.TextData) && highlightStartX < len(textboxEntry.TextData[highlightStartY]) {
+			result.WriteString(string(textboxEntry.TextData[highlightStartY][highlightStartX:]))
+			result.WriteString("\n")
+		}
+
+		// Middle lines
+		for y := highlightStartY + 1; y < highlightEndY; y++ {
+			if y < len(textboxEntry.TextData) {
+				result.WriteString(string(textboxEntry.TextData[y]))
+				result.WriteString("\n")
+			}
+		}
+
+		// Last line
+		if highlightEndY < len(textboxEntry.TextData) && highlightEndY > highlightStartY {
+			if highlightEndX+1 <= len(textboxEntry.TextData[highlightEndY]) {
+				result.WriteString(string(textboxEntry.TextData[highlightEndY][:highlightEndX+1]))
+			}
+		}
+	}
+
+	return result.String()
+}
+
 func (shared *textboxType) deleteHighlightedText(textboxEntry *types.TextboxEntryType) {
 	// Determine the correct start and end positions for highlighting
 	var highlightStartX, highlightEndX, highlightStartY, highlightEndY int
