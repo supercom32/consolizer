@@ -53,8 +53,8 @@ func DeleteAllViewportsFromLayer(layerAlias string) {
 	}
 }
 
-// Print adds text to the viewport.
-func (shared *ViewportInstanceType) Print(text string) *ViewportInstanceType {
+// Println adds text to the viewport followed by a new line.
+func (shared *ViewportInstanceType) Println(text string) *ViewportInstanceType {
 	viewportEntry := GetViewport(shared.layerAlias, shared.controlAlias)
 	if viewportEntry == nil {
 		return shared
@@ -62,6 +62,29 @@ func (shared *ViewportInstanceType) Print(text string) *ViewportInstanceType {
 
 	// Process the text and add it to the viewport
 	viewport.printText(viewportEntry, text)
+
+	// Update scrollbars
+	viewport.setViewportMaxScrollBarValues(shared.layerAlias, shared.controlAlias)
+	viewport.updateScrollbarBasedOnViewportViewport(shared.layerAlias, shared.controlAlias)
+
+	return shared
+}
+
+// Print adds text to the viewport by appending to the last line.
+// If the text contains control characters like \n, it will start a new line.
+func (shared *ViewportInstanceType) Print(text string) *ViewportInstanceType {
+	viewportEntry := GetViewport(shared.layerAlias, shared.controlAlias)
+	if viewportEntry == nil {
+		return shared
+	}
+
+	// If there's no text data yet, just use printText
+	if len(viewportEntry.TextData) == 0 {
+		viewport.printText(viewportEntry, text)
+	} else {
+		// Process the text to handle control characters
+		viewport.appendToLastLine(viewportEntry, text)
+	}
 
 	// Update scrollbars
 	viewport.setViewportMaxScrollBarValues(shared.layerAlias, shared.controlAlias)
@@ -252,6 +275,65 @@ func (shared *viewportType) trimToVisible(viewportEntry *types.ViewportEntryType
 		// Keep only the most recent lines that fit in the viewport
 		viewportEntry.TextData = viewportEntry.TextData[len(viewportEntry.TextData)-effectiveHeight:]
 		viewportEntry.ViewportYLocation = 0
+	}
+}
+
+// appendToLastLine appends text to the last line of the viewport.
+// If the text contains control characters like \n, it will start a new line.
+func (shared *viewportType) appendToLastLine(viewportEntry *types.ViewportEntryType, textToPrint string) {
+	// Get the effective width (accounting for border if present)
+	effectiveWidth := viewportEntry.Width
+	if viewportEntry.IsBorderDrawn {
+		effectiveWidth -= 2
+	}
+
+	// Get the runes from the string
+	arrayOfRunes := stringformat.GetRunesFromString(textToPrint)
+
+	// Process each character
+	currentLine := viewportEntry.TextData[len(viewportEntry.TextData)-1]
+
+	for i := 0; i < len(arrayOfRunes); i++ {
+		currentChar := string(arrayOfRunes[i])
+
+		// Handle newline character
+		if currentChar == "\n" {
+			// Add the current line to the viewport
+			viewportEntry.TextData[len(viewportEntry.TextData)-1] = currentLine
+			// Start a new line
+			currentLine = []rune{}
+			viewportEntry.TextData = append(viewportEntry.TextData, currentLine)
+		} else {
+			// Append the character to the current line
+			currentLine = append(currentLine, arrayOfRunes[i])
+
+			// Check if we need to wrap to the next line (only if lines should be wrapped)
+			if viewportEntry.IsLinesWrapped && len(currentLine) >= effectiveWidth {
+				// Update the last line
+				viewportEntry.TextData[len(viewportEntry.TextData)-1] = currentLine
+				// Start a new line
+				currentLine = []rune{}
+				viewportEntry.TextData = append(viewportEntry.TextData, currentLine)
+			}
+		}
+	}
+
+	// Update the last line with any remaining characters
+	if len(currentLine) > 0 {
+		viewportEntry.TextData[len(viewportEntry.TextData)-1] = currentLine
+	}
+
+	// Trim history if needed
+	shared.trimHistory(viewportEntry)
+
+	// Update viewport position to show the latest content
+	if len(viewportEntry.TextData) > viewportEntry.Height {
+		if viewportEntry.IsHistoryEnabled {
+			viewportEntry.ViewportYLocation = len(viewportEntry.TextData) - viewportEntry.Height
+		} else {
+			// If history is disabled, keep only what's visible
+			shared.trimToVisible(viewportEntry)
+		}
 	}
 }
 

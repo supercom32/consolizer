@@ -199,7 +199,12 @@ func drawProgressBar(layerEntry *types.LayerEntryType, progressBarAlias string, 
 	}
 
 	// Fill the entire area with the unfilled pattern
-	fillArea(layerEntry, attributeEntry, string(styleEntry.ProgressBar.UnfilledPattern), xLocation, yLocation, width, height, constants.CellTypeProgressBar)
+	unfilledPattern := styleEntry.ProgressBar.UnfilledPattern
+	// If in high-res mode do not use a pattern and simply use a block character since it is the only valid one.
+	if styleEntry.ProgressBar.IsHighResolution {
+		unfilledPattern = constants.CharBlockSolid
+	}
+	fillArea(layerEntry, attributeEntry, string(unfilledPattern), xLocation, yLocation, width, height, constants.CellTypeProgressBar)
 
 	// Calculate and draw the filled portion based on orientation
 	attributeEntry.ForegroundColor = styleEntry.ProgressBar.FilledForegroundColor
@@ -209,7 +214,7 @@ func drawProgressBar(layerEntry *types.LayerEntryType, progressBarAlias string, 
 	partialFillAttributeEntry := types.NewAttributeEntry(&attributeEntry)
 	partialFillAttributeEntry.ForegroundColor = styleEntry.ProgressBar.FilledForegroundColor
 	// Use the unfilled background color to avoid visible color differences for partial fill characters
-	partialFillAttributeEntry.BackgroundColor = styleEntry.ProgressBar.FilledBackgroundColor
+	partialFillAttributeEntry.BackgroundColor = styleEntry.ProgressBar.UnfilledBackgroundColor
 
 	if !isVertical {
 		// Horizontal progress bar (left to right)

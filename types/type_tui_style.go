@@ -191,15 +191,15 @@ func NewTuiStyleEntry(existingStyleEntry ...*TuiStyleEntryType) TuiStyleEntryTyp
 		styleEntry.Scrollbar.BackgroundColor = constants.AnsiColorByIndex[0]
 		styleEntry.Scrollbar.HandleColor = constants.AnsiColorByIndex[15]
 
-		styleEntry.ProgressBar.UnfilledPattern = constants.CharBlockSparce
+		styleEntry.ProgressBar.UnfilledPattern = ' '
 		styleEntry.ProgressBar.FilledPattern = constants.CharBlockSolid
-		styleEntry.ProgressBar.UnfilledForegroundColor = constants.AnsiColorByIndex[15]
+		styleEntry.ProgressBar.UnfilledForegroundColor = constants.AnsiColorByIndex[0]
 		styleEntry.ProgressBar.UnfilledBackgroundColor = constants.AnsiColorByIndex[0]
 		styleEntry.ProgressBar.FilledForegroundColor = constants.AnsiColorByIndex[3]
-		styleEntry.ProgressBar.FilledBackgroundColor = constants.AnsiColorByIndex[0]
+		styleEntry.ProgressBar.FilledBackgroundColor = constants.AnsiColorByIndex[3]
 		styleEntry.ProgressBar.TextForegroundColor = constants.AnsiColorByIndex[15]
 		styleEntry.ProgressBar.TextBackgroundColor = constants.AnsiColorByIndex[0]
-		styleEntry.ProgressBar.IsHighResolution = false
+		styleEntry.ProgressBar.IsHighResolution = true
 
 		styleEntry.TextField.ForegroundColor = constants.AnsiColorByIndex[15]
 		styleEntry.TextField.BackgroundColor = constants.AnsiColorByIndex[0]
