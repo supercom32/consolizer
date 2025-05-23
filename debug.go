@@ -5,6 +5,7 @@ import (
 	"github.com/supercom32/consolizer/stringformat"
 	"github.com/supercom32/filesystem"
 	"os"
+	"time"
 )
 
 func dumpScreenComparisons(originalScreenAsBase64 string, expectedScreenAsBase64 string) {
@@ -20,6 +21,7 @@ func LogInfo(info string, parameters ...any) {
 	//	stringToAppend = fmt.Sprintf(info, parameters...)
 	// } else {
 	stringToAppend = fmt.Sprintf(info, parameters...)
+	stringToAppend = time.Now().String() + " - " + stringToAppend
 	// }
 	filesystem.AppendLineToFile("/tmp/debug.log", stringToAppend+"\n", 0)
 }

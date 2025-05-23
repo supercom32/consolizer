@@ -132,6 +132,108 @@ func (shared *selectorInstanceType) setViewport(viewportPosition int) {
 }
 
 /*
+AddItem allows you to add a new selector item to the already loaded list of selector items. In addition,
+the following information should be noted:
+
+- The new item is added to the end of the list.
+- Both the alias and value for the item must be provided.
+- If the selector does not exist, no operation occurs.
+- Scrollbars are automatically enabled if items overflow the visible area.
+*/
+func (shared *selectorInstanceType) AddItem(selectionAlias string, selectionValue string) {
+	if Selectors.IsExists(shared.layerAlias, shared.controlAlias) {
+		validatorMenu(shared.layerAlias, shared.controlAlias)
+		menuEntry := Selectors.Get(shared.layerAlias, shared.controlAlias)
+		menuEntry.SelectionEntry.Add(selectionAlias, selectionValue)
+
+		// Update scrollbar if it exists
+		if menuEntry.ScrollbarAlias != "" && ScrollBars.IsExists(shared.layerAlias, menuEntry.ScrollbarAlias) {
+			scrollBarEntry := ScrollBars.Get(shared.layerAlias, menuEntry.ScrollbarAlias)
+			scrollBarMaxValue := len(menuEntry.SelectionEntry.SelectionValue) - (menuEntry.Height * menuEntry.NumberOfColumns) + 1
+
+			// Enable scrollbar if items overflow
+			if len(menuEntry.SelectionEntry.SelectionValue) > menuEntry.Height*menuEntry.NumberOfColumns &&
+				menuEntry.StyleEntry.Selector.TextAlignment != constants.AlignmentNoPadding {
+				scrollBarEntry.IsEnabled = true
+				scrollBarEntry.IsVisible = true
+			}
+
+			// Update max value
+			if scrollBarMaxValue < 0 {
+				scrollBarMaxValue = 0
+			}
+			scrollBarEntry.MaxScrollValue = scrollBarMaxValue
+		}
+	}
+}
+
+/*
+DeleteItem allows you to delete a selector item at a specified index from the list of selector items. In addition,
+the following information should be noted:
+
+- The index is zero-based.
+- If the index is out of range, no operation occurs.
+- If the selector does not exist, no operation occurs.
+- If the currently highlighted or selected item is deleted, the highlight/selection is adjusted.
+- Scrollbars are automatically disabled if items no longer overflow the visible area.
+*/
+func (shared *selectorInstanceType) DeleteItem(index int) {
+	if Selectors.IsExists(shared.layerAlias, shared.controlAlias) {
+		validatorMenu(shared.layerAlias, shared.controlAlias)
+		menuEntry := Selectors.Get(shared.layerAlias, shared.controlAlias)
+
+		// Check if index is valid
+		if index < 0 || index >= len(menuEntry.SelectionEntry.SelectionAlias) {
+			return
+		}
+
+		// Create new slices without the item at the specified index
+		newAliases := append(menuEntry.SelectionEntry.SelectionAlias[:index], menuEntry.SelectionEntry.SelectionAlias[index+1:]...)
+		newValues := append(menuEntry.SelectionEntry.SelectionValue[:index], menuEntry.SelectionEntry.SelectionValue[index+1:]...)
+
+		// Update the selection entry
+		menuEntry.SelectionEntry.SelectionAlias = newAliases
+		menuEntry.SelectionEntry.SelectionValue = newValues
+
+		// Adjust highlighted and selected items if necessary
+		if menuEntry.ItemHighlighted >= index {
+			if menuEntry.ItemHighlighted > 0 {
+				menuEntry.ItemHighlighted--
+			}
+		}
+		if menuEntry.ItemSelected >= index {
+			if menuEntry.ItemSelected > 0 {
+				menuEntry.ItemSelected--
+			}
+		}
+
+		// Update scrollbar if it exists
+		if menuEntry.ScrollbarAlias != "" && ScrollBars.IsExists(shared.layerAlias, menuEntry.ScrollbarAlias) {
+			scrollBarEntry := ScrollBars.Get(shared.layerAlias, menuEntry.ScrollbarAlias)
+
+			// Disable scrollbar if items no longer overflow
+			if len(menuEntry.SelectionEntry.SelectionValue) <= menuEntry.Height*menuEntry.NumberOfColumns ||
+				menuEntry.StyleEntry.Selector.TextAlignment == constants.AlignmentNoPadding {
+				scrollBarEntry.IsEnabled = false
+				scrollBarEntry.IsVisible = false
+			} else {
+				scrollBarEntry.IsEnabled = true
+				scrollBarEntry.IsVisible = true
+			}
+
+			// Calculate max scroll value
+			scrollBarMaxValue := len(menuEntry.SelectionEntry.SelectionValue) - (menuEntry.Height * menuEntry.NumberOfColumns) + 1
+
+			// Update max value
+			if scrollBarMaxValue < 0 {
+				scrollBarMaxValue = 0
+			}
+			scrollBarEntry.MaxScrollValue = scrollBarMaxValue
+		}
+	}
+}
+
+/*
 Add allows you to add a selector to a given text layer. Once called, an instance of your control is returned
 which will allow you to read or manipulate the properties for it. The Style of the Selector
 will be determined by the style entry passed in. If you wish to remove a Selector from a text layer, simply
@@ -149,7 +251,6 @@ then only the visible portion of the radio button will be drawn.
 */
 // TODO: Protect against viewport out of range errors.
 func (shared *selectorType) Add(layerAlias string, selectorAlias string, styleEntry types.TuiStyleEntryType, selectionEntry types.SelectionEntryType, xLocation int, yLocation int, selectorHeight int, itemWidth int, numberOfColumns int, viewportPosition int, selectedItem int, isBorderDrawn bool) selectorInstanceType {
-	validateSelectionEntry(selectionEntry)
 	newSelectorEntry := types.NewSelectorEntry()
 	newSelectorEntry.Alias = selectorAlias
 	newSelectorEntry.StyleEntry = styleEntry
@@ -178,22 +279,27 @@ func (shared *selectorType) Add(layerAlias string, selectorAlias string, styleEn
 	tooltipInstance.setParentControlAlias(selectorAlias)
 	selectorEntry := Selectors.Get(layerAlias, selectorAlias)
 	selectorEntry.ScrollbarAlias = stringformat.GetLastSortedUUID()
+
+	// Calculate max scroll value
 	scrollBarMaxValue := len(selectionEntry.SelectionValue) - (selectorHeight * numberOfColumns) + 1
-	scrollBarXLocation := xLocation + (itemWidth * numberOfColumns)
+
+	// Position scrollbar at the edge of the selector area
+	scrollBarXLocation := xLocation + (itemWidth * numberOfColumns) - 1
 	scrollBarYLocation := yLocation
 	scrollBarHeight := selectorHeight
+
 	if isBorderDrawn {
-		scrollBarXLocation = xLocation + (itemWidth * numberOfColumns) + 1
+		scrollBarXLocation = xLocation + (itemWidth * numberOfColumns)
 		scrollBarYLocation = scrollBarYLocation - 1
 		scrollBarHeight = selectorHeight + 2
 	}
+
 	scrollbar.Add(layerAlias, selectorEntry.ScrollbarAlias, styleEntry, scrollBarXLocation, scrollBarYLocation, scrollBarHeight, scrollBarMaxValue, 0, numberOfColumns, false)
 	scrollBarEntry := ScrollBars.Get(layerAlias, selectorEntry.ScrollbarAlias)
-	selectorWidth := itemWidth
+
 	if len(selectionEntry.SelectionValue) <= selectorHeight*numberOfColumns || styleEntry.Selector.TextAlignment == constants.AlignmentNoPadding {
 		scrollBarEntry.IsEnabled = false
 		scrollBarEntry.IsVisible = false
-		selectorWidth = selectorWidth + 1
 	}
 	var selectorInstance selectorInstanceType
 	selectorInstance.layerAlias = layerAlias
@@ -244,6 +350,7 @@ func (shared *selectorType) drawSelector(selectorAlias string, layerEntry *types
 	if selectorEntry.IsVisible == false {
 		return
 	}
+
 	menuAttributeEntry := types.NewAttributeEntry()
 	menuAttributeEntry.ForegroundColor = styleEntry.Selector.ForegroundColor
 	menuAttributeEntry.BackgroundColor = styleEntry.Selector.BackgroundColor
@@ -308,15 +415,19 @@ func (shared *selectorType) updateKeyboardEventForSelector(layerAlias string, se
 	keystrokeAsString := string(keystroke)
 	isScreenUpdateRequired := false
 	selectorEntry := Selectors.Get(layerAlias, selectorAlias)
+
+	// Use full number of columns
+	effectiveColumns := selectorEntry.NumberOfColumns
+
 	if keystrokeAsString == "down" {
-		// remainder := selectorEntry.ItemHighlighted % selectorEntry.NumberOfColumns
-		selectorEntry.ItemHighlighted = selectorEntry.ItemHighlighted + selectorEntry.NumberOfColumns
+		// remainder := selectorEntry.ItemHighlighted % effectiveColumns
+		selectorEntry.ItemHighlighted = selectorEntry.ItemHighlighted + effectiveColumns
 		if selectorEntry.ItemHighlighted >= len(selectorEntry.SelectionEntry.SelectionAlias) {
-			selectorEntry.ItemHighlighted = selectorEntry.ItemHighlighted - selectorEntry.NumberOfColumns
+			selectorEntry.ItemHighlighted = selectorEntry.ItemHighlighted - effectiveColumns
 		}
 		// Adjust viewport if highlighted item is outside visible range
-		if selectorEntry.ItemHighlighted >= selectorEntry.ViewportPosition+(selectorEntry.Height*selectorEntry.NumberOfColumns) {
-			selectorEntry.ViewportPosition = selectorEntry.ItemHighlighted - (selectorEntry.Height * selectorEntry.NumberOfColumns) + selectorEntry.NumberOfColumns
+		if selectorEntry.ItemHighlighted >= selectorEntry.ViewportPosition+(selectorEntry.Height*effectiveColumns) {
+			selectorEntry.ViewportPosition = selectorEntry.ItemHighlighted - (selectorEntry.Height * effectiveColumns) + effectiveColumns
 			// Update associated scrollbar
 			if scrollBarEntry := ScrollBars.Get(layerAlias, selectorEntry.ScrollbarAlias); scrollBarEntry != nil {
 				scrollBarEntry.ScrollValue = selectorEntry.ViewportPosition
@@ -326,9 +437,9 @@ func (shared *selectorType) updateKeyboardEventForSelector(layerAlias string, se
 		isScreenUpdateRequired = true
 	}
 	if keystrokeAsString == "up" {
-		selectorEntry.ItemHighlighted = selectorEntry.ItemHighlighted - selectorEntry.NumberOfColumns
+		selectorEntry.ItemHighlighted = selectorEntry.ItemHighlighted - effectiveColumns
 		if selectorEntry.ItemHighlighted < 0 {
-			selectorEntry.ItemHighlighted = selectorEntry.ItemHighlighted + selectorEntry.NumberOfColumns
+			selectorEntry.ItemHighlighted = selectorEntry.ItemHighlighted + effectiveColumns
 		}
 		// Adjust viewport if highlighted item is outside visible range
 		if selectorEntry.ItemHighlighted < selectorEntry.ViewportPosition {
@@ -342,7 +453,7 @@ func (shared *selectorType) updateKeyboardEventForSelector(layerAlias string, se
 		isScreenUpdateRequired = true
 	}
 	if keystrokeAsString == "left" {
-		if selectorEntry.ItemHighlighted%selectorEntry.NumberOfColumns != 0 {
+		if selectorEntry.ItemHighlighted%effectiveColumns != 0 {
 			selectorEntry.ItemHighlighted = selectorEntry.ItemHighlighted - 1
 			if selectorEntry.ItemHighlighted < 0 {
 				selectorEntry.ItemHighlighted = selectorEntry.ItemHighlighted + 1
@@ -351,7 +462,7 @@ func (shared *selectorType) updateKeyboardEventForSelector(layerAlias string, se
 		}
 	}
 	if keystrokeAsString == "right" {
-		if selectorEntry.ItemHighlighted%selectorEntry.NumberOfColumns != selectorEntry.NumberOfColumns-1 {
+		if selectorEntry.ItemHighlighted%effectiveColumns != effectiveColumns-1 {
 			selectorEntry.ItemHighlighted = selectorEntry.ItemHighlighted + 1
 			if selectorEntry.ItemHighlighted >= len(selectorEntry.SelectionEntry.SelectionAlias) {
 				selectorEntry.ItemHighlighted = selectorEntry.ItemHighlighted - 1

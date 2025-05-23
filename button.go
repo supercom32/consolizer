@@ -232,6 +232,11 @@ by mouse events. If a screen update is required, then this method returns
 true.
 */
 func (shared *buttonType) updateButtonStateMouse() bool {
+	// If we're currently in a scrollbar drag operation, don't process button clicks
+	if eventStateMemory.stateId == constants.EventStateDragAndDropScrollbar {
+		return false
+	}
+
 	isUpdateRequired := false
 	mouseXLocation, mouseYLocation, buttonPressed, _ := GetMouseStatus()
 	characterEntry := getCellInformationUnderMouseCursor(mouseXLocation, mouseYLocation)

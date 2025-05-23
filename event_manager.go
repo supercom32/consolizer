@@ -28,6 +28,7 @@ type eventStateType struct {
 
 var eventStateMemory eventStateType
 var eventIntervalTime time.Time
+var lastMouseMoveTime time.Time
 
 func UpdatePeriodicEvents() {
 	elapsedTime := time.Since(eventIntervalTime)
@@ -124,6 +125,17 @@ func UpdateEventQueues() {
 			wheelState = "Right"
 		}
 		isScreenUpdateRequired := false
+
+		// Throttle mouse movement events (when no button is pressed)
+		// Skip processing if not enough time has passed since the last event
+		if mouseButtonNumber == 0 && wheelState == "" {
+			elapsedTime := time.Since(lastMouseMoveTime)
+			if elapsedTime < 50*time.Millisecond {
+				return
+			}
+			lastMouseMoveTime = time.Now()
+		}
+
 		SetMouseStatus(mouseXLocation, mouseYLocation, mouseButtonNumber, wheelState)
 		bringLayerToFrontIfRequired()
 		if moveLayerIfRequired() {
@@ -135,9 +147,6 @@ func UpdateEventQueues() {
 			isScreenUpdateRequired = true
 		}
 		if TextField.updateMouseEvent() {
-			isScreenUpdateRequired = true
-		}
-		if Selector.updateMouseEvent() {
 			isScreenUpdateRequired = true
 		}
 		if textbox.updateMouseEvent() {
