@@ -128,7 +128,7 @@ func UpdateEventQueues() {
 
 		// Throttle mouse movement events (when no button is pressed)
 		// Skip processing if not enough time has passed since the last event
-		if mouseButtonNumber == 0 && wheelState == "" {
+		if mouseButtonNumber == 0 && wheelState == "" || (eventStateMemory.stateId == constants.EventStateDragAndDropScrollbar) {
 			elapsedTime := time.Since(lastMouseMoveTime)
 			if elapsedTime < 50*time.Millisecond {
 				return

@@ -234,13 +234,16 @@ func (shared *tooltipType) updateMouseEvent() bool {
 		}
 	} else {
 		for _, currentTooltipEntry := range Tooltips.GetAllEntriesOverall() {
+			if currentTooltipEntry.IsDrawn == true {
+				// Only update if a change was detected.
+				isScreenUpdateRequired = true
+			}
 			currentTooltipEntry.IsDrawn = false
 			currentTooltipEntry.HoverStartTime = time.Time{}
 		}
 		if eventStateMemory.previouslyHighlightedControl.controlType == constants.CellTypeTooltip {
 			setPreviouslyHighlightedControl("", "", constants.NullControlType)
 		}
-		isScreenUpdateRequired = true
 	}
 	return isScreenUpdateRequired
 }

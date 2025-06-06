@@ -19,6 +19,33 @@ func TestIsRuneCharacterWide(test *testing.T) {
 	assert.Equalf(test, true, obtainedResult, "The Korean character specified is wide, but was not detected as such.")
 	obtainedResult = IsRuneCharacterWide(englishCharacter)
 	assert.Equalf(test, false, obtainedResult, "The English character specified is not wide, but was not detected as such.")
+
+	// Test triangle characters (all directions)
+	blackUpTriangle := '\u25B2'
+	whiteUpTriangle := '\u25B3'
+	blackRightTriangle := '\u25B6'
+	whiteRightTriangle := '\u25B7'
+	blackDownTriangle := '\u25BC'
+	whiteDownTriangle := '\u25BD'
+	blackLeftTriangle := '\u25C0'
+	whiteLeftTriangle := '\u25C1'
+
+	obtainedResult = IsRuneCharacterWide(blackUpTriangle)
+	assert.Equalf(test, false, obtainedResult, "The BLACK UP-POINTING TRIANGLE character should not be wide.")
+	obtainedResult = IsRuneCharacterWide(whiteUpTriangle)
+	assert.Equalf(test, false, obtainedResult, "The WHITE UP-POINTING TRIANGLE character should not be wide.")
+	obtainedResult = IsRuneCharacterWide(blackRightTriangle)
+	assert.Equalf(test, false, obtainedResult, "The BLACK RIGHT-POINTING TRIANGLE character should not be wide.")
+	obtainedResult = IsRuneCharacterWide(whiteRightTriangle)
+	assert.Equalf(test, false, obtainedResult, "The WHITE RIGHT-POINTING TRIANGLE character should not be wide.")
+	obtainedResult = IsRuneCharacterWide(blackDownTriangle)
+	assert.Equalf(test, false, obtainedResult, "The BLACK DOWN-POINTING TRIANGLE character should not be wide.")
+	obtainedResult = IsRuneCharacterWide(whiteDownTriangle)
+	assert.Equalf(test, false, obtainedResult, "The WHITE DOWN-POINTING TRIANGLE character should not be wide.")
+	obtainedResult = IsRuneCharacterWide(blackLeftTriangle)
+	assert.Equalf(test, false, obtainedResult, "The BLACK LEFT-POINTING TRIANGLE character should not be wide.")
+	obtainedResult = IsRuneCharacterWide(whiteLeftTriangle)
+	assert.Equalf(test, false, obtainedResult, "The WHITE LEFT-POINTING TRIANGLE character should not be wide.")
 }
 
 func TestGetRunesFromString(test *testing.T) {

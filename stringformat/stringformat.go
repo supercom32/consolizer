@@ -34,6 +34,7 @@ func setUnicodeRangeWidth(startingIndex int, endingIndex int, isWide bool) {
 
 func setUnicodeGeometricShapeWidth() {
 	setUnicodeRangeWidth(9632, 9727, true) // Symbols
+
 	// Small arrows
 	isUnicodeWide['\u25B4'] = false
 	isUnicodeWide['\u25B5'] = false
@@ -43,11 +44,44 @@ func setUnicodeGeometricShapeWidth() {
 	isUnicodeWide['\u25BF'] = false
 	isUnicodeWide['\u25C2'] = false
 	isUnicodeWide['\u25C3'] = false
+
+	// Triangles (all directions)
+	isUnicodeWide['\u25B2'] = false // BLACK UP-POINTING TRIANGLE
+	isUnicodeWide['\u25B3'] = false // WHITE UP-POINTING TRIANGLE
+	isUnicodeWide['\u25B6'] = false // BLACK RIGHT-POINTING TRIANGLE
+	isUnicodeWide['\u25B7'] = false // WHITE RIGHT-POINTING TRIANGLE
+	isUnicodeWide['\u25BC'] = false // BLACK DOWN-POINTING TRIANGLE
+	isUnicodeWide['\u25BD'] = false // WHITE DOWN-POINTING TRIANGLE
+	isUnicodeWide['\u25C0'] = false // BLACK LEFT-POINTING TRIANGLE
+	isUnicodeWide['\u25C1'] = false // WHITE LEFT-POINTING TRIANGLE
+
+	isUnicodeWide['\u25C4'] = false // BLACK LEFT-POINTING TRIANGLE (bold variant)
+	isUnicodeWide['\u25C5'] = false // WHITE LEFT-POINTING TRIANGLE (bold variant)
+	isUnicodeWide['\u25BA'] = false // BLACK RIGHT-POINTING POINTER (bold variant)
+	isUnicodeWide['\u25BB'] = false // WHITE RIGHT-POINTING POINTER (bold variant)
+
 	// Circle pieces
 	isUnicodeWide['\u25DC'] = false
 	isUnicodeWide['\u25DD'] = false
 	isUnicodeWide['\u25DE'] = false
 	isUnicodeWide['\u25DF'] = false
+
+	// Additional circles
+	isUnicodeWide['\u25CF'] = false // BLACK CIRCLE
+	isUnicodeWide['\u25CB'] = false // WHITE CIRCLE
+	isUnicodeWide['\u25C9'] = false // FISHEYE
+	isUnicodeWide['\u25CE'] = false // BULLSEYE
+	isUnicodeWide['\u25EF'] = false // LARGE CIRCLE
+	isUnicodeWide['\u25CD'] = false // CIRCLE WITH VERTICAL FILL
+	isUnicodeWide['\u25CC'] = false // DOTTED CIRCLE
+	isUnicodeWide['\u25D0'] = false // CIRCLE WITH LEFT HALF BLACK
+	isUnicodeWide['\u25D1'] = false // CIRCLE WITH RIGHT HALF BLACK
+	isUnicodeWide['\u25D2'] = false // CIRCLE WITH LOWER HALF BLACK
+	isUnicodeWide['\u25D3'] = false // CIRCLE WITH UPPER HALF BLACK
+
+	// Extra medium circles from Misc Symbols block
+	isUnicodeWide['\u26AA'] = false // MEDIUM WHITE CIRCLE
+	isUnicodeWide['\u26AB'] = false // MEDIUM BLACK CIRCLE
 }
 
 func IsRuneCharacterWide(character rune) bool {

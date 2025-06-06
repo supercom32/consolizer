@@ -77,8 +77,6 @@ func InitializeTerminal(width int, height int) {
 		commonResource.screen.EnableMouse()
 		commonResource.updateDisplayChannel = make(chan bool)
 		setupCloseHandler()
-		go setupEventUpdater()
-		go setupPeriodicEventUpdater()
 		detectedWidth, detectedHeight = GetTerminalSize()
 	}
 	if width == 0 {
@@ -94,6 +92,8 @@ func InitializeTerminal(width int, height int) {
 	commonResource.debugDirectory = "/tmp/"
 	validateTerminalWidthAndHeight(commonResource.terminalWidth, commonResource.terminalHeight)
 	DeleteAllLayers()
+	go setupEventUpdater()
+	go setupPeriodicEventUpdater()
 }
 
 func setupPeriodicEventUpdater() {
