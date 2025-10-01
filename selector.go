@@ -110,9 +110,28 @@ func (shared *selectorInstanceType) GetSelected() (string, int) {
 		validatorMenu(shared.layerAlias, shared.controlAlias)
 		menuEntry := Selectors.Get(shared.layerAlias, shared.controlAlias)
 		value := menuEntry.ItemSelected
-		return menuEntry.SelectionEntry.SelectionAlias[value], value
+		if len(menuEntry.SelectionEntry.SelectionAlias) != 0 {
+			return menuEntry.SelectionEntry.SelectionAlias[value], value
+		}
 	}
 	return "", -1
+}
+
+/*
+GetAllItems allows you to retrieve all items from a selector. In addition,
+the following information should be noted:
+
+  - Returns two arrays: one containing all aliases and one containing all values.
+  - If the selector does not exist, returns empty arrays.
+  - The arrays are returned in the order they were added to the selector.
+*/
+func (shared *selectorInstanceType) GetAllItems() ([]string, []string) {
+	if Selectors.IsExists(shared.layerAlias, shared.controlAlias) {
+		validatorMenu(shared.layerAlias, shared.controlAlias)
+		menuEntry := Selectors.Get(shared.layerAlias, shared.controlAlias)
+		return menuEntry.SelectionEntry.SelectionAlias, menuEntry.SelectionEntry.SelectionValue
+	}
+	return []string{}, []string{}
 }
 
 /*
@@ -250,7 +269,7 @@ then only the visible portion of the radio button will be drawn.
 - If the Selector height is greater than the number of selections available, then no scroll bars are drawn.
 */
 // TODO: Protect against viewport out of range errors.
-func (shared *selectorType) Add(layerAlias string, selectorAlias string, styleEntry types.TuiStyleEntryType, selectionEntry types.SelectionEntryType, xLocation int, yLocation int, selectorHeight int, itemWidth int, numberOfColumns int, viewportPosition int, selectedItem int, isBorderDrawn bool) selectorInstanceType {
+func (shared *selectorType) Add(layerAlias string, selectorAlias string, styleEntry types.TuiStyleEntryType, selectionEntry types.SelectionEntryType, xLocation int, yLocation int, selectorHeight int, itemWidth int, numberOfColumns int, viewportPosition int, selectedItem int, highlightOnClickOnly bool, isBorderDrawn bool) selectorInstanceType {
 	newSelectorEntry := types.NewSelectorEntry()
 	newSelectorEntry.Alias = selectorAlias
 	newSelectorEntry.StyleEntry = styleEntry
@@ -260,6 +279,7 @@ func (shared *selectorType) Add(layerAlias string, selectorAlias string, styleEn
 	newSelectorEntry.Height = selectorHeight
 	newSelectorEntry.ItemWidth = itemWidth
 	newSelectorEntry.NumberOfColumns = numberOfColumns
+	newSelectorEntry.HighlightOnClickOnly = highlightOnClickOnly
 	newSelectorEntry.ViewportPosition = viewportPosition
 	newSelectorEntry.ItemHighlighted = selectedItem
 	newSelectorEntry.IsBorderDrawn = isBorderDrawn
@@ -289,7 +309,7 @@ func (shared *selectorType) Add(layerAlias string, selectorAlias string, styleEn
 	scrollBarHeight := selectorHeight
 
 	if isBorderDrawn {
-		scrollBarXLocation = xLocation + (itemWidth * numberOfColumns)
+		scrollBarXLocation = xLocation + (itemWidth * numberOfColumns) + 1
 		scrollBarYLocation = scrollBarYLocation - 1
 		scrollBarHeight = selectorHeight + 2
 	}
@@ -508,12 +528,11 @@ func (shared *selectorType) updateMouseEvent() bool {
 	mouseXLocation, mouseYLocation, buttonPressed, _ := GetMouseStatus()
 	characterEntry = getCellInformationUnderMouseCursor(mouseXLocation, mouseYLocation)
 	if characterEntry.AttributeEntry.CellType == constants.CellTypeSelectorItem && eventStateMemory.stateId == constants.EventStateNone && Selectors.IsExists(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias) {
+		selectorEntry := Selectors.Get(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias)
 		if buttonPressed != 0 {
-			selectorEntry := Selectors.Get(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias)
 			selectorEntry.ItemHighlighted = characterEntry.AttributeEntry.CellControlId
 			selectorEntry.ItemSelected = characterEntry.AttributeEntry.CellControlId
-		} else {
-			selectorEntry := Selectors.Get(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias)
+		} else if !selectorEntry.HighlightOnClickOnly {
 			selectorEntry.ItemHighlighted = characterEntry.AttributeEntry.CellControlId
 		}
 		// Check if this selector belongs to a dropdown
@@ -535,7 +554,10 @@ func (shared *selectorType) updateMouseEvent() bool {
 		if eventStateMemory.previouslyHighlightedControl.controlType == constants.CellTypeSelectorItem && Selectors.IsExists(eventStateMemory.previouslyHighlightedControl.layerAlias, eventStateMemory.previouslyHighlightedControl.controlAlias) &&
 			Selectors.IsExists(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias) {
 			selectorEntry := Selectors.Get(eventStateMemory.previouslyHighlightedControl.layerAlias, eventStateMemory.previouslyHighlightedControl.controlAlias)
-			selectorEntry.ItemHighlighted = constants.NullItemSelection
+			// Only clear highlighting if HighlightOnClickOnly is false
+			if !selectorEntry.HighlightOnClickOnly {
+				selectorEntry.ItemHighlighted = constants.NullItemSelection
+			}
 			setFocusedControl("", "", constants.NullControlType)
 			setPreviouslyHighlightedControl("", "", constants.NullControlType)
 			isScreenUpdateRequired = true

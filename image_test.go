@@ -3,8 +3,8 @@ package consolizer_test
 import (
 	"testing"
 
-	"consolizer"
 	"github.com/stretchr/testify/assert"
+	"github.com/supercom32/consolizer"
 	"github.com/supercom32/consolizer/types"
 )
 

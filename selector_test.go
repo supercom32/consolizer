@@ -14,7 +14,7 @@ func TestSelectorRandomSelection(test *testing.T) {
 	selectionEntry.Add("Selection Alias 2", "Selection Text 2")
 	selectionEntry.Add("Selection Alias 3", "Selection Text 3")
 	selectionEntry.Add("Selection Alias 4", "Selection Text 4")
-	selectorFieldInstance := layer1.AddSelector(styleEntry, selectionEntry, 2, 2, 4, 25, 1, 0, 1, true)
+	selectorFieldInstance := layer1.AddSelector(styleEntry, selectionEntry, 2, 2, 4, 25, 1, 0, 1, true, true)
 	setFocusedControl(layer1.layerAlias, selectorFieldInstance.controlAlias, constants.CellTypeTextField)
 	UpdateDisplay(false)
 	layerEntry := commonResource.screenLayer
@@ -39,7 +39,7 @@ func TestSelectorLongList(test *testing.T) {
 	selectionEntry.Add("Selection Alias 6", "Selection Text 6")
 	selectionEntry.Add("Selection Alias 7", "Selection Text 7")
 	selectionEntry.Add("Selection Alias 8", "Selection Text 8")
-	selectorFieldInstance := layer1.AddSelector(styleEntry, selectionEntry, 2, 2, 4, 25, 1, 0, 0, true)
+	selectorFieldInstance := layer1.AddSelector(styleEntry, selectionEntry, 2, 2, 4, 25, 1, 0, 0, true, true)
 	setFocusedControl(layer1.layerAlias, selectorFieldInstance.controlAlias, constants.CellTypeTextField)
 	UpdateDisplay(false)
 	layerEntry := commonResource.screenLayer
@@ -51,4 +51,36 @@ func TestSelectorLongList(test *testing.T) {
 		fmt.Println("Expected:\n", expectedValueBase64)
 		fmt.Println("Obtained:\n", obtainedValueBase64)
 	}
+}
+
+func TestGetAllItems(test *testing.T) {
+	layer1, _, _, styleEntry := CommonTestSetup()
+	selectionEntry := NewSelectionEntry()
+
+	// Add some items to the selection entry
+	expectedAliases := []string{"Alias 1", "Alias 2", "Alias 3", "Alias 4"}
+	expectedValues := []string{"Value 1", "Value 2", "Value 3", "Value 4"}
+
+	for i := 0; i < len(expectedAliases); i++ {
+		selectionEntry.Add(expectedAliases[i], expectedValues[i])
+	}
+
+	// Create a selector with the selection entry
+	selectorFieldInstance := layer1.AddSelector(styleEntry, selectionEntry, 2, 2, 4, 25, 1, 0, 0, true, true)
+
+	// Call GetAllItems and verify the results
+	aliases, values := selectorFieldInstance.GetAllItems()
+
+	// Check that the returned arrays match the expected values
+	assert.Equal(test, expectedAliases, aliases, "The returned aliases do not match the expected values")
+	assert.Equal(test, expectedValues, values, "The returned values do not match the expected values")
+
+	// Test with an empty selector
+	emptySelectionEntry := NewSelectionEntry()
+	emptySelectorFieldInstance := layer1.AddSelector(styleEntry, emptySelectionEntry, 10, 10, 4, 25, 1, 0, 0, true, true)
+	emptyAliases, emptyValues := emptySelectorFieldInstance.GetAllItems()
+
+	// Check that empty arrays are returned for an empty selector
+	assert.Empty(test, emptyAliases, "The returned aliases should be empty for an empty selector")
+	assert.Empty(test, emptyValues, "The returned values should be empty for an empty selector")
 }

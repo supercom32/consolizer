@@ -427,17 +427,17 @@ func drawFrame(layerEntry *types.LayerEntryType, styleEntry types.TuiStyleEntryT
 					if currentCharacter == 0 {
 						characterToDraw = styleEntry.Frame.UpperLeftCorner
 						if frameStyle == constants.FrameStyleSunken {
-							currentAttributeEntry.ForegroundColor = constants.AnsiColorByIndex[0]
+							currentAttributeEntry.ForegroundColor = styleEntry.Window.LineDrawingSunkenColor
 						}
 					} else if currentCharacter == width-1 {
 						characterToDraw = styleEntry.Frame.UpperRightCorner
 						if frameStyle == constants.FrameStyleRaised {
-							currentAttributeEntry.ForegroundColor = constants.AnsiColorByIndex[0]
+							currentAttributeEntry.ForegroundColor = styleEntry.Window.LineDrawingRaisedColor
 						}
 					} else {
 						characterToDraw = styleEntry.Frame.HorizontalLine
 						if frameStyle == constants.FrameStyleSunken {
-							currentAttributeEntry.ForegroundColor = constants.AnsiColorByIndex[0]
+							currentAttributeEntry.ForegroundColor = styleEntry.Window.LineDrawingSunkenColor
 						}
 					}
 				} else if currentRow == height-1 {
@@ -448,30 +448,30 @@ func drawFrame(layerEntry *types.LayerEntryType, styleEntry types.TuiStyleEntryT
 					if currentCharacter == 0 {
 						characterToDraw = styleEntry.Frame.LowerLeftCorner
 						if frameStyle == constants.FrameStyleSunken {
-							currentAttributeEntry.ForegroundColor = constants.AnsiColorByIndex[0]
+							currentAttributeEntry.ForegroundColor = styleEntry.Window.LineDrawingSunkenColor
 						}
 					} else if currentCharacter == width-1 {
 						characterToDraw = styleEntry.Frame.LowerRightCorner
 						if frameStyle == constants.FrameStyleRaised {
-							currentAttributeEntry.ForegroundColor = constants.AnsiColorByIndex[0]
+							currentAttributeEntry.ForegroundColor = styleEntry.Window.LineDrawingRaisedColor
 						}
 					} else {
 						characterToDraw = styleEntry.Frame.HorizontalLine
 						if frameStyle == constants.FrameStyleRaised {
-							currentAttributeEntry.ForegroundColor = constants.AnsiColorByIndex[0]
+							currentAttributeEntry.ForegroundColor = styleEntry.Window.LineDrawingRaisedColor
 						}
 					}
 				} else {
 					if currentCharacter == 0 {
 						characterToDraw = styleEntry.Frame.VerticalLine
 						if frameStyle == constants.FrameStyleSunken {
-							currentAttributeEntry.ForegroundColor = constants.AnsiColorByIndex[0]
+							currentAttributeEntry.ForegroundColor = styleEntry.Window.LineDrawingSunkenColor
 						}
 					}
 					if currentCharacter == width-1 {
 						characterToDraw = styleEntry.Frame.VerticalLine
 						if frameStyle == constants.FrameStyleRaised {
-							currentAttributeEntry.ForegroundColor = constants.AnsiColorByIndex[0]
+							currentAttributeEntry.ForegroundColor = styleEntry.Window.LineDrawingRaisedColor
 						}
 					}
 				}

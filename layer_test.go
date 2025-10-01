@@ -1,9 +1,9 @@
 package consolizer
 
 import (
-	"constants"
+	"github.com/supercom32/consolizer/constants"
+	"github.com/supercom32/consolizer/types"
 	"testing"
-	"types"
 )
 
 func TestLayerInitialization(t *testing.T) {
@@ -221,7 +221,7 @@ func TestLayerControlMethods(t *testing.T) {
 		t.Error("Label should be added to correct layer")
 	}
 
-	progressBar := layerInstance.AddProgressBar("Test", styleEntry, 0, 0, 10, 1, 50, 100, false)
+	progressBar := layerInstance.AddProgressBar("Test", styleEntry, 0, 0, 10, 1, false, 50, 100, false)
 	if progressBar.layerAlias != layerInstance.layerAlias {
 		t.Error("Progress bar should be added to correct layer")
 	}
@@ -419,7 +419,7 @@ func TestComplexControlManagement(t *testing.T) {
 	// Add controls to child1 layer
 	child1Button := child1Layer.AddButton("Child1 Button", styleEntry, 0, 0, 10, 1, true)
 	child1Label := child1Layer.AddLabel("Child1 Label", styleEntry, 0, 1, 10)
-	child1ProgressBar := child1Layer.AddProgressBar("Child1 Progress", styleEntry, 0, 2, 10, 1, 50, 100, false)
+	child1ProgressBar := child1Layer.AddProgressBar("Child1 Progress", styleEntry, 0, 2, 10, 1, false, 50, 100, false)
 
 	// Add controls to child2 layer
 	child2Button := child2Layer.AddButton("Child2 Button", styleEntry, 0, 0, 10, 1, true)
@@ -586,7 +586,7 @@ func TestLayerAndControlMemoryLeaks(t *testing.T) {
 		// Add controls to child layer
 		childLayer.AddButton("Child Button", styleEntry, 0, 0, 10, 1, true)
 		childLayer.AddLabel("Child Label", styleEntry, 0, 1, 10)
-		childLayer.AddProgressBar("Progress", styleEntry, 0, 2, 10, 1, 50, 100, false)
+ 	childLayer.AddProgressBar("Progress", styleEntry, 0, 2, 10, 1, false, 50, 100, false)
 
 		// Delete layers and verify all controls are deleted
 		rootLayer.DeleteLayer()
@@ -668,11 +668,11 @@ func TestComplexInterleavedOperations(t *testing.T) {
 	// Phase 1: Add controls to root1 layer with unique properties
 	root1Button := root1Layer.AddButton("Root1 Button", styleEntry1, 0, 0, 10, 1, true)
 	root1Checkbox := root1Layer.AddCheckbox("Root1 Checkbox", styleEntry1, 0, 2, true, true)
-	root1ProgressBar := root1Layer.AddProgressBar("Root1 Progress", styleEntry1, 0, 4, 10, 1, 75, 100, false)
+	root1ProgressBar := root1Layer.AddProgressBar("Root1 Progress", styleEntry1, 0, 4, 10, 1, false, 75, 100, false)
 	root1Layer.AddDropdown(styleEntry1, selectionEntry1, 0, 3, 3, 10, 1)
 	root1Layer.AddRadioButton("Root1 Radio", styleEntry1, 0, 5, 2, true)
 	root1Layer.AddScrollbar(styleEntry1, 0, 6, 10, 100, 25, 1, false)
-	root1Layer.AddSelector(styleEntry1, selectionEntry1, 0, 7, 3, 10, 2, 0, 0, true)
+	root1Layer.AddSelector(styleEntry1, selectionEntry1, 0, 7, 3, 10, 2, 0, 0, true, true)
 	root1Layer.AddTextField(styleEntry1, 0, 8, 10, 20, true, "Root1 Text", true)
 	root1Layer.AddTextbox(styleEntry1, 0, 9, 10, 3, true)
 	root1Layer.AddTooltip("Root1 Tooltip", styleEntry1, 0, 0, 10, 1, 0, 0, 10, 1, true, true, 2000)
@@ -689,11 +689,11 @@ func TestComplexInterleavedOperations(t *testing.T) {
 	// Phase 3: Add new controls to remaining layers with unique properties
 	child2Button := child2Layer.AddButton("Child2 Button", styleEntry2, 0, 0, 10, 1, true)
 	child2Checkbox := child2Layer.AddCheckbox("Child2 Checkbox", styleEntry2, 0, 2, false, true)
-	child2ProgressBar := child2Layer.AddProgressBar("Child2 Progress", styleEntry2, 0, 4, 10, 1, 25, 100, false)
+	child2ProgressBar := child2Layer.AddProgressBar("Child2 Progress", styleEntry2, 0, 4, 10, 1, false, 25, 100, false)
 	child2Layer.AddDropdown(styleEntry2, selectionEntry2, 0, 3, 3, 10, 2)
 	child2Layer.AddRadioButton("Child2 Radio", styleEntry2, 0, 5, 1, false)
 	child2Layer.AddScrollbar(styleEntry2, 0, 6, 10, 100, 50, 1, false)
-	child2Layer.AddSelector(styleEntry2, selectionEntry2, 0, 7, 3, 10, 1, 0, 0, true)
+	child2Layer.AddSelector(styleEntry2, selectionEntry2, 0, 7, 3, 10, 1, 0, 0, true, true)
 	child2Layer.AddTextField(styleEntry2, 0, 8, 10, 20, false, "Child2 Text", true)
 	child2Layer.AddTextbox(styleEntry2, 0, 9, 10, 3, true)
 	child2Layer.AddTooltip("Child2 Tooltip", styleEntry2, 0, 0, 10, 1, 0, 0, 10, 1, false, true, 1500)
@@ -716,11 +716,11 @@ func TestComplexInterleavedOperations(t *testing.T) {
 	newChildLayer := AddLayer(0, 0, 15, 15, 3, &root1Layer)
 	newChildLayer.AddButton("New Child Button", styleEntry1, 0, 0, 10, 1, true)
 	newChildLayer.AddCheckbox("New Child Checkbox", styleEntry1, 0, 2, true, true)
-	newChildLayer.AddProgressBar("New Child Progress", styleEntry1, 0, 4, 10, 1, 50, 100, false)
+	newChildLayer.AddProgressBar("New Child Progress", styleEntry1, 0, 4, 10, 1, false, 50, 100, false)
 	newChildLayer.AddDropdown(styleEntry1, selectionEntry1, 0, 3, 3, 10, 0)
 	newChildLayer.AddRadioButton("New Child Radio", styleEntry1, 0, 5, 3, true)
 	newChildLayer.AddScrollbar(styleEntry1, 0, 6, 10, 100, 75, 1, false)
-	newChildLayer.AddSelector(styleEntry1, selectionEntry1, 0, 7, 3, 10, 1, 0, 0, true)
+	newChildLayer.AddSelector(styleEntry1, selectionEntry1, 0, 7, 3, 10, 1, 0, 0, true, true)
 	newChildLayer.AddTextField(styleEntry1, 0, 8, 10, 20, true, "New Child Text", true)
 	newChildLayer.AddTextbox(styleEntry1, 0, 9, 10, 3, true)
 	newChildLayer.AddTooltip("New Child Tooltip", styleEntry1, 0, 0, 10, 1, 0, 0, 10, 1, true, true, 3000)
@@ -742,11 +742,11 @@ func TestComplexInterleavedOperations(t *testing.T) {
 	// Add controls to root3 layer with unique properties
 	root3Button := root3Layer.AddButton("Root3 Button", styleEntry2, 0, 0, 10, 1, true)
 	root3Checkbox := root3Layer.AddCheckbox("Root3 Checkbox", styleEntry2, 0, 2, true, true)
-	root3ProgressBar := root3Layer.AddProgressBar("Root3 Progress", styleEntry2, 0, 4, 10, 1, 90, 100, false)
+	root3ProgressBar := root3Layer.AddProgressBar("Root3 Progress", styleEntry2, 0, 4, 10, 1, false, 90, 100, false)
 	root3Layer.AddDropdown(styleEntry2, selectionEntry2, 0, 3, 3, 10, 1)
 	root3Layer.AddRadioButton("Root3 Radio", styleEntry2, 0, 5, 2, true)
 	root3Layer.AddScrollbar(styleEntry2, 0, 6, 10, 100, 60, 1, false)
-	root3Layer.AddSelector(styleEntry2, selectionEntry2, 0, 7, 3, 10, 2, 0, 0, true)
+	root3Layer.AddSelector(styleEntry2, selectionEntry2, 0, 7, 3, 10, 2, 0, 0, true, true)
 	root3Layer.AddTextField(styleEntry2, 0, 8, 10, 20, true, "Root3 Text", true)
 	root3Layer.AddTextbox(styleEntry2, 0, 9, 10, 3, true)
 	root3Layer.AddTooltip("Root3 Tooltip", styleEntry2, 0, 0, 10, 1, 0, 0, 10, 1, true, true, 2500)
@@ -754,11 +754,11 @@ func TestComplexInterleavedOperations(t *testing.T) {
 	// Add controls to root3Child1 with unique properties
 	root3Child1.AddButton("Root3 Child1 Button", styleEntry1, 0, 0, 10, 1, true)
 	root3Child1.AddCheckbox("Root3 Child1 Checkbox", styleEntry1, 0, 2, false, true)
-	root3Child1.AddProgressBar("Root3 Child1 Progress", styleEntry1, 0, 4, 10, 1, 40, 100, false)
+	root3Child1.AddProgressBar("Root3 Child1 Progress", styleEntry1, 0, 4, 10, 1, false, 40, 100, false)
 	root3Child1.AddDropdown(styleEntry1, selectionEntry1, 0, 3, 3, 10, 2)
 	root3Child1.AddRadioButton("Root3 Child1 Radio", styleEntry1, 0, 5, 1, false)
 	root3Child1.AddScrollbar(styleEntry1, 0, 6, 10, 100, 30, 1, false)
-	root3Child1.AddSelector(styleEntry1, selectionEntry1, 0, 7, 3, 10, 1, 0, 0, true)
+	root3Child1.AddSelector(styleEntry1, selectionEntry1, 0, 7, 3, 10, 1, 0, 0, true, true)
 	root3Child1.AddTextField(styleEntry1, 0, 8, 10, 20, false, "Root3 Child1 Text", true)
 	root3Child1.AddTextbox(styleEntry1, 0, 9, 10, 3, true)
 	root3Child1.AddTooltip("Root3 Child1 Tooltip", styleEntry1, 0, 0, 10, 1, 0, 0, 10, 1, false, true, 3500)
@@ -827,11 +827,11 @@ func TestComplexInterleavedOperations(t *testing.T) {
 	// Phase 10: Add new controls to root3's children with unique properties
 	root3Child2Button := root3Child2.AddButton("Root3 Child2 Button", styleEntry2, 0, 0, 10, 1, true)
 	root3Child2Checkbox := root3Child2.AddCheckbox("Root3 Child2 Checkbox", styleEntry2, 0, 2, true, true)
-	root3Child2ProgressBar := root3Child2.AddProgressBar("Root3 Child2 Progress", styleEntry2, 0, 4, 10, 1, 60, 100, false)
+	root3Child2ProgressBar := root3Child2.AddProgressBar("Root3 Child2 Progress", styleEntry2, 0, 4, 10, 1, false, 60, 100, false)
 	root3Child2.AddDropdown(styleEntry2, selectionEntry2, 0, 3, 3, 10, 0)
 	root3Child2.AddRadioButton("Root3 Child2 Radio", styleEntry2, 0, 5, 1, true)
 	root3Child2.AddScrollbar(styleEntry2, 0, 6, 10, 100, 40, 1, false)
-	root3Child2.AddSelector(styleEntry2, selectionEntry2, 0, 7, 3, 10, 1, 0, 0, true)
+	root3Child2.AddSelector(styleEntry2, selectionEntry2, 0, 7, 3, 10, 1, 0, 0, true, true)
 	root3Child2.AddTextField(styleEntry2, 0, 8, 10, 20, true, "Root3 Child2 Text", true)
 	root3Child2.AddTextbox(styleEntry2, 0, 9, 10, 3, true)
 	root3Child2.AddTooltip("Root3 Child2 Tooltip", styleEntry2, 0, 0, 10, 1, 0, 0, 10, 1, true, true, 4000)

@@ -123,6 +123,8 @@ type WindowStyle struct {
 	LineDrawingTextForegroundColor constants.ColorType
 	LineDrawingTextBackgroundColor constants.ColorType
 	LineDrawingTextLabelColor      constants.ColorType
+	LineDrawingSunkenColor         constants.ColorType
+	LineDrawingRaisedColor         constants.ColorType
 }
 
 // TuiStyleEntryType contains all UI style definitions
@@ -233,7 +235,8 @@ func NewTuiStyleEntry(existingStyleEntry ...*TuiStyleEntryType) TuiStyleEntryTyp
 		styleEntry.Window.LineDrawingTextForegroundColor = constants.AnsiColorByIndex[15]
 		styleEntry.Window.LineDrawingTextBackgroundColor = constants.AnsiColorByIndex[0]
 		styleEntry.Window.LineDrawingTextLabelColor = constants.AnsiColorByIndex[15]
-
+		styleEntry.Window.LineDrawingRaisedColor = constants.AnsiColorByIndex[0]
+		styleEntry.Window.LineDrawingSunkenColor = constants.AnsiColorByIndex[0]
 		styleEntry.Frame.IsSquareFont = false
 	}
 

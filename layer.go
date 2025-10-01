@@ -278,9 +278,9 @@ func (shared *LayerInstanceType) AddScrollbar(styleEntry types.TuiStyleEntryType
 	return scrollbarInstance
 }
 
-func (shared *LayerInstanceType) AddSelector(styleEntry types.TuiStyleEntryType, selectionEntry types.SelectionEntryType, xLocation int, yLocation int, selectorHeight int, itemWidth int, numberOfColumns int, viewportPosition int, selectedItem int, isBorderDrawn bool) selectorInstanceType {
+func (shared *LayerInstanceType) AddSelector(styleEntry types.TuiStyleEntryType, selectionEntry types.SelectionEntryType, xLocation int, yLocation int, selectorHeight int, itemWidth int, numberOfColumns int, viewportPosition int, selectedItem int, highlightOnClickOnly bool, isBorderDrawn bool) selectorInstanceType {
 	selectorAlias := getUUID()
-	selectorInstance := Selector.Add(shared.layerAlias, selectorAlias, styleEntry, selectionEntry, xLocation, yLocation, selectorHeight, itemWidth, numberOfColumns, viewportPosition, selectedItem, isBorderDrawn)
+	selectorInstance := Selector.Add(shared.layerAlias, selectorAlias, styleEntry, selectionEntry, xLocation, yLocation, selectorHeight, itemWidth, numberOfColumns, viewportPosition, selectedItem, highlightOnClickOnly, isBorderDrawn)
 	return selectorInstance
 }
 
@@ -563,6 +563,17 @@ func (shared *LayerInstanceType) IsLayerExists() bool {
 func (shared *LayerInstanceType) SetIsVisible(isVisible bool) {
 	validateLayer(shared.layerAlias)
 	setLayerIsVisible(shared.layerAlias, isVisible)
+}
+
+/*
+GetLocation returns the current x and y location of the layer. This is useful
+when you need to determine the exact position of a layer on the screen. The
+function returns two integer values representing the x and y coordinates.
+*/
+func (shared *LayerInstanceType) GetLocation() (int, int) {
+	validateLayer(shared.layerAlias)
+	layerEntry := Layers.Get(shared.layerAlias)
+	return layerEntry.ScreenXLocation, layerEntry.ScreenYLocation
 }
 
 /*

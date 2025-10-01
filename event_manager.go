@@ -54,6 +54,11 @@ UpdateEventQueues allows you to update all event queues so that information
 such as mouse clicks, keystrokes, and other events are properly registered.
 */
 func UpdateEventQueues() {
+	// Skip event processing if screen is not initialized (e.g., in debug mode or tests)
+	if commonResource.screen == nil {
+		return
+	}
+
 	event := commonResource.screen.PollEvent()
 	switch event := event.(type) {
 	case *tcell.EventResize:

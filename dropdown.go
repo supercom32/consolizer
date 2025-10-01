@@ -145,7 +145,11 @@ the following information should be noted:
 */
 func (shared *DropdownInstanceType) GetValue() string {
 	dropdownEntry := Dropdowns.Get(shared.layerAlias, shared.controlAlias)
-	return dropdownEntry.SelectionEntry.SelectionValue[dropdownEntry.ItemSelected]
+	if len(dropdownEntry.SelectionEntry.SelectionValue) != 0 && 
+	   dropdownEntry.ItemSelected >= 0 && dropdownEntry.ItemSelected < len(dropdownEntry.SelectionEntry.SelectionValue) {
+		return dropdownEntry.SelectionEntry.SelectionValue[dropdownEntry.ItemSelected]
+	}
+	return ""
 }
 
 /*
@@ -158,7 +162,11 @@ the following information should be noted:
 */
 func (shared *DropdownInstanceType) GetAlias() string {
 	dropdownEntry := Dropdowns.Get(shared.layerAlias, shared.controlAlias)
-	return dropdownEntry.SelectionEntry.SelectionAlias[dropdownEntry.ItemSelected]
+	if len(dropdownEntry.SelectionEntry.SelectionAlias) != 0 && 
+	   dropdownEntry.ItemSelected >= 0 && dropdownEntry.ItemSelected < len(dropdownEntry.SelectionEntry.SelectionAlias) {
+		return dropdownEntry.SelectionEntry.SelectionAlias[dropdownEntry.ItemSelected]
+	}
+	return ""
 }
 
 func (shared *DropdownInstanceType) GetSelectedItemIndex() int {
@@ -208,7 +216,7 @@ func (shared *dropdownType) Add(layerAlias string, dropdownAlias string, styleEn
 	}
 	dropdownEntry.SelectorAlias = stringformat.GetLastSortedUUID()
 	// Here we add +1 to x and y to account for borders around the selection.
-	Selector.Add(layerAlias, dropdownEntry.SelectorAlias, styleEntry, selectionEntry, xLocation+1, yLocation+1, selectorHeight, selectorWidth, 1, 0, 0, true)
+	Selector.Add(layerAlias, dropdownEntry.SelectorAlias, styleEntry, selectionEntry, xLocation+1, yLocation+1, selectorHeight, selectorWidth, 1, 0, 0, false, true)
 	selectorEntry := Selectors.Get(layerAlias, dropdownEntry.SelectorAlias)
 	selectorEntry.IsVisible = false
 	dropdownEntry.ScrollbarAlias = selectorEntry.ScrollbarAlias
@@ -289,7 +297,13 @@ func (shared *dropdownType) drawDropdown(layerEntry *types.LayerEntryType, dropd
 	attributeEntry.BackgroundColor = localStyleEntry.Selector.BackgroundColor
 	attributeEntry.CellType = constants.CellTypeDropdown
 	attributeEntry.CellControlAlias = dropdownAlias
-	itemSelected := dropdownEntry.SelectionEntry.SelectionValue[dropdownEntry.ItemSelected]
+
+	var itemSelected string
+	if len(dropdownEntry.SelectionEntry.SelectionValue) != 0 && 
+	   dropdownEntry.ItemSelected >= 0 && dropdownEntry.ItemSelected < len(dropdownEntry.SelectionEntry.SelectionValue) {
+		itemSelected = dropdownEntry.SelectionEntry.SelectionValue[dropdownEntry.ItemSelected]
+	}
+
 	// We add +2 to account for the Dropdown border window which will appear. Otherwise, the item name
 	// will appear 2 characters smaller than the popup Dropdown window.
 	formattedItemName := stringformat.GetFormattedString(itemSelected, dropdownEntry.ItemWidth+2, localStyleEntry.Selector.TextAlignment)

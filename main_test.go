@@ -38,7 +38,7 @@ func testProgressBar() {
 	styleEntry.ProgressBar.UnfilledBackgroundColor = constants.ColorBrightGreen
 
 	// Create a horizontal progress bar (default)
-	horizontalProgressBar := layer1.AddProgressBar("Horizontal Progress Bar", styleEntry, 21, 5, 40, 3, 10, 20, true)
+	horizontalProgressBar := layer1.AddProgressBar("Horizontal Progress Bar", styleEntry, 21, 5, 40, 3, false, 10, 20, true)
 
 	// Create a vertical progress bar
 	verticalProgressBar := layer1.AddProgressBar("Vertical Progress Bar", styleEntry, 21, 10, 3, 20, true, 10, 20, true)
@@ -228,11 +228,11 @@ func testDropdown() {
 	layer1.AddDropdown(styleEntry, selectionEntry, 2, 2, 8, 7, 3)
 	layer1.AddDropdown(styleEntry, selectionEntry2, 2, 39, 3, 7, 1)
 
-	layer1.AddSelector(styleEntry, selectionEntry, 6, 10, 4, 7, 3, 0, -1, false)
-	layer1.AddSelector(styleEntry, selectionEntry, 10, 20, 4, 7, 1, 0, -1, false)
+	layer1.AddSelector(styleEntry, selectionEntry, 6, 10, 4, 7, 3, 0, -1, true, false)
+	layer1.AddSelector(styleEntry, selectionEntry, 10, 20, 4, 7, 1, 0, -1, true, false)
 
 	styleEntry.Selector.TextAlignment = constants.AlignmentNoPadding
-	layer1.AddSelector(styleEntry, selectionEntry, 6, 30, 4, 7, 1, 0, -1, false)
+	layer1.AddSelector(styleEntry, selectionEntry, 6, 30, 4, 7, 1, 0, -1, true, false)
 	for {
 		UpdateDisplay(false)
 		key := string(Inkey())
@@ -316,7 +316,7 @@ func testSelector() {
 	for i := 0; i < 20; i++ {
 		selectionEntry.Add(strconv.Itoa(i), strconv.Itoa(i))
 	}
-	menuBarInstance := layer1.AddSelector(styleEntry, selectionEntry, 2, 10, 4, 7, 3, 0, -1, false)
+	menuBarInstance := layer1.AddSelector(styleEntry, selectionEntry, 2, 10, 4, 7, 3, 0, -1, true, false)
 	// menuBarInstance2 := Selector.AddLayer(layerAlias1, "menuBar2", styleEntry, selectionEntry, 10, 20, 4, 7, 1, 0, -1, false)
 	LocateLayer(layer1, 3, 3)
 	PrintLayer(layer1, menuBarInstance.layerAlias)

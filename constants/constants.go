@@ -254,3 +254,16 @@ const NullControlType = 0
 const NullScrollbarValue = -1
 
 const DefaultTooltipHoverTime = 1000
+
+const (
+	ButtonStateUnpressed = iota
+	ButtonStatePressed
+	ButtonStateHovering
+)
+
+const (
+	_ = iota
+	MouseButtonLeft
+	MouseButtonMiddle
+	MouseButtonRight
+)

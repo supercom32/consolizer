@@ -17,6 +17,7 @@ type SelectorEntryType struct {
 	ViewportPosition int
 	ItemHighlighted  int
 	ItemSelected     int
+	HighlightOnClickOnly bool
 }
 
 /*
@@ -42,28 +43,30 @@ information should be noted:
 func (shared SelectorEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
 		BaseControlType
-		ScrollbarAlias   string
-		SelectionEntry   SelectionEntryType
-		ItemWidth        int
-		ColumnCount      int
-		NumberOfColumns  int
-		ViewportX        int
-		ViewportY        int
-		ViewportPosition int
-		ItemHighlighted  int
-		ItemSelected     int
+		ScrollbarAlias       string
+		SelectionEntry       SelectionEntryType
+		ItemWidth            int
+		ColumnCount          int
+		NumberOfColumns      int
+		ViewportX            int
+		ViewportY            int
+		ViewportPosition     int
+		ItemHighlighted      int
+		ItemSelected         int
+		HighlightOnClickOnly bool
 	}{
-		BaseControlType:  shared.BaseControlType,
-		ScrollbarAlias:   shared.ScrollbarAlias,
-		SelectionEntry:   shared.SelectionEntry,
-		ItemWidth:        shared.ItemWidth,
-		ColumnCount:      shared.ColumnCount,
-		NumberOfColumns:  shared.NumberOfColumns,
-		ViewportX:        shared.ViewportX,
-		ViewportY:        shared.ViewportY,
-		ViewportPosition: shared.ViewportPosition,
-		ItemHighlighted:  shared.ItemHighlighted,
-		ItemSelected:     shared.ItemSelected,
+		BaseControlType:      shared.BaseControlType,
+		ScrollbarAlias:       shared.ScrollbarAlias,
+		SelectionEntry:       shared.SelectionEntry,
+		ItemWidth:            shared.ItemWidth,
+		ColumnCount:          shared.ColumnCount,
+		NumberOfColumns:      shared.NumberOfColumns,
+		ViewportX:            shared.ViewportX,
+		ViewportY:            shared.ViewportY,
+		ViewportPosition:     shared.ViewportPosition,
+		ItemHighlighted:      shared.ItemHighlighted,
+		ItemSelected:         shared.ItemSelected,
+		HighlightOnClickOnly: shared.HighlightOnClickOnly,
 	})
 	if err != nil {
 		return nil, err
@@ -110,6 +113,7 @@ func NewSelectorEntry(existingSelectorEntry ...*SelectorEntryType) SelectorEntry
 		selectorEntry.ViewportY = existingSelectorEntry[0].ViewportY
 		selectorEntry.ViewportPosition = existingSelectorEntry[0].ViewportPosition
 		selectorEntry.ItemHighlighted = existingSelectorEntry[0].ItemHighlighted
+		selectorEntry.HighlightOnClickOnly = existingSelectorEntry[0].HighlightOnClickOnly
 		selectorEntry.ItemSelected = existingSelectorEntry[0].ItemSelected
 	}
 	return selectorEntry
@@ -126,6 +130,7 @@ func IsSelectorEntryEqual(sourceSelectorEntry *SelectorEntryType, targetSelector
 		sourceSelectorEntry.ViewportY == targetSelectorEntry.ViewportY &&
 		sourceSelectorEntry.ViewportPosition == targetSelectorEntry.ViewportPosition &&
 		sourceSelectorEntry.ItemHighlighted == targetSelectorEntry.ItemHighlighted &&
+		sourceSelectorEntry.HighlightOnClickOnly == targetSelectorEntry.HighlightOnClickOnly &&
 		sourceSelectorEntry.ItemSelected == targetSelectorEntry.ItemSelected {
 		return true
 	}
