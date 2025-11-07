@@ -120,7 +120,7 @@ func TestCheckboxDeleteAll(test *testing.T) {
 	UpdateDisplay(false)
 
 	// Delete all checkboxes
-	Checkbox.DeleteAllCheckboxesFromLayer(layer1.layerAlias)
+	Checkbox.DeleteAllCheckboxes(layer1.layerAlias)
 
 	UpdateDisplay(false)
 	layerEntry := commonResource.screenLayer

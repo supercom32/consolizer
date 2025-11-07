@@ -184,7 +184,7 @@ func TestLayerDrawingMethods(t *testing.T) {
 	// Test filling methods
 	layerInstance.FillArea("X", 0, 0, 10, 10)
 	layerInstance.FillLayer("Y")
-	layerInstance.DrawBar(0, 0, 10, "Z")
+	layerInstance.DrawBar(styleEntry, 0, 0, 10, "Z")
 
 	// Test text methods
 	layerInstance.Locate(0, 0)
@@ -193,6 +193,105 @@ func TestLayerDrawingMethods(t *testing.T) {
 
 	// Test color methods
 	layerInstance.Color24Bit(constants.ColorWhite, constants.ColorBlack)
+	DeleteAllLayers()
+}
+
+func TestPrintMethod(t *testing.T) {
+	commonResource.isDebugEnabled = true
+	InitializeTerminal(80, 25)
+	layer.ReInitializeScreenMemory()
+
+	// Create a test layer
+	layerInstance := AddLayer(0, 0, 40, 20, 1, nil)
+
+	// Create a test style for markup testing
+	redStyle := NewTextStyle()
+	redStyle.ForegroundColor = GetRGBColor(255, 0, 0) // Red
+	AddTextStyle("red", redStyle)
+
+	blueStyle := NewTextStyle()
+	blueStyle.ForegroundColor = GetRGBColor(0, 0, 255) // Blue
+	AddTextStyle("blue", blueStyle)
+
+	// Test 1: Basic printing
+	layerInstance.Locate(0, 0)
+	layerInstance.Print("Basic text")
+	layerEntry := Layers.Get(layerInstance.layerAlias)
+
+	// Verify basic text was printed correctly
+	for i := 0; i < 9; i++ {
+		expectedChar := []rune("Basic text")[i]
+		actualChar := layerEntry.CharacterMemory[0][i].Character
+		if actualChar != expectedChar {
+			t.Errorf("Basic text printing failed. Expected '%c' at position %d, got '%c'", expectedChar, i, actualChar)
+		}
+	}
+
+	// Test 2: Space preservation
+	layerInstance.Locate(0, 1)
+	layerInstance.Print("Text with   multiple    spaces")
+
+	// Verify spaces are preserved
+	expectedText := "Text with   multiple    spaces"
+	for i := 0; i < len(expectedText); i++ {
+		expectedChar := []rune(expectedText)[i]
+		actualChar := layerEntry.CharacterMemory[1][i].Character
+		if actualChar != expectedChar {
+			t.Errorf("Space preservation failed. Expected '%c' at position %d, got '%c'", expectedChar, i, actualChar)
+		}
+	}
+
+	// Test 3: Markup handling with PrintMarkup
+	layerInstance.PrintMarkup(0, 2, 40, "Normal {{red}}Red{{}} and {{blue}}Blue{{}} text")
+
+	// Verify normal text color
+	if layerEntry.CharacterMemory[2][0].AttributeEntry.ForegroundColor != layerEntry.DefaultAttribute.ForegroundColor {
+		t.Errorf("Markup handling failed. Normal text should have default color")
+	}
+
+	// Verify red text color (character 'R' at position 7)
+	redColor := GetRGBColor(255, 0, 0)
+	if layerEntry.CharacterMemory[2][7].AttributeEntry.ForegroundColor != redColor {
+		t.Errorf("Markup handling failed. Text should be red")
+	}
+
+	// Verify blue text color (character 'B' at position 16)
+	blueColor := GetRGBColor(0, 0, 255)
+	if layerEntry.CharacterMemory[2][16].AttributeEntry.ForegroundColor != blueColor {
+		t.Errorf("Markup handling failed. Text should be blue")
+	}
+
+	// Test 4: Missing/broken tags with PrintMarkup
+	layerInstance.PrintMarkup(0, 3, 40, "Text with {{redincomplete tag")
+	layerEntry.GetBasicAnsiStringAsBase64()
+
+	// Verify text with incomplete tag is printed correctly
+	expectedText = "Text with {{redincomplete tag"
+	for i := 0; i < len(expectedText); i++ {
+		expectedChar := []rune(expectedText)[i]
+		actualChar := layerEntry.CharacterMemory[3][i].Character
+		if actualChar != expectedChar {
+			t.Errorf("Missing tag handling failed. Expected '%c' at position %d, got '%c'", expectedChar, i, actualChar)
+		}
+	}
+
+	// Test 5: Empty tags with PrintMarkup
+	layerInstance.PrintMarkup(0, 4, 40, "Text with {{}}empty tag")
+
+	// Verify text with empty tag is printed with default style
+	if layerEntry.CharacterMemory[4][10].AttributeEntry.ForegroundColor != layerEntry.DefaultAttribute.ForegroundColor {
+		t.Errorf("Empty tag handling failed. Text should have default color")
+	}
+
+	// Test 6: Long text with word wrapping
+	longText := "This is a very long text that should wrap to the next line when printed with word wrapping enabled"
+	layerInstance.PrintMarkup(0, 5, 20, longText)
+
+	// Verify text wrapping (check if text continues on next line)
+	if layerEntry.CharacterMemory[6][0].Character == 0 {
+		t.Errorf("Word wrapping failed. Text should continue on next line")
+	}
+
 	DeleteAllLayers()
 }
 
@@ -586,7 +685,7 @@ func TestLayerAndControlMemoryLeaks(t *testing.T) {
 		// Add controls to child layer
 		childLayer.AddButton("Child Button", styleEntry, 0, 0, 10, 1, true)
 		childLayer.AddLabel("Child Label", styleEntry, 0, 1, 10)
- 	childLayer.AddProgressBar("Progress", styleEntry, 0, 2, 10, 1, false, 50, 100, false)
+		childLayer.AddProgressBar("Progress", styleEntry, 0, 2, 10, 1, false, 50, 100, false)
 
 		// Delete layers and verify all controls are deleted
 		rootLayer.DeleteLayer()

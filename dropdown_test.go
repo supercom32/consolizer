@@ -13,7 +13,7 @@ func TestDropdownDefaultState(test *testing.T) {
 	selectionEntry := types.NewSelectionEntry()
 	selectionEntry.SelectionAlias = []string{"item1", "item2", "item3"}
 	selectionEntry.SelectionValue = []string{"Item 1", "Item 2", "Item 3"}
-	Dropdown.Add(layer1.layerAlias, "testDropdown", styleEntry, selectionEntry, 2, 2, 3, 10, 0)
+	layer1.AddDropdown(styleEntry, selectionEntry, 2, 2, 3, 10, 0)
 	UpdateDisplay(false)
 	layerEntry := commonResource.screenLayer
 	obtainedValue := layerEntry.GetBasicAnsiStringAsBase64()
@@ -31,7 +31,7 @@ func TestDropdownWithDefaultSelection(test *testing.T) {
 	selectionEntry := types.NewSelectionEntry()
 	selectionEntry.SelectionAlias = []string{"item1", "item2", "item3"}
 	selectionEntry.SelectionValue = []string{"Item 1", "Item 2", "Item 3"}
-	dropdownInstance := Dropdown.Add(layer1.layerAlias, "testDropdown", styleEntry, selectionEntry, 2, 2, 3, 10, 1)
+	dropdownInstance := layer1.AddDropdown(styleEntry, selectionEntry, 2, 2, 3, 10, 1)
 	UpdateDisplay(false)
 	layerEntry := commonResource.screenLayer
 	obtainedValue := layerEntry.GetBasicAnsiStringAsBase64()
@@ -59,13 +59,13 @@ func TestDropdownOpenState(test *testing.T) {
 	selectionEntry := types.NewSelectionEntry()
 	selectionEntry.SelectionAlias = []string{"item1", "item2", "item3"}
 	selectionEntry.SelectionValue = []string{"Item 1", "Item 2", "Item 3"}
-	Dropdown.Add(layer1.layerAlias, "testDropdown", styleEntry, selectionEntry, 2, 2, 3, 10, 0)
+	dropdownInstance := layer1.AddDropdown(styleEntry, selectionEntry, 2, 2, 3, 10, 0)
 
 	// Set focus to the dropdown
-	setFocusedControl(layer1.layerAlias, "testDropdown", constants.CellTypeDropdown)
+	setFocusedControl(layer1.layerAlias, dropdownInstance.GetAlias(), constants.CellTypeDropdown)
 
 	// Simulate opening the dropdown
-	dropdownEntry := Dropdown.Get(layer1.layerAlias, "testDropdown")
+	dropdownEntry := Dropdown.Get(layer1.layerAlias, dropdownInstance.controlAlias)
 	dropdownEntry.IsTrayOpen = true
 
 	// Make selector visible
@@ -89,13 +89,13 @@ func TestDropdownChangeSelection(test *testing.T) {
 	selectionEntry := types.NewSelectionEntry()
 	selectionEntry.SelectionAlias = []string{"item1", "item2", "item3"}
 	selectionEntry.SelectionValue = []string{"Item 1", "Item 2", "Item 3"}
-	dropdownInstance := Dropdown.Add(layer1.layerAlias, "testDropdown", styleEntry, selectionEntry, 2, 2, 3, 10, 0)
+	dropdownInstance := layer1.AddDropdown(styleEntry, selectionEntry, 2, 2, 3, 10, 0)
 
 	// Set focus to the dropdown
-	setFocusedControl(layer1.layerAlias, "testDropdown", constants.CellTypeDropdown)
+	setFocusedControl(layer1.layerAlias, dropdownInstance.GetAlias(), constants.CellTypeDropdown)
 
 	// Simulate opening the dropdown
-	dropdownEntry := Dropdown.Get(layer1.layerAlias, "testDropdown")
+	dropdownEntry := Dropdown.Get(layer1.layerAlias, dropdownInstance.controlAlias)
 	dropdownEntry.IsTrayOpen = true
 
 	// Make selector visible
@@ -132,13 +132,13 @@ func TestDropdownWithManyItems(test *testing.T) {
 	selectionEntry := types.NewSelectionEntry()
 	selectionEntry.SelectionAlias = []string{"item1", "item2", "item3", "item4", "item5", "item6"}
 	selectionEntry.SelectionValue = []string{"Item 1", "Item 2", "Item 3", "Item 4", "Item 5", "Item 6"}
-	Dropdown.Add(layer1.layerAlias, "testDropdown", styleEntry, selectionEntry, 2, 2, 3, 10, 0)
+	dropdownInstance := layer1.AddDropdown(styleEntry, selectionEntry, 2, 2, 3, 10, 0)
 
 	// Set focus to the dropdown
-	setFocusedControl(layer1.layerAlias, "testDropdown", constants.CellTypeDropdown)
+	setFocusedControl(layer1.layerAlias, dropdownInstance.GetAlias(), constants.CellTypeDropdown)
 
 	// Simulate opening the dropdown
-	dropdownEntry := Dropdown.Get(layer1.layerAlias, "testDropdown")
+	dropdownEntry := Dropdown.Get(layer1.layerAlias, dropdownInstance.controlAlias)
 	dropdownEntry.IsTrayOpen = true
 
 	// Make selector visible
@@ -166,13 +166,13 @@ func TestDropdownScrolling(test *testing.T) {
 	selectionEntry := types.NewSelectionEntry()
 	selectionEntry.SelectionAlias = []string{"item1", "item2", "item3", "item4", "item5", "item6"}
 	selectionEntry.SelectionValue = []string{"Item 1", "Item 2", "Item 3", "Item 4", "Item 5", "Item 6"}
-	Dropdown.Add(layer1.layerAlias, "testDropdown", styleEntry, selectionEntry, 2, 2, 3, 10, 0)
+	dropdownInstance := layer1.AddDropdown(styleEntry, selectionEntry, 2, 2, 3, 10, 0)
 
 	// Set focus to the dropdown
-	setFocusedControl(layer1.layerAlias, "testDropdown", constants.CellTypeDropdown)
+	setFocusedControl(layer1.layerAlias, dropdownInstance.GetAlias(), constants.CellTypeDropdown)
 
 	// Simulate opening the dropdown
-	dropdownEntry := Dropdown.Get(layer1.layerAlias, "testDropdown")
+	dropdownEntry := Dropdown.Get(layer1.layerAlias, dropdownInstance.controlAlias)
 	dropdownEntry.IsTrayOpen = true
 
 	// Make selector visible
@@ -204,7 +204,7 @@ func TestDropdownDelete(test *testing.T) {
 	selectionEntry := types.NewSelectionEntry()
 	selectionEntry.SelectionAlias = []string{"item1", "item2", "item3"}
 	selectionEntry.SelectionValue = []string{"Item 1", "Item 2", "Item 3"}
-	dropdownInstance := Dropdown.Add(layer1.layerAlias, "testDropdown", styleEntry, selectionEntry, 2, 2, 3, 10, 0)
+	dropdownInstance := layer1.AddDropdown(styleEntry, selectionEntry, 2, 2, 3, 10, 0)
 	UpdateDisplay(false)
 
 	// Delete the dropdown
@@ -227,8 +227,8 @@ func TestDropdownDeleteAll(test *testing.T) {
 	selectionEntry := types.NewSelectionEntry()
 	selectionEntry.SelectionAlias = []string{"item1", "item2", "item3"}
 	selectionEntry.SelectionValue = []string{"Item 1", "Item 2", "Item 3"}
-	Dropdown.Add(layer1.layerAlias, "testDropdown1", styleEntry, selectionEntry, 2, 2, 3, 10, 0)
-	Dropdown.Add(layer1.layerAlias, "testDropdown2", styleEntry, selectionEntry, 2, 6, 3, 10, 1)
+	layer1.AddDropdown(styleEntry, selectionEntry, 2, 2, 3, 10, 0)
+	layer1.AddDropdown(styleEntry, selectionEntry, 2, 6, 3, 10, 1)
 	UpdateDisplay(false)
 
 	// Delete all dropdowns
@@ -251,10 +251,10 @@ func TestDropdownFocus(test *testing.T) {
 	selectionEntry := types.NewSelectionEntry()
 	selectionEntry.SelectionAlias = []string{"item1", "item2", "item3"}
 	selectionEntry.SelectionValue = []string{"Item 1", "Item 2", "Item 3"}
-	Dropdown.Add(layer1.layerAlias, "testDropdown", styleEntry, selectionEntry, 2, 2, 3, 10, 0)
+	dropdownInstance := layer1.AddDropdown(styleEntry, selectionEntry, 2, 2, 3, 10, 0)
 
 	// Set focus to the dropdown
-	setFocusedControl(layer1.layerAlias, "testDropdown", constants.CellTypeDropdown)
+	setFocusedControl(layer1.layerAlias, dropdownInstance.GetAlias(), constants.CellTypeDropdown)
 
 	UpdateDisplay(false)
 	layerEntry := commonResource.screenLayer

@@ -20,6 +20,8 @@ type FrameStyle struct {
 	CrossConnector      rune
 	DesktopPattern      rune
 	IsSquareFont        bool
+	ForegroundColor     constants.ColorType
+	BackgroundColor     constants.ColorType
 }
 
 // LabelStyle contains styles for labels
@@ -97,6 +99,7 @@ type SelectorStyle struct {
 	HighlightForegroundColor constants.ColorType
 	HighlightBackgroundColor constants.ColorType
 	TextAlignment            int
+	IsSelectionCentered      bool
 }
 
 // ButtonStyle contains styles for buttons
@@ -118,17 +121,30 @@ type TooltipStyle struct {
 
 // WindowStyle contains styles for windows
 type WindowStyle struct {
-	IsHeaderDrawn                  bool
-	IsFooterDrawn                  bool
-	LineDrawingTextForegroundColor constants.ColorType
-	LineDrawingTextBackgroundColor constants.ColorType
-	LineDrawingTextLabelColor      constants.ColorType
-	LineDrawingSunkenColor         constants.ColorType
-	LineDrawingRaisedColor         constants.ColorType
+	IsHeaderDrawn                       bool
+	IsFooterDrawn                       bool
+	LineDrawingTextForegroundColor      constants.ColorType
+	LineDrawingTextBackgroundColor      constants.ColorType
+	LineDrawingTextLabelColor           constants.ColorType
+	LineDrawingSunkenColor              constants.ColorType
+	LineDrawingRaisedColor              constants.ColorType
+	LineDrawingTextLabelForegroundColor constants.ColorType
+	LineDrawingTextLabelBackgroundColor constants.ColorType
+}
+
+type BarStyle struct {
+	ForegroundColor constants.ColorType
+	BackgroundColor constants.ColorType
+}
+
+type TextStyle struct {
+	ForegroundColor constants.ColorType
+	BackgroundColor constants.ColorType
 }
 
 // TuiStyleEntryType contains all UI style definitions
 type TuiStyleEntryType struct {
+	Text        TextStyle
 	Frame       FrameStyle
 	Label       LabelStyle
 	Checkbox    CheckboxStyle
@@ -141,6 +157,7 @@ type TuiStyleEntryType struct {
 	Button      ButtonStyle
 	Tooltip     TooltipStyle
 	Window      WindowStyle
+	Bar         BarStyle
 }
 
 func (shared TuiStyleEntryType) GetEntryAsJsonDump() string {
@@ -157,6 +174,8 @@ func NewTuiStyleEntry(existingStyleEntry ...*TuiStyleEntryType) TuiStyleEntryTyp
 	if existingStyleEntry != nil {
 		styleEntry = *existingStyleEntry[0]
 	} else {
+		styleEntry.Text.BackgroundColor = constants.AnsiColorByIndex[0]
+		styleEntry.Text.ForegroundColor = constants.AnsiColorByIndex[15]
 		styleEntry.Frame.UpperLeftCorner = constants.CharULCorner
 		styleEntry.Frame.UpperRightCorner = constants.CharURCorner
 		styleEntry.Frame.HorizontalLine = constants.CharHLine
@@ -169,6 +188,8 @@ func NewTuiStyleEntry(existingStyleEntry ...*TuiStyleEntryType) TuiStyleEntryTyp
 		styleEntry.Frame.LowerLeftCorner = constants.CharSingleLineLowerLeftCorner
 		styleEntry.Frame.CrossConnector = constants.CharSingleLineCross
 		styleEntry.Frame.DesktopPattern = constants.CharBlockSparce
+		styleEntry.Frame.ForegroundColor = constants.AnsiColorByIndex[0]
+		styleEntry.Frame.BackgroundColor = constants.AnsiColorByIndex[15]
 
 		styleEntry.Label.ForegroundColor = constants.AnsiColorByIndex[15]
 		styleEntry.Label.BackgroundColor = constants.AnsiColorByIndex[0]
@@ -234,8 +255,10 @@ func NewTuiStyleEntry(existingStyleEntry ...*TuiStyleEntryType) TuiStyleEntryTyp
 		styleEntry.Window.IsFooterDrawn = false
 		styleEntry.Window.LineDrawingTextForegroundColor = constants.AnsiColorByIndex[15]
 		styleEntry.Window.LineDrawingTextBackgroundColor = constants.AnsiColorByIndex[0]
+		styleEntry.Window.LineDrawingTextLabelForegroundColor = constants.AnsiColorByIndex[15]
+		styleEntry.Window.LineDrawingTextLabelBackgroundColor = constants.AnsiColorByIndex[15]
 		styleEntry.Window.LineDrawingTextLabelColor = constants.AnsiColorByIndex[15]
-		styleEntry.Window.LineDrawingRaisedColor = constants.AnsiColorByIndex[0]
+		styleEntry.Window.LineDrawingRaisedColor = constants.AnsiColorByIndex[15]
 		styleEntry.Window.LineDrawingSunkenColor = constants.AnsiColorByIndex[0]
 		styleEntry.Frame.IsSquareFont = false
 	}

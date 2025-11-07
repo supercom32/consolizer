@@ -253,6 +253,20 @@ const NullControlType = 0
 
 const NullScrollbarValue = -1
 
+// Control type string constants
+const TYPE_BUTTON = "button"
+const TYPE_CHECKBOX = "checkbox"
+const TYPE_DROPDOWN = "dropdown"
+const TYPE_LABEL = "label"
+const TYPE_PROGRESSBAR = "progressbar"
+const TYPE_SCROLLBAR = "scrollbar"
+const TYPE_SELECTOR = "selector"
+const TYPE_TEXTBOX = "textbox"
+const TYPE_TEXTFIELD = "textfield"
+const TYPE_TOOLTIP = "tooltip"
+const TYPE_RADIOBUTTON = "radiobutton"
+const TYPE_VIEWPORT = "viewport"
+
 const DefaultTooltipHoverTime = 1000
 
 const (

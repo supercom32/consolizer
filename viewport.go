@@ -43,8 +43,8 @@ func DeleteViewport(layerAlias string, viewportAlias string) {
 	viewport.DeleteViewport(layerAlias, viewportAlias)
 }
 
-// DeleteAllViewportsFromLayer removes all viewports from the specified layer.
-func DeleteAllViewportsFromLayer(layerAlias string) {
+// DeleteAllViewports removes all viewports from the specified layer.
+func DeleteAllViewports(layerAlias string) {
 	// Get all entries for the layer
 	entries := Viewports.GetAllEntries(layerAlias)
 	// Remove each entry
@@ -547,7 +547,7 @@ func (shared *viewportType) AddViewport(layerAlias string, viewportAlias string,
 	// Set up the viewport instance
 	viewportInstance.layerAlias = layerAlias
 	viewportInstance.controlAlias = viewportAlias
-	viewportInstance.controlType = "viewport"
+	viewportInstance.controlType = constants.TYPE_VIEWPORT
 
 	return viewportInstance
 }
@@ -681,7 +681,7 @@ func (shared *viewportType) drawViewportContent(layerEntry *types.LayerEntryType
 			for x := 0; x < contentWidth; x++ {
 				// Create a space character with the background color
 				spaceChar := []rune{' '}
-				printLayer(layerEntry, localAttributeEntry, contentXLocation+x, contentYLocation+y, spaceChar)
+				layer.printLayer(layerEntry, localAttributeEntry, contentXLocation+x, contentYLocation+y, spaceChar)
 			}
 		}
 	}
@@ -724,7 +724,7 @@ func (shared *viewportType) drawViewportContent(layerEntry *types.LayerEntryType
 					}
 
 					// Print the character with the current attribute entry
-					printLayer(layerEntry, currentAttributeEntry, cursorXLocation, contentYLocation+y, []rune{line[currentCharacterIndex]})
+					layer.printLayer(layerEntry, currentAttributeEntry, cursorXLocation, contentYLocation+y, []rune{line[currentCharacterIndex]})
 					cursorXLocation++
 				}
 			}
@@ -786,7 +786,7 @@ func (shared *viewportType) drawViewportScrollbars(layerEntry *types.LayerEntryT
 		localAttributeEntry := types.NewAttributeEntry()
 		localAttributeEntry.BackgroundColor = styleEntry.Textbox.BackgroundColor
 		spaceChar := []rune{' '}
-		printLayer(layerEntry, localAttributeEntry, cornerX, cornerY, spaceChar)
+		layer.printLayer(layerEntry, localAttributeEntry, cornerX, cornerY, spaceChar)
 	} else {
 		// Restore original lengths if only one scrollbar is visible
 		if hScrollbarEntry != nil && isHorizontalScrollbarVisible && !isVerticalScrollbarVisible {

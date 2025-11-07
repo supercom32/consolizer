@@ -21,6 +21,7 @@ func TestStyleTypeCreation(test *testing.T) {
 	firstStyleEntry.Frame.LowerLeftCorner = 'i'
 	firstStyleEntry.Frame.CrossConnector = 'j'
 	firstStyleEntry.Frame.DesktopPattern = 'k'
+	firstStyleEntry.Frame.IsSquareFont = true
 	firstStyleEntry.ProgressBar.UnfilledPattern = 'l'
 	firstStyleEntry.ProgressBar.FilledPattern = 'm'
 	firstStyleEntry.Window.LineDrawingTextForegroundColor = constants.AnsiColorByIndex[1]
@@ -36,7 +37,6 @@ func TestStyleTypeCreation(test *testing.T) {
 	firstStyleEntry.Button.RaisedColor = constants.AnsiColorByIndex[11]
 	firstStyleEntry.Button.ForegroundColor = constants.AnsiColorByIndex[12]
 	firstStyleEntry.Button.BackgroundColor = constants.AnsiColorByIndex[13]
-	firstStyleEntry.Misc.IsSquareFont = true
 	firstStyleEntry.Window.IsFooterDrawn = true
 	firstStyleEntry.Window.IsHeaderDrawn = true
 	firstStyleEntry.Selector.TextAlignment = constants.AlignmentLeft

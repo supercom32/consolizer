@@ -7,7 +7,7 @@ import (
 	"github.com/supercom32/consolizer/types"
 )
 
-type CheckboxInstanceType struct {
+type checkboxInstanceType struct {
 	BaseControlInstanceType
 }
 
@@ -36,14 +36,12 @@ func DeleteAllCheckboxesFromLayer(layerAlias string) {
 	}
 }
 
-func (shared *CheckboxInstanceType) Delete() *CheckboxInstanceType {
-	if Checkboxes.IsExists(shared.layerAlias, shared.controlAlias) {
-		Checkboxes.Remove(shared.layerAlias, shared.controlAlias)
-	}
+func (shared *checkboxInstanceType) Delete() *checkboxInstanceType {
+	shared.BaseControlInstanceType.Delete()
 	return nil
 }
 
-func (shared *CheckboxInstanceType) AddToTabIndex() {
+func (shared *checkboxInstanceType) AddToTabIndex() {
 	addTabIndex(shared.layerAlias, shared.controlAlias, constants.CellTypeCheckbox)
 }
 
@@ -51,7 +49,7 @@ func (shared *CheckboxInstanceType) AddToTabIndex() {
 IsCheckboxSelected allows you to detect if the given Checkbox is selected or not. If the Checkbox instance
 no longer exists, then a result of false is always returned.
 */
-func (shared *CheckboxInstanceType) IsCheckboxSelected() bool {
+func (shared *checkboxInstanceType) IsCheckboxSelected() bool {
 	if Checkboxes.IsExists(shared.layerAlias, shared.controlAlias) {
 		checkboxEntry := Checkboxes.Get(shared.layerAlias, shared.controlAlias)
 		if checkboxEntry.IsSelected == true {
@@ -61,7 +59,7 @@ func (shared *CheckboxInstanceType) IsCheckboxSelected() bool {
 	return false
 }
 
-func (shared *CheckboxInstanceType) SetCheckboxState(isChecked bool) {
+func (shared *checkboxInstanceType) SetCheckboxState(isChecked bool) {
 	if Checkboxes.IsExists(shared.layerAlias, shared.controlAlias) {
 		checkboxEntry := Checkboxes.Get(shared.layerAlias, shared.controlAlias)
 		checkboxEntry.IsSelected = isChecked
@@ -83,7 +81,7 @@ the text layer data under it.
 - If the Checkbox to be drawn falls outside the range of the provided layer,
 then only the visible portion of the Checkbox will be drawn.
 */
-func (shared *checkboxType) Add(layerAlias string, checkboxAlias string, checkboxLabel string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, isSelected bool, isEnabled bool) CheckboxInstanceType {
+func (shared *checkboxType) Add(layerAlias string, checkboxAlias string, checkboxLabel string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, isSelected bool, isEnabled bool) checkboxInstanceType {
 	checkboxEntry := types.NewCheckboxEntry()
 	checkboxEntry.Alias = checkboxAlias
 	checkboxEntry.StyleEntry = styleEntry
@@ -105,10 +103,10 @@ func (shared *checkboxType) Add(layerAlias string, checkboxAlias string, checkbo
 	tooltipInstance.setParentControlAlias(checkboxAlias)
 	// Use the ControlMemoryManager to add the checkbox entry
 	Checkboxes.Add(layerAlias, checkboxAlias, &checkboxEntry)
-	var checkboxInstance CheckboxInstanceType
+	var checkboxInstance checkboxInstanceType
 	checkboxInstance.layerAlias = layerAlias
 	checkboxInstance.controlAlias = checkboxAlias
-	checkboxInstance.controlType = "checkbox"
+	checkboxInstance.controlType = constants.TYPE_CHECKBOX
 	return checkboxInstance
 }
 
@@ -126,7 +124,7 @@ func (shared *checkboxType) DeleteCheckbox(layerAlias string, checkboxAlias stri
 /*
 DeleteAllCheckboxesFromLayer allows you to delete all checkboxes on a given text layer.
 */
-func (shared *checkboxType) DeleteAllCheckboxesFromLayer(layerAlias string) {
+func (shared *checkboxType) DeleteAllCheckboxes(layerAlias string) {
 	Checkboxes.RemoveAll(layerAlias)
 }
 
@@ -169,9 +167,9 @@ func (shared *checkboxType) drawCheckbox(layerEntry *types.LayerEntryType, check
 		secondArrayOfRunes = []rune{localStyleEntry.Checkbox.UnselectedCharacter}
 		attributeEntry.CellControlId = constants.CellControlIdUnchecked
 	}
-	printLayer(layerEntry, attributeEntry, xLocation, yLocation, secondArrayOfRunes)
+	layer.printLayer(layerEntry, attributeEntry, xLocation, yLocation, secondArrayOfRunes)
 	firstArrayOfRunes := stringformat.GetRunesFromString(checkboxLabel)
-	printLayer(layerEntry, attributeEntry, xLocation+2, yLocation, firstArrayOfRunes)
+	layer.printLayer(layerEntry, attributeEntry, xLocation+2, yLocation, firstArrayOfRunes)
 }
 
 /*

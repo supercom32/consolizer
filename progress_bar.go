@@ -28,13 +28,11 @@ func (shared *ProgressBarInstanceType) AddToTabIndex() {
 }
 
 func (shared *ProgressBarInstanceType) Delete() *ProgressBarInstanceType {
-	if ProgressBars.IsExists(shared.layerAlias, shared.controlAlias) {
-		ProgressBars.Remove(shared.layerAlias, shared.controlAlias)
-	}
+	shared.BaseControlInstanceType.Delete()
 	return nil
 }
 
-func (shared *ProgressBarInstanceType) SetProgressBarValue(value int) {
+func (shared *ProgressBarInstanceType) SetValue(value int) {
 	progressBarEntry := ProgressBars.Get(shared.layerAlias, shared.controlAlias)
 	if value <= progressBarEntry.MaxValue {
 		progressBarEntry.Value = value
@@ -43,19 +41,19 @@ func (shared *ProgressBarInstanceType) SetProgressBarValue(value int) {
 	}
 }
 
-func (shared *ProgressBarInstanceType) SetProgressBarMaxValue(value int) {
+func (shared *ProgressBarInstanceType) SetMaxValue(value int) {
 	progressBarEntry := ProgressBars.Get(shared.layerAlias, shared.controlAlias)
 	if value > 0 {
 		progressBarEntry.MaxValue = value
 	}
 }
 
-func (shared *ProgressBarInstanceType) SetProgressBarLabel(label string) {
+func (shared *ProgressBarInstanceType) SetLabel(label string) {
 	progressBarEntry := ProgressBars.Get(shared.layerAlias, shared.controlAlias)
 	progressBarEntry.Label = label
 }
 
-func (shared *ProgressBarInstanceType) IncrementProgressBarValue() {
+func (shared *ProgressBarInstanceType) IncrementValue() {
 	progressBarEntry := ProgressBars.Get(shared.layerAlias, shared.controlAlias)
 	progressBarEntry.Value = progressBarEntry.Value + 1
 	if progressBarEntry.Value > progressBarEntry.MaxValue {
@@ -63,18 +61,18 @@ func (shared *ProgressBarInstanceType) IncrementProgressBarValue() {
 	}
 }
 
-func (shared *ProgressBarInstanceType) GetProgressBarValueAsRatio() string {
+func (shared *ProgressBarInstanceType) GetValueAsRatio() string {
 	progressBarEntry := ProgressBars.Get(shared.layerAlias, shared.controlAlias)
 	valueAsString := fmt.Sprintf("%d/%d", progressBarEntry.Value, progressBarEntry.MaxValue)
 	return valueAsString
 }
 
-func (shared *ProgressBarInstanceType) GetProgressBarValue() int {
+func (shared *ProgressBarInstanceType) GetValue() int {
 	progressBarEntry := ProgressBars.Get(shared.layerAlias, shared.controlAlias)
 	return progressBarEntry.Value
 }
 
-func (shared *ProgressBarInstanceType) GetProgressBarValueAsPercent() string {
+func (shared *ProgressBarInstanceType) GetValueAsPercent() string {
 	var returnValue int
 	progressBarEntry := ProgressBars.Get(shared.layerAlias, shared.controlAlias)
 	if progressBarEntry.MaxValue > 0 {
@@ -112,12 +110,12 @@ func (shared *progressBarType) Add(layerAlias string, progressBarAlias string, p
 	var progressBarInstance ProgressBarInstanceType
 	progressBarInstance.layerAlias = layerAlias
 	progressBarInstance.controlAlias = progressBarAlias
-	progressBarInstance.controlType = "progressbar"
+	progressBarInstance.controlType = constants.TYPE_PROGRESSBAR
 	return progressBarInstance
 }
 
 /*
-DeleteButton allows you to remove a button from a text layer. In addition,
+DeleteProgressBar allows you to remove a button from a text layer. In addition,
 the following information should be noted:
 
 - If you attempt to delete a button which does not exist, then the request
@@ -235,14 +233,14 @@ func drawProgressBar(layerEntry *types.LayerEntryType, progressBarAlias string, 
 
 				// Draw the partial fill character
 				for h := 0; h < height; h++ {
-					printLayer(layerEntry, partialFillAttributeEntry, xLocation+fullCellsCount, yLocation+h, []rune{partialChar})
+					layer.printLayer(layerEntry, partialFillAttributeEntry, xLocation+fullCellsCount, yLocation+h, []rune{partialChar})
 				}
 			} else {
 				// For low resolution, only fill whole blocks
 				// If partialFill is significant enough (e.g., > 0.5), consider it a full block
 				if partialFill > 0.5 && fullCellsCount < width {
 					for h := 0; h < height; h++ {
-						printLayer(layerEntry, attributeEntry, xLocation+fullCellsCount, yLocation+h, []rune{styleEntry.ProgressBar.FilledPattern})
+						layer.printLayer(layerEntry, attributeEntry, xLocation+fullCellsCount, yLocation+h, []rune{styleEntry.ProgressBar.FilledPattern})
 					}
 				}
 			}
@@ -271,7 +269,7 @@ func drawProgressBar(layerEntry *types.LayerEntryType, progressBarAlias string, 
 				partialCellY := fillStartY - 1
 				if partialCellY >= yLocation {
 					for w := 0; w < width; w++ {
-						printLayer(layerEntry, partialFillAttributeEntry, xLocation+w, partialCellY, []rune{partialChar})
+						layer.printLayer(layerEntry, partialFillAttributeEntry, xLocation+w, partialCellY, []rune{partialChar})
 					}
 				}
 			} else {
@@ -281,7 +279,7 @@ func drawProgressBar(layerEntry *types.LayerEntryType, progressBarAlias string, 
 					partialCellY := fillStartY - 1
 					if partialCellY >= yLocation {
 						for w := 0; w < width; w++ {
-							printLayer(layerEntry, attributeEntry, xLocation+w, partialCellY, []rune{styleEntry.ProgressBar.FilledPattern})
+							layer.printLayer(layerEntry, attributeEntry, xLocation+w, partialCellY, []rune{styleEntry.ProgressBar.FilledPattern})
 						}
 					}
 				}
@@ -314,7 +312,7 @@ func drawProgressBar(layerEntry *types.LayerEntryType, progressBarAlias string, 
 		// Center the label for horizontal progress bars
 		centerXLocation := (width - len(progressBarLabel)) / 2
 		centerYLocation := height / 2
-		printLayer(layerEntry, attributeEntry, xLocation+centerXLocation, yLocation+centerYLocation, arrayOfRunes)
+		layer.printLayer(layerEntry, attributeEntry, xLocation+centerXLocation, yLocation+centerYLocation, arrayOfRunes)
 	} else {
 		// For vertical progress bars, check if label is too long for height
 		if len(progressBarLabel) > height {
@@ -338,7 +336,7 @@ func drawProgressBar(layerEntry *types.LayerEntryType, progressBarAlias string, 
 
 		// Print each character of the label vertically
 		for i, char := range arrayOfRunes {
-			printLayer(layerEntry, attributeEntry, xLocation+centerXLocation, yLocation+centerYLocation+i, []rune{char})
+			layer.printLayer(layerEntry, attributeEntry, xLocation+centerXLocation, yLocation+centerYLocation+i, []rune{char})
 		}
 	}
 }

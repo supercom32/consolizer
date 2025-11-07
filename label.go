@@ -32,9 +32,7 @@ func (shared *LabelInstanceType) SetLabelValue(value string) {
 }
 
 func (shared *LabelInstanceType) Delete() *LabelInstanceType {
-	if Labels.IsExists(shared.layerAlias, shared.controlAlias) {
-		Labels.Remove(shared.layerAlias, shared.controlAlias)
-	}
+	shared.BaseControlInstanceType.Delete()
 	return nil
 }
 
@@ -61,7 +59,7 @@ func (shared *labelType) Add(layerAlias string, labelAlias string, labelValue st
 	var labelInstance LabelInstanceType
 	labelInstance.layerAlias = layerAlias
 	labelInstance.controlAlias = labelAlias
-	labelInstance.controlType = "label"
+	labelInstance.controlType = constants.TYPE_LABEL
 	return labelInstance
 }
 
@@ -91,11 +89,11 @@ func drawLabel(layerEntry *types.LayerEntryType, labelAlias string, labelValue s
 	attributeEntry.CellType = constants.CellTypeLabel
 	attributeEntry.CellControlAlias = labelAlias
 	emptyString := strings.Repeat(" ", width)
-	printLayer(layerEntry, attributeEntry, xLocation, yLocation, stringformat.GetRunesFromString(emptyString))
+	layer.printLayer(layerEntry, attributeEntry, xLocation, yLocation, stringformat.GetRunesFromString(emptyString))
 	if len(labelValue) > width {
 		labelValue = string([]rune(labelValue)[:width-3])
 		labelValue = labelValue + "..."
 	}
 	arrayOfRunes := stringformat.GetRunesFromString(labelValue)
-	printLayer(layerEntry, attributeEntry, xLocation, yLocation, arrayOfRunes)
+	layer.printLayer(layerEntry, attributeEntry, xLocation, yLocation, arrayOfRunes)
 }

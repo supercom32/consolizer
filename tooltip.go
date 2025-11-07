@@ -50,7 +50,7 @@ func (shared *tooltipType) Add(layerAlias string, tooltipAlias string, tooltipTe
 	var tooltipInstance TooltipInstanceType
 	tooltipInstance.layerAlias = layerAlias
 	tooltipInstance.controlAlias = tooltipAlias
-	tooltipInstance.controlType = "tooltip"
+	tooltipInstance.controlType = constants.TYPE_TOOLTIP
 	return tooltipInstance
 }
 
@@ -102,11 +102,26 @@ func (shared *tooltipType) renderAllTooltips(layerEntry types.LayerEntryType) {
 	}
 }
 
+/*
+renderTooltip allows you to render a tooltip on a given text layer. This method
+handles both absolute and relative positioning based on the tooltip configuration.
+In addition, the following information should be noted:
+
+- Rendering always starts at the coordinates specified by the user. However, the
+dimensions are always for the text area and borders are drawn around it, not
+inside it.
+
+- If the tooltip is not enabled or not marked as drawn, then no rendering will
+occur.
+
+- When absolute positioning is not used, the tooltip will be positioned relative
+to the current mouse cursor location.
+
+- If borders are enabled, they will be drawn around the text area, expanding
+the total rendered size by 2 characters in both width and height.
+*/
 func (shared *tooltipType) renderTooltip(layerEntry *types.LayerEntryType, tooltipEntry *types.TooltipEntryType) {
-	if !tooltipEntry.IsEnabled {
-		return
-	}
-	if !tooltipEntry.IsDrawn {
+	if !tooltipEntry.IsEnabled || !tooltipEntry.IsDrawn {
 		return
 	}
 	attributeEntry := types.NewAttributeEntry()
@@ -114,24 +129,44 @@ func (shared *tooltipType) renderTooltip(layerEntry *types.LayerEntryType, toolt
 	attributeEntry.BackgroundColor = tooltipEntry.StyleEntry.Tooltip.BackgroundColor
 	attributeEntry.CellType = constants.CellTypeTooltip
 	attributeEntry.CellControlAlias = tooltipEntry.Alias
-	calculatedXLocation := tooltipEntry.TooltipXLocation - 2
-	calculatedYLocation := tooltipEntry.TooltipYLocation - 1
-	calculatedWidth := tooltipEntry.TooltipWidth + 1
+	calculatedXLocation := tooltipEntry.TooltipXLocation
+	calculatedYLocation := tooltipEntry.TooltipYLocation
+	calculatedWidth := tooltipEntry.TooltipWidth
 	calculatedHeight := tooltipEntry.TooltipHeight
 	if !tooltipEntry.IsLocationAbsolute {
 		mouseXLocation, mouseYLocation, _, _ := GetMouseStatus()
-		calculatedXLocation = mouseXLocation + tooltipEntry.TooltipXLocation - 2
-		calculatedYLocation = mouseYLocation + tooltipEntry.TooltipYLocation - 1
-		calculatedWidth = tooltipEntry.TooltipWidth + 1
+		calculatedXLocation = mouseXLocation + tooltipEntry.TooltipXLocation
+		calculatedYLocation = mouseYLocation + tooltipEntry.TooltipYLocation
+		calculatedWidth = tooltipEntry.TooltipWidth
 		calculatedHeight = tooltipEntry.TooltipHeight
 	}
-	fillArea(layerEntry, attributeEntry, " ", calculatedXLocation, calculatedYLocation, calculatedWidth, calculatedHeight, constants.NullCellControlLocation)
+	fillStartX := calculatedXLocation
+	fillStartY := calculatedYLocation
+	fillWidth := calculatedWidth
+	fillHeight := calculatedHeight
+	xOffset := 2
+	yOffset := 0
+	// If a height of one, do not add white padding before text.
+	if calculatedHeight != 1 {
+		yOffset = 1
+	}
+	if tooltipEntry.IsBorderDrawn {
+		calculatedWidth += 2
+		calculatedHeight += 2
+		xOffset = 2
+		yOffset = 0
+		fillWidth = calculatedWidth - 2
+		fillHeight = calculatedHeight - 2
+		fillStartX += 1
+		fillStartY += 1
+	}
+	fillArea(layerEntry, attributeEntry, " ", fillStartX, fillStartY, fillWidth, fillHeight, constants.NullCellControlLocation)
 	if tooltipEntry.IsBorderDrawn {
 		drawBorder(layerEntry, tooltipEntry.StyleEntry, attributeEntry, calculatedXLocation, calculatedYLocation, calculatedWidth, calculatedHeight, false)
 	}
-	formattedLabel := tooltipEntry.Text
+	formattedLabel := " " + tooltipEntry.Text + " "
 	arrayOfRunes := stringformat.GetRunesFromString(formattedLabel)
-	printLayerWithWordWrap(layerEntry, attributeEntry, calculatedXLocation+2, calculatedYLocation+1, calculatedWidth-1, arrayOfRunes)
+	layer.printLayerWithWordWrap(layerEntry, attributeEntry, fillStartX+xOffset, fillStartY+yOffset, fillWidth-1, arrayOfRunes)
 }
 
 func (shared *tooltipType) getTooltipFromCharacterEntry(entry types.CharacterEntryType) *types.TooltipEntryType {

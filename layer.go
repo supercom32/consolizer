@@ -3,7 +3,9 @@ package consolizer
 import (
 	"fmt"
 	"github.com/supercom32/consolizer/memory"
+	"github.com/supercom32/consolizer/stringformat"
 	"sort"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/supercom32/consolizer/constants"
@@ -30,6 +32,297 @@ type LayerAliasZOrderPairList []layerAliasZOrderPair
 
 func init() {
 	layer.ReInitializeScreenMemory()
+}
+
+/*
+ClearLayer allows you to empty the specified text layer of all its contents. If you
+do not wish to specify a text layer, you can use the method 'Clear' which will
+simply clear the default text layer previously set.
+*/
+func ClearLayer(layerInstance LayerInstanceType) {
+	layerEntry := Layers.Get(layerInstance.layerAlias)
+	layer.clearLayer(layerEntry)
+}
+
+/*
+clearLayer allows you to empty the specified text layer of all its contents.
+This is useful for internal methods that want to clear a text layer directly.
+*/
+func (shared *layerType) clearLayer(layerEntry *types.LayerEntryType) {
+	types.InitializeCharacterMemory(layerEntry)
+}
+
+/*
+processMarkupTag processes a markup tag in the text and updates the attribute entry accordingly.
+It returns the updated attribute entry and the new character index after the tag.
+In addition, the following information should be noted:
+
+- If no valid closing tag is found, the opening tag is treated as regular text.
+- Special tag "/" resets to the default attribute entry.
+*/
+func (shared *layerType) processMarkupTag(textToPrint []rune, currentIndex int, textString string, defaultAttributeEntry types.AttributeEntryType) (types.AttributeEntryType, int) {
+	tagStartIndex := currentIndex + 2
+	tagEndRelIndex := strings.Index(textString[tagStartIndex:], "}}")
+	if tagEndRelIndex != -1 {
+		tagEndIndex := tagStartIndex + tagEndRelIndex
+		tagContent := textString[tagStartIndex:tagEndIndex]
+		return getDialogAttributeEntry(tagContent, defaultAttributeEntry), tagEndIndex + 1
+	}
+	return defaultAttributeEntry, currentIndex
+}
+
+/*
+handleWordWrap manages word wrapping logic when a space character is encountered.
+It returns the updated cursor positions after applying word wrap if needed.
+In addition, the following information should be noted:
+
+- Returns early if word wrapping is disabled (wordWrapWidth <= 0)
+- Wraps to the next line if the word would exceed the word wrap width or layer width
+*/
+func (shared *layerType) handleWordWrap(cursorX, cursorY, xLocation, wordWidth, wordWrapWidth, layerWidth, layerHeight int) (int, int) {
+	if wordWrapWidth <= 0 {
+		return cursorX, cursorY
+	}
+
+	if cursorX+wordWidth >= xLocation+wordWrapWidth || cursorX+wordWidth >= layerWidth {
+		cursorX = xLocation
+		cursorY++
+	}
+
+	return cursorX, cursorY
+}
+
+/*
+shouldSkipLeadingSpace determines if a space character at the start of a line should be skipped.
+This is typically used with word wrapping to avoid leading spaces after a wrap.
+In addition, the following information should be noted:
+
+- Only applies when word wrapping is enabled and the character is a space at the start of a line
+*/
+func (shared *layerType) shouldSkipLeadingSpace(wordWrapWidth int, character rune, cursorX, xLocation int) bool {
+	return wordWrapWidth > 0 && character == ' ' && cursorX == xLocation
+}
+
+/*
+isWithinVerticalBounds checks if the current cursor Y position is within the layer's height bounds.
+In addition, the following information should be noted:
+
+- A position is valid if it's greater than or equal to 0 and less than the layer height
+*/
+func (shared *layerType) isWithinVerticalBounds(y, height int) bool {
+	return y >= 0 && y < height
+}
+
+/*
+isWithinHorizontalBounds checks if the current cursor X position is within the layer's width bounds.
+In addition, the following information should be noted:
+
+- A position is valid if it's greater than or equal to 0 and less than the layer width
+*/
+func (shared *layerType) isWithinHorizontalBounds(x, width int) bool {
+	return x >= 0 && x < width
+}
+
+/*
+renderCharacter renders a character at the specified position with the given attributes.
+It handles wide characters and background transparency.
+In addition, the following information should be noted:
+
+- For wide characters, it occupies two character cells
+- Preserves the original background color when transparency is enabled
+*/
+func (shared *layerType) renderCharacter(characterMemory [][]types.CharacterEntryType, cursorX, cursorY int, character rune, attributeEntry types.AttributeEntryType) {
+	originalBackgroundColor := characterMemory[cursorY][cursorX].AttributeEntry.BackgroundColor
+
+	characterMemory[cursorY][cursorX].AttributeEntry = types.NewAttributeEntry(&attributeEntry)
+	characterMemory[cursorY][cursorX].Character = character
+
+	// Handle wide characters
+	if stringformat.IsRuneCharacterWide(character) {
+		cursorX++
+		if cursorX < len(characterMemory[0]) {
+			characterMemory[cursorY][cursorX].AttributeEntry = types.NewAttributeEntry(&attributeEntry)
+			characterMemory[cursorY][cursorX].Character = ' '
+		}
+	}
+
+	if characterMemory[cursorY][cursorX].AttributeEntry.IsBackgroundTransparent {
+		characterMemory[cursorY][cursorX].AttributeEntry.BackgroundColor = originalBackgroundColor
+	}
+}
+
+/*
+advanceCursor moves the cursor position after rendering a character.
+It handles line wrapping when the cursor reaches the end of a line.
+Returns the new cursor positions.
+In addition, the following information should be noted:
+
+- When word wrapping is enabled, wraps to the next line when reaching the layer width
+- When word wrapping is disabled, stops at the layer width
+*/
+func (shared *layerType) advanceCursor(cursorX, cursorY, xLocation, layerWidth, wordWrapWidth int) (int, int) {
+	cursorX++
+
+	if cursorX >= layerWidth {
+		if wordWrapWidth > 0 {
+			cursorX = xLocation
+			cursorY++
+		}
+	}
+
+	return cursorX, cursorY
+}
+
+/*
+print is a base method that handles all types of printing with configurable options.
+It supports word wrapping and markup/styling based on the provided options.
+
+Options:
+- wordWrapWidth: Width for word wrapping. Set to 0 to disable word wrapping.
+- useMarkup: Whether to process markup tags for styling.
+
+Returns the final cursor X position relative to the starting position.
+In addition, the following information should be noted:
+
+- Handles boundary checking to ensure text stays within the layer
+- Processes markup tags when useMarkup is true
+- Supports word wrapping when wordWrapWidth > 0
+*/
+func (shared *layerType) print(layerEntry *types.LayerEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, textToPrint []rune, wordWrapWidth int, useMarkup bool) int {
+	layerWidth := layerEntry.Width
+	layerHeight := layerEntry.Height
+	cursorXLocation := xLocation
+	cursorYLocation := yLocation
+	characterMemory := layerEntry.CharacterMemory
+
+	// For markup
+	currentAttributeEntry := attributeEntry
+
+	// Convert runes to string if markup is needed
+	var textString string
+	if useMarkup {
+		textString = string(textToPrint)
+	}
+
+	for currentCharacterIndex := 0; currentCharacterIndex < len(textToPrint); currentCharacterIndex++ {
+		currentCharacter := textToPrint[currentCharacterIndex]
+
+		// Word wrap logic
+		if wordWrapWidth > 0 && currentCharacter == ' ' {
+			wordWidth := calculateWordWidth(textToPrint, currentCharacterIndex, useMarkup)
+			cursorXLocation, cursorYLocation = shared.handleWordWrap(cursorXLocation, cursorYLocation, xLocation, wordWidth, wordWrapWidth, layerWidth, layerHeight)
+			if !shared.isWithinVerticalBounds(cursorYLocation, layerHeight) {
+				return cursorXLocation - xLocation
+			}
+		}
+
+		// Skip space at start of line with word wrap
+		if shared.shouldSkipLeadingSpace(wordWrapWidth, currentCharacter, cursorXLocation, xLocation) {
+			continue
+		}
+
+		// Handle markup
+		if useMarkup && currentCharacter == '{' && currentCharacterIndex+1 < len(textToPrint) && textToPrint[currentCharacterIndex+1] == '{' {
+			savedCharacterIndex := currentCharacterIndex
+			currentAttributeEntry, currentCharacterIndex = shared.processMarkupTag(textToPrint, currentCharacterIndex, textString, attributeEntry)
+			if savedCharacterIndex != currentCharacterIndex {
+				continue
+			}
+		}
+
+		// Skip if character is off-screen (vertically)
+		if !shared.isWithinVerticalBounds(cursorYLocation, layerHeight) {
+			cursorXLocation, cursorYLocation = shared.advanceCursor(cursorXLocation, cursorYLocation, xLocation, layerWidth, wordWrapWidth)
+			if !shared.isWithinVerticalBounds(cursorYLocation, layerHeight) {
+				return cursorXLocation - xLocation
+			}
+			continue
+		}
+
+		// Render character if it's within horizontal bounds
+		if shared.isWithinHorizontalBounds(cursorXLocation, layerWidth) {
+			attrToUse := currentAttributeEntry
+			if !useMarkup {
+				attrToUse = attributeEntry
+			}
+			shared.renderCharacter(characterMemory, cursorXLocation, cursorYLocation, currentCharacter, attrToUse)
+		}
+
+		// Advance cursor
+		cursorXLocation, cursorYLocation = shared.advanceCursor(cursorXLocation, cursorYLocation, xLocation, layerWidth, wordWrapWidth)
+		if !shared.isWithinVerticalBounds(cursorYLocation, layerHeight) {
+			return cursorXLocation - xLocation
+		}
+	}
+	return cursorXLocation - xLocation
+}
+
+func (shared *layerType) printLayerWithWordWrap(layerEntry *types.LayerEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, width int, textToPrint []rune) int {
+	return shared.print(layerEntry, attributeEntry, xLocation, yLocation, textToPrint, width, false)
+}
+
+/*
+calculateWordWidth calculates the width of a word from the given position.
+The first position is always assumed to be ' ' and is skipped.
+In addition, the following information should be noted:
+
+- When markup is enabled, it processes the text to exclude markup tags from the width calculation
+- Returns the number of characters until the next space or end of text
+*/
+func calculateWordWidth(textToPrint []rune, start int, useMarkup bool) int {
+	// Calculate the width of a word from the given position. The first position is
+	// always assumed to be ' ' and is skipped.
+
+	// If markup is enabled, use the string version and handle markup tags
+	if useMarkup {
+		textString := string(textToPrint)
+		// Use the substring from the starting index
+		substring := textString[start+1:]
+		// Get the text without markup
+		textWithoutMarkup := GetNonMarkupText(substring)
+		// Calculate the length of the next word
+		var wordWidth int
+		for i := 0; i < len(textWithoutMarkup); i++ {
+			if stringformat.GetSubString(textWithoutMarkup, i, 1) == " " {
+				return wordWidth
+			}
+			wordWidth++
+		}
+		return wordWidth
+	}
+
+	// Standard case without markup
+	wordWidth := 0
+	for i := start + 1; i < len(textToPrint); i++ {
+		if textToPrint[i] == ' ' {
+			break
+		}
+		wordWidth++
+	}
+	return wordWidth
+}
+
+/*
+printLayer allows you to write text to a text layer. This is useful
+for internal methods that want to write text to a text layer directly, without
+effecting user settings (such as current cursor location, etc). In addition,
+the following information should be noted:
+
+- If the location to print falls outside the range of the text layer,
+then only the visible portion of your text will be printed.
+*/
+func (shared *layerType) printLayer(layerEntry *types.LayerEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, textToPrint []rune) int {
+	return shared.print(layerEntry, attributeEntry, xLocation, yLocation, textToPrint, 0, false)
+}
+
+/*
+printMarkup allows you to write text to the terminal screen with word wrapping
+and attribute tags. This is similar to printDialog but without the typewriter
+effect and printing delay.
+*/
+func (shared *layerType) printMarkup(layerEntry *types.LayerEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, widthOfLineInCharacters int, stringToPrint string) {
+	arrayOfRunes := stringformat.GetRunesFromString(stringToPrint)
+	shared.print(layerEntry, attributeEntry, xLocation, yLocation, arrayOfRunes, widthOfLineInCharacters, true)
 }
 
 func (shared *layerType) ReInitializeScreenMemory() {
@@ -94,7 +387,7 @@ func (shared *layerType) Delete(layerAlias string) {
 	Selectors.RemoveAll(layerAlias)
 	Textboxes.RemoveAll(layerAlias)
 	TextFields.RemoveAll(layerAlias)
-
+	Tooltips.RemoveAll(layerAlias)
 	// Remove the layer itself
 	Layers.Remove(layerAlias)
 
@@ -236,13 +529,13 @@ func (shared *LayerInstanceType) DrawComposedImage(imageComposeEntry ImageCompos
 	return err
 }
 
-func (shared *LayerInstanceType) AddButton(buttonLabel string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, height int, isEnabled bool) ButtonInstanceType {
+func (shared *LayerInstanceType) AddButton(buttonLabel string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, height int, isEnabled bool) buttonInstanceType {
 	buttonAlias := getUUID()
 	buttonInstance := Button.Add(shared.layerAlias, buttonAlias, buttonLabel, styleEntry, xLocation, yLocation, width, height, isEnabled)
 	return buttonInstance
 }
 
-func (shared *LayerInstanceType) AddCheckbox(checkboxLabel string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, isSelected bool, isEnabled bool) CheckboxInstanceType {
+func (shared *LayerInstanceType) AddCheckbox(checkboxLabel string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, isSelected bool, isEnabled bool) checkboxInstanceType {
 	checkboxAlias := getUUID()
 	checkboxInstance := Checkbox.Add(shared.layerAlias, checkboxAlias, checkboxLabel, styleEntry, xLocation, yLocation, isSelected, isEnabled)
 	return checkboxInstance
@@ -471,9 +764,11 @@ func (shared *LayerInstanceType) FillLayer(fillCharacters string) {
 DrawBar allows you to draw a horizontal bar on a given text layer row. This is
 useful for drawing application headers or status bar footers.
 */
-func (shared *LayerInstanceType) DrawBar(xLocation int, yLocation int, barLength int, fillCharacters string) {
+func (shared *LayerInstanceType) DrawBar(styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, barLength int, fillCharacters string) {
 	layerEntry := Layers.Get(shared.layerAlias)
-	attributeEntry := layerEntry.DefaultAttribute
+	attributeEntry := types.NewAttributeEntry()
+	attributeEntry.ForegroundColor = styleEntry.Bar.ForegroundColor
+	attributeEntry.BackgroundColor = styleEntry.Bar.BackgroundColor
 	fillArea(layerEntry, attributeEntry, fillCharacters, xLocation, yLocation, barLength, 1, constants.NullCellControlLocation)
 }
 
@@ -632,13 +927,48 @@ func (shared *LayerInstanceType) SaveLayer(filePath string) error {
 	return SaveLayer(shared.layerAlias, filePath)
 }
 
+func (shared *LayerInstanceType) ColorStyle(styleEntry types.TuiStyleEntryType) {
+	shared.colorLayer(*shared, styleEntry.Text.ForegroundColor, styleEntry.Text.BackgroundColor)
+}
+
+/*
+Color allows you to set default colors on your text layer for printing with.
+The color index specified corresponds to the 16 color ANSI standard, where
+color 0 is Black and 15 is Bright White.
+*/
+func (shared *LayerInstanceType) Color(foregroundColorIndex int, backgroundColorIndex int) {
+	validateColorIndex(foregroundColorIndex)
+	validateColorIndex(backgroundColorIndex)
+	shared.colorLayer(*shared, constants.AnsiColorByIndex[foregroundColorIndex], constants.AnsiColorByIndex[backgroundColorIndex])
+}
+
+/*
+colorLayer allows you to set default colors on your specified text layer for
+printing with. The color index specified corresponds to the 16 color ANSI
+standard, where color 0 is Black and 15 is Bright White.
+*/
+func (shared *LayerInstanceType) colorLayer(layerInstance LayerInstanceType, foregroundColor constants.ColorType, backgroundColor constants.ColorType) {
+	layerEntry := Layers.Get(layerInstance.layerAlias)
+	layerEntry.DefaultAttribute.ForegroundColor = foregroundColor
+	layerEntry.DefaultAttribute.BackgroundColor = backgroundColor
+}
+
+/*
+ColorRGB allows you to set default colors on your text layer for printing with.
+This method allows you to specify colors using RGB color index values within
+the range of 0 to 255.
+*/
+func (shared *LayerInstanceType) ColorRGB(foregroundRedIndex int32, foregroundGreenIndex int32, foregroundBlueIndex int32, backgroundRedIndex int32, backgroundGreenIndex int32, backgroundBlueIndex int32) {
+	shared.colorLayer(*shared, GetRGBColor(foregroundRedIndex, foregroundGreenIndex, foregroundBlueIndex), GetRGBColor(backgroundRedIndex, backgroundGreenIndex, backgroundBlueIndex))
+}
+
 /*
 Color24Bit allows you to color a layer using a 24-bit color expressed as
 an int32. This is useful for when you have colors which are already defined.
 */
 
 func (shared *LayerInstanceType) Color24Bit(foregroundColor constants.ColorType, backgroundColor constants.ColorType) {
-	ColorLayer24Bit(*shared, foregroundColor, backgroundColor)
+	shared.colorLayer(*shared, foregroundColor, backgroundColor)
 }
 
 /*
@@ -672,6 +1002,46 @@ func (shared *LayerInstanceType) Locate(xLocation int, yLocation int) {
 }
 
 /*
+printLayer allows you to write text to a text layer. This is useful
+for internal methods that want to write text to a text layer directly, without
+effecting user settings (such as current cursor location, etc). In addition,
+the following information should be noted:
+
+- If the location to print falls outside the range of the text layer,
+then only the visible portion of your text will be printed.
+*/
+func (shared *LayerInstanceType) printLayer(layerEntry *types.LayerEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, textToPrint []rune) int {
+	layerWidth := layerEntry.Width
+	layerHeight := layerEntry.Height
+	cursorXLocation := xLocation
+	cursorYLocation := yLocation
+	characterMemory := layerEntry.CharacterMemory
+	for _, currentCharacter := range textToPrint {
+		if cursorXLocation >= 0 && cursorXLocation < layerWidth && cursorYLocation >= 0 && cursorYLocation < layerHeight {
+			originalBackgroundColor := characterMemory[cursorYLocation][cursorXLocation].AttributeEntry.BackgroundColor
+			characterMemory[cursorYLocation][cursorXLocation].AttributeEntry = types.NewAttributeEntry(&attributeEntry)
+			characterMemory[cursorYLocation][cursorXLocation].Character = currentCharacter
+			if stringformat.IsRuneCharacterWide(currentCharacter) {
+				cursorXLocation++
+				if cursorXLocation >= layerWidth {
+					return cursorXLocation - xLocation
+				}
+				characterMemory[cursorYLocation][cursorXLocation].AttributeEntry = types.NewAttributeEntry(&attributeEntry)
+				characterMemory[cursorYLocation][cursorXLocation].Character = ' '
+			}
+			if characterMemory[cursorYLocation][cursorXLocation].AttributeEntry.IsBackgroundTransparent {
+				characterMemory[cursorYLocation][cursorXLocation].AttributeEntry.BackgroundColor = originalBackgroundColor
+			}
+		}
+		cursorXLocation++
+		if cursorXLocation >= layerWidth {
+			return cursorXLocation - xLocation
+		}
+	}
+	return cursorXLocation - xLocation
+}
+
+/*
 Print allows you to write text to the default text layer. If you wish to
 print to a text layer that is not currently set as the default, use
 'PrintLayer' instead. In addition, the following information should be noted:
@@ -686,9 +1056,18 @@ then only the visible portion of your string will be printed.
 - If printing has not yet finished and there are no available lines left, then
 all remaining characters will be discarded and printing will stop.
 */
-func (shared *LayerInstanceType) Print(textToPrint string) {
+func (shared *LayerInstanceType) Print(textToPrint string, parameters ...any) {
 	validateDefaultLayerIsNotEmpty()
-	PrintLayer(*shared, textToPrint)
+	formattedTextToPrint := fmt.Sprintf(textToPrint, parameters...)
+	layerEntry := Layers.Get(shared.layerAlias)
+	if layerEntry.CursorYLocation >= layerEntry.Height {
+		layerEntry.CursorYLocation = layerEntry.Height - 1
+		layerEntry.CharacterMemory = scrollCharacterMemory(layerEntry)
+	}
+	arrayOfRunes := stringformat.GetRunesFromString(formattedTextToPrint)
+	shared.printLayer(layerEntry, layerEntry.DefaultAttribute, layerEntry.CursorXLocation, layerEntry.CursorYLocation, arrayOfRunes)
+	layerEntry.CursorXLocation = 0
+	layerEntry.CursorYLocation = layerEntry.CursorYLocation + 1
 }
 
 /*
@@ -747,12 +1126,13 @@ For example:
 	// "{}".
 	dosktop.PrintDialog("ForegroundLayer", 0, 0, 30, 10, true, "This is some dialog text in {red}red color{}. Only the words 'red color' should be colored.")
 */
-func (shared *LayerInstanceType) PrintDialog(xLocation int, yLocation int, widthOfLineInCharacters int, printDelayInMilliseconds int, isSkipable bool, stringToPrint string) {
+func (shared *LayerInstanceType) PrintDialog(xLocation int, yLocation int, widthOfLineInCharacters int, printDelayInMilliseconds int, isSkipable bool, stringToPrint string, parameters ...any) {
+	formattedTextToPrint := fmt.Sprintf(stringToPrint, parameters...)
 	layerEntry := Layers.Get(shared.layerAlias)
 	if xLocation < 0 || xLocation > layerEntry.Width || yLocation < 0 || yLocation > layerEntry.Height {
 		panic(fmt.Sprintf("The specified location (%d, %d) is out of bounds for layer '%s' with a size of (%d, %d).", xLocation, yLocation, layerEntry.LayerAlias, layerEntry.Width, layerEntry.Height))
 	}
-	printDialog(layerEntry, layerEntry.DefaultAttribute, xLocation, yLocation, widthOfLineInCharacters, printDelayInMilliseconds, isSkipable, stringToPrint)
+	printDialog(layerEntry, layerEntry.DefaultAttribute, xLocation, yLocation, widthOfLineInCharacters, printDelayInMilliseconds, isSkipable, formattedTextToPrint)
 }
 
 /*
@@ -801,12 +1181,13 @@ For example:
 	// "{}".
 	dosktop.PrintMarkup("ForegroundLayer", 0, 0, 30, "This is some text with {red}red color{}. Only the words 'red color' should be colored.")
 */
-func (shared *LayerInstanceType) PrintMarkup(xLocation int, yLocation int, widthOfLineInCharacters int, stringToPrint string) {
+func (shared *LayerInstanceType) PrintMarkup(xLocation int, yLocation int, widthOfLineInCharacters int, stringToPrint string, parameters ...any) {
+	formattedTextToPrint := fmt.Sprintf(stringToPrint, parameters...)
 	layerEntry := Layers.Get(shared.layerAlias)
 	if xLocation < 0 || xLocation > layerEntry.Width || yLocation < 0 || yLocation > layerEntry.Height {
 		panic(fmt.Sprintf("The specified location (%d, %d) is out of bounds for layer '%s' with a size of (%d, %d).", xLocation, yLocation, layerEntry.LayerAlias, layerEntry.Width, layerEntry.Height))
 	}
-	printMarkup(layerEntry, layerEntry.DefaultAttribute, xLocation, yLocation, widthOfLineInCharacters, stringToPrint)
+	layer.printMarkup(layerEntry, layerEntry.DefaultAttribute, xLocation, yLocation, widthOfLineInCharacters, formattedTextToPrint)
 }
 
 /*

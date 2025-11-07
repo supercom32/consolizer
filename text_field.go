@@ -110,7 +110,7 @@ func (shared *textFieldType) Add(layerAlias string, textFieldAlias string, style
 	var textFieldInstance textFieldInstanceType
 	textFieldInstance.layerAlias = layerAlias
 	textFieldInstance.controlAlias = textFieldAlias
-	textFieldInstance.controlType = "textField"
+	textFieldInstance.controlType = constants.TYPE_TEXTFIELD
 	return textFieldInstance
 }
 
@@ -212,12 +212,12 @@ func (shared *textFieldType) drawInputString(layerEntry *types.LayerEntryType, s
 		if textFieldEntry.IsPasswordProtected {
 			// If the field is password protected, then do not print the terminating ' ' character with an *.
 			if xLocationOffset == len(textFieldEntry.CurrentValue)-1 {
-				printLayer(layerEntry, attributeEntry, xLocation+xLocationOffset, yLocation, []rune{' '})
+				layer.printLayer(layerEntry, attributeEntry, xLocation+xLocationOffset, yLocation, []rune{' '})
 			} else {
-				printLayer(layerEntry, attributeEntry, xLocation+xLocationOffset, yLocation, []rune{'*'})
+				layer.printLayer(layerEntry, attributeEntry, xLocation+xLocationOffset, yLocation, []rune{'*'})
 			}
 		} else {
-			printLayer(layerEntry, attributeEntry, xLocation+xLocationOffset, yLocation, []rune{inputValue[absolutePosition]})
+			layer.printLayer(layerEntry, attributeEntry, xLocation+xLocationOffset, yLocation, []rune{inputValue[absolutePosition]})
 		}
 		xLocationOffset++
 		if stringformat.IsRuneCharacterWide(inputValue[absolutePosition]) {
@@ -225,12 +225,12 @@ func (shared *textFieldType) drawInputString(layerEntry *types.LayerEntryType, s
 			if textFieldEntry.IsPasswordProtected {
 				// If the field is password protected, then do not print the terminating ' ' character with an *.
 				if xLocation+xLocationOffset == len(textFieldEntry.CurrentValue)-1 {
-					printLayer(layerEntry, attributeEntry, xLocation+xLocationOffset, yLocation, []rune{' '})
+					layer.printLayer(layerEntry, attributeEntry, xLocation+xLocationOffset, yLocation, []rune{' '})
 				} else {
-					printLayer(layerEntry, attributeEntry, xLocation+xLocationOffset, yLocation, []rune{'*'})
+					layer.printLayer(layerEntry, attributeEntry, xLocation+xLocationOffset, yLocation, []rune{'*'})
 				}
 			} else {
-				printLayer(layerEntry, attributeEntry, xLocation+xLocationOffset, yLocation, []rune{' '})
+				layer.printLayer(layerEntry, attributeEntry, xLocation+xLocationOffset, yLocation, []rune{' '})
 			}
 		}
 	}

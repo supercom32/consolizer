@@ -154,6 +154,9 @@ func UpdateEventQueues() {
 		if TextField.updateMouseEvent() {
 			isScreenUpdateRequired = true
 		}
+		if Selector.updateMouseEvent() {
+			isScreenUpdateRequired = true
+		}
 		if textbox.updateMouseEvent() {
 			isScreenUpdateRequired = true
 		}

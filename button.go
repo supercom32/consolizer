@@ -14,7 +14,7 @@ type buttonHistoryType struct {
 
 var buttonHistory buttonHistoryType
 
-type ButtonInstanceType struct {
+type buttonInstanceType struct {
 	BaseControlInstanceType
 }
 
@@ -27,14 +27,12 @@ var Buttons = memory.NewControlMemoryManager[types.ButtonEntryType]()
 // REGULAR ENTRY
 // ============================================================================
 
-func (shared *ButtonInstanceType) Delete() *ButtonInstanceType {
-	if Buttons.IsExists(shared.layerAlias, shared.controlAlias) {
-		Buttons.Remove(shared.layerAlias, shared.controlAlias)
-	}
+func (shared *buttonInstanceType) Delete() *buttonInstanceType {
+	shared.BaseControlInstanceType.Delete()
 	return nil
 }
 
-func (shared *ButtonInstanceType) AddToTabIndex() {
+func (shared *buttonInstanceType) AddToTabIndex() {
 	addTabIndex(shared.layerAlias, shared.controlAlias, constants.CellTypeButton)
 }
 
@@ -43,7 +41,7 @@ IsButtonPressed allows you to detect if any text button was pressed or not. In
 order to obtain the button pressed and to clear this state, you must call the
 GetButtonPressed method.
 */
-func (shared *ButtonInstanceType) IsButtonPressed() bool {
+func (shared *buttonInstanceType) IsButtonPressed() bool {
 	if buttonHistory.layerAlias != "" && buttonHistory.buttonAlias != "" {
 		if buttonHistory.layerAlias == shared.layerAlias && buttonHistory.buttonAlias == shared.controlAlias {
 			for shared.IsButtonStatePressed() {
@@ -66,7 +64,7 @@ noted:
 - If any button is successfully returned, the pressed state is automatically
 cleared.
 */
-func (shared *ButtonInstanceType) GetButtonPressed() (string, string) {
+func (shared *buttonInstanceType) GetButtonPressed() (string, string) {
 	if buttonHistory.layerAlias != "" && buttonHistory.buttonAlias != "" {
 		layerAlias := buttonHistory.layerAlias
 		buttonAlias := buttonHistory.buttonAlias
@@ -77,7 +75,7 @@ func (shared *ButtonInstanceType) GetButtonPressed() (string, string) {
 	return "", ""
 }
 
-func (shared *ButtonInstanceType) IsButtonStatePressed() bool {
+func (shared *buttonInstanceType) IsButtonStatePressed() bool {
 	buttonEntry := Buttons.Get(shared.layerAlias, shared.controlAlias)
 	if buttonEntry.IsPressed == true {
 		return true
@@ -105,7 +103,7 @@ then the width will automatically default to the width of your button label.
 - If the height of your button is less than 3 characters high, then the height
 will automatically default to the minimum of 3 characters.
 */
-func (shared *buttonType) Add(layerAlias string, buttonAlias string, buttonLabel string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, height int, isEnabled bool) ButtonInstanceType {
+func (shared *buttonType) Add(layerAlias string, buttonAlias string, buttonLabel string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, height int, isEnabled bool) buttonInstanceType {
 	buttonEntry := types.NewButtonEntry()
 	buttonEntry.StyleEntry = styleEntry
 	buttonEntry.Alias = buttonAlias
@@ -128,10 +126,10 @@ func (shared *buttonType) Add(layerAlias string, buttonAlias string, buttonLabel
 		false, true, constants.DefaultTooltipHoverTime)
 	tooltipInstance.SetEnabled(false)
 	tooltipInstance.setParentControlAlias(buttonAlias)
-	var buttonInstance ButtonInstanceType
+	var buttonInstance buttonInstanceType
 	buttonInstance.layerAlias = layerAlias
 	buttonInstance.controlAlias = buttonAlias
-	buttonInstance.controlType = "button"
+	buttonInstance.controlType = constants.TYPE_BUTTON
 	return buttonInstance
 }
 
@@ -207,7 +205,7 @@ func (shared *buttonType) drawButton(layerEntry *types.LayerEntryType, buttonAli
 	if !isEnabled {
 		attributeEntry.ForegroundColor = styleEntry.Button.LabelDisabledColor
 	}
-	printLayer(layerEntry, attributeEntry, xLocation+centerXLocation, yLocation+centerYLocation, arrayOfRunes)
+	layer.printLayer(layerEntry, attributeEntry, xLocation+centerXLocation, yLocation+centerYLocation, arrayOfRunes)
 }
 
 /*
@@ -246,7 +244,8 @@ func (shared *buttonType) updateButtonStateMouse() bool {
 	// If not a button, reset all buttons if needed.
 	if characterEntry.AttributeEntry.CellType != constants.CellTypeButton {
 		// GetLayer all buttons from all layers using ControlMemoryManager
-		for currentLayer := range Buttons.MemoryManager {
+		Buttons.MemoryManager.Range(func(key, value interface{}) bool {
+			currentLayer := key.(string)
 			buttons := Buttons.GetAllEntries(currentLayer)
 
 			for _, buttonEntry := range buttons {
@@ -265,7 +264,8 @@ func (shared *buttonType) updateButtonStateMouse() bool {
 					isUpdateRequired = true
 				}
 			}
-		}
+			return true // continue iteration
+		})
 		return isUpdateRequired
 	}
 

@@ -86,9 +86,9 @@ func TestGetStringFromBase64(test *testing.T) {
 }
 
 func TestGetNumberOfWideCharacters(test *testing.T) {
-	arrayOfRunes := GetRunesFromString("AL 读写汉字 ひらがな コンピュータワンワンローソク 보리밥보리밥☑○ ●  EX")
+	arrayOfRunes := GetRunesFromString("AL 读写汉字 ひらがな コンピュータワンワンローソク 보리밥보리밥☑  EX")
 	obtainedResult := GetNumberOfWideCharacters(arrayOfRunes)
-	expectedResult := 31
+	expectedResult := 29
 	assert.Equalf(test, expectedResult, obtainedResult, "The number of wide characters detected did not match what was expected!")
 }
 

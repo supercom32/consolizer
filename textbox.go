@@ -65,14 +65,14 @@ func DeleteTextbox(layerAlias string, textboxAlias string) {
 }
 
 /*
-DeleteAllTextboxesFromLayer allows you to delete all textboxes from a given layer. In addition, the following
+DeleteAllTextboxes allows you to delete all textboxes from a given layer. In addition, the following
 information should be noted:
 
 - All textboxes on the specified layer will be removed.
 - All memory associated with the textboxes will be freed.
 - The textboxes will be removed from the tab index if they were added.
 */
-func DeleteAllTextboxesFromLayer(layerAlias string) {
+func DeleteAllTextboxes(layerAlias string) {
 	// Retrieve all textboxes in the specified layer
 	textboxes := Textboxes.GetAllEntries(layerAlias)
 
@@ -546,7 +546,7 @@ func (shared *textboxType) AddTextbox(layerAlias string, textboxAlias string, st
 	var textboxInstance TextboxInstanceType
 	textboxInstance.layerAlias = layerAlias
 	textboxInstance.controlAlias = textboxAlias
-	textboxInstance.controlType = "textbox"
+	textboxInstance.controlType = constants.TYPE_TEXTBOX
 	return textboxInstance
 }
 
@@ -897,12 +897,12 @@ func (shared *textboxType) printControlText(layerEntry *types.LayerEntryType, te
 				attributeEntry.BackgroundColor = styleEntry.Textbox.BackgroundColor
 			}
 		}
-		printLayer(layerEntry, attributeEntry, xLocation+currentXOffset, yLocation, []rune{currentCharacter})
+		layer.printLayer(layerEntry, attributeEntry, xLocation+currentXOffset, yLocation, []rune{currentCharacter})
 		if stringformat.IsRuneCharacterWide(currentCharacter) {
 			// If we find a wide character, we add a blank space with the same ID as the previous
 			// character so the next printed character doesn't get covered by the wide one.
 			currentXOffset++
-			printLayer(layerEntry, attributeEntry, xLocation+currentXOffset, yLocation, []rune{' '})
+			layer.printLayer(layerEntry, attributeEntry, xLocation+currentXOffset, yLocation, []rune{' '})
 			currentXOffset++
 		} else {
 			currentXOffset++

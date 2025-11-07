@@ -90,7 +90,7 @@ func TestTerminalColor(test *testing.T) {
 	commonResource.isDebugEnabled = true
 	InitializeTerminal(20, 20)
 	layer1 := AddLayer(0, 0, 20, 20, 1, nil)
-	Color(3, 12)
+	layer1.Color(3, 12)
 	layerEntry := Layers.Get(layer1.layerAlias)
 	expectedValues := recast.GetArrayOfInterfaces(constants.AnsiColorByIndex[3], constants.AnsiColorByIndex[12])
 	obtainedValues := recast.GetArrayOfInterfaces(layerEntry.DefaultAttribute.ForegroundColor, layerEntry.DefaultAttribute.BackgroundColor)
@@ -107,7 +107,7 @@ func TestTerminalColorRGB(test *testing.T) {
 	backgroundGreenIndex := int32(145)
 	backgroundBlueIndex := int32(192)
 	layer1 := AddLayer(0, 0, 20, 20, 1, nil)
-	ColorRGB(foregroundRedIndex, foregroundGreenIndex, foregroundBlueIndex, backgroundRedIndex, backgroundGreenIndex, backgroundBlueIndex)
+	layer1.ColorRGB(foregroundRedIndex, foregroundGreenIndex, foregroundBlueIndex, backgroundRedIndex, backgroundGreenIndex, backgroundBlueIndex)
 	layerEntry := Layers.Get(layer1.layerAlias)
 	expectedValues := recast.GetArrayOfInterfaces(constants.ColorType(0x3004b65f9), constants.ColorType(0x3007b91c0))
 	obtainedValues := recast.GetArrayOfInterfaces(layerEntry.DefaultAttribute.ForegroundColor, layerEntry.DefaultAttribute.BackgroundColor)
@@ -177,21 +177,23 @@ func TestTerminalPrint(test *testing.T) {
 	layerHeight := 8
 	InitializeTerminal(layerWidth, layerHeight)
 	layer1 := AddLayer(0, 0, layerWidth, layerHeight, 1, nil)
-	Color(10, 7)
-	Print("This is a test print on the first line!") // This line will be intentionally scrolled off
-	Color(3, 5)
-	Print("This is a test print on the second line!") // This line will be intentionally cut at 'print'.
-	Locate(7, 7)
-	Color(13, 14)
-	Print("This is a test print on an arbitrary location!") // This line will be intentionally shifted.
-	Color(3, 15)
-	Print("This is a test print after printing on an arbitrary location!") // This line will force scroll by 1 line.
+	layer1.Color(10, 7)
+	layer1.Print("This is a test print on the first line!") // This line will be intentionally scrolled off
+	layer1.Color(3, 5)
+	layer1.Print("This is a test print on the second line!") // This line will be intentionally cut at 'print'.
+	layer1.Locate(7, 7)
+	layer1.Color(13, 14)
+	layer1.Print("This is a test print on an arbitrary location!") // This line will be intentionally shifted.
+	layer1.Color(3, 15)
+	layer1.Print("This is a test print after printing on an arbitrary location!") // This line will force scroll by 1 line.
 	layerEntry := Layers.Get(layer1.layerAlias)
 	obtainedValue := layerEntry.GetBasicAnsiStringAsBase64()
 	expectedValue := "G1szODsyOzEyODsxMjg7MG0bWzQ4OzI7MTI4OzA7MTI4bVRoaXMgaXMgYSB0ZXN0IHByaW50G1szODsyOzA7MDswbRtbNDg7MjswOzA7MG0KG1szODsyOzI1NTsyNTU7MjU1bSAgICAgICAgICAgICAgICAgICAgG1szODsyOzA7MDswbRtbNDg7MjswOzA7MG0KG1szODsyOzI1NTsyNTU7MjU1bSAgICAgICAgICAgICAgICAgICAgG1szODsyOzA7MDswbRtbNDg7MjswOzA7MG0KG1szODsyOzI1NTsyNTU7MjU1bSAgICAgICAgICAgICAgICAgICAgG1szODsyOzA7MDswbRtbNDg7MjswOzA7MG0KG1szODsyOzI1NTsyNTU7MjU1bSAgICAgICAgICAgICAgICAgICAgG1szODsyOzA7MDswbRtbNDg7MjswOzA7MG0KG1szODsyOzI1NTsyNTU7MjU1bSAgICAgICAgICAgICAgICAgICAgG1szODsyOzA7MDswbRtbNDg7MjswOzA7MG0KG1szODsyOzI1NTsyNTU7MjU1bSAgICAgICAbWzM4OzI7MjU1OzA7MjU1bRtbNDg7MjswOzI1NTsyNTVtVGhpcyBpcyBhIHRlcxtbMzg7MjswOzA7MG0bWzQ4OzI7MDswOzBtChtbMzg7MjsxMjg7MTI4OzBtG1s0ODsyOzI1NTsyNTU7MjU1bVRoaXMgaXMgYSB0ZXN0IHByaW50G1szODsyOzA7MDswbRtbNDg7MjswOzA7MG0K"
-	result := assert.Equalf(test, expectedValue, obtainedValue, "The printed screen does not match the master original!")
-	if !result {
-		dumpScreenComparisons(expectedValue, obtainedValue)
+	obtainedValueBase64 := layerEntry.GetAnsiStringFromBase64(obtainedValue)
+	expectedValueBase64 := layerEntry.GetAnsiStringFromBase64(expectedValue)
+	if !assert.Equalf(test, expectedValue, obtainedValue, "The printed screen does not match the master original!") {
+		fmt.Println("Expected:\n", expectedValueBase64)
+		fmt.Println("Obtained:\n", obtainedValueBase64)
 	}
 }
 
@@ -201,18 +203,25 @@ func TestTerminalClear(test *testing.T) {
 	layerHeight := 8
 	InitializeTerminal(layerWidth, layerHeight)
 	layer1 := AddLayer(0, 0, layerWidth, layerHeight, 1, nil)
-	Color(13, 14)
+	layer1.Color(13, 14)
 	layer1.FillLayer("0123456789")
 	layerEntry := Layers.Get(layer1.layerAlias)
 	obtainedValue := layerEntry.GetBasicAnsiStringAsBase64()
 	expectedValue := "G1szODsyOzI1NTswOzI1NW0bWzQ4OzI7MDsyNTU7MjU1bTAxMjM0NTY3ODkwMTIzG1szODsyOzA7MDswbRtbNDg7MjswOzA7MG0KG1szODsyOzI1NTswOzI1NW0bWzQ4OzI7MDsyNTU7MjU1bTQ1Njc4OTAxMjM0NTY3G1szODsyOzA7MDswbRtbNDg7MjswOzA7MG0KG1szODsyOzI1NTswOzI1NW0bWzQ4OzI7MDsyNTU7MjU1bTg5MDEyMzQ1Njc4OTAxG1szODsyOzA7MDswbRtbNDg7MjswOzA7MG0KG1szODsyOzI1NTswOzI1NW0bWzQ4OzI7MDsyNTU7MjU1bTIzNDU2Nzg5MDEyMzQ1G1szODsyOzA7MDswbRtbNDg7MjswOzA7MG0KG1szODsyOzI1NTswOzI1NW0bWzQ4OzI7MDsyNTU7MjU1bTY3ODkwMTIzNDU2Nzg5G1szODsyOzA7MDswbRtbNDg7MjswOzA7MG0KG1szODsyOzI1NTswOzI1NW0bWzQ4OzI7MDsyNTU7MjU1bTAxMjM0NTY3ODkwMTIzG1szODsyOzA7MDswbRtbNDg7MjswOzA7MG0KG1szODsyOzI1NTswOzI1NW0bWzQ4OzI7MDsyNTU7MjU1bTQ1Njc4OTAxMjM0NTY3G1szODsyOzA7MDswbRtbNDg7MjswOzA7MG0KG1szODsyOzI1NTswOzI1NW0bWzQ4OzI7MDsyNTU7MjU1bTg5MDEyMzQ1Njc4OTAxG1szODsyOzA7MDswbRtbNDg7MjswOzA7MG0K"
-	assert.Equalf(test, expectedValue, obtainedValue, "The filled layer does not match the expected result")
+	obtainedValueBase64 := layerEntry.GetAnsiStringFromBase64(obtainedValue)
+	expectedValueBase64 := layerEntry.GetAnsiStringFromBase64(expectedValue)
+	if !assert.Equalf(test, expectedValue, obtainedValue, "The filled layer does not match the expected result") {
+		fmt.Println("Expected:\n", expectedValueBase64)
+		fmt.Println("Obtained:\n", obtainedValueBase64)
+	}
 	Clear()
 	obtainedValue = layerEntry.GetBasicAnsiStringAsBase64()
 	expectedValue = "G1szODsyOzI1NTsyNTU7MjU1bRtbNDg7MjswOzA7MG0gICAgICAgICAgICAgIBtbMzg7MjswOzA7MG0bWzQ4OzI7MDswOzBtChtbMzg7MjsyNTU7MjU1OzI1NW0gICAgICAgICAgICAgIBtbMzg7MjswOzA7MG0bWzQ4OzI7MDswOzBtChtbMzg7MjsyNTU7MjU1OzI1NW0gICAgICAgICAgICAgIBtbMzg7MjswOzA7MG0bWzQ4OzI7MDswOzBtChtbMzg7MjsyNTU7MjU1OzI1NW0gICAgICAgICAgICAgIBtbMzg7MjswOzA7MG0bWzQ4OzI7MDswOzBtChtbMzg7MjsyNTU7MjU1OzI1NW0gICAgICAgICAgICAgIBtbMzg7MjswOzA7MG0bWzQ4OzI7MDswOzBtChtbMzg7MjsyNTU7MjU1OzI1NW0gICAgICAgICAgICAgIBtbMzg7MjswOzA7MG0bWzQ4OzI7MDswOzBtChtbMzg7MjsyNTU7MjU1OzI1NW0gICAgICAgICAgICAgIBtbMzg7MjswOzA7MG0bWzQ4OzI7MDswOzBtChtbMzg7MjsyNTU7MjU1OzI1NW0gICAgICAgICAgICAgIBtbMzg7MjswOzA7MG0bWzQ4OzI7MDswOzBtCg=="
-	result := assert.Equalf(test, expectedValue, obtainedValue, "The filled layer does not match the expected result")
-	if !result {
-		dumpScreenComparisons(expectedValue, obtainedValue)
+	obtainedValueBase64 = layerEntry.GetAnsiStringFromBase64(obtainedValue)
+	expectedValueBase64 = layerEntry.GetAnsiStringFromBase64(expectedValue)
+	if !assert.Equalf(test, expectedValue, obtainedValue, "The filled layer does not match the expected result") {
+		fmt.Println("Expected:\n", expectedValueBase64)
+		fmt.Println("Obtained:\n", obtainedValueBase64)
 	}
 }
 
@@ -222,14 +231,19 @@ func TestTerminalScrollCharacterMemory(test *testing.T) {
 	layerHeight := 8
 	InitializeTerminal(layerWidth, layerHeight)
 	layer1 := AddLayer(0, 0, layerWidth, layerHeight, 1, nil)
-	Color(10, 7)
+	layer1.Color(10, 7)
 	for lineIndex := 0; lineIndex < 13; lineIndex++ {
-		Print(fmt.Sprintf("This is the '%d' line of text printed!", lineIndex))
+		layer1.Print(fmt.Sprintf("This is the '%d' line of text printed!", lineIndex))
 	}
 	layerEntry := Layers.Get(layer1.layerAlias)
 	obtainedValue := layerEntry.GetBasicAnsiStringAsBase64()
 	expectedValue := "G1szODsyOzA7MjU1OzBtG1s0ODsyOzE5MjsxOTI7MTkybVRoaXMgaXMgdGhlICc1JyBsaW5lIG9mIHRleHQgcHJpbnRlZCEbWzM4OzI7MjU1OzI1NTsyNTVtG1s0ODsyOzA7MDswbSAgIBtbMzg7MjswOzA7MG0bWzQ4OzI7MDswOzBtChtbMzg7MjswOzI1NTswbRtbNDg7MjsxOTI7MTkyOzE5Mm1UaGlzIGlzIHRoZSAnNicgbGluZSBvZiB0ZXh0IHByaW50ZWQhG1szODsyOzI1NTsyNTU7MjU1bRtbNDg7MjswOzA7MG0gICAbWzM4OzI7MDswOzBtG1s0ODsyOzA7MDswbQobWzM4OzI7MDsyNTU7MG0bWzQ4OzI7MTkyOzE5MjsxOTJtVGhpcyBpcyB0aGUgJzcnIGxpbmUgb2YgdGV4dCBwcmludGVkIRtbMzg7MjsyNTU7MjU1OzI1NW0bWzQ4OzI7MDswOzBtICAgG1szODsyOzA7MDswbRtbNDg7MjswOzA7MG0KG1szODsyOzA7MjU1OzBtG1s0ODsyOzE5MjsxOTI7MTkybVRoaXMgaXMgdGhlICc4JyBsaW5lIG9mIHRleHQgcHJpbnRlZCEgICAbWzM4OzI7MDswOzBtG1s0ODsyOzA7MDswbQobWzM4OzI7MDsyNTU7MG0bWzQ4OzI7MTkyOzE5MjsxOTJtVGhpcyBpcyB0aGUgJzknIGxpbmUgb2YgdGV4dCBwcmludGVkISAgIBtbMzg7MjswOzA7MG0bWzQ4OzI7MDswOzBtChtbMzg7MjswOzI1NTswbRtbNDg7MjsxOTI7MTkyOzE5Mm1UaGlzIGlzIHRoZSAnMTAnIGxpbmUgb2YgdGV4dCBwcmludGVkISAgG1szODsyOzA7MDswbRtbNDg7MjswOzA7MG0KG1szODsyOzA7MjU1OzBtG1s0ODsyOzE5MjsxOTI7MTkybVRoaXMgaXMgdGhlICcxMScgbGluZSBvZiB0ZXh0IHByaW50ZWQhICAbWzM4OzI7MDswOzBtG1s0ODsyOzA7MDswbQobWzM4OzI7MDsyNTU7MG0bWzQ4OzI7MTkyOzE5MjsxOTJtVGhpcyBpcyB0aGUgJzEyJyBsaW5lIG9mIHRleHQgcHJpbnRlZCEgIBtbMzg7MjswOzA7MG0bWzQ4OzI7MDswOzBtCg=="
-	assert.Equalf(test, expectedValue, obtainedValue, "The printed screen does not match the master original!")
+	obtainedValueBase64 := layerEntry.GetAnsiStringFromBase64(obtainedValue)
+	expectedValueBase64 := layerEntry.GetAnsiStringFromBase64(expectedValue)
+	if !assert.Equalf(test, expectedValue, obtainedValue, "The printed screen does not match the master original!") {
+		fmt.Println("Expected:\n", expectedValueBase64)
+		fmt.Println("Obtained:\n", obtainedValueBase64)
+	}
 }
 
 func TestTerminalGetRuneOnLayer(test *testing.T) {
@@ -238,12 +252,12 @@ func TestTerminalGetRuneOnLayer(test *testing.T) {
 	layerHeight := 8
 	InitializeTerminal(layerWidth, layerHeight)
 	layer1 := AddLayer(0, 0, layerWidth, layerHeight, 1, nil)
-	Color(10, 7)
+	layer1.Color(10, 7)
 	layerEntry := Layers.Get(layer1.layerAlias)
 	attributeEntry := types.NewAttributeEntry()
 	attributeEntry.CellUserId = 999
 	arrayOfRunes := stringformat.GetRunesFromString("T")
-	printLayer(layerEntry, attributeEntry, 3, 7, arrayOfRunes)
+	layer1.printLayer(layerEntry, attributeEntry, 3, 7, arrayOfRunes)
 	obtainedValue := getCellIdByLayerAlias(layer1.layerAlias, 3, 7)
 	expectedValue := 999
 	assert.Equalf(test, expectedValue, obtainedValue, "The expected cell ID was not found at the specified location!")
@@ -263,20 +277,23 @@ func TestTerminalUpdateDisplay(test *testing.T) {
 	layer1 := AddLayer(0, 0, layerWidth, layerHeight, 1, nil)
 	layer2 := AddLayer(3, 2, layerWidth, layerHeight, 2, nil)
 	layer3 := AddLayer(6, 4, layerWidth, layerHeight, 3, nil)
-	Layer(layer1)
-	Color(4, 6)
+	layer1.Color(4, 6)
 	layer1.FillLayer("a1a2a3a4a5")
-	Layer(layer2)
-	Color(3, 11)
+	layer2.Color(3, 11)
 	layer2.FillLayer("b1b2b3b4b5")
-	Layer(layer3)
-	Color(12, 13)
+	layer3.Color(12, 13)
 	layer3.FillLayer("c1c2c3c4c5")
+
 	UpdateDisplay(false)
 	layerEntry := commonResource.screenLayer
 	obtainedValue := layerEntry.GetBasicAnsiStringAsBase64()
 	expectedValue := "G1szODsyOzA7MDsxMjhtG1s0ODsyOzA7MTI4OzEyOG1hMWEyYTNhNGE1YTFhMmEzYTRhNWExYTJhM2E0YTVhMWEyYTNhNGE1G1szODsyOzA7MDswbRtbNDg7MjswOzA7MG0KG1szODsyOzA7MDsxMjhtG1s0ODsyOzA7MTI4OzEyOG1hMWEyYTNhNGE1YTFhMmEzYTRhNWExYTJhM2E0YTVhMWEyYTNhNGE1G1szODsyOzA7MDswbRtbNDg7MjswOzA7MG0KG1szODsyOzA7MDsxMjhtG1s0ODsyOzA7MTI4OzEyOG1hMWEbWzM4OzI7MTI4OzEyODswbRtbNDg7MjsyNTU7MjU1OzBtYjFiMmIzYjRiNWIxYjJiM2I0YjViMWIyYjNiNGI1YjFiMmIzYhtbMzg7MjswOzA7MG0bWzQ4OzI7MDswOzBtChtbMzg7MjswOzA7MTI4bRtbNDg7MjswOzEyODsxMjhtYTFhG1szODsyOzEyODsxMjg7MG0bWzQ4OzI7MjU1OzI1NTswbWIxYjJiM2I0YjViMWIyYjNiNGI1YjFiMmIzYjRiNWIxYjJiM2IbWzM4OzI7MDswOzBtG1s0ODsyOzA7MDswbQobWzM4OzI7MDswOzEyOG0bWzQ4OzI7MDsxMjg7MTI4bWExYRtbMzg7MjsxMjg7MTI4OzBtG1s0ODsyOzI1NTsyNTU7MG1iMWIbWzM4OzI7MDswOzI1NW0bWzQ4OzI7MjU1OzA7MjU1bWMxYzJjM2M0YzVjMWMyYzNjNGM1YzFjMmMzYzRjNWMxYzIbWzM4OzI7MDswOzBtG1s0ODsyOzA7MDswbQobWzM4OzI7MDswOzEyOG0bWzQ4OzI7MDsxMjg7MTI4bWExYRtbMzg7MjsxMjg7MTI4OzBtG1s0ODsyOzI1NTsyNTU7MG1iMWIbWzM4OzI7MDswOzI1NW0bWzQ4OzI7MjU1OzA7MjU1bWMxYzJjM2M0YzVjMWMyYzNjNGM1YzFjMmMzYzRjNWMxYzIbWzM4OzI7MDswOzBtG1s0ODsyOzA7MDswbQobWzM4OzI7MDswOzEyOG0bWzQ4OzI7MDsxMjg7MTI4bWExYRtbMzg7MjsxMjg7MTI4OzBtG1s0ODsyOzI1NTsyNTU7MG1iMWIbWzM4OzI7MDswOzI1NW0bWzQ4OzI7MjU1OzA7MjU1bWMxYzJjM2M0YzVjMWMyYzNjNGM1YzFjMmMzYzRjNWMxYzIbWzM4OzI7MDswOzBtG1s0ODsyOzA7MDswbQobWzM4OzI7MDswOzEyOG0bWzQ4OzI7MDsxMjg7MTI4bWExYRtbMzg7MjsxMjg7MTI4OzBtG1s0ODsyOzI1NTsyNTU7MG1iMWIbWzM4OzI7MDswOzI1NW0bWzQ4OzI7MjU1OzA7MjU1bWMxYzJjM2M0YzVjMWMyYzNjNGM1YzFjMmMzYzRjNWMxYzIbWzM4OzI7MDswOzBtG1s0ODsyOzA7MDswbQo="
-	assert.Equalf(test, expectedValue, obtainedValue, "The updated screen does not match the master original!")
+	obtainedValueBase64 := layerEntry.GetAnsiStringFromBase64(obtainedValue)
+	expectedValueBase64 := layerEntry.GetAnsiStringFromBase64(expectedValue)
+	if !assert.Equalf(test, expectedValue, obtainedValue, "The updated screen does not match the master original!") {
+		fmt.Println("Expected:\n", expectedValueBase64)
+		fmt.Println("Obtained:\n", obtainedValueBase64)
+	}
 }
 
 func TestTerminalRenderParentLayer(test *testing.T) {
@@ -297,42 +314,37 @@ func TestTerminalRenderParentLayer(test *testing.T) {
 	layer9 := AddLayer(20, 3, 10, 10, 3, &layer5)
 	layer10 := AddLayer(50, 3, 10, 10, 3, &layer1)
 
-	Layer(layer1)
-	Color(4, 6)
+	layer1.Color(4, 6)
 	layer1.FillLayer("a1a2a3a4a5")
-	Layer(layer2)
-	Color(3, 11)
+	layer2.Color(3, 11)
 	layer2.FillLayer("b1b2b3b4b5")
-	Layer(layer3)
-	Color(12, 13)
+	layer3.Color(12, 13)
 	layer3.FillLayer("c1c2c3c4c5")
-	Layer(layer4)
-	Color(1, 2)
+	layer4.Color(1, 2)
 	layer4.FillLayer("c1c2c3c4c5")
-	Layer(layer5)
-	Color(6, 7)
+	layer5.Color(6, 7)
 	layer5.FillLayer("a1a2a3a4a5")
-	Layer(layer6)
-	Color(4, 12)
+	layer6.Color(4, 12)
 	layer6.FillLayer("b1b2b3b4b5")
-	Layer(layer7)
-	Color(13, 14)
+	layer7.Color(13, 14)
 	layer7.FillLayer("c1c2c3c4c5")
-	Layer(layer8)
-	Color(2, 3)
+	layer8.Color(2, 3)
 	layer8.FillLayer("c1c2c3c4c5")
-	Layer(layer9)
-	Color(7, 4)
+	layer9.Color(7, 4)
 	layer9.FillLayer("c1c2c3c4c5")
-	Layer(layer10)
-	Color(9, 12)
+	layer10.Color(9, 12)
 	layer10.FillLayer("c1c2c3c4c5")
 
 	UpdateDisplay(false)
 	layerEntry := commonResource.screenLayer
 	obtainedValue := layerEntry.GetBasicAnsiStringAsBase64()
 	expectedValue := "G1szODsyOzA7MDsxMjhtG1s0ODsyOzA7MTI4OzEyOG1hMWEyYTNhNGE1YTFhMmEbWzM4OzI7MDsxMjg7MTI4bRtbNDg7MjsxOTI7MTkyOzE5Mm1hMWEyYTNhNGE1YTFhMmEzYTRhNWExYTJhM2E0YTVhMWEyYTNhNGE1G1szODsyOzA7MDsxMjhtG1s0ODsyOzA7MTI4OzEyOG0zYTRhNWExYTJhM2E0YTVhMWEyYTNhNGE1G1szODsyOzA7MDswbRtbNDg7MjswOzA7MG0KG1szODsyOzA7MDsxMjhtG1s0ODsyOzA7MTI4OzEyOG1hMWEyYTNhNGE1YTFhMmEbWzM4OzI7MDsxMjg7MTI4bRtbNDg7MjsxOTI7MTkyOzE5Mm1hMWEyYTNhNGE1YTFhMmEzYTRhNWExYTJhM2E0YTVhMWEyYTNhNGE1G1szODsyOzA7MDsxMjhtG1s0ODsyOzA7MTI4OzEyOG0zYTRhNWExYTJhM2E0YTVhMWEyYTNhNGE1G1szODsyOzA7MDswbRtbNDg7MjswOzA7MG0KG1szODsyOzA7MDsxMjhtG1s0ODsyOzA7MTI4OzEyOG1hMWEbWzM4OzI7MTI4OzEyODswbRtbNDg7MjsyNTU7MjU1OzBtYjFiMmIzYjRiNWIxG1szODsyOzA7MTI4OzEyOG0bWzQ4OzI7MTkyOzE5MjsxOTJtYTFhG1szODsyOzA7MDsxMjhtG1s0ODsyOzA7MDsyNTVtYjFiMmIzYjRiNWIxYjJiG1szODsyOzA7MTI4OzEyOG0bWzQ4OzI7MTkyOzE5MjsxOTJtYTVhMWEyYTNhNGE1YTFhMmEzYTRhNRtbMzg7MjswOzA7MTI4bRtbNDg7MjswOzEyODsxMjhtM2E0YTVhMWEyYTNhNGE1YTFhMmEzYTRhNRtbMzg7MjswOzA7MG0bWzQ4OzI7MDswOzBtChtbMzg7MjswOzA7MTI4bRtbNDg7MjswOzEyODsxMjhtYTFhG1szODsyOzEyODsxMjg7MG0bWzQ4OzI7MjU1OzI1NTswbTNiNGI1YjFiMmIzYhtbMzg7MjswOzEyODsxMjhtG1s0ODsyOzE5MjsxOTI7MTkybWExYRtbMzg7MjswOzA7MTI4bRtbNDg7MjswOzA7MjU1bTNiNGI1YjFiMmIzYjRiNRtbMzg7MjswOzEyODsxMjhtG1s0ODsyOzE5MjsxOTI7MTkybWE1G1szODsyOzE5MjsxOTI7MTkybRtbNDg7MjswOzA7MTI4bWMxYzJjM2M0YzUbWzM4OzI7MDsxMjg7MTI4bRtbNDg7MjsxOTI7MTkyOzE5Mm1hMWEyYTNhNGE1G1szODsyOzI1NTswOzBtG1s0ODsyOzA7MDsyNTVtM2M0YzUbWzM4OzI7MDswOzEyOG0bWzQ4OzI7MDsxMjg7MTI4bWExYTJhM2E0YTVhMWEyYTNhNGE1G1szODsyOzA7MDswbRtbNDg7MjswOzA7MG0KG1szODsyOzA7MDsxMjhtG1s0ODsyOzA7MTI4OzEyOG1hMWEbWzM4OzI7MTI4OzEyODswbRtbNDg7MjsyNTU7MjU1OzBtYjFiMmIzYjRiNWIxG1szODsyOzA7MTI4OzEyOG0bWzQ4OzI7MTkyOzE5MjsxOTJtYTFhG1szODsyOzA7MDsxMjhtG1s0ODsyOzA7MDsyNTVtYjFiMmIzYjRiNWIxYjJiG1szODsyOzA7MTI4OzEyOG0bWzQ4OzI7MTkyOzE5MjsxOTJtYTUbWzM4OzI7MTkyOzE5MjsxOTJtG1s0ODsyOzA7MDsxMjhtYzFjMmMzYzRjNRtbMzg7MjswOzEyODsxMjhtG1s0ODsyOzE5MjsxOTI7MTkybWExYTJhM2E0YTUbWzM4OzI7MjU1OzA7MG0bWzQ4OzI7MDswOzI1NW0zYzRjNRtbMzg7MjswOzA7MTI4bRtbNDg7MjswOzEyODsxMjhtYTFhMmEzYTRhNWExYTJhM2E0YTUbWzM4OzI7MDswOzBtG1s0ODsyOzA7MDswbQobWzM4OzI7MDswOzEyOG0bWzQ4OzI7MDsxMjg7MTI4bWExYRtbMzg7MjsxMjg7MTI4OzBtG1s0ODsyOzI1NTsyNTU7MG0zYjRiNWIxYjJiM2IbWzM4OzI7MDsxMjg7MTI4bRtbNDg7MjsxOTI7MTkyOzE5Mm1hMWEbWzM4OzI7MDswOzEyOG0bWzQ4OzI7MDswOzI1NW0zYjRiNWIxYjJiM2I0YjUbWzM4OzI7MDsxMjg7MTI4bRtbNDg7MjsxOTI7MTkyOzE5Mm1hNRtbMzg7MjsxOTI7MTkyOzE5Mm0bWzQ4OzI7MDswOzEyOG1jMWMyYzNjNGM1G1szODsyOzA7MTI4OzEyOG0bWzQ4OzI7MTkyOzE5MjsxOTJtYTFhMmEzYTRhNRtbMzg7MjsyNTU7MDswbRtbNDg7MjswOzA7MjU1bTNjNGM1G1szODsyOzA7MDsxMjhtG1s0ODsyOzA7MTI4OzEyOG1hMWEyYTNhNGE1YTFhMmEzYTRhNRtbMzg7MjswOzA7MG0bWzQ4OzI7MDswOzBtChtbMzg7MjswOzA7MTI4bRtbNDg7MjswOzEyODsxMjhtYTFhG1szODsyOzEyODsxMjg7MG0bWzQ4OzI7MjU1OzI1NTswbWIxYjJiMxtbMzg7MjsxMjg7MDswbRtbNDg7MjswOzEyODswbWM0YzUbWzM4OzI7MDswOzI1NW0bWzQ4OzI7MjU1OzA7MjU1bWMzG1szODsyOzA7MTI4OzEyOG0bWzQ4OzI7MTkyOzE5MjsxOTJtYTFhG1szODsyOzA7MDsxMjhtG1s0ODsyOzA7MDsyNTVtYjFiMmIzG1szODsyOzA7MTI4OzBtG1s0ODsyOzEyODsxMjg7MG1jMWMyYzNjNGMbWzM4OzI7MDsxMjg7MTI4bRtbNDg7MjsxOTI7MTkyOzE5Mm1hNRtbMzg7MjsxOTI7MTkyOzE5Mm0bWzQ4OzI7MDswOzEyOG1jMWMyYzNjNGM1G1szODsyOzA7MTI4OzEyOG0bWzQ4OzI7MTkyOzE5MjsxOTJtYTFhMmEzYTRhNRtbMzg7MjsyNTU7MDswbRtbNDg7MjswOzA7MjU1bTNjNGM1G1szODsyOzA7MDsxMjhtG1s0ODsyOzA7MTI4OzEyOG1hMWEyYTNhNGE1YTFhMmEzYTRhNRtbMzg7MjswOzA7MG0bWzQ4OzI7MDswOzBtChtbMzg7MjswOzA7MTI4bRtbNDg7MjswOzEyODsxMjhtYTFhG1szODsyOzEyODsxMjg7MG0bWzQ4OzI7MjU1OzI1NTswbTNiNGI1YhtbMzg7MjsxMjg7MDswbRtbNDg7MjswOzEyODswbWM0YzUbWzM4OzI7MDswOzI1NW0bWzQ4OzI7MjU1OzA7MjU1bWMzG1szODsyOzA7MTI4OzEyOG0bWzQ4OzI7MTkyOzE5MjsxOTJtYTFhG1szODsyOzA7MDsxMjhtG1s0ODsyOzA7MDsyNTVtM2I0YjViG1szODsyOzA7MTI4OzBtG1s0ODsyOzEyODsxMjg7MG1jMWMyYzNjNGMbWzM4OzI7MDsxMjg7MTI4bRtbNDg7MjsxOTI7MTkyOzE5Mm1hNRtbMzg7MjsxOTI7MTkyOzE5Mm0bWzQ4OzI7MDswOzEyOG1jMWMyYzNjNGM1G1szODsyOzA7MTI4OzEyOG0bWzQ4OzI7MTkyOzE5MjsxOTJtYTFhMmEzYTRhNRtbMzg7MjsyNTU7MDswbRtbNDg7MjswOzA7MjU1bTNjNGM1G1szODsyOzA7MDsxMjhtG1s0ODsyOzA7MTI4OzEyOG1hMWEyYTNhNGE1YTFhMmEzYTRhNRtbMzg7MjswOzA7MG0bWzQ4OzI7MDswOzBtChtbMzg7MjswOzA7MTI4bRtbNDg7MjswOzEyODsxMjhtYTFhG1szODsyOzEyODsxMjg7MG0bWzQ4OzI7MjU1OzI1NTswbWIxYjJiMxtbMzg7MjsxMjg7MDswbRtbNDg7MjswOzEyODswbWM0YzUbWzM4OzI7MDswOzI1NW0bWzQ4OzI7MjU1OzA7MjU1bWMzG1szODsyOzA7MTI4OzEyOG0bWzQ4OzI7MTkyOzE5MjsxOTJtYTFhG1szODsyOzA7MDsxMjhtG1s0ODsyOzA7MDsyNTVtYjFiMmIzG1szODsyOzA7MTI4OzBtG1s0ODsyOzEyODsxMjg7MG1jMWMyYzNjNGMbWzM4OzI7MDsxMjg7MTI4bRtbNDg7MjsxOTI7MTkyOzE5Mm1hNRtbMzg7MjsxOTI7MTkyOzE5Mm0bWzQ4OzI7MDswOzEyOG1jMWMyYzNjNGM1G1szODsyOzA7MTI4OzEyOG0bWzQ4OzI7MTkyOzE5MjsxOTJtYTFhMmEzYTRhNRtbMzg7MjsyNTU7MDswbRtbNDg7MjswOzA7MjU1bTNjNGM1G1szODsyOzA7MDsxMjhtG1s0ODsyOzA7MTI4OzEyOG1hMWEyYTNhNGE1YTFhMmEzYTRhNRtbMzg7MjswOzA7MG0bWzQ4OzI7MDswOzBtChtbMzg7MjswOzA7MTI4bRtbNDg7MjswOzEyODsxMjhtYTFhG1szODsyOzEyODsxMjg7MG0bWzQ4OzI7MjU1OzI1NTswbTNiNGI1YhtbMzg7MjsxMjg7MDswbRtbNDg7MjswOzEyODswbWM0YzUbWzM4OzI7MDswOzI1NW0bWzQ4OzI7MjU1OzA7MjU1bWMzG1szODsyOzA7MTI4OzEyOG0bWzQ4OzI7MTkyOzE5MjsxOTJtYTFhG1szODsyOzA7MDsxMjhtG1s0ODsyOzA7MDsyNTVtM2I0YjViG1szODsyOzA7MTI4OzBtG1s0ODsyOzEyODsxMjg7MG1jMWMyYzNjNGMbWzM4OzI7MDsxMjg7MTI4bRtbNDg7MjsxOTI7MTkyOzE5Mm1hNRtbMzg7MjsxOTI7MTkyOzE5Mm0bWzQ4OzI7MDswOzEyOG1jMWMyYzNjNGM1G1szODsyOzA7MTI4OzEyOG0bWzQ4OzI7MTkyOzE5MjsxOTJtYTFhMmEzYTRhNRtbMzg7MjsyNTU7MDswbRtbNDg7MjswOzA7MjU1bTNjNGM1G1szODsyOzA7MDsxMjhtG1s0ODsyOzA7MTI4OzEyOG1hMWEyYTNhNGE1YTFhMmEzYTRhNRtbMzg7MjswOzA7MG0bWzQ4OzI7MDswOzBtChtbMzg7MjswOzA7MTI4bRtbNDg7MjswOzEyODsxMjhtYTFhG1szODsyOzEyODsxMjg7MG0bWzQ4OzI7MjU1OzI1NTswbWIxYjJiMxtbMzg7MjsxMjg7MDswbRtbNDg7MjswOzEyODswbWM0YzUbWzM4OzI7MDswOzI1NW0bWzQ4OzI7MjU1OzA7MjU1bWMzG1szODsyOzA7MTI4OzEyOG0bWzQ4OzI7MTkyOzE5MjsxOTJtYTFhG1szODsyOzA7MDsxMjhtG1s0ODsyOzA7MDsyNTVtYjFiMmIzG1szODsyOzA7MTI4OzBtG1s0ODsyOzEyODsxMjg7MG1jMWMyYzNjNGMbWzM4OzI7MDsxMjg7MTI4bRtbNDg7MjsxOTI7MTkyOzE5Mm1hNRtbMzg7MjsxOTI7MTkyOzE5Mm0bWzQ4OzI7MDswOzEyOG1jMWMyYzNjNGM1G1szODsyOzA7MTI4OzEyOG0bWzQ4OzI7MTkyOzE5MjsxOTJtYTFhMmEzYTRhNRtbMzg7MjsyNTU7MDswbRtbNDg7MjswOzA7MjU1bTNjNGM1G1szODsyOzA7MDsxMjhtG1s0ODsyOzA7MTI4OzEyOG1hMWEyYTNhNGE1YTFhMmEzYTRhNRtbMzg7MjswOzA7MG0bWzQ4OzI7MDswOzBtChtbMzg7MjswOzA7MTI4bRtbNDg7MjswOzEyODsxMjhtYTFhG1szODsyOzEyODsxMjg7MG0bWzQ4OzI7MjU1OzI1NTswbTNiNGI1YhtbMzg7MjsxMjg7MDswbRtbNDg7MjswOzEyODswbWM0YzUbWzM4OzI7MDswOzI1NW0bWzQ4OzI7MjU1OzA7MjU1bWMzG1szODsyOzA7MTI4OzEyOG0bWzQ4OzI7MTkyOzE5MjsxOTJtYTFhG1szODsyOzA7MDsxMjhtG1s0ODsyOzA7MDsyNTVtM2I0YjViG1szODsyOzA7MTI4OzBtG1s0ODsyOzEyODsxMjg7MG1jMWMyYzNjNGMbWzM4OzI7MDsxMjg7MTI4bRtbNDg7MjsxOTI7MTkyOzE5Mm1hNRtbMzg7MjsxOTI7MTkyOzE5Mm0bWzQ4OzI7MDswOzEyOG1jMWMyYzNjNGM1G1szODsyOzA7MTI4OzEyOG0bWzQ4OzI7MTkyOzE5MjsxOTJtYTFhMmEzYTRhNRtbMzg7MjsyNTU7MDswbRtbNDg7MjswOzA7MjU1bTNjNGM1G1szODsyOzA7MDsxMjhtG1s0ODsyOzA7MTI4OzEyOG1hMWEyYTNhNGE1YTFhMmEzYTRhNRtbMzg7MjswOzA7MG0bWzQ4OzI7MDswOzBtChtbMzg7MjswOzA7MTI4bRtbNDg7MjswOzEyODsxMjhtYTFhG1szODsyOzEyODsxMjg7MG0bWzQ4OzI7MjU1OzI1NTswbWIxYjJiMxtbMzg7MjswOzA7MjU1bRtbNDg7MjsyNTU7MDsyNTVtYzFjMmMzG1szODsyOzA7MTI4OzEyOG0bWzQ4OzI7MTkyOzE5MjsxOTJtYTFhG1szODsyOzA7MDsxMjhtG1s0ODsyOzA7MDsyNTVtYjFiMmIzG1szODsyOzI1NTswOzI1NW0bWzQ4OzI7MDsyNTU7MjU1bWMxYzJjM2M0YxtbMzg7MjswOzEyODsxMjhtG1s0ODsyOzE5MjsxOTI7MTkybWE1G1szODsyOzE5MjsxOTI7MTkybRtbNDg7MjswOzA7MTI4bWMxYzJjM2M0YzUbWzM4OzI7MDsxMjg7MTI4bRtbNDg7MjsxOTI7MTkyOzE5Mm1hMWEyYTNhNGE1G1szODsyOzI1NTswOzBtG1s0ODsyOzA7MDsyNTVtM2M0YzUbWzM4OzI7MDswOzEyOG0bWzQ4OzI7MDsxMjg7MTI4bWExYTJhM2E0YTVhMWEyYTNhNGE1G1szODsyOzA7MDswbRtbNDg7MjswOzA7MG0KG1szODsyOzA7MDsxMjhtG1s0ODsyOzA7MTI4OzEyOG1hMWEbWzM4OzI7MTI4OzEyODswbRtbNDg7MjsyNTU7MjU1OzBtM2I0YjViG1szODsyOzA7MDsyNTVtG1s0ODsyOzI1NTswOzI1NW1jMWMyYzMbWzM4OzI7MDsxMjg7MTI4bRtbNDg7MjsxOTI7MTkyOzE5Mm1hMWEbWzM4OzI7MDswOzEyOG0bWzQ4OzI7MDswOzI1NW0zYjRiNWIbWzM4OzI7MjU1OzA7MjU1bRtbNDg7MjswOzI1NTsyNTVtYzFjMmMzYzRjG1szODsyOzA7MTI4OzEyOG0bWzQ4OzI7MTkyOzE5MjsxOTJtYTVhMWEyYTNhNGE1YTFhMmEzYTRhNRtbMzg7MjswOzA7MTI4bRtbNDg7MjswOzEyODsxMjhtM2E0YTVhMWEyYTNhNGE1YTFhMmEzYTRhNRtbMzg7MjswOzA7MG0bWzQ4OzI7MDswOzBtChtbMzg7MjswOzA7MTI4bRtbNDg7MjswOzEyODsxMjhtYTFhG1szODsyOzEyODsxMjg7MG0bWzQ4OzI7MjU1OzI1NTswbWIxYjJiMxtbMzg7MjswOzA7MjU1bRtbNDg7MjsyNTU7MDsyNTVtYzFjMmMzG1szODsyOzA7MTI4OzEyOG0bWzQ4OzI7MTkyOzE5MjsxOTJtYTFhG1szODsyOzA7MDsxMjhtG1s0ODsyOzA7MDsyNTVtYjFiMmIzG1szODsyOzI1NTswOzI1NW0bWzQ4OzI7MDsyNTU7MjU1bWMxYzJjM2M0YxtbMzg7MjswOzEyODsxMjhtG1s0ODsyOzE5MjsxOTI7MTkybWE1YTFhMmEzYTRhNWExYTJhM2E0YTUbWzM4OzI7MDswOzEyOG0bWzQ4OzI7MDsxMjg7MTI4bTNhNGE1YTFhMmEzYTRhNWExYTJhM2E0YTUbWzM4OzI7MDswOzBtG1s0ODsyOzA7MDswbQobWzM4OzI7MDswOzEyOG0bWzQ4OzI7MDsxMjg7MTI4bWExYRtbMzg7MjsxMjg7MTI4OzBtG1s0ODsyOzI1NTsyNTU7MG0zYjRiNWIbWzM4OzI7MDswOzI1NW0bWzQ4OzI7MjU1OzA7MjU1bWMxYzJjMxtbMzg7MjswOzEyODsxMjhtG1s0ODsyOzE5MjsxOTI7MTkybWExYRtbMzg7MjswOzA7MTI4bRtbNDg7MjswOzA7MjU1bTNiNGI1YhtbMzg7MjsyNTU7MDsyNTVtG1s0ODsyOzA7MjU1OzI1NW1jMWMyYzNjNGMbWzM4OzI7MDsxMjg7MTI4bRtbNDg7MjsxOTI7MTkyOzE5Mm1hNWExYTJhM2E0YTVhMWEyYTNhNGE1G1szODsyOzA7MDsxMjhtG1s0ODsyOzA7MTI4OzEyOG0zYTRhNWExYTJhM2E0YTVhMWEyYTNhNGE1G1szODsyOzA7MDswbRtbNDg7MjswOzA7MG0KG1szODsyOzA7MDsxMjhtG1s0ODsyOzA7MTI4OzEyOG1hMWEbWzM4OzI7MTI4OzEyODswbRtbNDg7MjsyNTU7MjU1OzBtYjFiMmIzG1szODsyOzA7MDsyNTVtG1s0ODsyOzI1NTswOzI1NW1jMWMyYzMbWzM4OzI7MDsxMjg7MTI4bRtbNDg7MjsxOTI7MTkyOzE5Mm1hMWEbWzM4OzI7MDswOzEyOG0bWzQ4OzI7MDswOzI1NW1iMWIyYjMbWzM4OzI7MjU1OzA7MjU1bRtbNDg7MjswOzI1NTsyNTVtYzFjMmMzYzRjG1szODsyOzA7MTI4OzEyOG0bWzQ4OzI7MTkyOzE5MjsxOTJtYTVhMWEyYTNhNGE1YTFhMmEzYTRhNRtbMzg7MjswOzA7MTI4bRtbNDg7MjswOzEyODsxMjhtM2E0YTVhMWEyYTNhNGE1YTFhMmEzYTRhNRtbMzg7MjswOzA7MG0bWzQ4OzI7MDswOzBtChtbMzg7MjswOzA7MTI4bRtbNDg7MjswOzEyODsxMjhtYTFhMmEzYTRhNWExYTJhG1szODsyOzA7MTI4OzEyOG0bWzQ4OzI7MTkyOzE5MjsxOTJtYTFhMmEzYTRhNWExYTJhM2E0YTVhMWEyYTNhNGE1YTFhMmEzYTRhNRtbMzg7MjswOzA7MTI4bRtbNDg7MjswOzEyODsxMjhtM2E0YTVhMWEyYTNhNGE1YTFhMmEzYTRhNRtbMzg7MjswOzA7MG0bWzQ4OzI7MDswOzBtChtbMzg7MjswOzA7MTI4bRtbNDg7MjswOzEyODsxMjhtYTFhMmEzYTRhNWExYTJhG1szODsyOzA7MTI4OzEyOG0bWzQ4OzI7MTkyOzE5MjsxOTJtYTFhMmEzYTRhNWExYTJhM2E0YTVhMWEyYTNhNGE1YTFhMmEzYTRhNRtbMzg7MjswOzA7MTI4bRtbNDg7MjswOzEyODsxMjhtM2E0YTVhMWEyYTNhNGE1YTFhMmEzYTRhNRtbMzg7MjswOzA7MG0bWzQ4OzI7MDswOzBtChtbMzg7MjswOzA7MTI4bRtbNDg7MjswOzEyODsxMjhtYTFhMmEzYTRhNWExYTJhG1szODsyOzA7MTI4OzEyOG0bWzQ4OzI7MTkyOzE5MjsxOTJtYTFhMmEzYTRhNWExYTJhM2E0YTVhMWEyYTNhNGE1YTFhMmEzYTRhNRtbMzg7MjswOzA7MTI4bRtbNDg7MjswOzEyODsxMjhtM2E0YTVhMWEyYTNhNGE1YTFhMmEzYTRhNRtbMzg7MjswOzA7MG0bWzQ4OzI7MDswOzBtCg=="
-	assert.Equalf(test, expectedValue, obtainedValue, "The updated screen does not match the master original!")
+	obtainedValueBase64 := layerEntry.GetAnsiStringFromBase64(obtainedValue)
+	expectedValueBase64 := layerEntry.GetAnsiStringFromBase64(expectedValue)
+	if !assert.Equalf(test, expectedValue, obtainedValue, "The updated screen does not match the master original!") {
+		fmt.Println("Expected:\n", expectedValueBase64)
+		fmt.Println("Obtained:\n", obtainedValueBase64)
+	}
 }
 
 func TestDeleteLayer(test *testing.T) {
@@ -341,7 +353,7 @@ func TestDeleteLayer(test *testing.T) {
 	layerHeight := 20
 	InitializeTerminal(layerWidth, layerHeight)
 	p1 := AddLayer(0, 0, layerWidth, layerHeight, 1, nil)
-	p2 := AddLayer(0, 0, layerWidth, layerHeight, 1, nil)
+	AddLayer(0, 0, layerWidth, layerHeight, 1, nil)
 	p3 := AddLayer(0, 0, layerWidth, layerHeight, 1, nil)
 	p4 := AddLayer(0, 0, layerWidth, layerHeight, 1, nil)
 	p1c1 := AddLayer(0, 0, layerWidth, layerHeight, 1, &p1)
@@ -357,21 +369,18 @@ func TestDeleteLayer(test *testing.T) {
 	expectedValue := 12
 	assert.Equalf(test, expectedValue, obtainedValue, "The number of layers created does not match!")
 
-	Layer(p1)
 	p3.DeleteLayer()
 	sortedLayerAliasSlice = layer.GetSortedLayerMemoryAliasSlice()
 	obtainedValue = len(sortedLayerAliasSlice)
 	expectedValue = 7
 	assert.Equalf(test, expectedValue, obtainedValue, "The number of layers created does not match!")
 
-	Layer(p1)
 	p4.DeleteLayer()
 	sortedLayerAliasSlice = layer.GetSortedLayerMemoryAliasSlice()
 	obtainedValue = len(sortedLayerAliasSlice)
 	expectedValue = 6
 	assert.Equalf(test, expectedValue, obtainedValue, "The number of layers created does not match!")
 
-	Layer(p2)
 	p1.DeleteLayer()
 	sortedLayerAliasSlice = layer.GetSortedLayerMemoryAliasSlice()
 	obtainedValue = len(sortedLayerAliasSlice)

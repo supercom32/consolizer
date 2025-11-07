@@ -119,9 +119,7 @@ will simply be ignored.
 - All memory associated with the dropdown will be freed.
 */
 func (shared *DropdownInstanceType) Delete() *DropdownInstanceType {
-	if Dropdowns.IsExists(shared.layerAlias, shared.controlAlias) {
-		Dropdowns.Remove(shared.layerAlias, shared.controlAlias)
-	}
+	shared.BaseControlInstanceType.Delete()
 	return nil
 }
 
@@ -238,7 +236,7 @@ func (shared *dropdownType) Add(layerAlias string, dropdownAlias string, styleEn
 	var dropdownInstance DropdownInstanceType
 	dropdownInstance.layerAlias = layerAlias
 	dropdownInstance.controlAlias = dropdownAlias
-	dropdownInstance.controlType = "dropdown"
+	dropdownInstance.controlType = constants.TYPE_DROPDOWN
 	return dropdownInstance
 }
 

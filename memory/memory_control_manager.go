@@ -4,11 +4,12 @@ import (
 	"fmt"
 	"reflect"
 	"sort"
+	"sync"
 )
 
 // ControlMemoryManager is a generic memory manager for handling layer-specific entries.
 type ControlMemoryManager[T any] struct {
-	MemoryManager map[string]*MemoryManager[T] // MemoryManager stores pointers to T
+	MemoryManager sync.Map // Keys are strings, values are *MemoryManager[T]
 }
 
 // NewControlMemoryManager creates a new instance of ControlMemoryManager.
@@ -17,12 +18,13 @@ NewControlMemoryManager allows you to create a new control memory manager. In ad
 information should be noted:
 
 - Initializes a new memory manager for handling layer-specific entries.
-- Creates an empty map for storing control entries.
+- Creates an empty sync.Map for storing control entries.
 - The manager is generic and can handle any type of control.
+- Uses sync.Map for thread-safe concurrent access.
 */
 func NewControlMemoryManager[T any]() *ControlMemoryManager[T] {
 	return &ControlMemoryManager[T]{
-		MemoryManager: make(map[string]*MemoryManager[T]),
+		MemoryManager: sync.Map{},
 	}
 }
 
@@ -37,11 +39,13 @@ information should be noted:
 */
 func (shared *ControlMemoryManager[T]) Add(layerAlias string, alias string, entry *T) {
 	// Ensure the layer exists, or create a new one
-	if shared.MemoryManager[layerAlias] == nil {
-		shared.MemoryManager[layerAlias] = NewMemoryManager[T]()
+	layerManager, ok := shared.MemoryManager.Load(layerAlias)
+	if !ok || layerManager == nil {
+		layerManager = NewMemoryManager[T]()
+		shared.MemoryManager.Store(layerAlias, layerManager)
 	}
-	// AddLayer the pointer entry to the specified layer
-	shared.MemoryManager[layerAlias].Add(alias, entry)
+	// Add the pointer entry to the specified layer
+	layerManager.(*MemoryManager[T]).Add(alias, entry)
 }
 
 // Remove deletes an entry from the specified layer's memory.
@@ -54,8 +58,9 @@ information should be noted:
 - The entry's memory is freed when removed.
 */
 func (shared *ControlMemoryManager[T]) Remove(layerAlias string, alias string) {
-	if shared.MemoryManager[layerAlias] != nil {
-		shared.MemoryManager[layerAlias].Remove(alias)
+	layerManager, ok := shared.MemoryManager.Load(layerAlias)
+	if ok && layerManager != nil {
+		layerManager.(*MemoryManager[T]).Remove(alias)
 	}
 }
 
@@ -69,8 +74,9 @@ information should be noted:
 - All memory associated with the entries is freed.
 */
 func (shared *ControlMemoryManager[T]) RemoveAll(layerAlias string) {
-	if shared.MemoryManager[layerAlias] != nil {
-		shared.MemoryManager[layerAlias].RemoveAll()
+	layerManager, ok := shared.MemoryManager.Load(layerAlias)
+	if ok && layerManager != nil {
+		layerManager.(*MemoryManager[T]).RemoveAll()
 	}
 }
 
@@ -84,9 +90,10 @@ information should be noted:
 - The entry can be modified through the returned pointer.
 */
 func (shared *ControlMemoryManager[T]) Get(layerAlias string, alias string) *T {
-	typeName := reflect.TypeOf(*new(T)).Name() // GetLayer the type name without pointer
-	if shared.MemoryManager[layerAlias] != nil {
-		value := shared.MemoryManager[layerAlias].Get(alias)
+	typeName := reflect.TypeOf(*new(T)).Name() // Get the type name without pointer
+	layerManager, ok := shared.MemoryManager.Load(layerAlias)
+	if ok && layerManager != nil {
+		value := layerManager.(*MemoryManager[T]).Get(alias)
 		if value == nil {
 			// Use reflect to get a human-readable type name (without pointer format)
 			panic(fmt.Sprintf("The %s '%s' under layer '%s' could not be obtained since it does not exist!", typeName, alias, layerAlias))
@@ -106,20 +113,23 @@ information should be noted:
 - The entries are returned in alphabetical order by alias.
 */
 func (shared *ControlMemoryManager[T]) GetAllEntries(layerAlias string) []*T {
-	if shared.MemoryManager[layerAlias] == nil {
+	layerManager, ok := shared.MemoryManager.Load(layerAlias)
+	if !ok || layerManager == nil {
 		return []*T{} // Return an empty slice if the layer doesn't exist
 	}
-	allEntries := shared.MemoryManager[layerAlias].GetAllEntries()
+	allEntries := layerManager.(*MemoryManager[T]).GetAllEntries()
 	return allEntries // Return the slice of pointers
 }
 
 // GetAllEntriesOverall retrieves all entries from all layers.
 func (shared *ControlMemoryManager[T]) GetAllEntriesOverall() []*T {
 	var allEntries []*T
-	for layerAlias := range shared.MemoryManager {
+	shared.MemoryManager.Range(func(key, value interface{}) bool {
+		layerAlias := key.(string)
 		layerEntries := shared.GetAllEntries(layerAlias)
 		allEntries = append(allEntries, layerEntries...)
-	}
+		return true
+	})
 	return allEntries
 }
 
@@ -156,8 +166,9 @@ information should be noted:
 - Useful for validation before performing operations.
 */
 func (shared *ControlMemoryManager[T]) IsExists(layerAlias string, alias string) bool {
-	if shared.MemoryManager[layerAlias] != nil {
-		return shared.MemoryManager[layerAlias].Get(alias) != nil
+	layerManager, ok := shared.MemoryManager.Load(layerAlias)
+	if ok && layerManager != nil {
+		return layerManager.(*MemoryManager[T]).Get(alias) != nil
 	}
 	return false
 }

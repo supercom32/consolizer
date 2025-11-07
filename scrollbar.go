@@ -24,9 +24,7 @@ func (shared *ScrollbarInstanceType) AddToTabIndex() {
 }
 
 func (shared *ScrollbarInstanceType) Delete() *ScrollbarInstanceType {
-	if ScrollBars.IsExists(shared.layerAlias, shared.controlAlias) {
-		ScrollBars.Remove(shared.layerAlias, shared.controlAlias)
-	}
+	shared.BaseControlInstanceType.Delete()
 	return nil
 }
 
@@ -101,11 +99,12 @@ func (shared *scrollbarType) Add(layerAlias string, scrollbarAlias string, style
 	// Use the generic memory manager to add the scrollbar entry
 	ScrollBars.Add(layerAlias, scrollbarAlias, &scrollbarEntry)
 	// TODO: add validation and what happens if failed.
-	var ScrollbarInstance ScrollbarInstanceType
-	ScrollbarInstance.layerAlias = layerAlias
-	ScrollbarInstance.controlAlias = scrollbarAlias
-	ScrollbarInstance.controlType = "scrollbar"
-	return ScrollbarInstance
+	var scrollbarInstance ScrollbarInstanceType
+	scrollbarInstance.layerAlias = layerAlias
+	scrollbarInstance.controlAlias = scrollbarAlias
+	scrollbarInstance.controlType = constants.TYPE_SCROLLBAR
+	scrollbarInstance.setScrollValue(scrollValue)
+	return scrollbarInstance
 }
 
 /*
@@ -168,31 +167,31 @@ func (shared *scrollbarType) drawScrollbar(layerEntry *types.LayerEntryType, scr
 	if isHorizontal {
 		for currentXLocation := 1; currentXLocation < length-1; currentXLocation++ {
 			attributeEntry.CellControlId = currentXLocation - 1
-			printLayer(layerEntry, attributeEntry, xLocation+currentXLocation, yLocation, []rune{styleEntry.Scrollbar.TrackPattern})
+			layer.printLayer(layerEntry, attributeEntry, xLocation+currentXLocation, yLocation, []rune{styleEntry.Scrollbar.TrackPattern})
 		}
 		attributeEntry.CellControlId = constants.CellControlIdUpScrollArrow
-		printLayer(layerEntry, attributeEntry, xLocation, yLocation, []rune{styleEntry.Scrollbar.LeftArrow})
+		layer.printLayer(layerEntry, attributeEntry, xLocation, yLocation, []rune{styleEntry.Scrollbar.LeftArrow})
 		attributeEntry.CellControlId = constants.CellControlIdDownScrollArrow
-		printLayer(layerEntry, attributeEntry, xLocation+length-1, yLocation, []rune{styleEntry.Scrollbar.RightArrow})
+		layer.printLayer(layerEntry, attributeEntry, xLocation+length-1, yLocation, []rune{styleEntry.Scrollbar.RightArrow})
 		attributeEntry.ForegroundColor = styleEntry.Scrollbar.HandleColor
 		attributeEntry.CellControlId = constants.CellControlIdScrollbarHandle
 		// Here we add 1 to the xLocation since handle bars cannot be drawn on scroll arrows.
 		if scrollbarEntry.IsEnabled {
-			printLayer(layerEntry, attributeEntry, xLocation+1+handlePosition, yLocation, []rune{styleEntry.Scrollbar.Handle})
+			layer.printLayer(layerEntry, attributeEntry, xLocation+1+handlePosition, yLocation, []rune{styleEntry.Scrollbar.Handle})
 		}
 	} else {
 		for currentYLocation := 1; currentYLocation < length-1; currentYLocation++ {
 			attributeEntry.CellControlId = currentYLocation - 1 // make all Ids 0 based.
-			printLayer(layerEntry, attributeEntry, xLocation, yLocation+currentYLocation, []rune{styleEntry.Scrollbar.TrackPattern})
+			layer.printLayer(layerEntry, attributeEntry, xLocation, yLocation+currentYLocation, []rune{styleEntry.Scrollbar.TrackPattern})
 		}
 		attributeEntry.CellControlId = constants.CellControlIdUpScrollArrow
-		printLayer(layerEntry, attributeEntry, xLocation, yLocation, []rune{styleEntry.Scrollbar.UpArrow})
+		layer.printLayer(layerEntry, attributeEntry, xLocation, yLocation, []rune{styleEntry.Scrollbar.UpArrow})
 		attributeEntry.CellControlId = constants.CellControlIdDownScrollArrow
-		printLayer(layerEntry, attributeEntry, xLocation, yLocation+length-1, []rune{styleEntry.Scrollbar.DownArrow})
+		layer.printLayer(layerEntry, attributeEntry, xLocation, yLocation+length-1, []rune{styleEntry.Scrollbar.DownArrow})
 		attributeEntry.ForegroundColor = styleEntry.Scrollbar.HandleColor
 		attributeEntry.CellControlId = constants.CellControlIdScrollbarHandle
 		if scrollbarEntry.IsEnabled {
-			printLayer(layerEntry, attributeEntry, xLocation, yLocation+1+handlePosition, []rune{styleEntry.Scrollbar.Handle})
+			layer.printLayer(layerEntry, attributeEntry, xLocation, yLocation+1+handlePosition, []rune{styleEntry.Scrollbar.Handle})
 		}
 	}
 }

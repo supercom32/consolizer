@@ -65,18 +65,6 @@ func TestUnloadImage(t *testing.T) {
 	assert.False(t, consolizer.IsImageExists(imageAlias), "Image should no longer exist after being unloaded")
 }
 
-func TestLoadImage(t *testing.T) {
-	t.Skip("Requires mocking of filesystem operations")
-}
-
-func TestLoadImagesInBulk(t *testing.T) {
-	t.Skip("Requires mocking of LoadImage behavior")
-}
-
-func TestLoadPreRenderedImage(t *testing.T) {
-	t.Skip("Requires mocking of filesystem operations")
-}
-
 func TestDeleteNonExistentImage(t *testing.T) {
 	setupTest()
 	nonExistentImageAlias := "nonExistentImage"

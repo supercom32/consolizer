@@ -9,7 +9,7 @@ import (
 
 func TestButtonDefaultState(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
-	Button.Add(layer1.layerAlias, "testButton", "Test", styleEntry, 2, 2, 10, 3, true)
+	layer1.AddButton("Test", styleEntry, 2, 2, 10, 3, true)
 	UpdateDisplay(false)
 	layerEntry := commonResource.screenLayer
 	obtainedValue := layerEntry.GetBasicAnsiStringAsBase64()
@@ -24,7 +24,7 @@ func TestButtonDefaultState(test *testing.T) {
 
 func TestButtonDisabledState(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
-	Button.Add(layer1.layerAlias, "testButton", "Test", styleEntry, 2, 2, 10, 3, false)
+	layer1.AddButton("Test", styleEntry, 2, 2, 10, 3, false)
 	UpdateDisplay(false)
 	layerEntry := commonResource.screenLayer
 	obtainedValue := layerEntry.GetBasicAnsiStringAsBase64()
@@ -39,10 +39,10 @@ func TestButtonDisabledState(test *testing.T) {
 
 func TestButtonPressedState(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
-	Button.Add(layer1.layerAlias, "testButton", "Test", styleEntry, 2, 2, 10, 3, true)
+	buttonObject := layer1.AddButton("Test", styleEntry, 2, 2, 10, 3, true)
 
 	// Simulate a button press by directly setting the button state
-	buttonEntry := Buttons.Get(layer1.layerAlias, "testButton")
+	buttonEntry := Buttons.Get(layer1.layerAlias, buttonObject.controlAlias)
 	buttonEntry.IsPressed = true
 
 	UpdateDisplay(false)
@@ -59,10 +59,10 @@ func TestButtonPressedState(test *testing.T) {
 
 func TestButtonSelectedState(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
-	Button.Add(layer1.layerAlias, "testButton", "Test", styleEntry, 2, 2, 10, 3, true)
+	buttonObject := layer1.AddButton("Test", styleEntry, 2, 2, 10, 3, true)
 
 	// Simulate a button selection by directly setting the button state
-	buttonEntry := Buttons.Get(layer1.layerAlias, "testButton")
+	buttonEntry := Buttons.Get(layer1.layerAlias, buttonObject.controlAlias)
 	buttonEntry.IsSelected = true
 
 	UpdateDisplay(false)
@@ -79,7 +79,7 @@ func TestButtonSelectedState(test *testing.T) {
 
 func TestButtonCustomDimensions(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
-	Button.Add(layer1.layerAlias, "testButton", "Test", styleEntry, 2, 2, 15, 5, true)
+	layer1.AddButton("Test", styleEntry, 2, 2, 15, 5, true)
 	UpdateDisplay(false)
 	layerEntry := commonResource.screenLayer
 	obtainedValue := layerEntry.GetBasicAnsiStringAsBase64()
@@ -94,7 +94,7 @@ func TestButtonCustomDimensions(test *testing.T) {
 
 func TestButtonLongLabel(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
-	Button.Add(layer1.layerAlias, "testButton", "This is a long button label", styleEntry, 2, 2, 10, 3, true)
+	layer1.AddButton("This is a long button label", styleEntry, 2, 2, 10, 3, true)
 	UpdateDisplay(false)
 	layerEntry := commonResource.screenLayer
 	obtainedValue := layerEntry.GetBasicAnsiStringAsBase64()
@@ -109,7 +109,7 @@ func TestButtonLongLabel(test *testing.T) {
 
 func TestButtonDelete(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
-	buttonInstance := Button.Add(layer1.layerAlias, "testButton", "Test", styleEntry, 2, 2, 10, 3, true)
+	buttonInstance := layer1.AddButton("Test", styleEntry, 2, 2, 10, 3, true)
 	UpdateDisplay(false)
 
 	// Delete the button
@@ -129,8 +129,8 @@ func TestButtonDelete(test *testing.T) {
 
 func TestButtonDeleteAll(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
-	Button.Add(layer1.layerAlias, "testButton1", "Test 1", styleEntry, 2, 2, 10, 3, true)
-	Button.Add(layer1.layerAlias, "testButton2", "Test 2", styleEntry, 2, 6, 10, 3, true)
+	layer1.AddButton("Test 1", styleEntry, 2, 2, 10, 3, true)
+	layer1.AddButton("Test 2", styleEntry, 2, 6, 10, 3, true)
 	UpdateDisplay(false)
 
 	// Delete all buttons
@@ -150,7 +150,7 @@ func TestButtonDeleteAll(test *testing.T) {
 
 func TestButtonFocus(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
-	Button.Add(layer1.layerAlias, "testButton", "Test", styleEntry, 2, 2, 10, 3, true)
+	layer1.AddButton("Test", styleEntry, 2, 2, 10, 3, true)
 
 	// Set focus to the button
 	setFocusedControl(layer1.layerAlias, "testButton", constants.CellTypeButton)

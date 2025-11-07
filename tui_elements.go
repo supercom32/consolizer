@@ -316,7 +316,7 @@ func drawVerticalLine(layerEntry *types.LayerEntryType, styleEntry types.TuiStyl
 				stringToPrint = string(characterToDraw)
 			}
 			arrayOfRunes := stringformat.GetRunesFromString(stringToPrint)
-			printLayer(layerEntry, localAttributeEntry, xLocation, yLocation+currentRow, arrayOfRunes)
+			layer.printLayer(layerEntry, localAttributeEntry, xLocation, yLocation+currentRow, arrayOfRunes)
 		}
 	}
 }
@@ -353,7 +353,7 @@ func drawHorizontalLine(layerEntry *types.LayerEntryType, styleEntry types.TuiSt
 				stringToPrint = string(characterToDraw)
 			}
 			arrayOfRunes := stringformat.GetRunesFromString(stringToPrint)
-			printLayer(layerEntry, localAttributeEntry, xLocation+currentCharacter, yLocation, arrayOfRunes)
+			layer.printLayer(layerEntry, localAttributeEntry, xLocation+currentCharacter, yLocation, arrayOfRunes)
 		}
 	}
 }
@@ -389,11 +389,11 @@ func drawFrameLabel(layerEntry *types.LayerEntryType, styleEntry types.TuiStyleE
 	attributeEntry := types.NewAttributeEntry()
 	attributeEntry.ForegroundColor = styleEntry.Window.LineDrawingTextForegroundColor
 	attributeEntry.BackgroundColor = styleEntry.Window.LineDrawingTextBackgroundColor
-	printLayer(layerEntry, attributeEntry, xLocation, yLocation, []rune("[ "))
-	printLayer(layerEntry, attributeEntry, xLocation+2+len(label), yLocation, []rune(" ]"))
-	attributeEntry.ForegroundColor = styleEntry.Window.LineDrawingTextLabelColor
-	attributeEntry.BackgroundColor = styleEntry.Window.LineDrawingTextBackgroundColor
-	printLayer(layerEntry, attributeEntry, xLocation+2, yLocation, []rune(label))
+	layer.printLayer(layerEntry, attributeEntry, xLocation, yLocation, []rune("[ "))
+	layer.printLayer(layerEntry, attributeEntry, xLocation+2+len(label), yLocation, []rune(" ]"))
+	attributeEntry.ForegroundColor = styleEntry.Window.LineDrawingTextLabelForegroundColor
+	attributeEntry.BackgroundColor = styleEntry.Window.LineDrawingTextLabelBackgroundColor
+	layer.printLayer(layerEntry, attributeEntry, xLocation+2, yLocation, []rune(label))
 }
 
 /*
@@ -428,16 +428,22 @@ func drawFrame(layerEntry *types.LayerEntryType, styleEntry types.TuiStyleEntryT
 						characterToDraw = styleEntry.Frame.UpperLeftCorner
 						if frameStyle == constants.FrameStyleSunken {
 							currentAttributeEntry.ForegroundColor = styleEntry.Window.LineDrawingSunkenColor
+						} else if frameStyle == constants.FrameStyleRaised {
+							currentAttributeEntry.ForegroundColor = styleEntry.Window.LineDrawingRaisedColor
 						}
 					} else if currentCharacter == width-1 {
 						characterToDraw = styleEntry.Frame.UpperRightCorner
-						if frameStyle == constants.FrameStyleRaised {
+						if frameStyle == constants.FrameStyleSunken {
 							currentAttributeEntry.ForegroundColor = styleEntry.Window.LineDrawingRaisedColor
+						} else if frameStyle == constants.FrameStyleRaised {
+							currentAttributeEntry.ForegroundColor = styleEntry.Window.LineDrawingSunkenColor
 						}
 					} else {
 						characterToDraw = styleEntry.Frame.HorizontalLine
 						if frameStyle == constants.FrameStyleSunken {
 							currentAttributeEntry.ForegroundColor = styleEntry.Window.LineDrawingSunkenColor
+						} else if frameStyle == constants.FrameStyleRaised {
+							currentAttributeEntry.ForegroundColor = styleEntry.Window.LineDrawingRaisedColor
 						}
 					}
 				} else if currentRow == height-1 {
@@ -449,16 +455,22 @@ func drawFrame(layerEntry *types.LayerEntryType, styleEntry types.TuiStyleEntryT
 						characterToDraw = styleEntry.Frame.LowerLeftCorner
 						if frameStyle == constants.FrameStyleSunken {
 							currentAttributeEntry.ForegroundColor = styleEntry.Window.LineDrawingSunkenColor
+						} else if frameStyle == constants.FrameStyleRaised {
+							currentAttributeEntry.ForegroundColor = styleEntry.Window.LineDrawingRaisedColor
 						}
 					} else if currentCharacter == width-1 {
 						characterToDraw = styleEntry.Frame.LowerRightCorner
-						if frameStyle == constants.FrameStyleRaised {
+						if frameStyle == constants.FrameStyleSunken {
 							currentAttributeEntry.ForegroundColor = styleEntry.Window.LineDrawingRaisedColor
+						} else if frameStyle == constants.FrameStyleRaised {
+							currentAttributeEntry.ForegroundColor = styleEntry.Window.LineDrawingSunkenColor
 						}
 					} else {
 						characterToDraw = styleEntry.Frame.HorizontalLine
-						if frameStyle == constants.FrameStyleRaised {
+						if frameStyle == constants.FrameStyleSunken {
 							currentAttributeEntry.ForegroundColor = styleEntry.Window.LineDrawingRaisedColor
+						} else if frameStyle == constants.FrameStyleRaised {
+							currentAttributeEntry.ForegroundColor = styleEntry.Window.LineDrawingSunkenColor
 						}
 					}
 				} else {
@@ -466,12 +478,16 @@ func drawFrame(layerEntry *types.LayerEntryType, styleEntry types.TuiStyleEntryT
 						characterToDraw = styleEntry.Frame.VerticalLine
 						if frameStyle == constants.FrameStyleSunken {
 							currentAttributeEntry.ForegroundColor = styleEntry.Window.LineDrawingSunkenColor
+						} else if frameStyle == constants.FrameStyleRaised {
+							currentAttributeEntry.ForegroundColor = styleEntry.Window.LineDrawingRaisedColor
 						}
 					}
 					if currentCharacter == width-1 {
 						characterToDraw = styleEntry.Frame.VerticalLine
-						if frameStyle == constants.FrameStyleRaised {
+						if frameStyle == constants.FrameStyleSunken {
 							currentAttributeEntry.ForegroundColor = styleEntry.Window.LineDrawingRaisedColor
+						} else if frameStyle == constants.FrameStyleRaised {
+							currentAttributeEntry.ForegroundColor = styleEntry.Window.LineDrawingSunkenColor
 						}
 					}
 				}
@@ -550,9 +566,9 @@ func fillArea(layerEntry *types.LayerEntryType, attributeEntry types.AttributeEn
 		for currentCharacter := 0; currentCharacter < width; currentCharacter++ {
 			if yLocation >= 0 && yLocation < layerEntry.Height && xLocation+currentCharacter >= 0 && xLocation+currentCharacter < layerEntry.Width {
 				if len(arrayOfRunes) == 0 {
-					printLayer(layerEntry, attributeEntry, xLocation+currentCharacter, yLocation+currentRow, []rune{0})
+					layer.printLayer(layerEntry, attributeEntry, xLocation+currentCharacter, yLocation+currentRow, []rune{0})
 				} else {
-					printLayer(layerEntry, attributeEntry, xLocation+currentCharacter, yLocation+currentRow, []rune{arrayOfRunes[currentFillCharacterIndex]})
+					layer.printLayer(layerEntry, attributeEntry, xLocation+currentCharacter, yLocation+currentRow, []rune{arrayOfRunes[currentFillCharacterIndex]})
 					// Double HotspotWidth characters advance by 2 spaces. But what happens to characters between? GetLayer lost?
 					if stringformat.IsRuneCharacterWide(arrayOfRunes[currentFillCharacterIndex]) {
 						currentCharacter++

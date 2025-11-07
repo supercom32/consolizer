@@ -18,6 +18,15 @@ type selectorType struct{}
 var Selector selectorType
 var Selectors = memory.NewControlMemoryManager[types.SelectorEntryType]()
 
+/*
+AddSelector allows you to add a selector to a given text layer. In addition, the following
+information should be noted:
+
+- If a selector with the same alias already exists on the specified layer, it will be replaced.
+- The selector will be visible by default.
+- The viewport position determines which items are initially visible in the selector.
+- The item selected parameter sets which item is initially selected.
+*/
 func AddSelector(layerAlias string, selectorAlias string, styleEntry types.TuiStyleEntryType, selectionEntry types.SelectionEntryType, xLocation int, yLocation int, selectorHeight int, itemWidth int, numberOfColumns int, viewportPosition int, itemSelected int, isBorderDrawn bool) {
 	selectorEntry := types.NewSelectorEntry()
 	selectorEntry.Alias = selectorAlias
@@ -37,11 +46,27 @@ func AddSelector(layerAlias string, selectorAlias string, styleEntry types.TuiSt
 	Selectors.Add(layerAlias, selectorAlias, &selectorEntry)
 }
 
+/*
+DeleteSelector allows you to remove a selector from a text layer. In addition, the following
+information should be noted:
+
+- If you attempt to delete a selector which does not exist, then the request
+will simply be ignored.
+- All memory associated with the selector will be freed.
+*/
 func DeleteSelector(layerAlias string, selectorAlias string) {
 	// Use the generic memory manager to remove the selector entry
 	Selectors.Remove(layerAlias, selectorAlias)
 }
 
+/*
+DeleteAllSelectorsFromLayer allows you to remove all selectors from a specified text layer.
+In addition, the following information should be noted:
+
+- This operation cannot be undone.
+- All memory associated with the selectors will be freed.
+- If the layer does not exist or has no selectors, no operation will be performed.
+*/
 func DeleteAllSelectorsFromLayer(layerAlias string) {
 	// Retrieve all selectors in the specified layer
 	selectors := Selectors.GetAllEntries(layerAlias)
@@ -52,11 +77,26 @@ func DeleteAllSelectorsFromLayer(layerAlias string) {
 	}
 }
 
+/*
+IsSelectorExists allows you to check if a selector with the specified alias exists on a given text layer.
+In addition, the following information should be noted:
+
+- Returns true if the selector exists, false otherwise.
+- This method is useful for validating selector existence before performing operations on it.
+*/
 func IsSelectorExists(layerAlias string, selectorAlias string) bool {
 	// Use the generic memory manager to check existence
 	return Selectors.IsExists(layerAlias, selectorAlias)
 }
 
+/*
+GetSelector allows you to retrieve a selector entry from a given text layer. In addition,
+the following information should be noted:
+
+- If the selector does not exist, a panic will be generated to fail as fast as possible.
+- The returned selector entry can be used to directly modify the selector's properties.
+- Changes made to the returned entry will be reflected when the selector is next drawn.
+*/
 func GetSelector(layerAlias string, selectorAlias string) *types.SelectorEntryType {
 	// Use the generic memory manager to retrieve the selector entry
 	selectorEntry := Selectors.Get(layerAlias, selectorAlias)
@@ -90,9 +130,7 @@ will simply be ignored.
 - All memory associated with the selector will be freed.
 */
 func (shared *selectorInstanceType) Delete() *selectorInstanceType {
-	if Selectors.IsExists(shared.layerAlias, shared.controlAlias) {
-		Selectors.Remove(shared.layerAlias, shared.controlAlias)
-	}
+	shared.BaseControlInstanceType.Delete()
 	return nil
 }
 
@@ -324,7 +362,7 @@ func (shared *selectorType) Add(layerAlias string, selectorAlias string, styleEn
 	var selectorInstance selectorInstanceType
 	selectorInstance.layerAlias = layerAlias
 	selectorInstance.controlAlias = selectorAlias
-	selectorInstance.controlType = "selectoritem"
+	selectorInstance.controlType = constants.TYPE_SELECTOR
 	setFocusedControl(layerAlias, selectorAlias, constants.CellTypeSelectorItem)
 	return selectorInstance
 }
@@ -353,6 +391,112 @@ func (shared *selectorType) DeleteAllSelectors(layerAlias string) {
 }
 
 /*
+setupSelectorAttributes allows you to create and configure the standard and highlight attribute entries
+for a selector based on the provided style entry. In addition, the following information should be noted:
+
+- Returns two attribute entries: one for normal menu items and one for highlighted items.
+- The attributes are configured based on the colors specified in the style entry.
+- These attributes control the visual appearance of selector items when drawn.
+*/
+func (shared *selectorType) setupSelectorAttributes(styleEntry types.TuiStyleEntryType) (types.AttributeEntryType, types.AttributeEntryType) {
+	menuAttributeEntry := types.NewAttributeEntry()
+	menuAttributeEntry.ForegroundColor = styleEntry.Selector.ForegroundColor
+	menuAttributeEntry.BackgroundColor = styleEntry.Selector.BackgroundColor
+
+	highlightAttributeEntry := types.NewAttributeEntry()
+	highlightAttributeEntry.ForegroundColor = styleEntry.Selector.HighlightForegroundColor
+	highlightAttributeEntry.BackgroundColor = styleEntry.Selector.HighlightBackgroundColor
+
+	return menuAttributeEntry, highlightAttributeEntry
+}
+
+/*
+drawSelectorBorder allows you to draw a border around a selector on the specified text layer.
+In addition, the following information should be noted:
+
+- The border is drawn using the border characters defined in the style entry.
+- The border is drawn one character outside the selector area.
+- The background of the border area is filled with spaces using the provided attribute entry.
+*/
+func (shared *selectorType) drawSelectorBorder(layerEntry *types.LayerEntryType, styleEntry types.TuiStyleEntryType,
+	attributeEntry types.AttributeEntryType, xLocation int, yLocation int, itemWidth int, selectorHeight int) {
+	fillArea(layerEntry, attributeEntry, " ", xLocation-1, yLocation-1, itemWidth+2, selectorHeight+2, constants.NullCellControlLocation)
+	drawBorder(layerEntry, styleEntry, attributeEntry, xLocation-1, yLocation-1, itemWidth+2, selectorHeight+2, false)
+}
+
+/*
+formatSelectorItemText allows you to format the text for a selector item based on the provided style
+and whether the item is highlighted. In addition, the following information should be noted:
+
+- Handles text alignment according to the style entry's text alignment setting.
+- For centered text, special handling is applied to ensure proper centering with markup.
+- For highlighted items, markup tags are stripped to ensure consistent highlighting.
+- Returns a string formatted to the specified width with appropriate padding.
+*/
+func (shared *selectorType) formatSelectorItemText(menuItemText string, itemWidth int, styleEntry types.TuiStyleEntryType, isHighlighted bool) string {
+	var menuItemName string
+
+	if styleEntry.Selector.IsSelectionCentered {
+		// If centered, we need to handle markup specially
+		if isHighlighted {
+			// For highlighted items, strip markup tags to ensure they don't apply
+			menuItemText = GetNonMarkupText(menuItemText)
+			menuItemName = stringformat.GetFormattedString(menuItemText, itemWidth, constants.AlignmentCenter)
+		} else {
+			// For non-highlighted items, calculate centering that accounts for markup
+			textLength := CalculateStringLengthWithoutMarkup(menuItemText)
+			padding := (itemWidth - textLength) / 2
+			if padding < 0 {
+				padding = 0
+			}
+
+			// Create padding
+			leftPadding := stringformat.GetFilledString(padding, " ")
+			rightPadding := stringformat.GetFilledString(itemWidth-textLength-padding, " ")
+
+			// Combine with original text (preserving markup)
+			menuItemName = leftPadding + menuItemText
+			if len(menuItemName) < itemWidth {
+				menuItemName += rightPadding
+			}
+		}
+	} else {
+		// Use standard formatting for non-centered items
+		if isHighlighted {
+			// For highlighted items, strip markup tags
+			menuItemText = GetNonMarkupText(menuItemText)
+		}
+		menuItemName = stringformat.GetFormattedString(menuItemText, itemWidth, styleEntry.Selector.TextAlignment)
+	}
+
+	return menuItemName
+}
+
+/*
+drawSelectorItem allows you to draw a single selector item on the specified text layer.
+In addition, the following information should be noted:
+
+- For non-highlighted items, markup processing is applied to support styled text.
+- For highlighted items, standard printing is used with the highlight attributes.
+- The cell control ID and alias are set to enable mouse and keyboard interaction.
+- Returns the width of the drawn item, which may vary based on the content.
+*/
+func (shared *selectorType) drawSelectorItem(layerEntry *types.LayerEntryType, attributeEntry types.AttributeEntryType,
+	menuItemName string, xLocation int, currentXOffset int, currentYLocation int, isHighlighted bool) int {
+
+	arrayOfRunes := stringformat.GetRunesFromString(menuItemName)
+
+	// Use printMarkup for non-highlighted items, otherwise use printLayer
+	if !isHighlighted {
+		layer.printMarkup(layerEntry, attributeEntry, xLocation+(currentXOffset), currentYLocation, 0, menuItemName)
+	} else {
+		layer.printLayer(layerEntry, attributeEntry, xLocation+(currentXOffset), currentYLocation, arrayOfRunes)
+	}
+
+	return stringformat.GetWidthOfRunesWhenPrinted(arrayOfRunes)
+}
+
+/*
 drawSelector allows you to draw a selector on a given text layer. The
 Style of the Selector will be determined by the style entry passed in. In
 addition, the following information should be noted:
@@ -371,34 +515,30 @@ func (shared *selectorType) drawSelector(selectorAlias string, layerEntry *types
 		return
 	}
 
-	menuAttributeEntry := types.NewAttributeEntry()
-	menuAttributeEntry.ForegroundColor = styleEntry.Selector.ForegroundColor
-	menuAttributeEntry.BackgroundColor = styleEntry.Selector.BackgroundColor
+	menuAttributeEntry, highlightAttributeEntry := shared.setupSelectorAttributes(styleEntry)
+
 	if selectorEntry.IsBorderDrawn {
-		fillArea(layerEntry, menuAttributeEntry, " ", xLocation-1, yLocation-1, itemWidth+2, selectorHeight+2, constants.NullCellControlLocation)
-		drawBorder(layerEntry, styleEntry, menuAttributeEntry, xLocation-1, yLocation-1, itemWidth+2, selectorHeight+2, false)
+		shared.drawSelectorBorder(layerEntry, styleEntry, menuAttributeEntry, xLocation, yLocation, itemWidth, selectorHeight)
 	}
-	highlightAttributeEntry := types.NewAttributeEntry()
-	highlightAttributeEntry.ForegroundColor = styleEntry.Selector.HighlightForegroundColor
-	highlightAttributeEntry.BackgroundColor = styleEntry.Selector.HighlightBackgroundColor
+
 	currentYLocation := yLocation
 	currentMenuItemIndex := viewportPosition
 	currentXOffset := 0
 	currentColumn := 0
 	currentRow := 0
 	for currentMenuItemIndex < len(selectionEntry.SelectionValue) && currentRow < selectorHeight {
+		isHighlighted := currentMenuItemIndex == itemHighlighted
 		attributeEntry := menuAttributeEntry
-		if currentMenuItemIndex == itemHighlighted {
+		if isHighlighted {
 			attributeEntry = highlightAttributeEntry
 		}
-		menuItemName := stringformat.GetFormattedString(selectionEntry.SelectionValue[currentMenuItemIndex], itemWidth, styleEntry.Selector.TextAlignment)
-		arrayOfRunes := stringformat.GetRunesFromString(menuItemName)
+		menuItemName := shared.formatSelectorItemText(selectionEntry.SelectionValue[currentMenuItemIndex], itemWidth, styleEntry, isHighlighted)
 		attributeEntry.CellControlId = currentMenuItemIndex
 		attributeEntry.CellControlAlias = selectorAlias
 		attributeEntry.CellType = constants.CellTypeSelectorItem
-		printLayer(layerEntry, attributeEntry, xLocation+(currentXOffset), currentYLocation, arrayOfRunes)
+		itemWidth := shared.drawSelectorItem(layerEntry, attributeEntry, menuItemName, xLocation, currentXOffset, currentYLocation, isHighlighted)
 		currentMenuItemIndex++
-		currentXOffset = currentXOffset + stringformat.GetWidthOfRunesWhenPrinted(arrayOfRunes) // len(arrayOfRunes)
+		currentXOffset = currentXOffset + itemWidth
 		currentColumn++
 		if currentColumn >= numberOfColumns {
 			currentXOffset = 0
@@ -431,6 +571,15 @@ func (shared *selectorType) drawSelectorsOnLayer(layerEntry types.LayerEntryType
 	}
 }
 
+/*
+updateKeyboardEventForSelector allows you to process keyboard events for a specific selector.
+In addition, the following information should be noted:
+
+- Handles navigation keys (up, down, left, right) to move between items.
+- Automatically adjusts the viewport position when navigating to items outside the visible area.
+- Updates the associated scrollbar position when the viewport changes.
+- Returns true if the screen needs to be updated due to state changes.
+*/
 func (shared *selectorType) updateKeyboardEventForSelector(layerAlias string, selectorAlias string, keystroke []rune) bool {
 	keystrokeAsString := string(keystroke)
 	isScreenUpdateRequired := false

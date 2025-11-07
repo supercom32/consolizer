@@ -639,63 +639,6 @@ func printLayer(layerEntry *types.LayerEntryType, attributeEntry types.Attribute
 	return cursorXLocation - xLocation
 }
 
-func printLayerWithWordWrap(layerEntry *types.LayerEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, width int, textToPrint []rune) int {
-	layerWidth := layerEntry.Width
-	layerHeight := layerEntry.Height
-	cursorXLocation := xLocation
-	cursorYLocation := yLocation
-	characterMemory := layerEntry.CharacterMemory
-	for currentCharacterIndex, currentCharacter := range textToPrint {
-		if currentCharacter == ' ' {
-			// Check if the word fits within the remaining space on the current line.
-			wordWidth := calculateWordWidth(textToPrint, currentCharacterIndex)
-			if cursorXLocation+wordWidth >= xLocation+width {
-				// Word doesn't fit, move to the next line.
-				cursorXLocation = xLocation
-				cursorYLocation++
-			}
-		}
-		if currentCharacter == ' ' && cursorXLocation == xLocation {
-			// Skip the first blank space at the start of a line if one exists.
-			continue
-		}
-		if cursorXLocation >= 0 && cursorXLocation < layerWidth && cursorYLocation >= 0 && cursorYLocation < layerHeight {
-			originalBackgroundColor := characterMemory[cursorYLocation][cursorXLocation].AttributeEntry.BackgroundColor
-			characterMemory[cursorYLocation][cursorXLocation].AttributeEntry = types.NewAttributeEntry(&attributeEntry)
-			characterMemory[cursorYLocation][cursorXLocation].Character = currentCharacter
-			if stringformat.IsRuneCharacterWide(currentCharacter) {
-				cursorXLocation++
-				if cursorXLocation >= layerWidth {
-					continue
-				}
-				characterMemory[cursorYLocation][cursorXLocation].AttributeEntry = types.NewAttributeEntry(&attributeEntry)
-				characterMemory[cursorYLocation][cursorXLocation].Character = ' '
-			}
-			if characterMemory[cursorYLocation][cursorXLocation].AttributeEntry.IsBackgroundTransparent {
-				characterMemory[cursorYLocation][cursorXLocation].AttributeEntry.BackgroundColor = originalBackgroundColor
-			}
-		}
-		cursorXLocation++
-		if cursorXLocation >= layerWidth {
-			continue
-		}
-	}
-	return cursorXLocation - xLocation
-}
-
-func calculateWordWidth(textToPrint []rune, start int) int {
-	// Calculate the width of a word from the given position. The first position is
-	// always assumed to be ' ' and is skipped.
-	wordWidth := 0
-	for i := start + 1; i < len(textToPrint); i++ {
-		if textToPrint[i] == ' ' {
-			break
-		}
-		wordWidth++
-	}
-	return wordWidth
-}
-
 /*
 Clear allows you to empty the default text layer of all its contents. If you
 wish to clear a text layer that is not currently set as the default, use
@@ -704,16 +647,6 @@ wish to clear a text layer that is not currently set as the default, use
 func Clear() {
 	validateDefaultLayerIsNotEmpty()
 	ClearLayer(commonResource.layerInstance)
-}
-
-/*
-ClearLayer allows you to empty the specified text layer of all its contents. If you
-do not wish to specify a text layer, you can use the method 'Clear' which will
-simply clear the default text layer previously set.
-*/
-func ClearLayer(layerInstance LayerInstanceType) {
-	layerEntry := Layers.Get(layerInstance.layerAlias)
-	clearLayer(layerEntry)
 }
 
 /*

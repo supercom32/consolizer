@@ -97,7 +97,7 @@ func (shared LayerEntryType) GetBasicAnsiString() string {
 
 func (shared LayerEntryType) GetBasicAnsiStringAsBase64() string {
 	ansiString := shared.GetBasicAnsiString()
-	err := filesystem.WriteBytesToFile("/tmp/output.ans", []byte(ansiString), 0)
+	err := filesystem.WriteBytesToFile("/tmp/test_output/output.ans", []byte(ansiString), 0)
 	if err != nil {
 		panic(err)
 	}
@@ -115,6 +115,13 @@ func (shared LayerEntryType) GetBasicAnsiStringAsBase642() string {
 
 func (shared LayerEntryType) GetAnsiStringFromBase64(base64String string) string {
 	return stringformat.GetStringFromBase64(base64String)
+}
+
+// WriteAnsiStringFromBase64 decodes a base64 string to ANSI and writes it to the specified file.
+// This is useful for comparing expected and actual values when tests fail.
+func WriteAnsiStringFromBase64(base64String string) error {
+	ansiString := stringformat.GetStringFromBase64(base64String)
+	return filesystem.WriteBytesToFile("/tmp/test_output/expected.ans", []byte(ansiString), 0)
 }
 
 func (shared LayerEntryType) GetAnsiForegroundColorString(color constants.ColorType) string {

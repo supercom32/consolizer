@@ -122,7 +122,7 @@ func (shared *radioButtonType) Add(layerAlias string, radioButtonAlias string, r
 	var radioButtonInstance RadioButtonInstanceType
 	radioButtonInstance.layerAlias = layerAlias
 	radioButtonInstance.controlAlias = radioButtonAlias
-	radioButtonInstance.controlType = "radiobutton"
+	radioButtonInstance.controlType = constants.TYPE_RADIOBUTTON
 	if isSelected {
 		selectRadioButton(layerAlias, radioButtonAlias)
 	}
@@ -163,7 +163,7 @@ func (shared *radioButtonType) drawRadioButton(layerEntry *types.LayerEntryType,
 	firstArrayOfRunes := stringformat.GetRunesFromString(radioButtonLabel)
 	firstArrayOfRunes = append(firstArrayOfRunes, ' ')
 	numberOfSpacesUsed := stringformat.GetWidthOfRunesWhenPrinted(firstArrayOfRunes)
-	printLayer(layerEntry, attributeEntry, xLocation, yLocation, firstArrayOfRunes)
+	layer.printLayer(layerEntry, attributeEntry, xLocation, yLocation, firstArrayOfRunes)
 	var secondArrayOfRunes []rune
 	if isSelected {
 		secondArrayOfRunes = []rune{localStyleEntry.RadioButton.SelectedCharacter}
@@ -172,7 +172,7 @@ func (shared *radioButtonType) drawRadioButton(layerEntry *types.LayerEntryType,
 		secondArrayOfRunes = []rune{localStyleEntry.RadioButton.UnselectedCharacter}
 		attributeEntry.CellControlId = constants.CellControlIdUnchecked
 	}
-	printLayer(layerEntry, attributeEntry, xLocation+numberOfSpacesUsed, yLocation, secondArrayOfRunes)
+	layer.printLayer(layerEntry, attributeEntry, xLocation+numberOfSpacesUsed, yLocation, secondArrayOfRunes)
 }
 
 /*
