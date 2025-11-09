@@ -843,6 +843,7 @@ func renderControls(currentLayerEntry types.LayerEntryType) {
 	Label.drawLabelsOnLayer(currentLayerEntry)
 	Tooltip.drawTooltipHotspotZonesOnLayer(currentLayerEntry)
 	viewport.drawViewportsOnLayer(currentLayerEntry)
+	FileMenu.drawFileMenusOnLayer(currentLayerEntry)
 }
 
 /*

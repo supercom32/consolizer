@@ -417,11 +417,17 @@ In addition, the following information should be noted:
 - The border is drawn using the border characters defined in the style entry.
 - The border is drawn one character outside the selector area.
 - The background of the border area is filled with spaces using the provided attribute entry.
+- If IsShadowDrawn is enabled, a shadow is drawn using drawWindow, otherwise a border is drawn using drawBorder.
 */
 func (shared *selectorType) drawSelectorBorder(layerEntry *types.LayerEntryType, styleEntry types.TuiStyleEntryType,
 	attributeEntry types.AttributeEntryType, xLocation int, yLocation int, itemWidth int, selectorHeight int) {
 	fillArea(layerEntry, attributeEntry, " ", xLocation-1, yLocation-1, itemWidth+2, selectorHeight+2, constants.NullCellControlLocation)
-	drawBorder(layerEntry, styleEntry, attributeEntry, xLocation-1, yLocation-1, itemWidth+2, selectorHeight+2, false)
+
+	if styleEntry.Selector.IsShadowDrawn {
+		drawWindow(layerEntry, styleEntry, attributeEntry, xLocation-1, yLocation-1, itemWidth+2, selectorHeight+2, false)
+	} else {
+		drawBorder(layerEntry, styleEntry, attributeEntry, xLocation-1, yLocation-1, itemWidth+2, selectorHeight+2, false)
+	}
 }
 
 /*

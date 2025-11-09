@@ -540,12 +540,47 @@ transparent areas which darken whatever text layers are underneath it by a
 specified degree. In addition, the following information should be noted:
 
 - The alpha value can range from 0.0 (no shadow) to 1.0 (totally black).
+- If the shadow is drawn over a non-null (non-empty) character, it applies an
+  "in-layer shadow" effect (i.e., darkens the existing content).
+- If the shadow is drawn over an empty area, it keeps the current behavior
+  (drawing the solid shadow color).
 */
 func drawShadow(layerEntry *types.LayerEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, width int, height int, alphaValue float32) {
 	localAttributeEntry := types.NewAttributeEntry(&attributeEntry)
 	localAttributeEntry.ForegroundTransformValue = alphaValue
 	localAttributeEntry.BackgroundTransformValue = alphaValue
-	fillArea(layerEntry, localAttributeEntry, "", xLocation, yLocation, width, height, constants.NullCellControlLocation)
+
+	// For empty areas, use the current behavior (null runes with transform values)
+	// For non-empty cells, darken the existing content
+	for currentRow := 0; currentRow < height; currentRow++ {
+		for currentColumn := 0; currentColumn < width; currentColumn++ {
+			x := xLocation + currentColumn
+			y := yLocation + currentRow
+
+			// Check if coordinates are within layer bounds
+			if y >= 0 && y < layerEntry.Height && x >= 0 && x < layerEntry.Width {
+				// Get the current cell
+				cell := &layerEntry.CharacterMemory[y][x]
+
+				// If the cell contains a non-null character, darken it instead of replacing
+				if cell.Character != 0 && cell.Character != constants.NullRune {
+					// Create a copy of the current cell's attributes
+					cellAttr := types.NewAttributeEntry(&cell.AttributeEntry)
+
+					// Darken the foreground and background colors
+					cellAttr.ForegroundColor = GetDarkenedColor(cellAttr.ForegroundColor, alphaValue)
+					cellAttr.BackgroundColor = GetDarkenedColor(cellAttr.BackgroundColor, alphaValue)
+
+					// Update the cell with darkened colors but keep the original character
+					cell.AttributeEntry = cellAttr
+				} else {
+					// For empty cells, use the standard shadow approach (null rune with transform values)
+					shadowAttr := types.NewAttributeEntry(&localAttributeEntry)
+					layer.printLayer(layerEntry, shadowAttr, x, y, []rune{0})
+				}
+			}
+		}
+	}
 }
 
 /*

@@ -100,6 +100,7 @@ type SelectorStyle struct {
 	HighlightBackgroundColor constants.ColorType
 	TextAlignment            int
 	IsSelectionCentered      bool
+	IsShadowDrawn            bool
 }
 
 // ButtonStyle contains styles for buttons
@@ -239,6 +240,7 @@ func NewTuiStyleEntry(existingStyleEntry ...*TuiStyleEntryType) TuiStyleEntryTyp
 		styleEntry.Selector.HighlightForegroundColor = constants.AnsiColorByIndex[0]
 		styleEntry.Selector.HighlightBackgroundColor = constants.AnsiColorByIndex[15]
 		styleEntry.Selector.TextAlignment = constants.AlignmentLeft
+		styleEntry.Selector.IsShadowDrawn = false
 
 		styleEntry.Button.RaisedColor = constants.AnsiColorByIndex[15]
 		styleEntry.Button.ForegroundColor = constants.AnsiColorByIndex[0]

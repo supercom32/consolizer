@@ -617,6 +617,21 @@ func (shared *LayerInstanceType) AddViewport(styleEntry types.TuiStyleEntryType,
 }
 
 /*
+AddFileMenu allows you to add a file menu to a layer. In addition, the following
+information should be noted:
+
+- The file menu will be drawn at the specified location with the given style.
+- Each heading in the menu can have its own dropdown with selectable items.
+- The top level headings widths are always dynamic based on how large the heading is.
+- The file menu reuses existing selectors for dropdown functionality.
+*/
+func (shared *LayerInstanceType) AddFileMenu(styleEntry types.TuiStyleEntryType, menuHeadings []string, menuSelections []types.SelectionEntryType, xLocation int, yLocation int, isEnabled bool) FileMenuInstanceType {
+	menuAlias := getUUID()
+	fileMenuInstance := FileMenu.Add(shared.layerAlias, menuAlias, styleEntry, menuHeadings, menuSelections, xLocation, yLocation, isEnabled)
+	return fileMenuInstance
+}
+
+/*
 DrawVerticalLine allows you to draw a vertical line on a text layer. This
 method also has the ability to draw connectors in case the line intersects
 with other lines that have already been drawn. In addition, the following

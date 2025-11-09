@@ -237,6 +237,8 @@ const CellTypeRadioButton = 9
 const CellTypeProgressBar = 10
 const CellTypeLabel = 11
 const CellTypeTooltip = 12
+const CellTypeFileMenuHeading = 13
+const CellTypeFileMenuItem = 14
 
 const CellControlIdUpScrollArrow = -1
 const CellControlIdDownScrollArrow = -2
@@ -266,6 +268,7 @@ const TYPE_TEXTFIELD = "textfield"
 const TYPE_TOOLTIP = "tooltip"
 const TYPE_RADIOBUTTON = "radiobutton"
 const TYPE_VIEWPORT = "viewport"
+const TYPE_FILEMENU = "filemenu"
 
 const DefaultTooltipHoverTime = 1000
 

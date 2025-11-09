@@ -102,6 +102,10 @@ func UpdateEventQueues() {
 			isScreenUpdateRequired = true
 			isKeystrokeConsumed = true
 		}
+		if FileMenu.updateKeyboardEvent(keystroke) {
+			isScreenUpdateRequired = true
+			isKeystrokeConsumed = true
+		}
 		if isScreenUpdateRequired == true {
 			UpdateDisplay(false)
 		}
@@ -165,6 +169,9 @@ func UpdateEventQueues() {
 		}
 		// This is done last so that it can update itself if a Selector or scroll bar change was detected.
 		if Dropdown.updateDropdownStateMouse() {
+			isScreenUpdateRequired = true
+		}
+		if FileMenu.updateFileMenuStateMouse() {
 			isScreenUpdateRequired = true
 		}
 		if Checkbox.updateMouseEvent() {
