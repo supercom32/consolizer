@@ -138,6 +138,21 @@ type BarStyle struct {
 	BackgroundColor constants.ColorType
 }
 
+// FileMenuStyle contains styles for file menus
+type FileMenuStyle struct {
+	ForegroundColor          constants.ColorType
+	BackgroundColor          constants.ColorType
+	HighlightForegroundColor constants.ColorType
+	HighlightBackgroundColor constants.ColorType
+}
+
+// DropdownStyle contains styles for dropdowns
+type DropdownStyle struct {
+	ForegroundColor constants.ColorType
+	BackgroundColor constants.ColorType
+	TextAlignment   int
+}
+
 type TextStyle struct {
 	ForegroundColor constants.ColorType
 	BackgroundColor constants.ColorType
@@ -159,6 +174,8 @@ type TuiStyleEntryType struct {
 	Tooltip     TooltipStyle
 	Window      WindowStyle
 	Bar         BarStyle
+	FileMenu    FileMenuStyle
+	Dropdown    DropdownStyle
 }
 
 func (shared TuiStyleEntryType) GetEntryAsJsonDump() string {
@@ -263,6 +280,15 @@ func NewTuiStyleEntry(existingStyleEntry ...*TuiStyleEntryType) TuiStyleEntryTyp
 		styleEntry.Window.LineDrawingRaisedColor = constants.AnsiColorByIndex[15]
 		styleEntry.Window.LineDrawingSunkenColor = constants.AnsiColorByIndex[0]
 		styleEntry.Frame.IsSquareFont = false
+
+		styleEntry.FileMenu.ForegroundColor = constants.AnsiColorByIndex[15]
+		styleEntry.FileMenu.BackgroundColor = constants.AnsiColorByIndex[0]
+		styleEntry.FileMenu.HighlightForegroundColor = constants.AnsiColorByIndex[0]
+		styleEntry.FileMenu.HighlightBackgroundColor = constants.AnsiColorByIndex[15]
+
+		styleEntry.Dropdown.ForegroundColor = constants.AnsiColorByIndex[15]
+		styleEntry.Dropdown.BackgroundColor = constants.AnsiColorByIndex[0]
+		styleEntry.Dropdown.TextAlignment = constants.AlignmentLeft
 	}
 
 	return styleEntry

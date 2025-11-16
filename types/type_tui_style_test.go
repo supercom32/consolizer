@@ -37,6 +37,10 @@ func TestStyleTypeCreation(test *testing.T) {
 	firstStyleEntry.Button.RaisedColor = constants.AnsiColorByIndex[11]
 	firstStyleEntry.Button.ForegroundColor = constants.AnsiColorByIndex[12]
 	firstStyleEntry.Button.BackgroundColor = constants.AnsiColorByIndex[13]
+	firstStyleEntry.FileMenu.ForegroundColor = constants.AnsiColorByIndex[14]
+	firstStyleEntry.FileMenu.BackgroundColor = constants.AnsiColorByIndex[15]
+	firstStyleEntry.FileMenu.HighlightForegroundColor = constants.AnsiColorByIndex[1]
+	firstStyleEntry.FileMenu.HighlightBackgroundColor = constants.AnsiColorByIndex[2]
 	firstStyleEntry.Window.IsFooterDrawn = true
 	firstStyleEntry.Window.IsHeaderDrawn = true
 	firstStyleEntry.Selector.TextAlignment = constants.AlignmentLeft

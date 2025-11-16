@@ -831,6 +831,7 @@ The order of drawing matters, as complex controls are drawn first above basic co
 to ensure that any pop-up controls appear over complex controls.
 */
 func renderControls(currentLayerEntry types.LayerEntryType) {
+	Label.drawLabelsOnLayer(currentLayerEntry)
 	Button.drawButtonsOnLayer(currentLayerEntry)
 	TextField.drawTextFieldOnLayer(currentLayerEntry)
 	Checkbox.drawCheckboxesOnLayer(currentLayerEntry)
@@ -840,7 +841,6 @@ func renderControls(currentLayerEntry types.LayerEntryType) {
 	textbox.drawTextboxesOnLayer(currentLayerEntry)
 	radioButton.drawRadioButtonsOnLayer(currentLayerEntry)
 	ProgressBar.drawProgressBarsOnLayer(currentLayerEntry)
-	Label.drawLabelsOnLayer(currentLayerEntry)
 	Tooltip.drawTooltipHotspotZonesOnLayer(currentLayerEntry)
 	viewport.drawViewportsOnLayer(currentLayerEntry)
 	FileMenu.drawFileMenusOnLayer(currentLayerEntry)

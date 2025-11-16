@@ -291,8 +291,8 @@ func (shared *dropdownType) drawDropdown(layerEntry *types.LayerEntryType, dropd
 	dropdownEntry := Dropdowns.Get(layerAlias, dropdownAlias)
 	localStyleEntry := types.NewTuiStyleEntry(&dropdownEntry.StyleEntry)
 	attributeEntry := types.NewAttributeEntry()
-	attributeEntry.ForegroundColor = localStyleEntry.Selector.ForegroundColor
-	attributeEntry.BackgroundColor = localStyleEntry.Selector.BackgroundColor
+	attributeEntry.ForegroundColor = localStyleEntry.Dropdown.ForegroundColor
+	attributeEntry.BackgroundColor = localStyleEntry.Dropdown.BackgroundColor
 	attributeEntry.CellType = constants.CellTypeDropdown
 	attributeEntry.CellControlAlias = dropdownAlias
 
@@ -304,11 +304,12 @@ func (shared *dropdownType) drawDropdown(layerEntry *types.LayerEntryType, dropd
 
 	// We add +2 to account for the Dropdown border window which will appear. Otherwise, the item name
 	// will appear 2 characters smaller than the popup Dropdown window.
-	formattedItemName := stringformat.GetFormattedString(itemSelected, dropdownEntry.ItemWidth+2, localStyleEntry.Selector.TextAlignment)
+	formattedItemName := stringformat.GetFormattedString(itemSelected, dropdownEntry.ItemWidth+2, localStyleEntry.Dropdown.TextAlignment)
 	arrayOfRunes := stringformat.GetRunesFromString(formattedItemName)
 	printLayer(layerEntry, attributeEntry, dropdownEntry.XLocation, dropdownEntry.YLocation, arrayOfRunes)
-	attributeEntry.ForegroundColor = localStyleEntry.Selector.BackgroundColor
-	attributeEntry.BackgroundColor = localStyleEntry.Selector.ForegroundColor
+	// Invert colors for the dropdown arrow
+	attributeEntry.ForegroundColor = localStyleEntry.Dropdown.BackgroundColor
+	attributeEntry.BackgroundColor = localStyleEntry.Dropdown.ForegroundColor
 	printLayer(layerEntry, attributeEntry, dropdownEntry.XLocation+len(arrayOfRunes), dropdownEntry.YLocation, []rune{constants.CharTriangleDown})
 }
 

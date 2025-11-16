@@ -33,6 +33,9 @@ func AddTextbox(layerAlias string, textboxAlias string, styleEntry types.TuiStyl
 	textboxEntry.IsBorderDrawn = isBorderDrawn
 	textboxEntry.TooltipAlias = stringformat.GetLastSortedUUID()
 
+	// Initialize TextData with at least one empty line to prevent nil pointer dereferences
+	textboxEntry.TextData = [][]rune{[]rune{' '}}
+
 	// Create associated tooltip (always created but disabled by default)
 	Tooltip.Add(layerAlias, textboxEntry.TooltipAlias, "", styleEntry,
 		textboxEntry.XLocation, textboxEntry.YLocation,
@@ -420,12 +423,23 @@ viewport position of a textbox. In addition, the following information should be
 */
 func (shared *textboxType) updateScrollbarBasedOnTextboxViewport(layerAlias string, textboxAlias string) {
 	textboxEntry := Textboxes.Get(layerAlias, textboxAlias)
-	horizontalScrollbarEntry := ScrollBars.Get(layerAlias, textboxEntry.HorizontalScrollbarAlias)
-	horizontalScrollbarEntry.ScrollValue = textboxEntry.ViewportXLocation
-	scrollbar.computeScrollbarHandlePositionByScrollValue(layerAlias, textboxEntry.HorizontalScrollbarAlias)
-	verticalScrollbarEntry := ScrollBars.Get(layerAlias, textboxEntry.VerticalScrollbarAlias)
-	verticalScrollbarEntry.ScrollValue = textboxEntry.ViewportYLocation
-	scrollbar.computeScrollbarHandlePositionByScrollValue(layerAlias, textboxEntry.VerticalScrollbarAlias)
+	if textboxEntry == nil {
+		return
+	}
+
+	// Update horizontal scrollbar if it exists
+	if ScrollBars.IsExists(layerAlias, textboxEntry.HorizontalScrollbarAlias) {
+		horizontalScrollbarEntry := ScrollBars.Get(layerAlias, textboxEntry.HorizontalScrollbarAlias)
+		horizontalScrollbarEntry.ScrollValue = textboxEntry.ViewportXLocation
+		scrollbar.computeScrollbarHandlePositionByScrollValue(layerAlias, textboxEntry.HorizontalScrollbarAlias)
+	}
+
+	// Update vertical scrollbar if it exists
+	if ScrollBars.IsExists(layerAlias, textboxEntry.VerticalScrollbarAlias) {
+		verticalScrollbarEntry := ScrollBars.Get(layerAlias, textboxEntry.VerticalScrollbarAlias)
+		verticalScrollbarEntry.ScrollValue = textboxEntry.ViewportYLocation
+		scrollbar.computeScrollbarHandlePositionByScrollValue(layerAlias, textboxEntry.VerticalScrollbarAlias)
+	}
 }
 
 /*
@@ -438,6 +452,15 @@ the following information should be noted:
 */
 func (shared *textboxType) getMaxHorizontalTextValue(layerAlias string, textboxAlias string) int {
 	textboxEntry := Textboxes.Get(layerAlias, textboxAlias)
+	if textboxEntry == nil {
+		return 0
+	}
+
+	// Ensure TextData is initialized
+	if len(textboxEntry.TextData) == 0 {
+		return 0
+	}
+
 	maxHorizontalValue := 0
 	for _, currentLine := range textboxEntry.TextData {
 		lengthOfLine := stringformat.GetWidthOfRunesWhenPrinted(currentLine)
@@ -459,10 +482,31 @@ the following information should be noted:
 */
 func (shared *textboxType) setTextboxMaxScrollBarValues(layerAlias string, textboxAlias string) {
 	textboxEntry := Textboxes.Get(layerAlias, textboxAlias)
+	if textboxEntry == nil {
+		return
+	}
+
+	// Ensure TextData is initialized
+	if len(textboxEntry.TextData) == 0 {
+		textboxEntry.TextData = [][]rune{[]rune{' '}}
+	}
+
 	maxVerticalValue := len(textboxEntry.TextData)
 	maxHorizontalValue := shared.getMaxHorizontalTextValue(layerAlias, textboxAlias)
+
+	// Check if horizontal scrollbar exists
+	if !ScrollBars.IsExists(layerAlias, textboxEntry.HorizontalScrollbarAlias) {
+		return
+	}
+
+	// Check if vertical scrollbar exists
+	if !ScrollBars.IsExists(layerAlias, textboxEntry.VerticalScrollbarAlias) {
+		return
+	}
+
 	hScrollBarEntry := ScrollBars.Get(layerAlias, textboxEntry.HorizontalScrollbarAlias)
 	vScrollBarEntry := ScrollBars.Get(layerAlias, textboxEntry.VerticalScrollbarAlias)
+
 	maxHorizontalValue = maxHorizontalValue - textboxEntry.Width
 	// If the max horizontal width is smaller than the textbox width, disable scrolling.
 	if maxHorizontalValue <= 0 {
@@ -473,6 +517,7 @@ func (shared *textboxType) setTextboxMaxScrollBarValues(layerAlias string, textb
 		hScrollBarEntry.IsEnabled = true
 		hScrollBarEntry.IsVisible = true
 	}
+
 	maxVerticalValue = maxVerticalValue - textboxEntry.Height
 	// If the max vertical height is smaller than the textbox height, disable scrolling.
 	if maxVerticalValue <= 0 {
@@ -483,6 +528,7 @@ func (shared *textboxType) setTextboxMaxScrollBarValues(layerAlias string, textb
 		vScrollBarEntry.IsEnabled = true
 		vScrollBarEntry.IsVisible = true
 	}
+
 	hScrollBarEntry.MaxScrollValue = maxHorizontalValue
 	vScrollBarEntry.MaxScrollValue = maxVerticalValue
 }
@@ -920,6 +966,11 @@ information should be noted:
 - Updates the cursor position in the textbox entry.
 */
 func (shared *textboxType) updateCursor(textboxEntry *types.TextboxEntryType, xLocation int, yLocation int) {
+	// Ensure TextData is initialized
+	if len(textboxEntry.TextData) == 0 {
+		textboxEntry.TextData = [][]rune{[]rune{' '}}
+	}
+
 	textboxEntry.CursorXLocation = xLocation
 	textboxEntry.CursorYLocation = yLocation
 	// If yLocation is less than text data bounds.
@@ -930,6 +981,12 @@ func (shared *textboxType) updateCursor(textboxEntry *types.TextboxEntryType, xL
 	if textboxEntry.CursorYLocation > len(textboxEntry.TextData)-1 {
 		textboxEntry.CursorYLocation = len(textboxEntry.TextData) - 1
 	}
+
+	// Ensure the current line has at least one character
+	if len(textboxEntry.TextData[textboxEntry.CursorYLocation]) == 0 {
+		textboxEntry.TextData[textboxEntry.CursorYLocation] = []rune{' '}
+	}
+
 	// If our cursor xLocation was jumped (due to NullCellControlId) or placed in an invalid xLocation spot greater than the length of our text line.
 	// Move it to the end of the line.
 	if textboxEntry.CursorXLocation == constants.NullCellControlId || textboxEntry.CursorXLocation > len(textboxEntry.TextData[textboxEntry.CursorYLocation])-1 {
@@ -949,6 +1006,18 @@ information should be noted:
 - Updates the viewport position in the textbox entry.
 */
 func (shared *textboxType) updateViewport(textboxEntry *types.TextboxEntryType) {
+	// Ensure TextData is initialized
+	if len(textboxEntry.TextData) == 0 {
+		textboxEntry.TextData = [][]rune{[]rune{' '}}
+		textboxEntry.CursorYLocation = 0
+		textboxEntry.CursorXLocation = 0
+	}
+
+	// Ensure the current line has at least one character
+	if textboxEntry.CursorYLocation < len(textboxEntry.TextData) && len(textboxEntry.TextData[textboxEntry.CursorYLocation]) == 0 {
+		textboxEntry.TextData[textboxEntry.CursorYLocation] = []rune{' '}
+	}
+
 	// If cursor yLocation is higher than the viewport window, move the window to make the cursor appear at the end.
 	if textboxEntry.CursorYLocation >= textboxEntry.ViewportYLocation+textboxEntry.Height {
 		textboxEntry.ViewportYLocation = textboxEntry.CursorYLocation - textboxEntry.Height + 1
@@ -978,9 +1047,32 @@ func (shared *textboxType) updateViewport(textboxEntry *types.TextboxEntryType) 
 			textboxEntry.ViewportXLocation = textboxEntry.CursorXLocation
 		}
 	}
+
+	// Ensure cursor is within valid bounds
+	if textboxEntry.CursorYLocation >= len(textboxEntry.TextData) {
+		textboxEntry.CursorYLocation = len(textboxEntry.TextData) - 1
+	}
+	if textboxEntry.CursorYLocation < 0 {
+		textboxEntry.CursorYLocation = 0
+	}
+
+	// Ensure ViewportXLocation is valid
+	if textboxEntry.ViewportXLocation < 0 {
+		textboxEntry.ViewportXLocation = 0
+	}
+
+	// Ensure ViewportXLocation doesn't exceed the line length
+	if textboxEntry.ViewportXLocation >= len(textboxEntry.TextData[textboxEntry.CursorYLocation]) {
+		textboxEntry.ViewportXLocation = len(textboxEntry.TextData[textboxEntry.CursorYLocation]) - 1
+		if textboxEntry.ViewportXLocation < 0 {
+			textboxEntry.ViewportXLocation = 0
+		}
+	}
+
 	// Figure out how much displayable space is in our current viewport window.
 	arrayOfRunesAvailableToPrint := textboxEntry.TextData[textboxEntry.CursorYLocation][textboxEntry.ViewportXLocation:]
 	arrayOfRunesThatFitStringSize := stringformat.GetMaxCharactersThatFitInStringSize(arrayOfRunesAvailableToPrint, textboxEntry.Width)
+
 	// If the cursor xLocation is equal or greater than the visible viewport window width.
 	if textboxEntry.CursorXLocation >= textboxEntry.ViewportXLocation+len(arrayOfRunesThatFitStringSize) {
 		// Then make the viewport xLocation equal to the visible viewport width behind it.
@@ -988,10 +1080,25 @@ func (shared *textboxType) updateViewport(textboxEntry *types.TextboxEntryType) 
 		if textboxEntry.CursorXLocation-textboxEntry.Width < 0 {
 			maxViewportWidthAvaliable = textboxEntry.CursorXLocation
 		}
-		arrayOfRunesAvailableToPrint = textboxEntry.TextData[textboxEntry.CursorYLocation][textboxEntry.CursorXLocation-maxViewportWidthAvaliable : textboxEntry.CursorXLocation]
-		numberOfRunesThatFitStringSize := stringformat.GetMaxCharactersThatFitInStringSizeReverse(arrayOfRunesAvailableToPrint, textboxEntry.Width)
-		// LogInfo(fmt.Sprintf("v: %d x: %d off: %d fit: %d, aval: %s", textboxEntry.ViewportXLocation, textboxEntry.CursorXLocation, maxViewportWidthAvaliable, numberOfRunesThatFitStringSize, string(arrayOfRunesAvailableToPrint)))
-		textboxEntry.ViewportXLocation = textboxEntry.CursorXLocation - numberOfRunesThatFitStringSize + 1
+
+		// Ensure we don't go out of bounds
+		startIndex := textboxEntry.CursorXLocation - maxViewportWidthAvaliable
+		if startIndex < 0 {
+			startIndex = 0
+		}
+
+		if startIndex < len(textboxEntry.TextData[textboxEntry.CursorYLocation]) && 
+		   textboxEntry.CursorXLocation <= len(textboxEntry.TextData[textboxEntry.CursorYLocation]) {
+			arrayOfRunesAvailableToPrint = textboxEntry.TextData[textboxEntry.CursorYLocation][startIndex:textboxEntry.CursorXLocation]
+			numberOfRunesThatFitStringSize := stringformat.GetMaxCharactersThatFitInStringSizeReverse(arrayOfRunesAvailableToPrint, textboxEntry.Width)
+			// LogInfo(fmt.Sprintf("v: %d x: %d off: %d fit: %d, aval: %s", textboxEntry.ViewportXLocation, textboxEntry.CursorXLocation, maxViewportWidthAvaliable, numberOfRunesThatFitStringSize, string(arrayOfRunesAvailableToPrint)))
+			textboxEntry.ViewportXLocation = textboxEntry.CursorXLocation - numberOfRunesThatFitStringSize + 1
+
+			// Ensure ViewportXLocation is not negative
+			if textboxEntry.ViewportXLocation < 0 {
+				textboxEntry.ViewportXLocation = 0
+			}
+		}
 	}
 }
 
@@ -1578,6 +1685,12 @@ func (shared *textboxType) updateMouseEvent() bool {
 		eventStateMemory.stateId != constants.EventStateDragAndDrop && // Add check for layer drag and drop
 		Textboxes.IsExists(layerAlias, characterEntry.AttributeEntry.CellControlAlias) {
 		textboxEntry := Textboxes.Get(layerAlias, characterEntry.AttributeEntry.CellControlAlias)
+
+		// Ensure TextData is initialized before updating cursor
+		if len(textboxEntry.TextData) == 0 {
+			textboxEntry.TextData = [][]rune{[]rune{' '}}
+		}
+
 		shared.updateCursor(textboxEntry, characterEntry.AttributeEntry.CellControlId, characterEntry.AttributeEntry.CellControlLocation)
 		shared.updateViewport(textboxEntry)
 		shared.setTextboxMaxScrollBarValues(layerAlias, characterEntry.AttributeEntry.CellControlAlias)
@@ -1592,8 +1705,16 @@ func (shared *textboxType) updateMouseEvent() bool {
 		isMatchFound := false
 		for _, currentTextBoxEntry := range Textboxes.GetAllEntries(layerAlias) {
 			textboxEntry := currentTextBoxEntry
+
+			// Skip if horizontal or vertical scrollbar doesn't exist
+			if !ScrollBars.IsExists(layerAlias, textboxEntry.HorizontalScrollbarAlias) ||
+			   !ScrollBars.IsExists(layerAlias, textboxEntry.VerticalScrollbarAlias) {
+				continue
+			}
+
 			hScrollBarEntry := ScrollBars.Get(layerAlias, textboxEntry.HorizontalScrollbarAlias)
 			vScrollBarEntry := ScrollBars.Get(layerAlias, textboxEntry.VerticalScrollbarAlias)
+
 			if textboxEntry.ViewportXLocation != hScrollBarEntry.ScrollValue {
 				textboxEntry.ViewportXLocation = hScrollBarEntry.ScrollValue
 				isUpdateRequired = true

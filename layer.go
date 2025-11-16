@@ -340,7 +340,12 @@ func (shared *layerType) Add(layerAlias string, xLocation int, yLocation int, wi
 	layerEntry.LayerAlias = layerAlias
 	layerEntry.ScreenXLocation = xLocation
 	layerEntry.ScreenYLocation = yLocation
-	layerEntry.ZOrder = zOrderPriority
+	if zOrderPriority < 0 {
+		layerEntry.ZOrder = shared.getHighestZOrderNumber(parentAlias) + 1
+		layerEntry.IsTopmost = true
+	} else {
+		layerEntry.ZOrder = zOrderPriority
+	}
 	layerEntry.ParentAlias = parentAlias
 
 	if parentAlias != "" {
@@ -466,6 +471,33 @@ func (shared *layerType) getHighestZOrderNumber(parentAlias string) int {
 		}
 	}
 	return highestZOrderNumber
+}
+
+// SetTopmostLayer sets the specified layer to be the topmost layer.
+func (shared *layerType) SetTopmostLayer(layerAlias string) {
+	if !Layers.IsExists(layerAlias) {
+		return
+	}
+
+	targetLayer := Layers.Get(layerAlias)
+
+	// Reset the current topmost layer's flag.
+	for _, layerEntry := range Layers.GetAllEntries() {
+		if layerEntry.ParentAlias == targetLayer.ParentAlias && layerEntry.IsTopmost {
+			layerEntry.IsTopmost = false
+		}
+	}
+
+	// Find the highest Z-order and set the target layer's Z-order higher.
+	highestZOrder := 0
+	for _, layerEntry := range Layers.GetAllEntries() {
+		if layerEntry.ParentAlias == targetLayer.ParentAlias && layerEntry.ZOrder > highestZOrder {
+			highestZOrder = layerEntry.ZOrder
+		}
+	}
+
+	targetLayer.ZOrder = highestZOrder + 1
+	targetLayer.IsTopmost = true
 }
 
 func (shared *layerType) GetRootParentLayerAlias(layerAlias string, previousChildAlias string) (string, string) {
@@ -876,6 +908,15 @@ func (shared *LayerInstanceType) SetIsVisible(isVisible bool) {
 }
 
 /*
+SetTopmost sets the current layer to be the topmost layer within its parent.
+This ensures that it is rendered on top of all other sibling layers.
+*/
+func (shared *LayerInstanceType) SetTopmost() {
+	validateLayer(shared.layerAlias)
+	layer.SetTopmostLayer(shared.layerAlias)
+}
+
+/*
 GetLocation returns the current x and y location of the layer. This is useful
 when you need to determine the exact position of a layer on the screen. The
 function returns two integer values representing the x and y coordinates.
@@ -884,6 +925,17 @@ func (shared *LayerInstanceType) GetLocation() (int, int) {
 	validateLayer(shared.layerAlias)
 	layerEntry := Layers.Get(shared.layerAlias)
 	return layerEntry.ScreenXLocation, layerEntry.ScreenYLocation
+}
+
+/*
+GetLayerSize returns the current width and height of the layer. This is useful
+when you need to determine the exact dimensions of a layer. The function
+returns two integer values representing the width and height.
+*/
+func (shared *LayerInstanceType) GetLayerSize() (int, int) {
+	validateLayer(shared.layerAlias)
+	layerEntry := Layers.Get(shared.layerAlias)
+	return layerEntry.Width, layerEntry.Height
 }
 
 /*
@@ -1353,6 +1405,13 @@ func DeleteAllLayers() {
 		layer.Delete(entryToRemove.LayerAlias)
 	}
 	layer.ReInitializeScreenMemory()
+}
+
+/*
+SetTopmostLayer sets the specified layer to be the topmost layer.
+*/
+func SetTopmostLayer(layerInstance LayerInstanceType) {
+	layer.SetTopmostLayer(layerInstance.layerAlias)
 }
 
 func isLayerExists(layerAlias string) bool {

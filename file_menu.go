@@ -14,7 +14,6 @@ type FileMenuInstanceType struct {
 
 // fileMenuType is the main struct for managing file menus.
 type fileMenuType struct {
-	// previousButtonState tracks the previous mouse button state to detect new clicks
 	previousButtonState uint
 }
 
@@ -98,8 +97,9 @@ func (shared *fileMenuType) Add(layerAlias string, menuAlias string, styleEntry 
 
 		// Add the selector (initially hidden)
 		// Position the selector directly beneath the header
-		Selector.Add(layerAlias, selectorAlias, styleEntry, selection,
+		selectorInstance := Selector.Add(layerAlias, selectorAlias, styleEntry, selection,
 			selectorX+1, yLocation+2, len(selection.SelectionAlias), maxWidth, 1, 0, 0, false, true)
+		selectorInstance.SetVisible(false)
 	}
 
 	// Create tooltip (initially disabled)
@@ -192,13 +192,13 @@ func (shared *fileMenuType) drawFileMenu(layerEntry *types.LayerEntryType, fileM
 
 		// Set up attributes for drawing
 		attributeEntry := types.NewAttributeEntry()
-		attributeEntry.ForegroundColor = fileMenuEntry.StyleEntry.Selector.ForegroundColor
-		attributeEntry.BackgroundColor = fileMenuEntry.StyleEntry.Selector.BackgroundColor
+		attributeEntry.ForegroundColor = fileMenuEntry.StyleEntry.FileMenu.ForegroundColor
+		attributeEntry.BackgroundColor = fileMenuEntry.StyleEntry.FileMenu.BackgroundColor
 
 		// Highlight active heading if its submenu is open
 		if index == fileMenuEntry.ActiveHeadingIndex && fileMenuEntry.IsSubmenuOpen {
-			attributeEntry.ForegroundColor = fileMenuEntry.StyleEntry.Selector.HighlightForegroundColor
-			attributeEntry.BackgroundColor = fileMenuEntry.StyleEntry.Selector.HighlightBackgroundColor
+			attributeEntry.ForegroundColor = fileMenuEntry.StyleEntry.FileMenu.HighlightForegroundColor
+			attributeEntry.BackgroundColor = fileMenuEntry.StyleEntry.FileMenu.HighlightBackgroundColor
 		}
 
 		// Set cell type for mouse interaction
@@ -345,28 +345,18 @@ func (shared *fileMenuType) closeAllOpenMenus() bool {
 	return menuClosed
 }
 
-/*
-NewFileMenu allows you to create a new file menu. In addition, the following
-information should be noted:
-
-- This is a convenience function for creating a file menu.
-- It returns a file menu instance that can be added to a screen.
-- This function creates a layer and adds the file menu to it.
-- If you want to add a file menu to an existing layer, use the AddFileMenu method on LayerInstanceType instead.
-*/
-func NewFileMenu(menuHeadings []string, menuSelections []types.SelectionEntryType) FileMenuInstanceType {
-	// Create a default style entry
-	styleEntry := types.NewTuiStyleEntry()
-
-	// Create a layer for the file menu
-	layerInstance := AddLayer(0, 0, 80, 25, 0, nil)
-
-	// Add the file menu to the layer using the AddFileMenu method
-	return layerInstance.AddFileMenu(styleEntry, menuHeadings, menuSelections, 0, 0, true)
+func (shared *FileMenuInstanceType) GetSelectedItem() (int, int, string) {
+	if !FileMenus.IsExists(shared.layerAlias, shared.controlAlias) {
+		return -1, -1, ""
+	}
+	fileMenuEntry := FileMenus.Get(shared.layerAlias, shared.controlAlias)
+	// Iterate through selectors (one per heading)
+	for headingIndex, selectorAlias := range fileMenuEntry.SelectorAliases {
+		selectorEntry := Selectors.Get(shared.layerAlias, selectorAlias)
+		if selectorEntry.ItemSelected >= 0 {
+			return headingIndex, selectorEntry.ItemSelected, selectorEntry.SelectionEntry.SelectionValue[selectorEntry.ItemSelected]
+		}
+	}
+	// Nothing selected
+	return -1, -1, ""
 }
-
-// The file menu widget is now fully integrated with the system:
-// 1. FileMenu.drawFileMenusOnLayer(currentLayerEntry) is called in the renderControls function in terminal.go
-// 2. FileMenu.updateKeyboardEvent(keystroke) is called in the keyboard event handling in event_manager.go
-// 3. FileMenu.updateFileMenuStateMouse() is called in the mouse event handling in event_manager.go
-// 4. LayerInstanceType.AddFileMenu() method is available for adding file menus to existing layers
