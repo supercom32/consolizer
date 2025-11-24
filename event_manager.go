@@ -300,6 +300,9 @@ func bringLayerToFrontIfRequired() {
 		if characterEntry.LayerAlias == "" {
 			return
 		}
+		if characterEntry.AttributeEntry.CellType == constants.CellTypeShadow {
+			return
+		}
 		buttonHistory.layerAlias = ""
 		buttonHistory.buttonAlias = ""
 		// Protect against layer deletions.

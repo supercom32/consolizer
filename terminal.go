@@ -212,9 +212,9 @@ he is working on. For example:
 	// PrintLayer anymore. Instead, we can use the shorter method Print.
 	consolizer.Print("Hello World")
 */
-func Layer(layerInstance LayerInstanceType) {
+func Layer(layerInstance *LayerInstanceType) {
 	validateLayer(layerInstance.layerAlias)
-	commonResource.layerInstance = layerInstance
+	commonResource.layerInstance = *layerInstance
 }
 
 /*
@@ -949,6 +949,9 @@ func overlayLayers(sourceLayerEntry *types.LayerEntryType, targetLayerEntry *typ
 					targetCharacterEntry.AttributeEntry.CellType = constants.CellTypeTooltip
 					targetCharacterEntry.AttributeEntry.CellControlAlias = sourceCharacterEntry.AttributeEntry.CellControlAlias
 					targetCharacterEntry.LayerAlias = sourceCharacterEntry.LayerAlias
+				}
+				if sourceCharacterEntry.AttributeEntry.CellType == constants.CellTypeShadow {
+					targetCharacterEntry.AttributeEntry.CellType = constants.CellTypeShadow
 				}
 				targetCharacterMemory[currentRow+startingTargetYLocation][currentColumn+startingTargetXLocation] = *targetCharacterEntry
 			} else {

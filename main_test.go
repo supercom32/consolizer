@@ -252,7 +252,7 @@ func testScrollBars() {
 	InitializeTerminal(80, 40)
 	layer1 := AddLayer(0, 0, 80, 40, 1, nil)
 	layer2 := AddLayer(20, 15, 40, 20, 1, &layer1)
-	Layer(layer1)
+	Layer(&layer1)
 	layer1.FillLayer("#")
 	layer2.FillLayer("@")
 	styleEntry := types.NewTuiStyleEntry()

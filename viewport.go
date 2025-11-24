@@ -93,6 +93,36 @@ func (shared *ViewportInstanceType) Print(text string) *ViewportInstanceType {
 	return shared
 }
 
+// SetData clears the viewport and sets its content to the given text.
+// This method resets the viewport scroll position to the top-left.
+func (shared *ViewportInstanceType) SetContent(text string) *ViewportInstanceType {
+	viewportEntry := GetViewport(shared.layerAlias, shared.controlAlias)
+	if viewportEntry == nil {
+		return shared
+	}
+
+	// Clear existing data and reset viewport position.
+	viewportEntry.TextData = [][]rune{}
+	viewportEntry.ViewportXLocation = 0
+	viewportEntry.ViewportYLocation = 0
+
+	// Process and add the new text.
+	viewport.printText(viewportEntry, text, false)
+
+	// Update scrollbar max values to get correct dimensions and max scroll value.
+	viewport.setViewportMaxScrollBarValues(shared.layerAlias, shared.controlAlias)
+
+	// Set the viewport's Y location to the maximum possible scroll value.
+	vScrollbar := ScrollBars.Get(shared.layerAlias, viewportEntry.VerticalScrollbarAlias)
+	if vScrollbar != nil {
+		viewportEntry.ViewportYLocation = vScrollbar.MaxScrollValue
+	}
+
+	// Update the scrollbar handle to reflect the new viewport position.
+	viewport.updateScrollbarBasedOnViewportViewport(shared.layerAlias, shared.controlAlias)
+	return shared
+}
+
 // SetViewport sets the viewport position.
 func (shared *ViewportInstanceType) SetViewport(xLocation int, yLocation int) *ViewportInstanceType {
 	viewportEntry := GetViewport(shared.layerAlias, shared.controlAlias)
@@ -107,6 +137,19 @@ func (shared *ViewportInstanceType) SetViewport(xLocation int, yLocation int) *V
 	viewport.setViewportMaxScrollBarValues(shared.layerAlias, shared.controlAlias)
 	viewport.updateScrollbarBasedOnViewportViewport(shared.layerAlias, shared.controlAlias)
 
+	return shared
+}
+
+// ScrollToBottom scrolls the viewport to the bottom of its content.
+func (shared *ViewportInstanceType) ScrollToBottom() *ViewportInstanceType {
+	viewportEntry := GetViewport(shared.layerAlias, shared.controlAlias)
+	if viewportEntry == nil {
+		return shared
+	}
+	viewport.setViewportMaxScrollBarValues(shared.layerAlias, shared.controlAlias)
+	vScrollbar := ScrollBars.Get(shared.layerAlias, viewportEntry.VerticalScrollbarAlias)
+	viewportEntry.ViewportYLocation = vScrollbar.MaxScrollValue
+	viewport.updateScrollbarBasedOnViewportViewport(shared.layerAlias, shared.controlAlias)
 	return shared
 }
 
@@ -172,7 +215,7 @@ func (shared *ViewportInstanceType) SetTransparent(isTransparent bool) *Viewport
 }
 
 // printText processes and adds text to the viewport.
-func (shared *viewportType) printText(viewportEntry *types.ViewportEntryType, textToPrint string) {
+func (shared *viewportType) printText(viewportEntry *types.ViewportEntryType, textToPrint string, autoScrollToBottom ...bool) {
 	// Get the effective width (accounting for border if present)
 	effectiveWidth := viewportEntry.Width
 	if viewportEntry.IsBorderDrawn {
@@ -190,13 +233,16 @@ func (shared *viewportType) printText(viewportEntry *types.ViewportEntryType, te
 	// Trim history if needed
 	shared.trimHistory(viewportEntry)
 
-	// Update viewport position to show the latest content
-	if len(viewportEntry.TextData) > viewportEntry.Height {
-		if viewportEntry.IsHistoryEnabled {
-			viewportEntry.ViewportYLocation = len(viewportEntry.TextData) - viewportEntry.Height
-		} else {
-			// If history is disabled, keep only what's visible
-			shared.trimToVisible(viewportEntry)
+	// By default, scroll to the bottom. This is the behavior for Print/Println.
+	shouldAutoScroll := true
+	if len(autoScrollToBottom) > 0 {
+		shouldAutoScroll = autoScrollToBottom[0]
+	}
+
+	if shouldAutoScroll {
+		// Update viewport position to show the latest content.
+		if len(viewportEntry.TextData) > viewportEntry.Height-2 { // -2 for border
+			viewportEntry.ViewportYLocation = len(viewportEntry.TextData) - (viewportEntry.Height - 2)
 		}
 	}
 }
@@ -210,20 +256,20 @@ func (shared *viewportType) processTextWithMarkup(textToPrint string, widthOfLin
 	cursorXLocation := 0
 
 	for currentCharacterIndex := 0; currentCharacterIndex < len(arrayOfRunes); currentCharacterIndex++ {
-		currentCharacter := stringformat.GetSubString(textToPrint, currentCharacterIndex, 1)
+		currentCharacter := arrayOfRunes[currentCharacterIndex]
 
 		// Add the character to the current line
-		currentLine = append(currentLine, arrayOfRunes[currentCharacterIndex])
+		currentLine = append(currentLine, currentCharacter)
 		cursorXLocation++
 
 		// Check for word wrapping if lines should be wrapped
 		lengthOfNextWord := 0
-		if isLinesWrapped && currentCharacter == " " {
+		if isLinesWrapped && currentCharacter == ' ' {
 			lengthOfNextWord = getLengthOfNextWord(textToPrint, currentCharacterIndex+1)
 		}
 
 		// Handle newlines
-		if currentCharacter == "\n" {
+		if currentCharacter == '\n' {
 			// Remove the newline character
 			currentLine = currentLine[:len(currentLine)-1]
 			// Add the current line to the result

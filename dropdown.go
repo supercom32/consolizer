@@ -143,8 +143,8 @@ the following information should be noted:
 */
 func (shared *DropdownInstanceType) GetValue() string {
 	dropdownEntry := Dropdowns.Get(shared.layerAlias, shared.controlAlias)
-	if len(dropdownEntry.SelectionEntry.SelectionValue) != 0 && 
-	   dropdownEntry.ItemSelected >= 0 && dropdownEntry.ItemSelected < len(dropdownEntry.SelectionEntry.SelectionValue) {
+	if len(dropdownEntry.SelectionEntry.SelectionValue) != 0 &&
+		dropdownEntry.ItemSelected >= 0 && dropdownEntry.ItemSelected < len(dropdownEntry.SelectionEntry.SelectionValue) {
 		return dropdownEntry.SelectionEntry.SelectionValue[dropdownEntry.ItemSelected]
 	}
 	return ""
@@ -160,8 +160,8 @@ the following information should be noted:
 */
 func (shared *DropdownInstanceType) GetAlias() string {
 	dropdownEntry := Dropdowns.Get(shared.layerAlias, shared.controlAlias)
-	if len(dropdownEntry.SelectionEntry.SelectionAlias) != 0 && 
-	   dropdownEntry.ItemSelected >= 0 && dropdownEntry.ItemSelected < len(dropdownEntry.SelectionEntry.SelectionAlias) {
+	if len(dropdownEntry.SelectionEntry.SelectionAlias) != 0 &&
+		dropdownEntry.ItemSelected >= 0 && dropdownEntry.ItemSelected < len(dropdownEntry.SelectionEntry.SelectionAlias) {
 		return dropdownEntry.SelectionEntry.SelectionAlias[dropdownEntry.ItemSelected]
 	}
 	return ""
@@ -177,6 +177,27 @@ func (shared *DropdownInstanceType) SetSelectedItemIndex(itemIndex int) {
 	if itemIndex < len(dropdownEntry.SelectionEntry.SelectionValue) {
 		dropdownEntry.ItemSelected = itemIndex
 	}
+}
+
+/*
+SetSelectionEntry allows you to overwrite the selection entry for a dropdown.
+In addition, the following information should be noted:
+
+- This replaces the list of items that can be selected in the dropdown.
+- The currently selected item index will be reset to -1.
+- The associated selector and scrollbar will be updated to reflect the new items.
+*/
+func (shared *DropdownInstanceType) SetSelectionEntry(selectionEntry types.SelectionEntryType) {
+	dropdownEntry := Dropdowns.Get(shared.layerAlias, shared.controlAlias)
+	dropdownEntry.SelectionEntry = selectionEntry
+	dropdownEntry.ItemSelected = -1
+
+	selectorEntry := Selectors.Get(shared.layerAlias, dropdownEntry.SelectorAlias)
+	selectorEntry.SelectionEntry = selectionEntry
+	selectorEntry.ItemSelected = -1
+
+	scrollBarEntry := ScrollBars.Get(shared.layerAlias, dropdownEntry.ScrollbarAlias)
+	scrollBarEntry.MaxScrollValue = len(selectionEntry.SelectionValue) - selectorEntry.Height
 }
 
 /*
@@ -297,8 +318,8 @@ func (shared *dropdownType) drawDropdown(layerEntry *types.LayerEntryType, dropd
 	attributeEntry.CellControlAlias = dropdownAlias
 
 	var itemSelected string
-	if len(dropdownEntry.SelectionEntry.SelectionValue) != 0 && 
-	   dropdownEntry.ItemSelected >= 0 && dropdownEntry.ItemSelected < len(dropdownEntry.SelectionEntry.SelectionValue) {
+	if len(dropdownEntry.SelectionEntry.SelectionValue) != 0 &&
+		dropdownEntry.ItemSelected >= 0 && dropdownEntry.ItemSelected < len(dropdownEntry.SelectionEntry.SelectionValue) {
 		itemSelected = dropdownEntry.SelectionEntry.SelectionValue[dropdownEntry.ItemSelected]
 	}
 

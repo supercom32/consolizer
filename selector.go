@@ -9,7 +9,7 @@ import (
 	"github.com/supercom32/consolizer/types"
 )
 
-type selectorInstanceType struct {
+type SelectorInstanceType struct {
 	BaseControlInstanceType
 }
 
@@ -117,7 +117,7 @@ between controls using the tab key. In addition, the following information shoul
 - The selector will be added to the tab order based on the order in which it was created.
 - The tab index is used to determine which control receives focus when the tab key is pressed.
 */
-func (shared *selectorInstanceType) AddToTabIndex() {
+func (shared *SelectorInstanceType) AddToTabIndex() {
 	addTabIndex(shared.layerAlias, shared.controlAlias, constants.CellTypeSelectorItem)
 }
 
@@ -129,7 +129,7 @@ information should be noted:
 will simply be ignored.
 - All memory associated with the selector will be freed.
 */
-func (shared *selectorInstanceType) Delete() *selectorInstanceType {
+func (shared *SelectorInstanceType) Delete() *SelectorInstanceType {
 	shared.BaseControlInstanceType.Delete()
 	return nil
 }
@@ -143,16 +143,19 @@ the following information should be noted:
   - The alias is typically used for display purposes, while the index is used for
     programmatic access to the selection.
 */
-func (shared *selectorInstanceType) GetSelected() (string, int) {
+func (shared *SelectorInstanceType) GetSelected() (string, int) {
 	if Selectors.IsExists(shared.layerAlias, shared.controlAlias) {
 		validatorMenu(shared.layerAlias, shared.controlAlias)
 		menuEntry := Selectors.Get(shared.layerAlias, shared.controlAlias)
 		value := menuEntry.ItemSelected
-		if len(menuEntry.SelectionEntry.SelectionAlias) != 0 {
+		if value == constants.SELECTED_NONE {
+			return "", constants.SELECTED_NONE
+		}
+		if len(menuEntry.SelectionEntry.SelectionAlias) > value {
 			return menuEntry.SelectionEntry.SelectionAlias[value], value
 		}
 	}
-	return "", -1
+	return "", constants.SELECTED_NONE
 }
 
 /*
@@ -163,13 +166,121 @@ the following information should be noted:
   - If the selector does not exist, returns empty arrays.
   - The arrays are returned in the order they were added to the selector.
 */
-func (shared *selectorInstanceType) GetAllItems() ([]string, []string) {
+func (shared *SelectorInstanceType) GetAllItems() ([]string, []string) {
 	if Selectors.IsExists(shared.layerAlias, shared.controlAlias) {
 		validatorMenu(shared.layerAlias, shared.controlAlias)
 		menuEntry := Selectors.Get(shared.layerAlias, shared.controlAlias)
 		return menuEntry.SelectionEntry.SelectionAlias, menuEntry.SelectionEntry.SelectionValue
 	}
 	return []string{}, []string{}
+}
+
+/*
+Unselect allows you to clear the current selection for a selector. In addition,
+the following information should be noted:
+
+- The selector's selected item will be set to 'SELECTED_NONE'.
+- If the selector does not exist, no operation occurs.
+*/
+func (shared *SelectorInstanceType) Unselect() {
+	if Selectors.IsExists(shared.layerAlias, shared.controlAlias) {
+		validatorMenu(shared.layerAlias, shared.controlAlias)
+		selectorEntry := Selectors.Get(shared.layerAlias, shared.controlAlias)
+		selectorEntry.ItemSelected = constants.SELECTED_NONE
+	}
+}
+
+/*
+Select allows you to select an item by its alias. In addition,
+the following information should be noted:
+
+- If an item with the matching alias is found, it will be set as the selected and highlighted item.
+- If the selector or the item does not exist, no operation occurs.
+*/
+func (shared *SelectorInstanceType) Select(selectionAlias string) {
+	if Selectors.IsExists(shared.layerAlias, shared.controlAlias) {
+		validatorMenu(shared.layerAlias, shared.controlAlias)
+		selectorEntry := Selectors.Get(shared.layerAlias, shared.controlAlias)
+
+		// Find the index of the item with the matching alias
+		itemIndex := -1
+		for i, alias := range selectorEntry.SelectionEntry.SelectionAlias {
+			if alias == selectionAlias {
+				itemIndex = i
+				break
+			}
+		}
+
+		// If the item exists, set it as selected.
+		if itemIndex != -1 {
+			selectorEntry.ItemSelected = itemIndex
+			selectorEntry.ItemHighlighted = itemIndex
+		}
+	}
+}
+
+/*
+FocusSelection allows you to focus on a specific item in the selector by its alias. In addition,
+the following information should be noted:
+
+- The item with the matching alias will be scrolled into view.
+- If possible, the item will be centered in the visible area.
+- If the item is near the top or bottom, the viewport will be adjusted accordingly.
+- The scrollbar position will be updated to reflect the new viewport position.
+- If the selector or item does not exist, no operation occurs.
+*/
+func (shared *SelectorInstanceType) FocusSelection(selectionAlias string) {
+	if Selectors.IsExists(shared.layerAlias, shared.controlAlias) {
+		validatorMenu(shared.layerAlias, shared.controlAlias)
+		selectorEntry := Selectors.Get(shared.layerAlias, shared.controlAlias)
+
+		// Find the index of the item with the matching alias
+		itemIndex := -1
+		for i, alias := range selectorEntry.SelectionEntry.SelectionAlias {
+			if alias == selectionAlias {
+				itemIndex = i
+				break
+			}
+		}
+
+		// If the item doesn't exist, do nothing
+		if itemIndex == -1 {
+			return
+		}
+
+		// Calculate the number of items visible in the viewport
+		visibleItems := selectorEntry.Height * selectorEntry.NumberOfColumns
+
+		// Calculate the ideal viewport position to center the item
+		idealPosition := itemIndex - (visibleItems / 2)
+
+		// Adjust the viewport position to ensure it's within valid bounds
+		maxPosition := len(selectorEntry.SelectionEntry.SelectionValue) - visibleItems
+		if maxPosition < 0 {
+			maxPosition = 0
+		}
+
+		newPosition := idealPosition
+		if newPosition < 0 {
+			newPosition = 0
+		} else if newPosition > maxPosition {
+			newPosition = maxPosition
+		}
+
+		// Update the viewport position
+		selectorEntry.ViewportPosition = newPosition
+
+		// Update scrollbar if it exists
+		if selectorEntry.ScrollbarAlias != "" && ScrollBars.IsExists(shared.layerAlias, selectorEntry.ScrollbarAlias) {
+			scrollBarEntry := ScrollBars.Get(shared.layerAlias, selectorEntry.ScrollbarAlias)
+
+			// Update the scroll value based on the new viewport position
+			scrollBarEntry.ScrollValue = newPosition
+
+			// Compute and update the handle position
+			scrollbar.computeScrollbarHandlePositionByScrollValue(shared.layerAlias, selectorEntry.ScrollbarAlias)
+		}
+	}
 }
 
 /*
@@ -180,11 +291,53 @@ the following information should be noted:
 - If the selector does not exist, no operation occurs.
 - The viewport position is automatically adjusted when navigating through items.
 */
-func (shared *selectorInstanceType) setViewport(viewportPosition int) {
+func (shared *SelectorInstanceType) setViewport(viewportPosition int) {
 	if Selectors.IsExists(shared.layerAlias, shared.controlAlias) {
 		validatorMenu(shared.layerAlias, shared.controlAlias)
 		menuEntry := Selectors.Get(shared.layerAlias, shared.controlAlias)
 		menuEntry.ViewportPosition = viewportPosition
+	}
+}
+
+/*
+SetSelectionEntry allows you to overwrite the current selection entry with a new one.
+In addition, the following information should be noted:
+
+- The selector's selected and highlighted item will be reset.
+- The viewport will be reset to the beginning.
+- The associated scrollbar will be updated to reflect the new item list.
+- If the selector does not exist, no operation occurs.
+*/
+func (shared *SelectorInstanceType) SetSelectionEntry(selectionEntry types.SelectionEntryType) {
+	if Selectors.IsExists(shared.layerAlias, shared.controlAlias) {
+		selectorEntry := Selectors.Get(shared.layerAlias, shared.controlAlias)
+		selectorEntry.SelectionEntry = selectionEntry
+		selectorEntry.ItemSelected = constants.SELECTED_NONE
+		selectorEntry.ItemHighlighted = constants.NullItemSelection
+		selectorEntry.ViewportPosition = 0
+
+		// Update scrollbar if it exists
+		if selectorEntry.ScrollbarAlias != "" && ScrollBars.IsExists(shared.layerAlias, selectorEntry.ScrollbarAlias) {
+			scrollBarEntry := ScrollBars.Get(shared.layerAlias, selectorEntry.ScrollbarAlias)
+
+			// Calculate max scroll value
+			scrollBarMaxValue := len(selectorEntry.SelectionEntry.SelectionValue) - (selectorEntry.Height * selectorEntry.NumberOfColumns) + 1
+
+			// Enable or disable scrollbar based on whether items overflow
+			if len(selectorEntry.SelectionEntry.SelectionValue) > selectorEntry.Height*selectorEntry.NumberOfColumns &&
+				selectorEntry.StyleEntry.Selector.TextAlignment != constants.AlignmentNoPadding {
+				scrollBarEntry.IsEnabled = true
+				scrollBarEntry.IsVisible = true
+			} else {
+				scrollBarEntry.IsEnabled = false
+				scrollBarEntry.IsVisible = false
+			}
+
+			if scrollBarMaxValue < 0 {
+				scrollBarMaxValue = 0
+			}
+			scrollBarEntry.MaxScrollValue = scrollBarMaxValue
+		}
 	}
 }
 
@@ -197,7 +350,7 @@ the following information should be noted:
 - If the selector does not exist, no operation occurs.
 - Scrollbars are automatically enabled if items overflow the visible area.
 */
-func (shared *selectorInstanceType) AddItem(selectionAlias string, selectionValue string) {
+func (shared *SelectorInstanceType) AddItem(selectionAlias string, selectionValue string) {
 	if Selectors.IsExists(shared.layerAlias, shared.controlAlias) {
 		validatorMenu(shared.layerAlias, shared.controlAlias)
 		menuEntry := Selectors.Get(shared.layerAlias, shared.controlAlias)
@@ -234,7 +387,7 @@ the following information should be noted:
 - If the currently highlighted or selected item is deleted, the highlight/selection is adjusted.
 - Scrollbars are automatically disabled if items no longer overflow the visible area.
 */
-func (shared *selectorInstanceType) DeleteItem(index int) {
+func (shared *SelectorInstanceType) DeleteItem(index int) {
 	if Selectors.IsExists(shared.layerAlias, shared.controlAlias) {
 		validatorMenu(shared.layerAlias, shared.controlAlias)
 		menuEntry := Selectors.Get(shared.layerAlias, shared.controlAlias)
@@ -307,7 +460,7 @@ then only the visible portion of the radio button will be drawn.
 - If the Selector height is greater than the number of selections available, then no scroll bars are drawn.
 */
 // TODO: Protect against viewport out of range errors.
-func (shared *selectorType) Add(layerAlias string, selectorAlias string, styleEntry types.TuiStyleEntryType, selectionEntry types.SelectionEntryType, xLocation int, yLocation int, selectorHeight int, itemWidth int, numberOfColumns int, viewportPosition int, selectedItem int, highlightOnClickOnly bool, isBorderDrawn bool) selectorInstanceType {
+func (shared *selectorType) Add(layerAlias string, selectorAlias string, styleEntry types.TuiStyleEntryType, selectionEntry types.SelectionEntryType, xLocation int, yLocation int, selectorHeight int, itemWidth int, numberOfColumns int, viewportPosition int, selectedItem int, highlightOnClickOnly bool, isBorderDrawn bool) SelectorInstanceType {
 	newSelectorEntry := types.NewSelectorEntry()
 	newSelectorEntry.Alias = selectorAlias
 	newSelectorEntry.StyleEntry = styleEntry
@@ -320,6 +473,7 @@ func (shared *selectorType) Add(layerAlias string, selectorAlias string, styleEn
 	newSelectorEntry.HighlightOnClickOnly = highlightOnClickOnly
 	newSelectorEntry.ViewportPosition = viewportPosition
 	newSelectorEntry.ItemHighlighted = selectedItem
+	//newSelectorEntry.ItemSelected = constants.SELECTED_NONE
 	newSelectorEntry.IsBorderDrawn = isBorderDrawn
 	newSelectorEntry.IsVisible = true
 
@@ -359,7 +513,7 @@ func (shared *selectorType) Add(layerAlias string, selectorAlias string, styleEn
 		scrollBarEntry.IsEnabled = false
 		scrollBarEntry.IsVisible = false
 	}
-	var selectorInstance selectorInstanceType
+	var selectorInstance SelectorInstanceType
 	selectorInstance.layerAlias = layerAlias
 	selectorInstance.controlAlias = selectorAlias
 	selectorInstance.controlType = constants.TYPE_SELECTOR

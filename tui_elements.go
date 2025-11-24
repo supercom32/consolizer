@@ -549,7 +549,7 @@ func drawShadow(layerEntry *types.LayerEntryType, attributeEntry types.Attribute
 	localAttributeEntry := types.NewAttributeEntry(&attributeEntry)
 	localAttributeEntry.ForegroundTransformValue = alphaValue
 	localAttributeEntry.BackgroundTransformValue = alphaValue
-
+	localAttributeEntry.CellType = constants.CellTypeShadow
 	// For empty areas, use the current behavior (null runes with transform values)
 	// For non-empty cells, darken the existing content
 	for currentRow := 0; currentRow < height; currentRow++ {
@@ -570,7 +570,7 @@ func drawShadow(layerEntry *types.LayerEntryType, attributeEntry types.Attribute
 					// Darken the foreground and background colors
 					cellAttr.ForegroundColor = GetDarkenedColor(cellAttr.ForegroundColor, alphaValue)
 					cellAttr.BackgroundColor = GetDarkenedColor(cellAttr.BackgroundColor, alphaValue)
-
+					cellAttr.CellType = constants.CellTypeShadow
 					// Update the cell with darkened colors but keep the original character
 					cell.AttributeEntry = cellAttr
 				} else {

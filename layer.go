@@ -603,7 +603,7 @@ func (shared *LayerInstanceType) AddScrollbar(styleEntry types.TuiStyleEntryType
 	return scrollbarInstance
 }
 
-func (shared *LayerInstanceType) AddSelector(styleEntry types.TuiStyleEntryType, selectionEntry types.SelectionEntryType, xLocation int, yLocation int, selectorHeight int, itemWidth int, numberOfColumns int, viewportPosition int, selectedItem int, highlightOnClickOnly bool, isBorderDrawn bool) selectorInstanceType {
+func (shared *LayerInstanceType) AddSelector(styleEntry types.TuiStyleEntryType, selectionEntry types.SelectionEntryType, xLocation int, yLocation int, selectorHeight int, itemWidth int, numberOfColumns int, viewportPosition int, selectedItem int, highlightOnClickOnly bool, isBorderDrawn bool) SelectorInstanceType {
 	selectorAlias := getUUID()
 	selectorInstance := Selector.Add(shared.layerAlias, selectorAlias, styleEntry, selectionEntry, xLocation, yLocation, selectorHeight, itemWidth, numberOfColumns, viewportPosition, selectedItem, highlightOnClickOnly, isBorderDrawn)
 	return selectorInstance
@@ -939,6 +939,37 @@ func (shared *LayerInstanceType) GetLayerSize() (int, int) {
 }
 
 /*
+SetAlpha allows you to set the alpha value for a given text layer. This lets
+you perform pseudo transparencies by making the layer foreground and background
+colors blend with the layers underneath it to the degree specified. In
+addition, the following information should be noted:
+
+- An alpha value of 1.0 is equal to 100% visible, while an alpha value of
+0.0 is 0% visible. Specifying a value outside this range indicates that
+you want to over amplify or under amplify the color transparency effect.
+
+- If the percent change specified is outside of the RGB color range (for
+example, if you specified 200%), then the color will simply bottom or max
+out at RGB(0, 0, 0) or RGB(255, 255, 255) respectively.
+*/
+func (shared *LayerInstanceType) SetAlpha(alphaValue float32) {
+	validateLayer(shared.layerAlias)
+	layerEntry := Layers.Get(shared.layerAlias)
+	layerEntry.DefaultAttribute.ForegroundTransformValue = alphaValue
+	layerEntry.DefaultAttribute.BackgroundTransformValue = alphaValue
+}
+
+/*
+GetAlpha allows you to retrieve the alpha value for a given text layer.
+This value represents the layer's transparency level.
+*/
+func (shared *LayerInstanceType) GetAlpha() float32 {
+	validateLayer(shared.layerAlias)
+	layerEntry := Layers.Get(shared.layerAlias)
+	return layerEntry.DefaultAttribute.ForegroundTransformValue
+}
+
+/*
 LoadLayerFromFile allows you to load a pre-rendered layer from disk and add it to the layer system.
 This is useful for quickly loading complex layers that were previously saved, such as image layers.
 The layer is loaded from a compressed format that was created by SaveLayer. In addition, the following
@@ -1123,9 +1154,9 @@ then only the visible portion of your string will be printed.
 - If printing has not yet finished and there are no available lines left, then
 all remaining characters will be discarded and printing will stop.
 */
-func (shared *LayerInstanceType) Print(textToPrint string, parameters ...any) {
+func (shared *LayerInstanceType) Print(textToPrint string) {
 	validateDefaultLayerIsNotEmpty()
-	formattedTextToPrint := fmt.Sprintf(textToPrint, parameters...)
+	formattedTextToPrint := fmt.Sprint(textToPrint)
 	layerEntry := Layers.Get(shared.layerAlias)
 	if layerEntry.CursorYLocation >= layerEntry.Height {
 		layerEntry.CursorYLocation = layerEntry.Height - 1
@@ -1193,8 +1224,8 @@ For example:
 	// "{}".
 	dosktop.PrintDialog("ForegroundLayer", 0, 0, 30, 10, true, "This is some dialog text in {red}red color{}. Only the words 'red color' should be colored.")
 */
-func (shared *LayerInstanceType) PrintDialog(xLocation int, yLocation int, widthOfLineInCharacters int, printDelayInMilliseconds int, isSkipable bool, stringToPrint string, parameters ...any) {
-	formattedTextToPrint := fmt.Sprintf(stringToPrint, parameters...)
+func (shared *LayerInstanceType) PrintDialog(xLocation int, yLocation int, widthOfLineInCharacters int, printDelayInMilliseconds int, isSkipable bool, stringToPrint string) {
+	formattedTextToPrint := fmt.Sprint(stringToPrint)
 	layerEntry := Layers.Get(shared.layerAlias)
 	if xLocation < 0 || xLocation > layerEntry.Width || yLocation < 0 || yLocation > layerEntry.Height {
 		panic(fmt.Sprintf("The specified location (%d, %d) is out of bounds for layer '%s' with a size of (%d, %d).", xLocation, yLocation, layerEntry.LayerAlias, layerEntry.Width, layerEntry.Height))
@@ -1248,8 +1279,8 @@ For example:
 	// "{}".
 	dosktop.PrintMarkup("ForegroundLayer", 0, 0, 30, "This is some text with {red}red color{}. Only the words 'red color' should be colored.")
 */
-func (shared *LayerInstanceType) PrintMarkup(xLocation int, yLocation int, widthOfLineInCharacters int, stringToPrint string, parameters ...any) {
-	formattedTextToPrint := fmt.Sprintf(stringToPrint, parameters...)
+func (shared *LayerInstanceType) PrintMarkup(xLocation int, yLocation int, widthOfLineInCharacters int, stringToPrint string) {
+	formattedTextToPrint := fmt.Sprint(stringToPrint)
 	layerEntry := Layers.Get(shared.layerAlias)
 	if xLocation < 0 || xLocation > layerEntry.Width || yLocation < 0 || yLocation > layerEntry.Height {
 		panic(fmt.Sprintf("The specified location (%d, %d) is out of bounds for layer '%s' with a size of (%d, %d).", xLocation, yLocation, layerEntry.LayerAlias, layerEntry.Width, layerEntry.Height))

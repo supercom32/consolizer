@@ -14,19 +14,19 @@ func TestGetAbsoluteValue(test *testing.T) {
 	for _, currentValue := range intValues {
 		absoluteValue := GetAbsoluteValueAsFloat64(currentValue)
 		if absoluteValue != 3 {
-			test.Errorf("The absolute value of '-3' given as type '" + reflect.TypeOf(currentValue).String() + "' should have been '3', but '" + stringformat.GetIntAsString(absoluteValue) + "' was received instead.")
+			test.Error("The absolute value of '-3' given as type '" + reflect.TypeOf(currentValue).String() + "' should have been '3', but '" + stringformat.GetIntAsString(absoluteValue) + "' was received instead.")
 		}
 	}
 	for _, currentValue := range uIntValues {
 		absoluteValue := GetAbsoluteValueAsFloat64(currentValue)
 		if absoluteValue != 3 {
-			test.Errorf("The absolute value of '3' given as type '" + reflect.TypeOf(currentValue).String() + "' should have been '3', but '" + stringformat.GetIntAsString(absoluteValue) + "' was received instead.")
+			test.Error("The absolute value of '3' given as type '" + reflect.TypeOf(currentValue).String() + "' should have been '3', but '" + stringformat.GetIntAsString(absoluteValue) + "' was received instead.")
 		}
 	}
 	for _, currentValue := range floatValues {
 		absoluteValue := GetAbsoluteValueAsFloat64(currentValue)
 		if !IsFloatEffectivelyEqual(absoluteValue, 3.3) {
-			test.Errorf("The absolute value of '-3.3' given as type '" + reflect.TypeOf(currentValue).String() + "' should have been '3.3', but '" + stringformat.GetIntAsString(absoluteValue) + "' was received instead.")
+			test.Error("The absolute value of '-3.3' given as type '" + reflect.TypeOf(currentValue).String() + "' should have been '3.3', but '" + stringformat.GetIntAsString(absoluteValue) + "' was received instead.")
 		}
 	}
 }
@@ -38,19 +38,19 @@ func TestIsNumberEven(test *testing.T) {
 	for _, currentValue := range intValues {
 		isEven := IsNumberEven(currentValue)
 		if isEven != true {
-			test.Errorf("The value of '12' given as type '" + reflect.TypeOf(currentValue).String() + "' should return 'true' if checked as an even number.")
+			test.Error("The value of '12' given as type '" + reflect.TypeOf(currentValue).String() + "' should return 'true' if checked as an even number.")
 		}
 	}
 	for _, currentValue := range uIntValues {
 		isEven := IsNumberEven(currentValue)
 		if isEven != false {
-			test.Errorf("The value of '13' given as type '" + reflect.TypeOf(currentValue).String() + "' should return 'false' if checked as an even number.")
+			test.Error("The value of '13' given as type '" + reflect.TypeOf(currentValue).String() + "' should return 'false' if checked as an even number.")
 		}
 	}
 	for _, currentValue := range floatValues {
 		isEven := IsNumberEven(currentValue)
 		if isEven != true {
-			test.Errorf("The value of '12.3' given as type '" + reflect.TypeOf(currentValue).String() + "' should return 'false' if checked as an even number.")
+			test.Error("The value of '12.3' given as type '" + reflect.TypeOf(currentValue).String() + "' should return 'false' if checked as an even number.")
 		}
 	}
 }
@@ -62,19 +62,19 @@ func TestRoundToWholeNumber(test *testing.T) {
 	for _, currentValue := range intValues {
 		result := RoundToWholeNumber(currentValue)
 		if result != 5 {
-			test.Errorf("The value of '5' given as type '" + reflect.TypeOf(currentValue).String() + "' should be rounded to '5', but was rounded to '" + stringformat.GetIntAsString(result) + "' instead.")
+			test.Error("The value of '5' given as type '" + reflect.TypeOf(currentValue).String() + "' should be rounded to '5', but was rounded to '" + stringformat.GetIntAsString(result) + "' instead.")
 		}
 	}
 	for _, currentValue := range uIntValues {
 		result := RoundToWholeNumber(currentValue)
 		if result != 5 {
-			test.Errorf("The value of '5' given as type '" + reflect.TypeOf(currentValue).String() + "' should be rounded to '5', but was rounded to '" + stringformat.GetIntAsString(result) + "' instead.")
+			test.Error("The value of '5' given as type '" + reflect.TypeOf(currentValue).String() + "' should be rounded to '5', but was rounded to '" + stringformat.GetIntAsString(result) + "' instead.")
 		}
 	}
 	for _, currentValue := range floatValues {
 		result := RoundToWholeNumber(currentValue)
 		if !IsFloatEffectivelyEqual(result, 6) {
-			test.Errorf("The value of '5.5' given as type '" + reflect.TypeOf(currentValue).String() + "' should be rounded to '6', but was rounded to '" + stringformat.GetIntAsString(result) + "' instead.")
+			test.Error("The value of '5.5' given as type '" + reflect.TypeOf(currentValue).String() + "' should be rounded to '6', but was rounded to '" + stringformat.GetIntAsString(result) + "' instead.")
 		}
 	}
 }
@@ -86,19 +86,19 @@ func TestRoundToDecimal(test *testing.T) {
 	for _, currentValue := range intValues {
 		result := RoundToDecimal(currentValue, 3)
 		if !IsFloatEffectivelyEqual(result, 3) {
-			test.Errorf("The value of '3' given as type '" + reflect.TypeOf(currentValue).String() + "' should be rounded to '3' decimal places, but returned '" + stringformat.GetIntAsString(result) + "' instead.")
+			test.Error("The value of '3' given as type '" + reflect.TypeOf(currentValue).String() + "' should be rounded to '3' decimal places, but returned '" + stringformat.GetIntAsString(result) + "' instead.")
 		}
 	}
 	for _, currentValue := range uIntValues {
 		result := RoundToDecimal(currentValue, 3)
 		if !IsFloatEffectivelyEqual(result, 3) {
-			test.Errorf("The value of '3' given as type '" + reflect.TypeOf(currentValue).String() + "' should be rounded to '3' decimal places, but returned '" + stringformat.GetIntAsString(result) + "' instead.")
+			test.Error("The value of '3' given as type '" + reflect.TypeOf(currentValue).String() + "' should be rounded to '3' decimal places, but returned '" + stringformat.GetIntAsString(result) + "' instead.")
 		}
 	}
 	for _, currentValue := range floatValues {
 		result := RoundToDecimal(currentValue, 4)
 		if !IsFloatEffectivelyEqual(result, 5.1235) {
-			test.Errorf("The value of '5.1234567' given as type '" + reflect.TypeOf(currentValue).String() + "' should be rounded to '4' decimal places, but returned '" + stringformat.GetIntAsString(result) + "' instead.")
+			test.Error("The value of '5.1234567' given as type '" + reflect.TypeOf(currentValue).String() + "' should be rounded to '4' decimal places, but returned '" + stringformat.GetIntAsString(result) + "' instead.")
 		}
 	}
 }

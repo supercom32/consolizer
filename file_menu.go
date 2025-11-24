@@ -99,6 +99,7 @@ func (shared *fileMenuType) Add(layerAlias string, menuAlias string, styleEntry 
 		// Position the selector directly beneath the header
 		selectorInstance := Selector.Add(layerAlias, selectorAlias, styleEntry, selection,
 			selectorX+1, yLocation+2, len(selection.SelectionAlias), maxWidth, 1, 0, 0, false, true)
+		selectorInstance.Unselect()
 		selectorInstance.SetVisible(false)
 	}
 
@@ -359,4 +360,24 @@ func (shared *FileMenuInstanceType) GetSelectedItem() (int, int, string) {
 	}
 	// Nothing selected
 	return -1, -1, ""
+}
+
+/*
+Unselect allows you to clear the current selection for a file menu. In addition,
+the following information should be noted:
+
+  - This method iterates through all submenus (selectors) of the file menu and
+    unselects any selected item.
+  - If the file menu does not exist, no operation occurs.
+*/
+func (shared *FileMenuInstanceType) Unselect() {
+	if !FileMenus.IsExists(shared.layerAlias, shared.controlAlias) {
+		return
+	}
+	fileMenuEntry := FileMenus.Get(shared.layerAlias, shared.controlAlias)
+	// Iterate through selectors (one per heading) and unselect them.
+	for _, selectorAlias := range fileMenuEntry.SelectorAliases {
+		selectorEntry := Selectors.Get(shared.layerAlias, selectorAlias)
+		selectorEntry.ItemSelected = constants.SELECTED_NONE
+	}
 }

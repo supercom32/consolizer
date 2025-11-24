@@ -239,6 +239,7 @@ const CellTypeLabel = 11
 const CellTypeTooltip = 12
 const CellTypeFileMenuHeading = 13
 const CellTypeFileMenuItem = 14
+const CellTypeShadow = 15
 
 const CellControlIdUpScrollArrow = -1
 const CellControlIdDownScrollArrow = -2
@@ -271,6 +272,7 @@ const TYPE_VIEWPORT = "viewport"
 const TYPE_FILEMENU = "filemenu"
 
 const DefaultTooltipHoverTime = 1000
+const SELECTED_NONE = -1
 
 const (
 	ButtonStateUnpressed = iota
