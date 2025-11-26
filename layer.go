@@ -39,7 +39,7 @@ ClearLayer allows you to empty the specified text layer of all its contents. If 
 do not wish to specify a text layer, you can use the method 'Clear' which will
 simply clear the default text layer previously set.
 */
-func ClearLayer(layerInstance LayerInstanceType) {
+func ClearLayer(layerInstance *LayerInstanceType) {
 	layerEntry := Layers.Get(layerInstance.layerAlias)
 	layer.clearLayer(layerEntry)
 }
@@ -889,7 +889,7 @@ func (shared *LayerInstanceType) DeleteLayer() {
 		var nextLayerInstance *types.LayerEntryType
 		if nextLayerAlias != "" {
 			nextLayerInstance = Layers.Get(nextLayerAlias)
-			commonResource.layerInstance = LayerInstanceType{layerAlias: nextLayerAlias, parentAlias: nextLayerInstance.ParentAlias, LayerWidth: nextLayerInstance.Width, LayerHeight: nextLayerInstance.Height}
+			commonResource.layerInstance = &LayerInstanceType{layerAlias: nextLayerAlias, parentAlias: nextLayerInstance.ParentAlias, LayerWidth: nextLayerInstance.Width, LayerHeight: nextLayerInstance.Height}
 		}
 	}
 	shared.layerAlias = ""
@@ -1096,7 +1096,7 @@ example:
 */
 func (shared *LayerInstanceType) Locate(xLocation int, yLocation int) {
 	validateDefaultLayerIsNotEmpty()
-	LocateLayer(*shared, xLocation, yLocation)
+	LocateLayer(shared, xLocation, yLocation)
 }
 
 /*
@@ -1323,19 +1323,19 @@ something else.
 working text layer automatically. If you wish to set another text layer
 as your default, use 'Layer' to explicitly set it.
 */
-func AddLayer(xLocation int, yLocation int, width int, height int, zOrderPriority int, parentLayerInstance *LayerInstanceType) LayerInstanceType {
+func AddLayer(xLocation int, yLocation int, width int, height int, zOrderPriority int, parentLayerInstance *LayerInstanceType) *LayerInstanceType {
 	layerAlias := getUUID()
 	validateTerminalWidthAndHeight(width, height)
 	if parentLayerInstance == nil {
 		layer.Add(layerAlias, xLocation, yLocation, width, height, zOrderPriority, "")
 		layerInstance := LayerInstanceType{layerAlias: layerAlias, parentAlias: "", LayerWidth: width, LayerHeight: height}
-		commonResource.layerInstance = layerInstance
-		return layerInstance
+		commonResource.layerInstance = &layerInstance
+		return &layerInstance
 	} else {
 		layer.Add(layerAlias, xLocation, yLocation, width, height, zOrderPriority, parentLayerInstance.layerAlias)
 		layerInstance := LayerInstanceType{layerAlias: layerAlias, parentAlias: "", LayerWidth: width, LayerHeight: height}
-		commonResource.layerInstance = layerInstance
-		return layerInstance
+		commonResource.layerInstance = &layerInstance
+		return &layerInstance
 	}
 }
 
@@ -1408,21 +1408,22 @@ func deleteLayer(layerAlias string) {
 		nextLayerAlias := layer.GetNextLayerAlias()
 		// If last entry and no more layers, just return. Do not set anything.
 		if nextLayerAlias == "" {
-			commonResource.layerInstance = LayerInstanceType{layerAlias: "", parentAlias: "", LayerWidth: 0, LayerHeight: 0}
+			commonResource.layerInstance = &LayerInstanceType{layerAlias: "", parentAlias: "", LayerWidth: 0, LayerHeight: 0}
 			return
 		}
 		nextLayerInstance := Layers.Get(nextLayerAlias)
-		commonResource.layerInstance = LayerInstanceType{layerAlias: nextLayerAlias, parentAlias: nextLayerInstance.ParentAlias, LayerWidth: nextLayerInstance.Width, LayerHeight: nextLayerInstance.Height}
+		commonResource.layerInstance = &LayerInstanceType{layerAlias: nextLayerAlias, parentAlias: nextLayerInstance.ParentAlias, LayerWidth: nextLayerInstance.Width, LayerHeight: nextLayerInstance.Height}
 	}
 }
 
-func DeleteLayer(layerInstance LayerInstanceType) {
+func DeleteLayer(layerInstance *LayerInstanceType) *LayerInstanceType {
 	deleteLayer(layerInstance.layerAlias)
 	if commonResource.layerInstance.layerAlias == layerInstance.layerAlias {
 		nextLayerAlias := layer.GetNextLayerAlias()
 		nextLayerInstance := Layers.Get(nextLayerAlias)
-		commonResource.layerInstance = LayerInstanceType{layerAlias: nextLayerAlias, parentAlias: nextLayerInstance.ParentAlias, LayerWidth: nextLayerInstance.Width, LayerHeight: nextLayerInstance.Height}
+		commonResource.layerInstance = &LayerInstanceType{layerAlias: nextLayerAlias, parentAlias: nextLayerInstance.ParentAlias, LayerWidth: nextLayerInstance.Width, LayerHeight: nextLayerInstance.Height}
 	}
+	return nil
 }
 
 /*
@@ -1441,7 +1442,7 @@ func DeleteAllLayers() {
 /*
 SetTopmostLayer sets the specified layer to be the topmost layer.
 */
-func SetTopmostLayer(layerInstance LayerInstanceType) {
+func SetTopmostLayer(layerInstance *LayerInstanceType) {
 	layer.SetTopmostLayer(layerInstance.layerAlias)
 }
 

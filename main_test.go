@@ -27,7 +27,7 @@ func testProgressBar() {
 	commonResource.isDebugEnabled = false
 	InitializeTerminal(80, 40)
 	layer1 := AddLayer(0, 0, 80, 40, 1, nil)
-	layer2 := AddLayer(20, 15, 40, 20, 1, &layer1)
+	layer2 := AddLayer(20, 15, 40, 20, 1, layer1)
 	layer1.ColorRGB(255, 0, 0, 0, 0, 0)
 	layer1.FillLayer("#")
 	layer2.FillLayer("@")
@@ -87,7 +87,7 @@ func testRadioButtons() {
 	commonResource.isDebugEnabled = false
 	InitializeTerminal(80, 40)
 	layer1 := AddLayer(0, 0, 80, 40, 1, nil)
-	layer2 := AddLayer(20, 15, 40, 20, 1, &layer1)
+	layer2 := AddLayer(20, 15, 40, 20, 1, layer1)
 	layer1.ColorRGB(255, 0, 0, 0, 0, 0)
 	layer1.FillLayer("#")
 	layer2.FillLayer("@")
@@ -126,7 +126,7 @@ func testTextboxes() {
 	commonResource.isDebugEnabled = false
 	InitializeTerminal(80, 40)
 	layer1 := AddLayer(0, 0, 80, 40, 1, nil)
-	layer2 := AddLayer(25, 15, 40, 20, 1, &layer1)
+	layer2 := AddLayer(25, 15, 40, 20, 1, layer1)
 	layer1.ColorRGB(255, 0, 0, 0, 0, 0)
 	layer1.FillLayer("#")
 	layer2.FillLayer("@")
@@ -171,7 +171,7 @@ func testCheckboxes() {
 	commonResource.isDebugEnabled = false
 	InitializeTerminal(80, 40)
 	layer1 := AddLayer(0, 0, 80, 40, 1, nil)
-	layer2 := AddLayer(20, 15, 40, 20, 1, &layer1)
+	layer2 := AddLayer(20, 15, 40, 20, 1, layer1)
 	layer1.ColorRGB(255, 0, 0, 0, 0, 0)
 	layer1.FillLayer("#")
 	layer2.FillLayer("@")
@@ -198,7 +198,7 @@ func testDropdown() {
 	commonResource.isDebugEnabled = false
 	InitializeTerminal(80, 40)
 	layer1 := AddLayer(0, 0, 80, 40, 1, nil)
-	layer2 := AddLayer(20, 15, 40, 20, 1, &layer1)
+	layer2 := AddLayer(20, 15, 40, 20, 1, layer1)
 	layer1.ColorRGB(255, 0, 0, 0, 0, 0)
 	layer1.FillLayer("#")
 	layer2.FillLayer("@")
@@ -251,8 +251,8 @@ func testScrollBars() {
 	commonResource.isDebugEnabled = false
 	InitializeTerminal(80, 40)
 	layer1 := AddLayer(0, 0, 80, 40, 1, nil)
-	layer2 := AddLayer(20, 15, 40, 20, 1, &layer1)
-	Layer(&layer1)
+	layer2 := AddLayer(20, 15, 40, 20, 1, layer1)
+	Layer(layer1)
 	layer1.FillLayer("#")
 	layer2.FillLayer("@")
 	styleEntry := types.NewTuiStyleEntry()
@@ -295,7 +295,7 @@ func testSelector() {
 	commonResource.isDebugEnabled = false
 	InitializeTerminal(80, 40)
 	layer1 := AddLayer(0, 0, 80, 40, 1, nil)
-	layer2 := AddLayer(20, 15, 40, 20, 1, &layer1)
+	layer2 := AddLayer(20, 15, 40, 20, 1, layer1)
 	layer1.FillLayer("#")
 	layer2.FillLayer("@")
 	styleEntry := types.NewTuiStyleEntry()
@@ -335,7 +335,7 @@ func testTextField() {
 	commonResource.isDebugEnabled = false
 	InitializeTerminal(80, 40)
 	layer1 := AddLayer(0, 0, 80, 40, 1, nil)
-	layer2 := AddLayer(20, 15, 40, 20, 1, &layer1)
+	layer2 := AddLayer(20, 15, 40, 20, 1, layer1)
 	layer1.FillLayer("#")
 	layer2.FillLayer("@")
 	styleEntry := types.NewTuiStyleEntry()
@@ -370,9 +370,9 @@ func testWindowMovement() {
 	yLocation := 1
 	InitializeTerminal(80, 40)
 	layer1 := AddLayer(0, 0, 80, 40, 1, nil)
-	layer2 := AddLayer(20, 15, 40, 20, 1, &layer1)
-	layer3 := AddLayer(0, 0, 20, 10, 1, &layer2)
-	layer4 := AddLayer(15, 10, 20, 10, 2, &layer1)
+	layer2 := AddLayer(20, 15, 40, 20, 1, layer1)
+	layer3 := AddLayer(0, 0, 20, 10, 1, layer2)
+	layer4 := AddLayer(15, 10, 20, 10, 2, layer1)
 	layer1.FillLayer("#")
 	layer2.FillLayer("@")
 	layer1.Locate(xLocation, yLocation)

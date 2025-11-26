@@ -504,8 +504,8 @@ func TestComplexControlManagement(t *testing.T) {
 
 	// Create layer instances
 	rootLayer := AddLayer(0, 0, 20, 20, 1, nil)
-	child1Layer := AddLayer(0, 0, 15, 15, 1, &rootLayer)
-	child2Layer := AddLayer(0, 0, 15, 15, 2, &rootLayer)
+	child1Layer := AddLayer(0, 0, 15, 15, 1, rootLayer)
+	child2Layer := AddLayer(0, 0, 15, 15, 2, rootLayer)
 
 	// Create style entries
 	styleEntry := types.NewTuiStyleEntry()
@@ -598,7 +598,7 @@ func TestLayerAndControlPropertyStability(t *testing.T) {
 
 	// Create a layer hierarchy
 	rootLayer := AddLayer(0, 0, 20, 20, 1, nil)
-	childLayer := AddLayer(0, 0, 15, 15, 1, &rootLayer)
+	childLayer := AddLayer(0, 0, 15, 15, 1, rootLayer)
 
 	// Create style entries
 	styleEntry := types.NewTuiStyleEntry()
@@ -648,7 +648,7 @@ func TestLayerAndControlPropertyStability(t *testing.T) {
 	rootLayer.DeleteLayer()
 
 	newRootLayer := AddLayer(0, 0, 20, 20, 1, nil)
-	newChildLayer := AddLayer(0, 0, 15, 15, 1, &newRootLayer)
+	newChildLayer := AddLayer(0, 0, 15, 15, 1, newRootLayer)
 
 	// Verify new layers have correct properties
 	newRootLayerEntry := Layers.Get(newRootLayer.layerAlias)
@@ -680,7 +680,7 @@ func TestLayerAndControlMemoryLeaks(t *testing.T) {
 		rootLayer.AddCheckbox("Checkbox", styleEntry, 0, 2, false, true)
 
 		// Create child layer
-		childLayer := AddLayer(0, 0, 15, 15, i, &rootLayer)
+		childLayer := AddLayer(0, 0, 15, 15, i, rootLayer)
 
 		// Add controls to child layer
 		childLayer.AddButton("Child Button", styleEntry, 0, 0, 10, 1, true)
@@ -740,10 +740,10 @@ func TestComplexInterleavedOperations(t *testing.T) {
 	// Create a layer hierarchy
 	root1Layer := AddLayer(0, 0, 20, 20, 1, nil)
 	root2Layer := AddLayer(0, 0, 20, 20, 2, nil)
-	child1Layer := AddLayer(0, 0, 15, 15, 1, &root1Layer)
-	child2Layer := AddLayer(0, 0, 15, 15, 2, &root1Layer)
-	child3Layer := AddLayer(0, 0, 15, 15, 1, &root2Layer)
-	grandchild1Layer := AddLayer(0, 0, 10, 10, 1, &child1Layer)
+	child1Layer := AddLayer(0, 0, 15, 15, 1, root1Layer)
+	child2Layer := AddLayer(0, 0, 15, 15, 2, root1Layer)
+	child3Layer := AddLayer(0, 0, 15, 15, 1, root2Layer)
+	grandchild1Layer := AddLayer(0, 0, 10, 10, 1, child1Layer)
 
 	// Create style entries with unique properties
 	styleEntry1 := types.NewTuiStyleEntry()
@@ -812,7 +812,7 @@ func TestComplexInterleavedOperations(t *testing.T) {
 	}
 
 	// Phase 4: Create new child layer under root1 with unique properties
-	newChildLayer := AddLayer(0, 0, 15, 15, 3, &root1Layer)
+	newChildLayer := AddLayer(0, 0, 15, 15, 3, root1Layer)
 	newChildLayer.AddButton("New Child Button", styleEntry1, 0, 0, 10, 1, true)
 	newChildLayer.AddCheckbox("New Child Checkbox", styleEntry1, 0, 2, true, true)
 	newChildLayer.AddProgressBar("New Child Progress", styleEntry1, 0, 4, 10, 1, false, 50, 100, false)
@@ -835,8 +835,8 @@ func TestComplexInterleavedOperations(t *testing.T) {
 
 	// Phase 6: Add new root layer and children with unique properties
 	root3Layer := AddLayer(0, 0, 20, 20, 3, nil)
-	root3Child1 := AddLayer(0, 0, 15, 15, 1, &root3Layer)
-	root3Child2 := AddLayer(0, 0, 15, 15, 2, &root3Layer)
+	root3Child1 := AddLayer(0, 0, 15, 15, 1, root3Layer)
+	root3Child2 := AddLayer(0, 0, 15, 15, 2, root3Layer)
 
 	// Add controls to root3 layer with unique properties
 	root3Button := root3Layer.AddButton("Root3 Button", styleEntry2, 0, 0, 10, 1, true)

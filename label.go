@@ -31,6 +31,20 @@ func (shared *LabelInstanceType) SetLabelValue(value string) {
 	labelEntry.Text = value
 }
 
+func (shared *LabelInstanceType) SetIsTooltipEnabled(isEnabled bool) {
+	labelEntry := Labels.Get(shared.layerAlias, shared.controlAlias)
+	if labelEntry != nil && labelEntry.TooltipAlias != "" {
+		tooltipEntry := Tooltips.Get(shared.layerAlias, labelEntry.TooltipAlias)
+		tooltipEntry.IsEnabled = isEnabled
+	}
+}
+
+func (shared *LabelInstanceType) SetTooltipText(text string) {
+	labelEntry := Labels.Get(shared.layerAlias, shared.controlAlias)
+	tooltipEntry := Tooltips.Get(shared.layerAlias, labelEntry.TooltipAlias)
+	tooltipEntry.Text = text
+}
+
 func (shared *LabelInstanceType) Delete() *LabelInstanceType {
 	shared.BaseControlInstanceType.Delete()
 	return nil
@@ -48,11 +62,13 @@ func (shared *labelType) Add(layerAlias string, labelAlias string, labelValue st
 	// Use the ControlMemoryManager to add the label entry
 	Labels.Add(layerAlias, labelAlias, &labelEntry)
 
-	tooltipInstance := Tooltip.Add(layerAlias, labelEntry.TooltipAlias, "", styleEntry,
+	tooltipWidth := len(stringformat.GetRunesFromString(labelValue)) + 13 // Add padding
+
+	tooltipInstance := Tooltip.Add(layerAlias, labelEntry.TooltipAlias, labelValue, styleEntry,
 		labelEntry.XLocation, labelEntry.YLocation,
 		labelEntry.Width+2, 1,
 		labelEntry.XLocation, labelEntry.YLocation+1,
-		labelEntry.Width+2, 3,
+		tooltipWidth, 1,
 		false, true, constants.DefaultTooltipHoverTime)
 	tooltipInstance.SetEnabled(false)
 	tooltipInstance.setParentControlAlias(labelAlias)

@@ -17,5 +17,5 @@ func CommonTestSetup() (*LayerInstanceType, *LayerInstanceType, *LayerInstanceTy
 	layer1.FillLayer("a1a2a3a4a5")
 	layer2.Color(11, 9)
 	layer2.FillLayer("a1a2a3a4a5")
-	return &layer1, &layer2, &layer3, styleEntry
+	return layer1, layer2, layer3, styleEntry
 }

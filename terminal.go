@@ -27,7 +27,7 @@ current terminal session that needs to be shared.
 */
 type defaultValueType struct {
 	screen               tcell.Screen
-	layerInstance        LayerInstanceType // What happens when last layer is deleted? This needs to be updated.
+	layerInstance        *LayerInstanceType // What happens when last layer is deleted? This needs to be updated.
 	terminalWidth        int
 	terminalHeight       int
 	screenLayer          types.LayerEntryType
@@ -214,7 +214,7 @@ he is working on. For example:
 */
 func Layer(layerInstance *LayerInstanceType) {
 	validateLayer(layerInstance.layerAlias)
-	commonResource.layerInstance = *layerInstance
+	commonResource.layerInstance = layerInstance
 }
 
 /*
@@ -345,7 +345,7 @@ that two layers have the same priority, they will be drawn in random order.
 This is to ensure that programmers do not attempt to rely on any specific
 behavior that might be a coincidental side effect.
 */
-func SetLayerZOrder(layerInstance LayerInstanceType, zOrder int) {
+func SetLayerZOrder(layerInstance *LayerInstanceType, zOrder int) {
 	layerEntry := Layers.Get(layerInstance.layerAlias)
 	layerEntry.ZOrder = zOrder
 }
@@ -379,11 +379,11 @@ you want to over amplify or under amplify the color transparency effect.
 example, if you specified 200%), then the color will simply bottom or max
 out at RGB(0, 0, 0) or RGB(255, 255, 255) respectively.
 */
-func SetLayerAlpha(layerInstance LayerInstanceType, alphaValue float32) {
+func SetLayerAlpha(layerInstance *LayerInstanceType, alphaValue float32) {
 	setLayerAlpha(layerInstance, alphaValue)
 }
 
-func setLayerAlpha(layerInstance LayerInstanceType, alphaValue float32) {
+func setLayerAlpha(layerInstance *LayerInstanceType, alphaValue float32) {
 	layerEntry := Layers.Get(layerInstance.layerAlias)
 	layerEntry.DefaultAttribute.ForegroundTransformValue = alphaValue
 	layerEntry.DefaultAttribute.BackgroundTransformValue = alphaValue
@@ -438,7 +438,7 @@ standard, where color 0 is Black and 15 is Bright White. If you do not wish
 to specify a text layer, you can use the method 'Color' which will simply
 change the color for the default text layer previously set.
 */
-func ColorLayer(layerInstance LayerInstanceType, foregroundColorIndex int, backgroundColorIndex int) {
+func ColorLayer(layerInstance *LayerInstanceType, foregroundColorIndex int, backgroundColorIndex int) {
 	validateColorIndex(foregroundColorIndex)
 	validateColorIndex(backgroundColorIndex)
 	layerEntry := Layers.Get(layerInstance.layerAlias)
@@ -464,7 +464,7 @@ index values within the range of 0 to 255. If you do not wish to specify a
 text layer, you can use the method 'ColorRGB' which will simply change the
 color for the default text layer previously set.
 */
-func ColorLayerRGB(layerInstance LayerInstanceType, foregroundRed int32, foregroundGreen int32, foregroundBlue int32, backgroundRed int32, backgroundGreen int32, backgroundBlue int32) {
+func ColorLayerRGB(layerInstance *LayerInstanceType, foregroundRed int32, foregroundGreen int32, foregroundBlue int32, backgroundRed int32, backgroundGreen int32, backgroundBlue int32) {
 	foregroundColor := GetRGBColor(foregroundRed, foregroundGreen, foregroundBlue)
 	backgroundColor := GetRGBColor(backgroundRed, backgroundGreen, backgroundBlue)
 	ColorLayer24Bit(layerInstance, foregroundColor, backgroundColor)
@@ -484,7 +484,7 @@ ColorLayer24Bit allows you to color a layer using a 24-bit color expressed as
 an int32. This is useful for internal methods that already have a 24-bit color
 and do not require to compute it again.
 */
-func ColorLayer24Bit(layerInstance LayerInstanceType, foregroundColor constants.ColorType, backgroundColor constants.ColorType) {
+func ColorLayer24Bit(layerInstance *LayerInstanceType, foregroundColor constants.ColorType, backgroundColor constants.ColorType) {
 	layerEntry := Layers.Get(layerInstance.layerAlias)
 	layerEntry.DefaultAttribute.ForegroundColor = foregroundColor
 	layerEntry.DefaultAttribute.BackgroundColor = backgroundColor
@@ -543,7 +543,7 @@ example:
 	// Move our cursor location to the bottom right corner of our text layer.
 	consolizer.LocateLayer(14, 14)
 */
-func LocateLayer(layerInstance LayerInstanceType, xLocation int, yLocation int) {
+func LocateLayer(layerInstance *LayerInstanceType, xLocation int, yLocation int) {
 	validateLayer(layerInstance.layerAlias)
 	layerEntry := Layers.Get(layerInstance.layerAlias)
 	validateLayerLocationByLayerEntry(layerEntry, xLocation, yLocation)
@@ -587,7 +587,7 @@ then only the visible portion of your string will be printed.
 - If printing has not yet finished and there are no available lines left, then
 all remaining characters will be discarded and printing will stop.
 */
-func PrintLayer(layerInstance LayerInstanceType, textToPrint string) {
+func PrintLayer(layerInstance *LayerInstanceType, textToPrint string) {
 	layerEntry := Layers.Get(layerInstance.layerAlias)
 	if layerEntry.CursorYLocation >= layerEntry.Height {
 		layerEntry.CursorYLocation = layerEntry.Height - 1
@@ -835,14 +835,14 @@ func renderControls(currentLayerEntry types.LayerEntryType) {
 	Button.drawButtonsOnLayer(currentLayerEntry)
 	TextField.drawTextFieldOnLayer(currentLayerEntry)
 	Checkbox.drawCheckboxesOnLayer(currentLayerEntry)
-	Dropdown.drawDropdownsOnLayer(currentLayerEntry)
-	Selector.drawSelectorsOnLayer(currentLayerEntry)
-	scrollbar.drawScrollbarsOnLayer(currentLayerEntry)
 	textbox.drawTextboxesOnLayer(currentLayerEntry)
 	radioButton.drawRadioButtonsOnLayer(currentLayerEntry)
 	ProgressBar.drawProgressBarsOnLayer(currentLayerEntry)
-	Tooltip.drawTooltipHotspotZonesOnLayer(currentLayerEntry)
 	viewport.drawViewportsOnLayer(currentLayerEntry)
+	scrollbar.drawScrollbarsOnLayer(currentLayerEntry)
+	Dropdown.drawDropdownsOnLayer(currentLayerEntry)
+	Selector.drawSelectorsOnLayer(currentLayerEntry) // Selector must always render above dropdowns.
+	Tooltip.drawTooltipHotspotZonesOnLayer(currentLayerEntry)
 	FileMenu.drawFileMenusOnLayer(currentLayerEntry)
 }
 
