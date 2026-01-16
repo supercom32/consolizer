@@ -315,31 +315,8 @@ var cp437ToUnicode = func() []rune {
 	return arr
 }()
 
-// Cell represents a single character and color in a glyph
-type Cell struct {
-	Char  rune
-	Color byte
-}
-
-// Glyph represents a single character glyph
-type Glyph struct {
-	Width, Height int
-	Cells         []Cell
-}
-
-// Font represents a TDF font
-type Font struct {
-	Name     string
-	FontType byte
-	Spacing  byte
-	Height   int
-	charList []uint16
-	fontData []byte
-	Glyphs   []*Glyph
-}
-
 // LoadFont loads a TDF font from the given file path.
-func LoadFont(fontFile, fontDir string) (*Font, error) {
+func LoadFont(fontFile, fontDir string) (*types.FontEntryType, error) {
 	if filepath.Ext(fontFile) == "" {
 		fontFile += ".tdf"
 	}
@@ -354,34 +331,34 @@ func LoadFont(fontFile, fontDir string) (*Font, error) {
 		return nil, fmt.Errorf("invalid TDF font: %s", fullpath)
 	}
 
-	font := &Font{}
+	fontEntry := &types.FontEntryType{}
 	nameLen := int(data[24])
-	font.Name = string(data[25 : 25+nameLen])
-	font.FontType = data[41]
-	font.Spacing = data[42]
-	font.Glyphs = make([]*Glyph, numChars)
-	font.charList = make([]uint16, numChars)
+	fontEntry.Name = string(data[25 : 25+nameLen])
+	fontEntry.FontType = data[41]
+	fontEntry.Spacing = data[42]
+	fontEntry.Glyphs = make([]*types.Glyph, numChars)
+	fontEntry.CharList = make([]uint16, numChars)
 
 	// Character list offset starts at 45
 	charListOffset := 45
 	for i := 0; i < numChars; i++ {
-		font.charList[i] = binary.LittleEndian.Uint16(data[charListOffset+i*2 : charListOffset+i*2+2])
+		fontEntry.CharList[i] = binary.LittleEndian.Uint16(data[charListOffset+i*2 : charListOffset+i*2+2])
 	}
 
 	// Font data starts at 233
-	font.fontData = data[233:]
+	fontEntry.FontData = data[233:]
 
-	// Calculate font height and load glyphs
+	// Calculate fontEntry height and load glyphs
 	for i := 0; i < numChars; i++ {
 		charIndex := lookupChar(charlist[i])
 		if charIndex != -1 {
-			charOffset := font.charList[charIndex]
+			charOffset := fontEntry.CharList[charIndex]
 			if charOffset != 0xffff {
 				heightOffset := charOffset + 1
-				if int(heightOffset) < len(font.fontData) {
-					height := int(font.fontData[heightOffset])
-					if height > font.Height {
-						font.Height = height
+				if int(heightOffset) < len(fontEntry.FontData) {
+					height := int(fontEntry.FontData[heightOffset])
+					if height > fontEntry.Height {
+						fontEntry.Height = height
 					}
 				}
 			}
@@ -391,50 +368,50 @@ func LoadFont(fontFile, fontDir string) (*Font, error) {
 	for i := 0; i < numChars; i++ {
 		charIndex := lookupChar(charlist[i])
 		if charIndex != -1 {
-			glyph, err := readGlyph(font, charIndex)
+			glyph, err := readGlyph(fontEntry, charIndex)
 			if err != nil {
 				return nil, fmt.Errorf("failed reading glyph %d: %v", i, err)
 			}
-			font.Glyphs[i] = glyph
+			fontEntry.Glyphs[i] = glyph
 		} else {
-			font.Glyphs[i] = nil
+			fontEntry.Glyphs[i] = nil
 		}
 	}
 
-	return font, nil
+	return fontEntry, nil
 }
 
 // readGlyph reads a single glyph from the font data.
-func readGlyph(font *Font, index int) (*Glyph, error) {
-	if font.charList[index] == 0xffff {
+func readGlyph(fontEntry *types.FontEntryType, index int) (*types.Glyph, error) {
+	if fontEntry.CharList[index] == 0xffff {
 		return nil, nil
 	}
 
-	offset := int(font.charList[index])
-	if offset+2 > len(font.fontData) {
+	offset := int(fontEntry.CharList[index])
+	if offset+2 > len(fontEntry.FontData) {
 		return nil, fmt.Errorf("offset beyond file")
 	}
 
-	width := int(font.fontData[offset])
-	height := int(font.fontData[offset+1])
+	width := int(fontEntry.FontData[offset])
+	height := int(fontEntry.FontData[offset+1])
 	if width <= 0 || height <= 0 {
 		return nil, nil
 	}
 	offset += 2
 
-	glyph := &Glyph{
+	glyph := &types.Glyph{
 		Width:  width,
 		Height: height,
-		Cells:  make([]Cell, width*font.Height),
+		Cells:  make([]types.Cell, width*fontEntry.Height),
 	}
 
 	for i := range glyph.Cells {
-		glyph.Cells[i] = Cell{Char: ' ', Color: 0}
+		glyph.Cells[i] = types.Cell{Char: ' ', Color: 0}
 	}
 
 	row, col := 0, 0
-	for offset < len(font.fontData) {
-		b := font.fontData[offset]
+	for offset < len(fontEntry.FontData) {
+		b := fontEntry.FontData[offset]
 		offset++
 		if b == 0 {
 			break
@@ -446,13 +423,13 @@ func readGlyph(font *Font, index int) (*Glyph, error) {
 			continue
 		}
 
-		if offset >= len(font.fontData) {
+		if offset >= len(fontEntry.FontData) {
 			break
 		}
-		color := font.fontData[offset]
+		color := fontEntry.FontData[offset]
 		offset++
 
-		if row < font.Height && col < width {
+		if row < fontEntry.Height && col < width {
 			cellIdx := row*width + col
 			var char rune
 			if int(b) < len(cp437ToUnicode) {
@@ -460,7 +437,7 @@ func readGlyph(font *Font, index int) (*Glyph, error) {
 			} else {
 				char = ' '
 			}
-			glyph.Cells[cellIdx] = Cell{Char: char, Color: color}
+			glyph.Cells[cellIdx] = types.Cell{Char: char, Color: color}
 		}
 		col++
 	}
@@ -479,7 +456,7 @@ func lookupChar(ch rune) int {
 }
 
 // RenderOnLayer renders a string onto a layer using the specified font.
-func RenderOnLayer(layerEntry *types.LayerEntryType, x, y int, str string, font *Font) {
+func RenderOnLayer(layerEntry *types.LayerEntryType, x, y int, str string, font *types.FontEntryType) {
 	currentX := x
 	for _, ch := range str {
 		idx := lookupChar(ch)
