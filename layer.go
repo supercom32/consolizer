@@ -1290,7 +1290,7 @@ func (shared *LayerInstanceType) PrintMarkup(xLocation int, yLocation int, width
 
 func (shared *LayerInstanceType) PrintFont(xLocation int, yLocation int, fontName string, stringToPrint string) {
 	layerEntry := Layers.Get(shared.layerAlias)
-	font, err := LoadFont(fontName, "./")
+	font, err := LoadFont(fontName)
 	if err != nil {
 		panic(err)
 	}

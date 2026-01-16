@@ -3,13 +3,14 @@ package consolizer
 import (
 	"encoding/binary"
 	"fmt"
-	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/supercom32/consolizer/constants"
+	"github.com/supercom32/consolizer/memory"
 	"github.com/supercom32/consolizer/types"
 )
+
+var fontManager = memory.NewMemoryManager[types.FontEntryType]()
 
 // Constants
 const (
@@ -315,22 +316,27 @@ var cp437ToUnicode = func() []rune {
 	return arr
 }()
 
+func UnloadFont(fontAlias string) {
+	fontManager.Remove(fontAlias)
+}
+
+func GetFontFromMemory(alias string) (*types.FontEntryType, error) {
+	font := fontManager.Get(alias)
+	if font == nil {
+		return nil, fmt.Errorf("font with alias '%s' not found", alias)
+	}
+	return font, nil
+}
+
 // LoadFont loads a TDF font from the given file path.
-func LoadFont(fontFile, fontDir string) (*types.FontEntryType, error) {
-	if filepath.Ext(fontFile) == "" {
-		fontFile += ".tdf"
-	}
-
-	fullpath := filepath.Join(fontDir, fontFile)
-	data, err := os.ReadFile(fullpath)
+func LoadFont(fontFile string) (string, error) {
+	data, err := getFileDataFromFileSystem(fontFile)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-
 	if !strings.HasPrefix(string(data), magicHeader) {
-		return nil, fmt.Errorf("invalid TDF font: %s", fullpath)
+		return "", fmt.Errorf("invalid TDF font: %s", fontFile)
 	}
-
 	fontEntry := &types.FontEntryType{}
 	nameLen := int(data[24])
 	fontEntry.Name = string(data[25 : 25+nameLen])
@@ -370,15 +376,15 @@ func LoadFont(fontFile, fontDir string) (*types.FontEntryType, error) {
 		if charIndex != -1 {
 			glyph, err := readGlyph(fontEntry, charIndex)
 			if err != nil {
-				return nil, fmt.Errorf("failed reading glyph %d: %v", i, err)
+				return "", fmt.Errorf("failed reading glyph %d: %v", i, err)
 			}
 			fontEntry.Glyphs[i] = glyph
 		} else {
 			fontEntry.Glyphs[i] = nil
 		}
 	}
-
-	return fontEntry, nil
+	fontManager.Add(fontFile, fontEntry)
+	return fontFile, nil
 }
 
 // readGlyph reads a single glyph from the font data.
@@ -456,7 +462,11 @@ func lookupChar(ch rune) int {
 }
 
 // RenderOnLayer renders a string onto a layer using the specified font.
-func RenderOnLayer(layerEntry *types.LayerEntryType, x, y int, str string, font *types.FontEntryType) {
+func RenderOnLayer(layerEntry *types.LayerEntryType, x, y int, str string, fontAlias string) {
+	font, err := GetFontFromMemory(fontAlias)
+	if err != nil {
+		return // Font not found, so we can't render anything.
+	}
 	currentX := x
 	for _, ch := range str {
 		idx := lookupChar(ch)
