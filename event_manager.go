@@ -158,6 +158,9 @@ func UpdateEventQueues() {
 		if TextField.updateMouseEvent() {
 			isScreenUpdateRequired = true
 		}
+		if FileMenu.updateFileMenuStateMouse() {
+			isScreenUpdateRequired = true
+		}
 		if Selector.updateMouseEvent() {
 			isScreenUpdateRequired = true
 		}
@@ -171,9 +174,6 @@ func UpdateEventQueues() {
 		if Dropdown.updateDropdownStateMouse() {
 			isScreenUpdateRequired = true
 		}
-		if FileMenu.updateFileMenuStateMouse() {
-			isScreenUpdateRequired = true
-		}
 		if Checkbox.updateMouseEvent() {
 			isScreenUpdateRequired = true
 		}
@@ -183,10 +183,6 @@ func UpdateEventQueues() {
 		if scrollbar.updateMouseEvent() {
 			buttonHistory.layerAlias = ""
 			buttonHistory.buttonAlias = ""
-			isScreenUpdateRequired = true
-		}
-		// LogInfo("mouse scrollbar" + time.Now().String())
-		if Selector.updateMouseEvent() {
 			isScreenUpdateRequired = true
 		}
 		// LogInfo("mouse event selector" + time.Now().String())

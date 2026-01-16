@@ -1288,6 +1288,15 @@ func (shared *LayerInstanceType) PrintMarkup(xLocation int, yLocation int, width
 	layer.printMarkup(layerEntry, layerEntry.DefaultAttribute, xLocation, yLocation, widthOfLineInCharacters, formattedTextToPrint)
 }
 
+func (shared *LayerInstanceType) PrintFont(xLocation int, yLocation int, fontName string, stringToPrint string) {
+	layerEntry := Layers.Get(shared.layerAlias)
+	font, err := LoadFont(fontName, "./")
+	if err != nil {
+		panic(err)
+	}
+	RenderOnLayer(layerEntry, xLocation, yLocation, stringToPrint, font)
+}
+
 /*
 AddLayer allows you to add a text layer to the current terminal display. You
 can add as many layers as you wish to suite your applications needs. Text

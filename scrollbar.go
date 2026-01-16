@@ -96,6 +96,8 @@ func (shared *scrollbarType) Add(layerAlias string, scrollbarAlias string, style
 	scrollbarEntry.IsEnabled = true
 	scrollbarEntry.IsHorizontal = isHorizontal
 	scrollbarEntry.ScrollIncrement = scrollIncrement
+	scrollbarEntry.ParentControlAlias = "" // Empty for standalone scrollbars
+	scrollbarEntry.ParentControlType = 0   // No parent control type by default
 	// Use the generic memory manager to add the scrollbar entry
 	ScrollBars.Add(layerAlias, scrollbarAlias, &scrollbarEntry)
 	// TODO: add validation and what happens if failed.
@@ -137,7 +139,19 @@ func (shared *scrollbarType) drawScrollbarsOnLayer(layerEntry types.LayerEntryTy
 	for _, currentKey := range ScrollBars.SortEntries(layerAlias, true, compareByAlias) {
 		scrollbarEntry := currentKey
 		if scrollbarEntry.IsVisible {
-			shared.drawScrollbar(&layerEntry, scrollbarEntry.Alias, scrollbarEntry.StyleEntry, scrollbarEntry.XLocation, scrollbarEntry.YLocation, scrollbarEntry.Length, scrollbarEntry.HandlePosition, scrollbarEntry.IsHorizontal)
+			if scrollbarEntry.ParentControlAlias == "" {
+				shared.drawScrollbar(&layerEntry, scrollbarEntry.Alias, scrollbarEntry.StyleEntry, scrollbarEntry.XLocation, scrollbarEntry.YLocation, scrollbarEntry.Length, scrollbarEntry.HandlePosition, scrollbarEntry.IsHorizontal)
+			}
+		}
+	}
+}
+
+func (shared *scrollbarType) drawScrollbarOnLayerByAlias(layerEntry *types.LayerEntryType, scrollbarAlias string) {
+	layerAlias := layerEntry.LayerAlias
+	if ScrollBars.IsExists(layerAlias, scrollbarAlias) {
+		scrollbarEntry := ScrollBars.Get(layerAlias, scrollbarAlias)
+		if scrollbarEntry.IsVisible {
+			shared.drawScrollbar(layerEntry, scrollbarEntry.Alias, scrollbarEntry.StyleEntry, scrollbarEntry.XLocation, scrollbarEntry.YLocation, scrollbarEntry.Length, scrollbarEntry.HandlePosition, scrollbarEntry.IsHorizontal)
 		}
 	}
 }

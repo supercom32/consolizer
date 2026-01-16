@@ -40,7 +40,7 @@ information should be noted:
 - This method is used to make the file menu focusable via tab navigation.
 */
 func (shared *FileMenuInstanceType) AddToTabIndex() {
-	addTabIndex(shared.layerAlias, shared.controlAlias, constants.CellTypeButton)
+	addTabIndex(shared.layerAlias, shared.controlAlias, constants.CellTypeFileMenuHeading)
 }
 
 /*
@@ -71,7 +71,6 @@ func (shared *fileMenuType) Add(layerAlias string, menuAlias string, styleEntry 
 	fileMenuEntry.ActiveHeadingIndex = -1
 	fileMenuEntry.IsSubmenuOpen = false
 	fileMenuEntry.IsEnabled = isEnabled
-	fileMenuEntry.TooltipAlias = stringformat.GetLastSortedUUID()
 
 	// Create selectors for each menu heading
 	for i, selection := range menuSelections {
@@ -102,12 +101,6 @@ func (shared *fileMenuType) Add(layerAlias string, menuAlias string, styleEntry 
 		selectorInstance.Unselect()
 		selectorInstance.SetVisible(false)
 	}
-
-	// Create tooltip (initially disabled)
-	Tooltip.Add(layerAlias, fileMenuEntry.TooltipAlias, "", styleEntry,
-		xLocation, yLocation, 10, 1,
-		xLocation, yLocation+1, 20, 3,
-		false, true, constants.DefaultTooltipHoverTime)
 
 	// Store the file menu entry in memory
 	FileMenus.Add(layerAlias, menuAlias, &fileMenuEntry)
@@ -202,10 +195,10 @@ func (shared *fileMenuType) drawFileMenu(layerEntry *types.LayerEntryType, fileM
 			attributeEntry.BackgroundColor = fileMenuEntry.StyleEntry.FileMenu.HighlightBackgroundColor
 		}
 
-		// Set cell type for mouse interaction
-		attributeEntry.CellType = constants.CellTypeButton
-		attributeEntry.CellControlAlias = fileMenuEntry.Alias
-		attributeEntry.CellControlId = index
+ 	// Set cell type for mouse interaction
+ 	attributeEntry.CellType = constants.CellTypeFileMenuHeading
+ 	attributeEntry.CellControlAlias = fileMenuEntry.Alias
+ 	attributeEntry.CellControlId = index
 
 		// Draw the heading with padding
 		paddedHeading := " " + heading + " "
@@ -287,8 +280,8 @@ func (shared *fileMenuType) updateFileMenuStateMouse() bool {
 
 	// Only process if a button is pressed and it's a new click (not a continued press)
 	if isNewClick {
-		// Check if the mouse clicked on a file menu heading (which uses button cell type)
-		if cellType == constants.CellTypeButton && FileMenus.IsExists(layerAlias, cellControlAlias) {
+		// Check if the mouse clicked on a file menu heading
+		if cellType == constants.CellTypeFileMenuHeading && FileMenus.IsExists(layerAlias, cellControlAlias) {
 			fileMenuEntry := FileMenus.Get(layerAlias, cellControlAlias)
 
 			// If clicking on the active heading, close the submenu

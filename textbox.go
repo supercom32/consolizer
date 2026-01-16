@@ -588,6 +588,20 @@ func (shared *textboxType) AddTextbox(layerAlias string, textboxAlias string, st
 	}
 	scrollbar.Add(layerAlias, textboxEntry.HorizontalScrollbarAlias, styleEntry, hScrollbarXLocation, hScrollbarYLocation, hScrollbarWidth, 0, 0, 1, true)
 	scrollbar.Add(layerAlias, textboxEntry.VerticalScrollbarAlias, styleEntry, vScrollbarXLocation, vScrollbarYLocation, vScrollbarHeight, 0, 0, 1, false)
+
+	// Set parent control information for scrollbars
+	hScrollbarEntry := ScrollBars.Get(layerAlias, textboxEntry.HorizontalScrollbarAlias)
+	if hScrollbarEntry != nil {
+		hScrollbarEntry.ParentControlAlias = textboxAlias
+		hScrollbarEntry.ParentControlType = constants.CellTypeTextbox
+	}
+
+	vScrollbarEntry := ScrollBars.Get(layerAlias, textboxEntry.VerticalScrollbarAlias)
+	if vScrollbarEntry != nil {
+		vScrollbarEntry.ParentControlAlias = textboxAlias
+		vScrollbarEntry.ParentControlType = constants.CellTypeTextbox
+	}
+
 	shared.setTextboxMaxScrollBarValues(layerAlias, textboxAlias)
 	var textboxInstance TextboxInstanceType
 	textboxInstance.layerAlias = layerAlias
@@ -710,37 +724,37 @@ func (shared *textboxType) wrapTextToWidth(text [][]rune, width int) [][]rune {
 }
 
 func (shared *textboxType) drawTextbox(layerEntry *types.LayerEntryType, textboxAlias string) {
-	t := Textboxes.Get(layerEntry.LayerAlias, textboxAlias)
+	textboxEntry := Textboxes.Get(layerEntry.LayerAlias, textboxAlias)
 	attributeEntry := types.NewAttributeEntry()
-	attributeEntry.ForegroundColor = t.StyleEntry.Textbox.ForegroundColor
-	attributeEntry.BackgroundColor = t.StyleEntry.Textbox.BackgroundColor
+	attributeEntry.ForegroundColor = textboxEntry.StyleEntry.Textbox.ForegroundColor
+	attributeEntry.BackgroundColor = textboxEntry.StyleEntry.Textbox.BackgroundColor
 	attributeEntry.CellControlAlias = textboxAlias
-	if t.IsBorderDrawn {
-		drawBorder(layerEntry, t.StyleEntry, attributeEntry, t.XLocation-1, t.YLocation-1, t.Width+2, t.Height+2, false)
+	if textboxEntry.IsBorderDrawn {
+		drawBorder(layerEntry, textboxEntry.StyleEntry, attributeEntry, textboxEntry.XLocation-1, textboxEntry.YLocation-1, textboxEntry.Width+2, textboxEntry.Height+2, false)
 	}
 	attributeEntry.CellType = constants.CellTypeTextbox
-	fillArea(layerEntry, attributeEntry, " ", t.XLocation, t.YLocation, t.Width, t.Height, t.ViewportYLocation)
+	fillArea(layerEntry, attributeEntry, " ", textboxEntry.XLocation, textboxEntry.YLocation, textboxEntry.Width, textboxEntry.Height, textboxEntry.ViewportYLocation)
 	attributeEntry.CellControlAlias = textboxAlias
 
 	// Apply word wrapping if enabled
 	var displayText [][]rune
-	if t.IsWordWrapEnabled {
-		displayText = shared.wrapTextToWidth(t.TextData, t.Width)
+	if textboxEntry.IsWordWrapEnabled {
+		displayText = shared.wrapTextToWidth(textboxEntry.TextData, textboxEntry.Width)
 	} else {
-		displayText = t.TextData
+		displayText = textboxEntry.TextData
 	}
 
-	for currentLine := 0; currentLine < t.Height; currentLine++ {
+	for currentLine := 0; currentLine < textboxEntry.Height; currentLine++ {
 		var arrayOfRunes []rune
-		if t.ViewportYLocation+currentLine < len(displayText) && t.ViewportYLocation+currentLine >= 0 {
-			arrayOfRunes = displayText[t.ViewportYLocation+currentLine]
-			if !t.IsWordWrapEnabled {
+		if textboxEntry.ViewportYLocation+currentLine < len(displayText) && textboxEntry.ViewportYLocation+currentLine >= 0 {
+			arrayOfRunes = displayText[textboxEntry.ViewportYLocation+currentLine]
+			if !textboxEntry.IsWordWrapEnabled {
 				// Only apply horizontal scrolling if word wrap is disabled
-				if t.ViewportXLocation < len(arrayOfRunes) && t.ViewportXLocation >= 0 {
-					if t.ViewportXLocation+t.Width < len(arrayOfRunes) {
-						arrayOfRunes = arrayOfRunes[t.ViewportXLocation : t.ViewportXLocation+t.Width]
+				if textboxEntry.ViewportXLocation < len(arrayOfRunes) && textboxEntry.ViewportXLocation >= 0 {
+					if textboxEntry.ViewportXLocation+textboxEntry.Width < len(arrayOfRunes) {
+						arrayOfRunes = arrayOfRunes[textboxEntry.ViewportXLocation : textboxEntry.ViewportXLocation+textboxEntry.Width]
 					} else {
-						arrayOfRunes = arrayOfRunes[t.ViewportXLocation:]
+						arrayOfRunes = arrayOfRunes[textboxEntry.ViewportXLocation:]
 					}
 				} else {
 					// If scrolled too far right and there are no column text to print, just show blanks.
@@ -749,14 +763,16 @@ func (shared *textboxType) drawTextbox(layerEntry *types.LayerEntryType, textbox
 				}
 			}
 
-			arrayOfRunes = stringformat.GetMaxCharactersThatFitInStringSize(arrayOfRunes, t.Width)
-			shared.printControlText(layerEntry, textboxAlias, t.StyleEntry, attributeEntry, t.XLocation, t.YLocation+currentLine, arrayOfRunes, t.ViewportYLocation+currentLine, t.ViewportXLocation, t.CursorXLocation, t.CursorYLocation)
+			arrayOfRunes = stringformat.GetMaxCharactersThatFitInStringSize(arrayOfRunes, textboxEntry.Width)
+			shared.printControlText(layerEntry, textboxAlias, textboxEntry.StyleEntry, attributeEntry, textboxEntry.XLocation, textboxEntry.YLocation+currentLine, arrayOfRunes, textboxEntry.ViewportYLocation+currentLine, textboxEntry.ViewportXLocation, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
 		} else {
 			// If scrolled too far down and there are no more rows to print, just show blanks.
 			// If scrolled too far up and there are no rows to print, just print blanks. Note: This case should never happen really.
-			shared.printControlText(layerEntry, textboxAlias, t.StyleEntry, attributeEntry, t.XLocation, t.YLocation+currentLine, arrayOfRunes, t.ViewportYLocation+currentLine, t.ViewportXLocation, t.CursorXLocation, t.CursorYLocation)
+			shared.printControlText(layerEntry, textboxAlias, textboxEntry.StyleEntry, attributeEntry, textboxEntry.XLocation, textboxEntry.YLocation+currentLine, arrayOfRunes, textboxEntry.ViewportYLocation+currentLine, textboxEntry.ViewportXLocation, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
 		}
 	}
+	scrollbar.drawScrollbarOnLayerByAlias(layerEntry, textboxEntry.HorizontalScrollbarAlias)
+	scrollbar.drawScrollbarOnLayerByAlias(layerEntry, textboxEntry.VerticalScrollbarAlias)
 }
 
 /*
@@ -1087,8 +1103,8 @@ func (shared *textboxType) updateViewport(textboxEntry *types.TextboxEntryType) 
 			startIndex = 0
 		}
 
-		if startIndex < len(textboxEntry.TextData[textboxEntry.CursorYLocation]) && 
-		   textboxEntry.CursorXLocation <= len(textboxEntry.TextData[textboxEntry.CursorYLocation]) {
+		if startIndex < len(textboxEntry.TextData[textboxEntry.CursorYLocation]) &&
+			textboxEntry.CursorXLocation <= len(textboxEntry.TextData[textboxEntry.CursorYLocation]) {
 			arrayOfRunesAvailableToPrint = textboxEntry.TextData[textboxEntry.CursorYLocation][startIndex:textboxEntry.CursorXLocation]
 			numberOfRunesThatFitStringSize := stringformat.GetMaxCharactersThatFitInStringSizeReverse(arrayOfRunesAvailableToPrint, textboxEntry.Width)
 			// LogInfo(fmt.Sprintf("v: %d x: %d off: %d fit: %d, aval: %s", textboxEntry.ViewportXLocation, textboxEntry.CursorXLocation, maxViewportWidthAvaliable, numberOfRunesThatFitStringSize, string(arrayOfRunesAvailableToPrint)))
@@ -1708,7 +1724,7 @@ func (shared *textboxType) updateMouseEvent() bool {
 
 			// Skip if horizontal or vertical scrollbar doesn't exist
 			if !ScrollBars.IsExists(layerAlias, textboxEntry.HorizontalScrollbarAlias) ||
-			   !ScrollBars.IsExists(layerAlias, textboxEntry.VerticalScrollbarAlias) {
+				!ScrollBars.IsExists(layerAlias, textboxEntry.VerticalScrollbarAlias) {
 				continue
 			}
 

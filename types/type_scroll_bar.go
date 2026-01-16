@@ -6,12 +6,14 @@ import (
 
 type ScrollbarEntryType struct {
 	BaseControlType
-	Length          int
-	MaxScrollValue  int
-	ScrollValue     int
-	HandlePosition  int
-	IsHorizontal    bool
-	ScrollIncrement int
+	Length            int
+	MaxScrollValue    int
+	ScrollValue       int
+	HandlePosition    int
+	IsHorizontal      bool
+	ScrollIncrement   int
+	ParentControlAlias string // Empty for standalone scrollbars
+	ParentControlType  int    // Constants.CellTypeTextbox, etc.
 }
 
 /*
@@ -37,20 +39,24 @@ information should be noted:
 func (shared ScrollbarEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
 		BaseControlType
-		Length          int
-		MaxScrollValue  int
-		ScrollValue     int
-		HandlePosition  int
-		IsHorizontal    bool
-		ScrollIncrement int
+		Length            int
+		MaxScrollValue    int
+		ScrollValue       int
+		HandlePosition    int
+		IsHorizontal      bool
+		ScrollIncrement   int
+		ParentControlAlias string
+		ParentControlType  int
 	}{
-		BaseControlType: shared.BaseControlType,
-		Length:          shared.Length,
-		MaxScrollValue:  shared.MaxScrollValue,
-		ScrollValue:     shared.ScrollValue,
-		HandlePosition:  shared.HandlePosition,
-		IsHorizontal:    shared.IsHorizontal,
-		ScrollIncrement: shared.ScrollIncrement,
+		BaseControlType:   shared.BaseControlType,
+		Length:            shared.Length,
+		MaxScrollValue:    shared.MaxScrollValue,
+		ScrollValue:       shared.ScrollValue,
+		HandlePosition:    shared.HandlePosition,
+		IsHorizontal:      shared.IsHorizontal,
+		ScrollIncrement:   shared.ScrollIncrement,
+		ParentControlAlias: shared.ParentControlAlias,
+		ParentControlType:  shared.ParentControlType,
 	})
 	if err != nil {
 		return nil, err
@@ -104,6 +110,8 @@ func NewScrollbarEntry(existingScrollbarEntry ...*ScrollbarEntryType) ScrollbarE
 		scrollbarEntry.HandlePosition = existingScrollbarEntry[0].HandlePosition
 		scrollbarEntry.IsHorizontal = existingScrollbarEntry[0].IsHorizontal
 		scrollbarEntry.ScrollIncrement = existingScrollbarEntry[0].ScrollIncrement
+		scrollbarEntry.ParentControlAlias = existingScrollbarEntry[0].ParentControlAlias
+		scrollbarEntry.ParentControlType = existingScrollbarEntry[0].ParentControlType
 	}
 	return scrollbarEntry
 }
@@ -114,7 +122,9 @@ func IsScrollbarEntryEqual(sourceScrollbarEntry *ScrollbarEntryType, targetScrol
 		sourceScrollbarEntry.ScrollValue == targetScrollBarEntry.ScrollValue &&
 		sourceScrollbarEntry.HandlePosition == targetScrollBarEntry.HandlePosition &&
 		sourceScrollbarEntry.IsHorizontal == targetScrollBarEntry.IsHorizontal &&
-		sourceScrollbarEntry.ScrollIncrement == targetScrollBarEntry.ScrollIncrement {
+		sourceScrollbarEntry.ScrollIncrement == targetScrollBarEntry.ScrollIncrement &&
+		sourceScrollbarEntry.ParentControlAlias == targetScrollBarEntry.ParentControlAlias &&
+		sourceScrollbarEntry.ParentControlType == targetScrollBarEntry.ParentControlType {
 		return true
 	}
 	return false

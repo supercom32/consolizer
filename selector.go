@@ -509,6 +509,12 @@ func (shared *selectorType) Add(layerAlias string, selectorAlias string, styleEn
 	scrollbar.Add(layerAlias, selectorEntry.ScrollbarAlias, styleEntry, scrollBarXLocation, scrollBarYLocation, scrollBarHeight, scrollBarMaxValue, 0, numberOfColumns, false)
 	scrollBarEntry := ScrollBars.Get(layerAlias, selectorEntry.ScrollbarAlias)
 
+	// Set parent control information for scrollbar
+	if scrollBarEntry != nil {
+		scrollBarEntry.ParentControlAlias = selectorAlias
+		scrollBarEntry.ParentControlType = constants.CellTypeSelectorItem
+	}
+
 	if len(selectionEntry.SelectionValue) <= selectorHeight*numberOfColumns || styleEntry.Selector.TextAlignment == constants.AlignmentNoPadding {
 		scrollBarEntry.IsEnabled = false
 		scrollBarEntry.IsVisible = false
@@ -707,6 +713,7 @@ func (shared *selectorType) drawSelector(selectorAlias string, layerEntry *types
 			currentRow++
 		}
 	}
+	scrollbar.drawScrollbarOnLayerByAlias(layerEntry, selectorEntry.ScrollbarAlias)
 }
 
 /*

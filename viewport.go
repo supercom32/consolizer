@@ -571,6 +571,13 @@ func (shared *viewportType) AddViewport(layerAlias string, viewportAlias string,
 	scrollbar.Add(layerAlias, horizontalScrollbarAlias, scrollbarStyleEntry, scrollbarXLocation, scrollbarYLocation, horizontalScrollbarLength, 0, 0, 1, true)
 	viewportEntry.HorizontalScrollbarAlias = horizontalScrollbarAlias
 
+	// Set parent control information for horizontal scrollbar
+	hScrollbarEntry := ScrollBars.Get(layerAlias, horizontalScrollbarAlias)
+	if hScrollbarEntry != nil {
+		hScrollbarEntry.ParentControlAlias = viewportAlias
+		hScrollbarEntry.ParentControlType = constants.CellTypeTextbox // Viewports use textbox cell type
+	}
+
 	// For vertical scrollbar - position it inside the frame on the right
 	verticalScrollbarAlias := viewportAlias + "_vscroll"
 
@@ -589,6 +596,13 @@ func (shared *viewportType) AddViewport(layerAlias string, viewportAlias string,
 	// Add vertical scrollbar
 	scrollbar.Add(layerAlias, verticalScrollbarAlias, scrollbarStyleEntry, scrollbarXLocation, scrollbarYLocation, verticalScrollbarLength, 0, 0, 1, false)
 	viewportEntry.VerticalScrollbarAlias = verticalScrollbarAlias
+
+	// Set parent control information for vertical scrollbar
+	vScrollbarEntry := ScrollBars.Get(layerAlias, verticalScrollbarAlias)
+	if vScrollbarEntry != nil {
+		vScrollbarEntry.ParentControlAlias = viewportAlias
+		vScrollbarEntry.ParentControlType = constants.CellTypeTextbox // Viewports use textbox cell type
+	}
 
 	// Set up the viewport instance
 	viewportInstance.layerAlias = layerAlias
@@ -663,8 +677,9 @@ func (shared *viewportType) drawViewport(layerEntry *types.LayerEntryType, viewp
 	// Draw viewport content
 	shared.drawViewportContent(layerEntry, viewportAlias, styleEntry, attributeEntry, viewportEntry.XLocation, viewportEntry.YLocation, viewportEntry.Width, viewportEntry.Height)
 
-	// Draw scrollbars if needed
-	shared.drawViewportScrollbars(layerEntry, viewportAlias, styleEntry, attributeEntry, viewportEntry.XLocation, viewportEntry.YLocation, viewportEntry.Width, viewportEntry.Height)
+	shared.updateViewportScrollbars(layerEntry, viewportAlias, styleEntry, attributeEntry, viewportEntry.XLocation, viewportEntry.YLocation, viewportEntry.Width, viewportEntry.Height)
+	scrollbar.drawScrollbarOnLayerByAlias(layerEntry, viewportEntry.HorizontalScrollbarAlias)
+	scrollbar.drawScrollbarOnLayerByAlias(layerEntry, viewportEntry.VerticalScrollbarAlias)
 }
 
 // drawBorder draws a border around the viewport.
@@ -778,8 +793,8 @@ func (shared *viewportType) drawViewportContent(layerEntry *types.LayerEntryType
 	}
 }
 
-// drawViewportScrollbars draws scrollbars for the viewport.
-func (shared *viewportType) drawViewportScrollbars(layerEntry *types.LayerEntryType, viewportAlias string, styleEntry types.TuiStyleEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, width int, height int) {
+// updateViewportScrollbars draws scrollbars for the viewport.
+func (shared *viewportType) updateViewportScrollbars(layerEntry *types.LayerEntryType, viewportAlias string, styleEntry types.TuiStyleEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, width int, height int) {
 	viewportEntry := GetViewport(layerEntry.LayerAlias, viewportAlias)
 	if viewportEntry == nil {
 		return

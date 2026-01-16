@@ -829,20 +829,24 @@ func renderLayers(rootLayerEntry *types.LayerEntryType, sortedLayerAliasSlice La
 renderControls allows you to draw various control elements on the specified layer.
 The order of drawing matters, as complex controls are drawn first above basic controls
 to ensure that any pop-up controls appear over complex controls.
+
+Note: Tooltip hotspot zones must be drawn before FileMenu to prevent them from
+capturing clicks intended for file menu headings.
 */
 func renderControls(currentLayerEntry types.LayerEntryType) {
-	Label.drawLabelsOnLayer(currentLayerEntry)
 	Button.drawButtonsOnLayer(currentLayerEntry)
 	TextField.drawTextFieldOnLayer(currentLayerEntry)
 	Checkbox.drawCheckboxesOnLayer(currentLayerEntry)
-	textbox.drawTextboxesOnLayer(currentLayerEntry)
 	radioButton.drawRadioButtonsOnLayer(currentLayerEntry)
 	ProgressBar.drawProgressBarsOnLayer(currentLayerEntry)
-	viewport.drawViewportsOnLayer(currentLayerEntry)
+	Label.drawLabelsOnLayer(currentLayerEntry)
 	scrollbar.drawScrollbarsOnLayer(currentLayerEntry)
-	Dropdown.drawDropdownsOnLayer(currentLayerEntry)
-	Selector.drawSelectorsOnLayer(currentLayerEntry) // Selector must always render above dropdowns.
+
+	textbox.drawTextboxesOnLayer(currentLayerEntry)
 	Tooltip.drawTooltipHotspotZonesOnLayer(currentLayerEntry)
+	viewport.drawViewportsOnLayer(currentLayerEntry)
+	Dropdown.drawDropdownsOnLayer(currentLayerEntry) // Dropdowns must come before selectors, or it won't show on top.
+	Selector.drawSelectorsOnLayer(currentLayerEntry)
 	FileMenu.drawFileMenusOnLayer(currentLayerEntry)
 }
 
