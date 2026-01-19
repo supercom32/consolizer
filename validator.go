@@ -79,7 +79,7 @@ func validatorMenu(layerAlias string, menuAlias string) {
 	}
 }
 
-func safeSttyPanic(panicMessage string) {
+func safeSttyPanic(panicMessage interface{}) {
 	RestoreTerminalSettings()
 	panic(panicMessage)
 }

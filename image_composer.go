@@ -45,7 +45,7 @@ func (shared *ImageComposerEntryType) Add(fileName string, xLocation int, yLocat
 	imageEntry, err := getImage(fileName)
 	if err != nil {
 		// Here we perform this action anyway to trigger a panic, so we don't need to duplicate the panic code.
-		GetImage(fileName)
+		safeSttyPanic(err)
 	}
 	imageComposerImage.ImageData = imageEntry.ImageData
 	shared.images[fileName] = &imageComposerImage
@@ -161,7 +161,7 @@ func BrailleFromDots(dot0, dot1, dot2, dot3, dot4, dot5, dot6, dot7 bool) rune {
 
 func getImageLayerAsBraille(sourceImageData image.Image, imageStyle types.ImageStyleEntryType, widthInCharacters int, heightInCharacters int, blurSigma float64) types.LayerEntryType {
 	if widthInCharacters <= 0 && heightInCharacters <= 0 {
-		panic(fmt.Sprintf("The specified width and height of %dx%d for your image is not valid.", widthInCharacters, heightInCharacters))
+		safeSttyPanic(fmt.Sprintf("The specified width and height of %dx%d for your image is not valid.", widthInCharacters, heightInCharacters))
 	}
 	calculatedPixelWidth := widthInCharacters * 2
 	calculatedPixelHeight := heightInCharacters * 4
@@ -222,7 +222,7 @@ func getBrailleImageData(inputImage image.Image, imageStyle types.ImageStyleEntr
 	}
 	/*contextForImage := gg.NewContextForImage(monochromeImage)
 	if err := contextForImage.SavePNG("dithered_output.png"); err != nil {
-		panic(err)
+		safeSttyPanic(err)
 	}*/
 	bounds := inputImage.Bounds()
 	width, height := bounds.Dx(), bounds.Dy()

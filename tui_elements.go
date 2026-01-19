@@ -669,7 +669,7 @@ func GetDarkenedColor(color constants.ColorType, percentChange float32) constant
 	var greenColorIndex int32
 	var blueColorIndex int32
 	if percentChange < 0 || percentChange > 1 {
-		panic(fmt.Sprintf("The specified brightness percent value of '%f' is invalid!", percentChange))
+		safeSttyPanic(fmt.Sprintf("The specified brightness percent value of '%f' is invalid!", percentChange))
 	}
 	redColorIndex, greenColorIndex, blueColorIndex = GetRGBColorComponents(color)
 	redColorIndex = int32(float32(redColorIndex) * percentChange)

@@ -37,7 +37,7 @@ In order to activate the timer again, simply call 'StartTimer'.
 func (shared *TimerType) IsExpired() bool {
 	timerEntry := Timers.Get(shared.timerAlias)
 	if timerEntry == nil {
-		panic(fmt.Sprintf("The requested timer with alias '%s' could not be returned since it does not exist.", shared.timerAlias))
+		safeSttyPanic(fmt.Sprintf("The requested timer with alias '%s' could not be returned since it does not exist.", shared.timerAlias))
 	}
 	if timerEntry.IsTimerEnabled {
 		timeElapsed := GetCurrentTimeInMilliseconds() - timerEntry.StartTime
@@ -57,7 +57,7 @@ to begin.
 func (shared *TimerType) SetTimer(durationInMilliseconds int64, isEnabled bool) {
 	timerEntry := Timers.Get(shared.timerAlias)
 	if timerEntry == nil {
-		panic(fmt.Sprintf("The requested timer with alias '%s' could not be returned since it does not exist.", shared.timerAlias))
+		safeSttyPanic(fmt.Sprintf("The requested timer with alias '%s' could not be returned since it does not exist.", shared.timerAlias))
 	}
 	timerEntry.StartTime = GetCurrentTimeInMilliseconds()
 	timerEntry.TimerLength = durationInMilliseconds
@@ -74,7 +74,7 @@ generated to fail as fast as possible.
 func (shared *TimerType) Start() {
 	timerEntry := Timers.Get(shared.timerAlias)
 	if timerEntry == nil {
-		panic(fmt.Sprintf("The requested timer with alias '%s' could not be returned since it does not exist.", shared.timerAlias))
+		safeSttyPanic(fmt.Sprintf("The requested timer with alias '%s' could not be returned since it does not exist.", shared.timerAlias))
 	}
 	timerEntry.StartTime = GetCurrentTimeInMilliseconds()
 	timerEntry.IsTimerEnabled = true

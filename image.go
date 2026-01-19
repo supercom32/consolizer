@@ -49,7 +49,7 @@ func GetImage(imageAlias string) *types.ImageEntryType {
 		Image.Unlock()
 	}()
 	if Image.Entries[imageAlias] == nil {
-		panic(fmt.Sprintf("The requested Image with alias '%s' could not be returned since it does not exist.", imageAlias))
+		safeSttyPanic(fmt.Sprintf("The requested Image with alias '%s' could not be returned since it does not exist.", imageAlias))
 	}
 	return Image.Entries[imageAlias]
 }
@@ -334,7 +334,7 @@ with higher values increasing the blur factor.
 */
 func getImageLayerAsHighColor(sourceImageData image.Image, imageStyle types.ImageStyleEntryType, widthInCharacters int, heightInCharacters int, blurSigma float64) types.LayerEntryType {
 	if widthInCharacters <= 0 && heightInCharacters <= 0 {
-		panic(fmt.Sprintf("The specified width and height of %dx%d for your image is not valid.", widthInCharacters, heightInCharacters))
+		safeSttyPanic(fmt.Sprintf("The specified width and height of %dx%d for your image is not valid.", widthInCharacters, heightInCharacters))
 	}
 	calculatedPixelWidth := widthInCharacters
 	calculatedPixelHeight := heightInCharacters * 2
@@ -475,7 +475,7 @@ func mapBrightnessToCharacter(brightness float64) rune {
 // Function to process the image and convert it to ASCII art
 func GetImageLayerAsAsciiColorArt(sourceImageData image.Image, imageStyle types.ImageStyleEntryType, widthInCharacters int, heightInCharacters int, blurSigma float64) types.LayerEntryType {
 	if widthInCharacters <= 0 && heightInCharacters <= 0 {
-		panic(fmt.Sprintf("The specified width and height of %dx%d for your image is not valid.", widthInCharacters, heightInCharacters))
+		safeSttyPanic(fmt.Sprintf("The specified width and height of %dx%d for your image is not valid.", widthInCharacters, heightInCharacters))
 	}
 
 	// Seed the random number generator for random character selection
@@ -554,7 +554,7 @@ func GetImageLayerAsAsciiColorArt(sourceImageData image.Image, imageStyle types.
 // to represent the image in that cell.
 func getImageLayerAsBlockElements(sourceImageData image.Image, imageStyle types.ImageStyleEntryType, widthInCharacters int, heightInCharacters int, blurSigma float64) types.LayerEntryType {
 	if widthInCharacters <= 0 && heightInCharacters <= 0 {
-		panic(fmt.Sprintf("The specified width and height of %dx%d for your image is not valid.", widthInCharacters, heightInCharacters))
+		safeSttyPanic(fmt.Sprintf("The specified width and height of %dx%d for your image is not valid.", widthInCharacters, heightInCharacters))
 	}
 	// Calculate the pixel dimensions
 	calculatedPixelWidth := widthInCharacters * 8

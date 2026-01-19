@@ -16,7 +16,7 @@ func init() {
 func GetTextStyle(textStyleAlias string) *types.TextCellStyleEntryType {
 	// Use the generic memory manager to retrieve the text style entry
 	if !TextStyles.IsExists(textStyleAlias) {
-		panic(fmt.Sprintf("The requested text style with alias '%s' could not be returned since it does not exist.", textStyleAlias))
+		safeSttyPanic(fmt.Sprintf("The requested text style with alias '%s' could not be returned since it does not exist.", textStyleAlias))
 	}
 	return TextStyles.Get(textStyleAlias)
 }
@@ -24,7 +24,7 @@ func GetTextStyle(textStyleAlias string) *types.TextCellStyleEntryType {
 func GetTextStyleAsAttributeEntry(textStyleAlias string) types.AttributeEntryType {
 	// Use the generic memory manager to retrieve the text style entry
 	if !TextStyles.IsExists(textStyleAlias) {
-		panic(fmt.Sprintf("The requested text style with alias '%s' could not be returned since it does not exist.", textStyleAlias))
+		safeSttyPanic(fmt.Sprintf("The requested text style with alias '%s' could not be returned since it does not exist.", textStyleAlias))
 	}
 	textStyleEntry := TextStyles.Get(textStyleAlias)
 

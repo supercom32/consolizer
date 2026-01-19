@@ -52,7 +52,7 @@ func GetTextbox(layerAlias string, textboxAlias string) *types.TextboxEntryType 
 	// Use the generic memory manager to retrieve the textbox entry
 	textboxEntry := Textboxes.Get(layerAlias, textboxAlias)
 	if textboxEntry == nil {
-		panic(fmt.Sprintf("The requested text with alias '%s' on layer '%s' could not be returned since it does not exist.", textboxAlias, layerAlias))
+		safeSttyPanic(fmt.Sprintf("The requested text with alias '%s' on layer '%s' could not be returned since it does not exist.", textboxAlias, layerAlias))
 	}
 	return textboxEntry
 }
@@ -1179,7 +1179,7 @@ func (shared *textboxType) UpdateKeyboardEventManually(layerAlias string, textbo
 			if err != nil {
 				RestoreTerminalSettings()
 				fmt.Println("Clipboard write error:", err)
-				panic(err)
+				safeSttyPanic(err)
 				// Handle clipboard write error (could log it)
 				// fmt.Println("Clipboard write error:", err)
 			}
