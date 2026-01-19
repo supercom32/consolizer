@@ -1,4 +1,3 @@
-
 package types
 
 import (
@@ -69,4 +68,23 @@ func NewFontEntry(existingFontEntry ...*FontEntryType) FontEntryType {
 		fontEntry.Glyphs = existingFontEntry[0].Glyphs
 	}
 	return fontEntry
+}
+
+// FontInstanceType represents an instance of a font that can be used by the application
+type FontInstanceType struct {
+	fontAlias   string
+	controlType string
+}
+
+// GetAlias returns the alias of the font
+func (shared *FontInstanceType) GetAlias() string {
+	return shared.fontAlias
+}
+
+// NewFontInstance creates a new FontInstanceType with the given alias
+func NewFontInstance(fontAlias string) FontInstanceType {
+	return FontInstanceType{
+		fontAlias:   fontAlias,
+		controlType: "font",
+	}
 }

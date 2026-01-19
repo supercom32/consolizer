@@ -1288,29 +1288,33 @@ func (shared *LayerInstanceType) PrintMarkup(xLocation int, yLocation int, width
 	layer.printMarkup(layerEntry, layerEntry.DefaultAttribute, xLocation, yLocation, widthOfLineInCharacters, formattedTextToPrint)
 }
 
-func (shared *LayerInstanceType) PrintFont(xLocation int, yLocation int, fontAlias string, stringToPrint string) {
+// PrintFont renders a string onto a layer using the specified font.
+func (shared *LayerInstanceType) PrintFont(fontInstance fontInstanceType, xLocation int, yLocation int, stringToPrint string) {
 	layerEntry := Layers.Get(shared.layerAlias)
 	if layerEntry == nil {
 		panic(fmt.Sprintf("Layer with alias '%s' not found.", shared.layerAlias))
 	}
-	printFont(layerEntry, xLocation, yLocation, stringToPrint, fontAlias)
+	printFont(layerEntry, fontInstance, xLocation, yLocation, stringToPrint)
 }
 
 /*
 PrintFontDialog allows you to write text to the terminal screen with a typewriter effect using a specified font.
 This is useful for creating animated text sequences with custom fonts. In addition, the following information should be noted:
 
-- If you specify a print location outside the range of your specified text layer, a panic will be generated.
-- When specifying a printing delay, the amount of time to wait is inserted between each character printed.
-- If the dialog being printed is flagged as skippable, the user can speed up printing by pressing the 'enter' key or right mouse button.
+  - If you specify a print location outside the range of your specified text layer, a panic will be generated.
+  - When specifying a printing delay, the amount of time to wait is inserted between each character printed.
+  - If the dialog being printed is flagged as skippable, the user can speed up printing by pressing the 'enter' key or right mouse button.
+  - Specifying the width of your text line in characters allows you to control when text wrapping occurs. For example, if printing starts at location (2, 2) and you set
+    a line width of 10 characters, text wrapping will occur after 10 characters have been printed. When this happens, text will continue
+    to print underneath the previous line at a distance of font height + 1.
 */
-func (shared *LayerInstanceType) PrintFontDialog(xLocation int, yLocation int, printDelayInMilliseconds int, isSkipable bool, fontAlias string, stringToPrint string) {
+func (shared *LayerInstanceType) PrintFontDialog(fontInstance fontInstanceType, xLocation int, yLocation int, widthOfLineInCharacters int, printDelayInMilliseconds int, isSkipable bool, stringToPrint string) {
 	formattedTextToPrint := fmt.Sprint(stringToPrint)
 	layerEntry := Layers.Get(shared.layerAlias)
 	if xLocation < 0 || xLocation > layerEntry.Width || yLocation < 0 || yLocation > layerEntry.Height {
 		panic(fmt.Sprintf("The specified location (%d, %d) is out of bounds for layer '%s' with a size of (%d, %d).", xLocation, yLocation, layerEntry.LayerAlias, layerEntry.Width, layerEntry.Height))
 	}
-	printFontDialog(layerEntry, xLocation, yLocation, printDelayInMilliseconds, isSkipable, formattedTextToPrint, fontAlias)
+	printFontDialog(layerEntry, fontInstance, xLocation, yLocation, widthOfLineInCharacters, printDelayInMilliseconds, isSkipable, formattedTextToPrint)
 }
 
 /*

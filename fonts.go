@@ -3,7 +3,6 @@ package consolizer
 import (
 	"encoding/binary"
 	"fmt"
-	"path/filepath"
 	"strings"
 
 	"github.com/supercom32/consolizer/constants"
@@ -11,7 +10,11 @@ import (
 	"github.com/supercom32/consolizer/types"
 )
 
-var fontManager = memory.NewMemoryManager[types.FontEntryType]()
+type fontInstanceType struct {
+	fontAlias string
+}
+
+var fonts = memory.NewMemoryManager[types.FontEntryType]()
 
 // Constants
 const (
@@ -29,27 +32,26 @@ var charlist = []rune{
 	'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '{', '|', '}', '~',
 }
 
-func UnloadFont(fontAlias string) {
-	if !fontManager.IsExists(fontAlias) {
-		safeSttyPanic(fmt.Sprintf("Could not unload font with alias '%s' because it was not loaded.", fontAlias))
+// UnloadFont removes a font from memory
+func (shared *fontInstanceType) Unload() {
+	if !fonts.IsExists(shared.fontAlias) {
+		safeSttyPanic(fmt.Sprintf("Could not unload font with alias '%s' because it was not loaded.", shared.fontAlias))
 	}
-	fontManager.Remove(fontAlias)
+	fonts.Remove(shared.fontAlias)
 }
 
-func GetFontFromMemory(alias string) (*types.FontEntryType, error) {
-	font := fontManager.Get(alias)
+// UnloadFont is kept for backward compatibility
+
+func getFontFromMemory(alias string) (*types.FontEntryType, error) {
+	font := fonts.Get(alias)
 	if font == nil {
 		return nil, fmt.Errorf("font with alias '%s' not found", alias)
 	}
 	return font, nil
 }
 
-// LoadFont loads a TDF font from the given file path.
-func LoadFont(fontFile string) string {
-	if filepath.Ext(fontFile) == "" {
-		fontFile += ".tdf"
-	}
-
+// LoadFont loads a TDF font from the given file path (kept for backward compatibility).
+func LoadFont(fontFile string) fontInstanceType {
 	data, err := getFileDataFromFileSystem(fontFile)
 	if err != nil {
 		safeSttyPanic(fmt.Sprintf("Could not load font file '%s': %s", fontFile, err.Error()))
@@ -105,8 +107,11 @@ func LoadFont(fontFile string) string {
 			fontEntry.Glyphs[i] = nil
 		}
 	}
-	fontManager.Add(fontFile, fontEntry)
-	return fontFile
+
+	fonts.Add(fontFile, fontEntry)
+	var fontInstance fontInstanceType
+	fontInstance.fontAlias = fontFile
+	return fontInstance
 }
 
 // readGlyph reads a single glyph from the font data.
@@ -211,11 +216,11 @@ func renderGlyph(layerEntry *types.LayerEntryType, font *types.FontEntryType, ch
 	return glyph.Width + int(font.Spacing)
 }
 
-// printFont renders a string onto a layer using the specified font.
-func printFont(layerEntry *types.LayerEntryType, x, y int, str string, fontAlias string) {
-	font, err := GetFontFromMemory(fontAlias)
+// PrintFont renders a string onto a layer using the specified font.
+func printFont(layerEntry *types.LayerEntryType, fontInstance fontInstanceType, x, y int, str string) {
+	font, err := getFontFromMemory(fontInstance.fontAlias)
 	if err != nil {
-		safeSttyPanic(fmt.Sprintf("Font with alias '%s' not found.", fontAlias))
+		safeSttyPanic(fmt.Sprintf("Font with alias '%s' not found.", fontInstance.fontAlias))
 	}
 	currentX := x
 	for _, ch := range str {
@@ -224,23 +229,55 @@ func printFont(layerEntry *types.LayerEntryType, x, y int, str string, fontAlias
 	}
 }
 
-// printFontDialog renders a string onto a layer with a typewriter effect using the specified font.
-func printFontDialog(layerEntry *types.LayerEntryType, x, y, printDelayInMilliseconds int, isSkipable bool, str string, fontAlias string) {
-	font, err := GetFontFromMemory(fontAlias)
+// PrintFontDialog renders a string onto a layer with a typewriter effect using the specified font.
+// If widthOfLineInCharacters is greater than 0, text will wrap after that many characters.
+func printFontDialog(layerEntry *types.LayerEntryType, fontInstance fontInstanceType, x, y, widthOfLineInCharacters, printDelayInMilliseconds int, isSkipable bool, str string) {
+	font, err := getFontFromMemory(fontInstance.fontAlias)
 	if err != nil {
-		safeSttyPanic(fmt.Sprintf("Font with alias '%s' not found.", fontAlias))
+		safeSttyPanic(fmt.Sprintf("Font with alias '%s' not found.", fontInstance.fontAlias))
 	}
 
 	if printDelayInMilliseconds <= 0 {
-		printFont(layerEntry, x, y, str, fontAlias)
+		if widthOfLineInCharacters <= 0 {
+			printFont(layerEntry, fontInstance, x, y, str)
+		} else {
+			// Implement non-typewriter font printing with line wrapping
+			currentX := x
+			currentY := y
+			charCount := 0
+
+			for _, ch := range str {
+				// Check if we need to wrap to the next line
+				if widthOfLineInCharacters > 0 && charCount >= widthOfLineInCharacters {
+					charCount = 0
+					currentX = x
+					currentY += font.Height + 1 // Move down by font height + 1
+				}
+
+				width := renderGlyph(layerEntry, font, ch, currentX, currentY)
+				currentX += width
+				charCount++
+			}
+		}
 		return
 	}
 
 	isPrintDelaySkipped := false
 	currentX := x
+	currentY := y
+	charCount := 0
+
 	for _, ch := range str {
-		width := renderGlyph(layerEntry, font, ch, currentX, y)
+		// Check if we need to wrap to the next line
+		if widthOfLineInCharacters > 0 && charCount >= widthOfLineInCharacters {
+			charCount = 0
+			currentX = x
+			currentY += font.Height + 1 // Move down by font height + 1
+		}
+
+		width := renderGlyph(layerEntry, font, ch, currentX, currentY)
 		currentX += width
+		charCount++
 
 		// Check for skip input
 		if isSkipable {

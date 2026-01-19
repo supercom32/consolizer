@@ -315,6 +315,7 @@ const NullScrollbarValue = -1
 const TYPE_BUTTON = "button"
 const TYPE_CHECKBOX = "checkbox"
 const TYPE_DROPDOWN = "dropdown"
+const TYPE_FONT = "font"
 const TYPE_LABEL = "label"
 const TYPE_PROGRESSBAR = "progressbar"
 const TYPE_SCROLLBAR = "scrollbar"
