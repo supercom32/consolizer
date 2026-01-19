@@ -1294,7 +1294,7 @@ func (shared *LayerInstanceType) PrintFont(fontInstance fontInstanceType, xLocat
 	if layerEntry == nil {
 		panic(fmt.Sprintf("Layer with alias '%s' not found.", shared.layerAlias))
 	}
-	printFont(layerEntry, fontInstance, xLocation, yLocation, stringToPrint)
+	Font.PrintText(layerEntry, fontInstance, xLocation, yLocation, stringToPrint)
 }
 
 /*
@@ -1314,7 +1314,7 @@ func (shared *LayerInstanceType) PrintFontDialog(fontInstance fontInstanceType, 
 	if xLocation < 0 || xLocation > layerEntry.Width || yLocation < 0 || yLocation > layerEntry.Height {
 		panic(fmt.Sprintf("The specified location (%d, %d) is out of bounds for layer '%s' with a size of (%d, %d).", xLocation, yLocation, layerEntry.LayerAlias, layerEntry.Width, layerEntry.Height))
 	}
-	printFontDialog(layerEntry, fontInstance, xLocation, yLocation, widthOfLineInCharacters, printDelayInMilliseconds, isSkipable, formattedTextToPrint)
+	Font.PrintTextDialog(layerEntry, fontInstance, xLocation, yLocation, widthOfLineInCharacters, printDelayInMilliseconds, isSkipable, formattedTextToPrint)
 }
 
 /*

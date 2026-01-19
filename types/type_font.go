@@ -4,6 +4,10 @@ import (
 	"encoding/json"
 )
 
+type FontFamilyType struct {
+	Fonts []*FontEntryType
+}
+
 type FontEntryType struct {
 	Name     string
 	FontType byte
@@ -54,37 +58,4 @@ func (shared FontEntryType) GetEntryAsJsonDump() string {
 		panic(err)
 	}
 	return string(j)
-}
-
-func NewFontEntry(existingFontEntry ...*FontEntryType) FontEntryType {
-	var fontEntry FontEntryType
-	if existingFontEntry != nil {
-		fontEntry.Name = existingFontEntry[0].Name
-		fontEntry.FontType = existingFontEntry[0].FontType
-		fontEntry.Spacing = existingFontEntry[0].Spacing
-		fontEntry.Height = existingFontEntry[0].Height
-		fontEntry.CharList = existingFontEntry[0].CharList
-		fontEntry.FontData = existingFontEntry[0].FontData
-		fontEntry.Glyphs = existingFontEntry[0].Glyphs
-	}
-	return fontEntry
-}
-
-// FontInstanceType represents an instance of a font that can be used by the application
-type FontInstanceType struct {
-	fontAlias   string
-	controlType string
-}
-
-// GetAlias returns the alias of the font
-func (shared *FontInstanceType) GetAlias() string {
-	return shared.fontAlias
-}
-
-// NewFontInstance creates a new FontInstanceType with the given alias
-func NewFontInstance(fontAlias string) FontInstanceType {
-	return FontInstanceType{
-		fontAlias:   fontAlias,
-		controlType: "font",
-	}
 }
