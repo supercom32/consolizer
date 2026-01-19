@@ -3,6 +3,7 @@ package consolizer
 import (
 	"bytes"
 	"crypto/md5"
+	"embed"
 	"encoding/base64"
 	"encoding/hex"
 	"errors"
@@ -24,6 +25,7 @@ var virtualFileSystemArchive string
 var virtualFileSystemPassword string
 var virtualFileSystemArchiveType int
 var virtualFileSystemEncryptionKey string
+var virtualEmbeddedFileSystem embed.FS
 
 /*
 GetScrambledPassword allows you to scramble a password with a simple
@@ -160,6 +162,11 @@ func mountVirtualFileSystem(archivePath string, password string, scrambleKey str
 	return err
 }
 
+func MountEmbeddedFileSystem(fs embed.FS) {
+	virtualFileSystemArchiveType = constants.VirtualFileSystemEmbedded
+	virtualEmbeddedFileSystem = fs
+}
+
 /*
 UnmountVirtualFileSystem allows you to reset the virtual file system to an
 unmounted state. This is useful for when you want to access the physical
@@ -170,6 +177,7 @@ func UnmountVirtualFileSystem() {
 	virtualFileSystemArchive = ""
 	virtualFileSystemPassword = ""
 	virtualFileSystemEncryptionKey = ""
+	virtualEmbeddedFileSystem = embed.FS{}
 }
 
 /*
@@ -274,7 +282,10 @@ the file automatically.
 func getFileDataFromFileSystem(fileName string) ([]byte, error) {
 	var fileData []byte
 	var err error
-	if virtualFileSystemArchiveType == constants.VirtualFileSystemZip {
+	if virtualFileSystemArchiveType == constants.VirtualFileSystemEmbedded {
+		fileData, err = virtualEmbeddedFileSystem.ReadFile(fileName)
+		return fileData, err
+	} else if virtualFileSystemArchiveType == constants.VirtualFileSystemZip {
 		fileData, err = getFileDataFromZipArchive(fileName)
 		return fileData, err
 	} else if virtualFileSystemArchiveType == constants.VirtualFileSystemRar {

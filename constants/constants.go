@@ -304,6 +304,7 @@ const CellControlIdChecked = 2
 
 const VirtualFileSystemZip = 1
 const VirtualFileSystemRar = 2
+const VirtualFileSystemEmbedded = 3
 const EventStateNone = 0
 const EventStateDragAndDrop = 1
 const EventStateDragAndDropScrollbar = 2
