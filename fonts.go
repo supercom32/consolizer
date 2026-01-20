@@ -10,110 +10,6 @@ import (
 	"github.com/supercom32/consolizer/types"
 )
 
-type fontInstanceType struct {
-	fontAlias string
-	fontIndex int
-}
-
-// fontType struct acts as a manager/factory for fonts
-type fontType struct{}
-
-// findFontOffsets finds all font offsets in the file by reading each font's
-// block size to determine the start of the next font.
-func (shared *fontType) findFontOffsets(data []byte) []int {
-	var offsets []int
-	currentOffset := 20 // First font always starts at offset 20
-
-	for currentOffset < len(data) {
-		// Ensure we have enough data for the font header
-		if currentOffset+25 > len(data) {
-			break
-		}
-
-		// Add the current offset to our list of font offsets.
-		offsets = append(offsets, currentOffset)
-
-		// The block size is a 2-byte little-endian integer located 23 bytes
-		// from the start of the font header.
-		blockSizeOffset := currentOffset + 23
-		blockSize := int(binary.LittleEndian.Uint16(data[blockSizeOffset : blockSizeOffset+2]))
-
-		// The next font header begins immediately after the current font's
-		// character data block. The character data block starts 213 bytes
-		// after the font header.
-		currentOffset += 213 + blockSize
-	}
-
-	return offsets
-}
-
-// loadFontAtOffset loads a font from the given offset
-func (shared *fontType) loadFontAtOffset(data []byte, offset int) *types.FontEntryType {
-	fontEntry := &types.FontEntryType{}
-
-	// Read font name length
-	nameLen := int(data[offset+4])
-
-	// Read font name
-	fontEntry.Name = string(data[offset+5 : offset+5+nameLen])
-
-	// Read font type and spacing
-	fontEntry.FontType = data[offset+21]
-	fontEntry.Spacing = data[offset+22]
-
-	// Calculate block size
-	blockSize := int(binary.LittleEndian.Uint16(data[offset+23 : offset+25]))
-
-	// Initialize glyph and character list arrays
-	fontEntry.Glyphs = make([]*types.Glyph, numChars)
-	fontEntry.CharList = make([]uint16, numChars)
-
-	// Character list offset starts at offset+25
-	charListOffset := offset + 25
-	for i := 0; i < numChars; i++ {
-		fontEntry.CharList[i] = binary.LittleEndian.Uint16(data[charListOffset+i*2 : charListOffset+i*2+2])
-	}
-
-	// Font data starts at offset+213
-	fontDataOffset := offset + 213
-	fontEntry.FontData = data[fontDataOffset : fontDataOffset+blockSize]
-
-	// Calculate font height and load glyphs
-	for i := 0; i < numChars; i++ {
-		charIndex := shared.lookupChar(charlist[i])
-		if charIndex != -1 {
-			charOffset := fontEntry.CharList[charIndex]
-			if charOffset != 0xffff {
-				heightOffset := charOffset + 1
-				if int(heightOffset) < len(fontEntry.FontData) {
-					height := int(fontEntry.FontData[heightOffset])
-					if height > fontEntry.Height {
-						fontEntry.Height = height
-					}
-				}
-			}
-		}
-	}
-
-	// Load glyphs
-	for i := 0; i < numChars; i++ {
-		charIndex := shared.lookupChar(charlist[i])
-		if charIndex != -1 {
-			glyph, err := shared.readGlyph(fontEntry, charIndex)
-			if err != nil {
-				// Skip this glyph if there's an error
-				fontEntry.Glyphs[i] = nil
-			} else {
-				fontEntry.Glyphs[i] = glyph
-			}
-		} else {
-			fontEntry.Glyphs[i] = nil
-		}
-	}
-
-	return fontEntry
-}
-
 // Font is a global instance of fontType.
 var Font fontType
 var fonts = memory.NewMemoryManager[types.FontFamilyType]()
@@ -134,6 +30,11 @@ var charlist = []rune{
 	'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '{', '|', '}', '~',
 }
 
+type fontInstanceType struct {
+	fontAlias string
+	fontIndex int
+}
+
 // Unload removes a font from memory.
 func (shared *fontInstanceType) Unload() {
 	if !fonts.IsExists(shared.fontAlias) {
@@ -147,13 +48,26 @@ func (shared *fontInstanceType) SwitchFont(fontIndex int) {
 	shared.fontIndex = fontIndex
 }
 
-func getFontFamilyFromMemory(alias string) *types.FontFamilyType {
-	fontFamily := fonts.Get(alias)
-	if fontFamily == nil {
-		safeSttyPanic(fmt.Sprintf("font with alias '%s' not found", alias))
+// SetCharacterSpacing sets the character spacing for the font instance.
+func (shared *fontInstanceType) SetCharacterSpacing(spacing int) {
+	fontFamily := getFontFamilyFromMemory(shared.fontAlias)
+	if shared.fontIndex >= len(fontFamily.Fonts) {
+		safeSttyPanic(fmt.Sprintf("Font index %d not found in font alias '%s'.", shared.fontIndex, shared.fontAlias))
 	}
-	return fontFamily
+	fontFamily.Fonts[shared.fontIndex].CharacterSpacing = spacing
 }
+
+// SetBlankSizeInCharacters sets the blank size for the font instance.
+func (shared *fontInstanceType) SetBlankSizeInCharacters(size int) {
+	fontFamily := getFontFamilyFromMemory(shared.fontAlias)
+	if shared.fontIndex >= len(fontFamily.Fonts) {
+		safeSttyPanic(fmt.Sprintf("Font index %d not found in font alias '%s'.", shared.fontIndex, shared.fontAlias))
+	}
+	fontFamily.Fonts[shared.fontIndex].BlankSizeInCharacters = size
+}
+
+// fontType struct acts as a manager/factory for fonts
+type fontType struct{}
 
 // Load loads a TDF font from the given file path.
 // All fonts in the file are loaded and cached in memory.
@@ -198,10 +112,99 @@ func (shared *fontType) Load(fontFile string) fontInstanceType {
 	return fontInstance
 }
 
-// LoadFont loads a TDF font from the given file path (kept for backward compatibility).
-// If fontIndex is provided, it selects that specific font from the file.
-func LoadFont(fontFile string) fontInstanceType {
-	return Font.Load(fontFile)
+// findFontOffsets finds all font offsets in the file by reading each font's
+// block size to determine the start of the next font.
+func (shared *fontType) findFontOffsets(data []byte) []int {
+	var offsets []int
+	currentOffset := 20 // First font always starts at offset 20
+
+	for currentOffset < len(data) {
+		// Ensure we have enough data for the font header
+		if currentOffset+25 > len(data) {
+			break
+		}
+
+		// Add the current offset to our list of font offsets.
+		offsets = append(offsets, currentOffset)
+
+		// The block size is a 2-byte little-endian integer located 23 bytes
+		// from the start of the font header.
+		blockSizeOffset := currentOffset + 23
+		blockSize := int(binary.LittleEndian.Uint16(data[blockSizeOffset : blockSizeOffset+2]))
+
+		// The next font header begins immediately after the current font's
+		// character data block. The character data block starts 213 bytes
+		// after the font header.
+		currentOffset += 213 + blockSize
+	}
+
+	return offsets
+}
+
+// loadFontAtOffset loads a font from the given offset
+func (shared *fontType) loadFontAtOffset(data []byte, offset int) *types.FontEntryType {
+	fontEntry := &types.FontEntryType{}
+	fontEntry.CharacterSpacing = -1 // Default character spacing
+	fontEntry.BlankSizeInCharacters = 1
+
+	// Read font name length
+	nameLen := int(data[offset+4])
+
+	// Read font name
+	fontEntry.Name = string(data[offset+5 : offset+5+nameLen])
+
+	// Read font type and spacing
+	fontEntry.FontType = data[offset+21]
+	fontEntry.Spacing = data[offset+22]
+
+	// Calculate block size
+	blockSize := int(binary.LittleEndian.Uint16(data[offset+23 : offset+25]))
+
+	// Initialize glyph and character list arrays
+	fontEntry.Glyphs = make([]*types.Glyph, numChars)
+	fontEntry.CharList = make([]uint16, numChars)
+
+	// Character list offset starts at offset+25
+	charListOffset := offset + 25
+	for i := 0; i < numChars; i++ {
+		fontEntry.CharList[i] = binary.LittleEndian.Uint16(data[charListOffset+i*2 : charListOffset+i*2+2])
+	}
+
+	// Font data starts at offset+213
+	fontDataOffset := offset + 213
+	fontEntry.FontData = data[fontDataOffset : fontDataOffset+blockSize]
+
+	// Calculate font height.
+	for i := 0; i < numChars; i++ {
+		charOffset := fontEntry.CharList[i]
+		if charOffset != 0xffff {
+			heightOffset := charOffset + 1
+			if int(heightOffset) < len(fontEntry.FontData) {
+				height := int(fontEntry.FontData[heightOffset])
+				if height > fontEntry.Height {
+					fontEntry.Height = height
+				}
+			}
+		}
+	}
+
+	// Load glyphs
+	for i := 0; i < numChars; i++ {
+		charIndex := shared.lookupChar(charlist[i])
+		if charIndex != -1 {
+			glyph, err := shared.readGlyph(fontEntry, i)
+			if err != nil {
+				// Skip this glyph if there's an error
+				fontEntry.Glyphs[charIndex] = nil
+			} else {
+				fontEntry.Glyphs[charIndex] = glyph
+			}
+		} else {
+			fontEntry.Glyphs[i] = nil
+		}
+	}
+
+	return fontEntry
 }
 
 // GetAvailableFonts returns a list of all fonts in the specified file
@@ -304,6 +307,14 @@ func (shared *fontType) lookupChar(ch rune) int {
 
 // renderGlyph draws a single character and returns the width it occupied.
 func (shared *fontType) renderGlyph(layerEntry *types.LayerEntryType, font *types.FontEntryType, ch rune, x, y int) int {
+	if ch == ' ' {
+		aIndex := shared.lookupChar('a')
+		aWidth := 1
+		if aIndex != -1 && font.Glyphs[aIndex] != nil {
+			aWidth = font.Glyphs[aIndex].Width
+		}
+		return font.BlankSizeInCharacters * aWidth
+	}
 	idx := shared.lookupChar(ch)
 	if idx == -1 {
 		return 1 // Return a default width for unknown characters.
@@ -327,7 +338,11 @@ func (shared *fontType) renderGlyph(layerEntry *types.LayerEntryType, font *type
 			}
 		}
 	}
-	return glyph.Width + int(font.Spacing)
+	spacing := int(font.Spacing)
+	if font.CharacterSpacing != -1 {
+		spacing = font.CharacterSpacing
+	}
+	return glyph.Width + spacing
 }
 
 // PrintText renders a string onto a layer using the specified font.
@@ -431,4 +446,18 @@ func (shared *fontType) convertTdfColorToRgb(c byte) (constants.ColorType, const
 	}
 
 	return constants.TdfToRgbMap[fgIndex], constants.TdfToRgbMap[bgIndex]
+}
+
+// LoadFont loads a TDF font from the given file path (kept for backward compatibility).
+// If fontIndex is provided, it selects that specific font from the file.
+func LoadFont(fontFile string) fontInstanceType {
+	return Font.Load(fontFile)
+}
+
+func getFontFamilyFromMemory(alias string) *types.FontFamilyType {
+	fontFamily := fonts.Get(alias)
+	if fontFamily == nil {
+		safeSttyPanic(fmt.Sprintf("font with alias '%s' not found", alias))
+	}
+	return fontFamily
 }
