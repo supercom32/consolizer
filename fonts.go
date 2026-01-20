@@ -16,12 +16,12 @@ var fonts = memory.NewMemoryManager[types.FontFamilyType]()
 
 // Constants
 const (
-	numChars    = 94
-	magicHeader = "\x13TheDraw FONTS file\x1a"
+	numberOfCharacters = 94
+	magicHeader        = "\x13TheDraw FONTS file\x1a"
 )
 
 // The standard printable ASCII characters in TDF fonts
-var charlist = []rune{
+var characterList = []rune{
 	'!', '"', '#', '$', '%', '&', '\'', '(', ')', '*', '+', ',', '-', '.', '/',
 	'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', ':', ';', '<', '=', '>', '?',
 	'@', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O',
@@ -36,34 +36,34 @@ type fontInstanceType struct {
 }
 
 // Unload removes a font from memory.
-func (shared *fontInstanceType) Unload() {
-	if !fonts.IsExists(shared.fontAlias) {
-		safeSttyPanic(fmt.Sprintf("Could not unload font with alias '%s' because it was not loaded.", shared.fontAlias))
+func (instance *fontInstanceType) Unload() {
+	if !fonts.IsExists(instance.fontAlias) {
+		safeSttyPanic(fmt.Sprintf("Could not unload font with alias '%s' because it was not loaded.", instance.fontAlias))
 	}
-	fonts.Remove(shared.fontAlias)
+	fonts.Remove(instance.fontAlias)
 }
 
 // SwitchFont switches to a different font in the same file.
-func (shared *fontInstanceType) SwitchFont(fontIndex int) {
-	shared.fontIndex = fontIndex
+func (instance *fontInstanceType) SwitchFont(fontIndex int) {
+	instance.fontIndex = fontIndex
 }
 
 // SetCharacterSpacing sets the character spacing for the font instance.
-func (shared *fontInstanceType) SetCharacterSpacing(spacing int) {
-	fontFamily := getFontFamilyFromMemory(shared.fontAlias)
-	if shared.fontIndex >= len(fontFamily.Fonts) {
-		safeSttyPanic(fmt.Sprintf("Font index %d not found in font alias '%s'.", shared.fontIndex, shared.fontAlias))
+func (instance *fontInstanceType) SetCharacterSpacing(characterSpacing int) {
+	fontFamily := getFontFamilyFromMemory(instance.fontAlias)
+	if instance.fontIndex >= len(fontFamily.Fonts) {
+		safeSttyPanic(fmt.Sprintf("Font index %d not found in font alias '%s'.", instance.fontIndex, instance.fontAlias))
 	}
-	fontFamily.Fonts[shared.fontIndex].CharacterSpacing = spacing
+	fontFamily.Fonts[instance.fontIndex].CharacterSpacing = characterSpacing
 }
 
 // SetBlankSizeInCharacters sets the blank size for the font instance.
-func (shared *fontInstanceType) SetBlankSizeInCharacters(size int) {
-	fontFamily := getFontFamilyFromMemory(shared.fontAlias)
-	if shared.fontIndex >= len(fontFamily.Fonts) {
-		safeSttyPanic(fmt.Sprintf("Font index %d not found in font alias '%s'.", shared.fontIndex, shared.fontAlias))
+func (instance *fontInstanceType) SetBlankSizeInCharacters(blankSize int) {
+	fontFamily := getFontFamilyFromMemory(instance.fontAlias)
+	if instance.fontIndex >= len(fontFamily.Fonts) {
+		safeSttyPanic(fmt.Sprintf("Font index %d not found in font alias '%s'.", instance.fontIndex, instance.fontAlias))
 	}
-	fontFamily.Fonts[shared.fontIndex].BlankSizeInCharacters = size
+	fontFamily.Fonts[instance.fontIndex].BlankSizeInCharacters = blankSize
 }
 
 // fontType struct acts as a manager/factory for fonts
@@ -73,20 +73,20 @@ type fontType struct{}
 // All fonts in the file are loaded and cached in memory.
 // Returns a fontInstanceType with fontIndex set to 0 (the first font).
 // Use SwitchFont to select a different font from the same file.
-func (shared *fontType) Load(fontFile string) fontInstanceType {
+func (manager *fontType) Load(fontFile string) fontInstanceType {
 	// If the font family is already loaded, just return a new instance.
 	if !fonts.IsExists(fontFile) {
-		data, err := getFileDataFromFileSystem(fontFile)
+		fileData, err := getFileDataFromFileSystem(fontFile)
 		if err != nil {
 			safeSttyPanic(fmt.Sprintf("Could not load font file '%s': %s", fontFile, err.Error()))
 		}
 
-		if !strings.HasPrefix(string(data), magicHeader) {
+		if !strings.HasPrefix(string(fileData), magicHeader) {
 			safeSttyPanic(fmt.Sprintf("The file '%s' is not a valid TDF font.", fontFile))
 		}
 
 		// Find all fonts in the file
-		fontOffsets := shared.findFontOffsets(data)
+		fontOffsets := manager.findFontOffsets(fileData)
 
 		if len(fontOffsets) == 0 {
 			safeSttyPanic(fmt.Sprintf("No fonts found in file '%s'.", fontFile))
@@ -97,10 +97,10 @@ func (shared *fontType) Load(fontFile string) fontInstanceType {
 		}
 
 		// Load all fonts with unique aliases
-		for i, offset := range fontOffsets {
+		for fontIndex, fontOffset := range fontOffsets {
 			// Load the font at this offset
-			fontEntry := shared.loadFontAtOffset(data, offset)
-			fontFamily.Fonts[i] = fontEntry
+			fontEntry := manager.loadFontAtOffset(fileData, fontOffset)
+			fontFamily.Fonts[fontIndex] = fontEntry
 		}
 		fonts.Add(fontFile, fontFamily)
 	}
@@ -114,23 +114,23 @@ func (shared *fontType) Load(fontFile string) fontInstanceType {
 
 // findFontOffsets finds all font offsets in the file by reading each font's
 // block size to determine the start of the next font.
-func (shared *fontType) findFontOffsets(data []byte) []int {
-	var offsets []int
+func (manager *fontType) findFontOffsets(fileData []byte) []int {
+	var fontOffsets []int
 	currentOffset := 20 // First font always starts at offset 20
 
-	for currentOffset < len(data) {
+	for currentOffset < len(fileData) {
 		// Ensure we have enough data for the font header
-		if currentOffset+25 > len(data) {
+		if currentOffset+25 > len(fileData) {
 			break
 		}
 
 		// Add the current offset to our list of font offsets.
-		offsets = append(offsets, currentOffset)
+		fontOffsets = append(fontOffsets, currentOffset)
 
 		// The block size is a 2-byte little-endian integer located 23 bytes
 		// from the start of the font header.
 		blockSizeOffset := currentOffset + 23
-		blockSize := int(binary.LittleEndian.Uint16(data[blockSizeOffset : blockSizeOffset+2]))
+		blockSize := int(binary.LittleEndian.Uint16(fileData[blockSizeOffset : blockSizeOffset+2]))
 
 		// The next font header begins immediately after the current font's
 		// character data block. The character data block starts 213 bytes
@@ -138,45 +138,45 @@ func (shared *fontType) findFontOffsets(data []byte) []int {
 		currentOffset += 213 + blockSize
 	}
 
-	return offsets
+	return fontOffsets
 }
 
 // loadFontAtOffset loads a font from the given offset
-func (shared *fontType) loadFontAtOffset(data []byte, offset int) *types.FontEntryType {
+func (manager *fontType) loadFontAtOffset(fileData []byte, fontOffset int) *types.FontEntryType {
 	fontEntry := &types.FontEntryType{}
 	fontEntry.CharacterSpacing = -1 // Default character spacing
 	fontEntry.BlankSizeInCharacters = 1
 
 	// Read font name length
-	nameLen := int(data[offset+4])
+	nameLength := int(fileData[fontOffset+4])
 
 	// Read font name
-	fontEntry.Name = string(data[offset+5 : offset+5+nameLen])
+	fontEntry.Name = string(fileData[fontOffset+5 : fontOffset+5+nameLength])
 
 	// Read font type and spacing
-	fontEntry.FontType = data[offset+21]
-	fontEntry.Spacing = data[offset+22]
+	fontEntry.FontType = fileData[fontOffset+21]
+	fontEntry.Spacing = fileData[fontOffset+22]
 
 	// Calculate block size
-	blockSize := int(binary.LittleEndian.Uint16(data[offset+23 : offset+25]))
+	blockSize := int(binary.LittleEndian.Uint16(fileData[fontOffset+23 : fontOffset+25]))
 
 	// Initialize glyph and character list arrays
-	fontEntry.Glyphs = make([]*types.Glyph, numChars)
-	fontEntry.CharList = make([]uint16, numChars)
+	fontEntry.Glyphs = make([]*types.Glyph, numberOfCharacters)
+	fontEntry.CharList = make([]uint16, numberOfCharacters)
 
 	// Character list offset starts at offset+25
-	charListOffset := offset + 25
-	for i := 0; i < numChars; i++ {
-		fontEntry.CharList[i] = binary.LittleEndian.Uint16(data[charListOffset+i*2 : charListOffset+i*2+2])
+	characterListOffset := fontOffset + 25
+	for charIndex := 0; charIndex < numberOfCharacters; charIndex++ {
+		fontEntry.CharList[charIndex] = binary.LittleEndian.Uint16(fileData[characterListOffset+charIndex*2 : characterListOffset+charIndex*2+2])
 	}
 
 	// Font data starts at offset+213
-	fontDataOffset := offset + 213
-	fontEntry.FontData = data[fontDataOffset : fontDataOffset+blockSize]
+	fontDataOffset := fontOffset + 213
+	fontEntry.FontData = fileData[fontDataOffset : fontDataOffset+blockSize]
 
 	// Calculate font height.
-	for i := 0; i < numChars; i++ {
-		charOffset := fontEntry.CharList[i]
+	for charIndex := 0; charIndex < numberOfCharacters; charIndex++ {
+		charOffset := fontEntry.CharList[charIndex]
 		if charOffset != 0xffff {
 			heightOffset := charOffset + 1
 			if int(heightOffset) < len(fontEntry.FontData) {
@@ -189,10 +189,10 @@ func (shared *fontType) loadFontAtOffset(data []byte, offset int) *types.FontEnt
 	}
 
 	// Load glyphs
-	for i := 0; i < numChars; i++ {
-		charIndex := shared.lookupChar(charlist[i])
+	for glyphIndex := 0; glyphIndex < numberOfCharacters; glyphIndex++ {
+		charIndex := manager.lookupChar(characterList[glyphIndex])
 		if charIndex != -1 {
-			glyph, err := shared.readGlyph(fontEntry, i)
+			glyph, err := manager.readGlyph(fontEntry, glyphIndex)
 			if err != nil {
 				// Skip this glyph if there's an error
 				fontEntry.Glyphs[charIndex] = nil
@@ -200,7 +200,7 @@ func (shared *fontType) loadFontAtOffset(data []byte, offset int) *types.FontEnt
 				fontEntry.Glyphs[charIndex] = glyph
 			}
 		} else {
-			fontEntry.Glyphs[i] = nil
+			fontEntry.Glyphs[glyphIndex] = nil
 		}
 	}
 
@@ -208,133 +208,133 @@ func (shared *fontType) loadFontAtOffset(data []byte, offset int) *types.FontEnt
 }
 
 // GetAvailableFonts returns a list of all fonts in the specified file
-func (shared *fontType) GetAvailableFonts(fontFile string) []string {
-	data, err := getFileDataFromFileSystem(fontFile)
+func (manager *fontType) GetAvailableFonts(fontFile string) []string {
+	fileData, err := getFileDataFromFileSystem(fontFile)
 	if err != nil {
 		safeSttyPanic(fmt.Sprintf("Could not load font file '%s': %s", fontFile, err.Error()))
 	}
 
-	if !strings.HasPrefix(string(data), magicHeader) {
+	if !strings.HasPrefix(string(fileData), magicHeader) {
 		safeSttyPanic(fmt.Sprintf("The file '%s' is not a valid TDF font.", fontFile))
 	}
 
 	// Find all fonts in the file
-	fontOffsets := shared.findFontOffsets(data)
+	fontOffsets := manager.findFontOffsets(fileData)
 
 	// Get the names of all fonts
 	fontNames := make([]string, len(fontOffsets))
-	for i, offset := range fontOffsets {
-		nameLen := int(data[offset+4])
-		fontNames[i] = string(data[offset+5 : offset+5+nameLen])
+	for fontIndex, fontOffset := range fontOffsets {
+		nameLength := int(fileData[fontOffset+4])
+		fontNames[fontIndex] = string(fileData[fontOffset+5 : fontOffset+5+nameLength])
 	}
 
 	return fontNames
 }
 
 // readGlyph reads a single glyph from the font data.
-func (shared *fontType) readGlyph(fontEntry *types.FontEntryType, index int) (*types.Glyph, error) {
-	if fontEntry.CharList[index] == 0xffff {
+func (manager *fontType) readGlyph(fontEntry *types.FontEntryType, glyphIndex int) (*types.Glyph, error) {
+	if fontEntry.CharList[glyphIndex] == 0xffff {
 		return nil, nil
 	}
 
-	offset := int(fontEntry.CharList[index])
-	if offset+2 > len(fontEntry.FontData) {
+	dataOffset := int(fontEntry.CharList[glyphIndex])
+	if dataOffset+2 > len(fontEntry.FontData) {
 		return nil, fmt.Errorf("offset beyond file")
 	}
 
-	width := int(fontEntry.FontData[offset])
-	height := int(fontEntry.FontData[offset+1])
-	if width <= 0 || height <= 0 {
+	glyphWidth := int(fontEntry.FontData[dataOffset])
+	glyphHeight := int(fontEntry.FontData[dataOffset+1])
+	if glyphWidth <= 0 || glyphHeight <= 0 {
 		return nil, nil
 	}
-	offset += 2
+	dataOffset += 2
 
 	glyph := &types.Glyph{
-		Width:  width,
-		Height: height,
-		Cells:  make([]types.Cell, width*fontEntry.Height),
+		Width:  glyphWidth,
+		Height: glyphHeight,
+		Cells:  make([]types.Cell, glyphWidth*fontEntry.Height),
 	}
 
-	for i := range glyph.Cells {
-		glyph.Cells[i] = types.Cell{Char: ' ', Color: 0}
+	for cellIndex := range glyph.Cells {
+		glyph.Cells[cellIndex] = types.Cell{Char: ' ', Color: 0}
 	}
 
-	row, col := 0, 0
-	for offset < len(fontEntry.FontData) {
-		b := fontEntry.FontData[offset]
-		offset++
-		if b == 0 {
+	rowIndex, columnIndex := 0, 0
+	for dataOffset < len(fontEntry.FontData) {
+		byteValue := fontEntry.FontData[dataOffset]
+		dataOffset++
+		if byteValue == 0 {
 			break
 		}
 
-		if b == 13 {
-			row++
-			col = 0
+		if byteValue == 13 {
+			rowIndex++
+			columnIndex = 0
 			continue
 		}
 
-		if offset >= len(fontEntry.FontData) {
+		if dataOffset >= len(fontEntry.FontData) {
 			break
 		}
-		color := fontEntry.FontData[offset]
-		offset++
+		colorValue := fontEntry.FontData[dataOffset]
+		dataOffset++
 
-		if row < fontEntry.Height && col < width {
-			cellIdx := row*width + col
-			var char rune
-			if int(b) < len(constants.CP437ToUnicode) {
-				char = constants.CP437ToUnicode[b]
+		if rowIndex < fontEntry.Height && columnIndex < glyphWidth {
+			cellIndex := rowIndex*glyphWidth + columnIndex
+			var character rune
+			if int(byteValue) < len(constants.CP437ToUnicode) {
+				character = constants.CP437ToUnicode[byteValue]
 			} else {
-				char = ' '
+				character = ' '
 			}
-			glyph.Cells[cellIdx] = types.Cell{Char: char, Color: color}
+			glyph.Cells[cellIndex] = types.Cell{Char: character, Color: colorValue}
 		}
-		col++
+		columnIndex++
 	}
 
 	return glyph, nil
 }
 
-// lookupChar finds the index of a character in the charlist.
-func (shared *fontType) lookupChar(ch rune) int {
-	for i, c := range charlist {
-		if c == ch {
-			return i
+// lookupChar finds the index of a character in the characterList.
+func (manager *fontType) lookupChar(characterToFind rune) int {
+	for index, character := range characterList {
+		if character == characterToFind {
+			return index
 		}
 	}
 	return -1
 }
 
 // renderGlyph draws a single character and returns the width it occupied.
-func (shared *fontType) renderGlyph(layerEntry *types.LayerEntryType, font *types.FontEntryType, ch rune, x, y int) int {
-	if ch == ' ' {
-		aIndex := shared.lookupChar('a')
-		aWidth := 1
-		if aIndex != -1 && font.Glyphs[aIndex] != nil {
-			aWidth = font.Glyphs[aIndex].Width
+func (manager *fontType) renderGlyph(layerEntry *types.LayerEntryType, font *types.FontEntryType, character rune, xLocation, yLocation int) int {
+	if character == ' ' {
+		characterAIndex := manager.lookupChar('a')
+		characterAWidth := 1
+		if characterAIndex != -1 && font.Glyphs[characterAIndex] != nil {
+			characterAWidth = font.Glyphs[characterAIndex].Width
 		}
-		return font.BlankSizeInCharacters * aWidth
+		return font.BlankSizeInCharacters * characterAWidth
 	}
-	idx := shared.lookupChar(ch)
-	if idx == -1 {
+	characterIndex := manager.lookupChar(character)
+	if characterIndex == -1 {
 		return 1 // Return a default width for unknown characters.
 	}
-	glyph := font.Glyphs[idx]
+	glyph := font.Glyphs[characterIndex]
 	if glyph == nil {
 		return 1 // Return a default width for nil glyphs.
 	}
 
-	for row := 0; row < glyph.Height; row++ {
-		for col := 0; col < glyph.Width; col++ {
-			cell := glyph.Cells[row*glyph.Width+col]
+	for rowIndex := 0; rowIndex < glyph.Height; rowIndex++ {
+		for columnIndex := 0; columnIndex < glyph.Width; columnIndex++ {
+			cell := glyph.Cells[rowIndex*glyph.Width+columnIndex]
 			if cell.Char != ' ' { // Don't draw spaces
 				attribute := types.NewAttributeEntry(&layerEntry.DefaultAttribute)
 				if cell.Color != 0 {
-					fg, bg := shared.convertTdfColorToRgb(cell.Color)
-					attribute.ForegroundColor = fg
-					attribute.BackgroundColor = bg
+					foregroundColor, backgroundColor := manager.convertTdfColorToRgb(cell.Color)
+					attribute.ForegroundColor = foregroundColor
+					attribute.BackgroundColor = backgroundColor
 				}
-				printLayer(layerEntry, attribute, x+col, y+row, []rune{cell.Char})
+				printLayer(layerEntry, attribute, xLocation+columnIndex, yLocation+rowIndex, []rune{cell.Char})
 			}
 		}
 	}
@@ -346,22 +346,22 @@ func (shared *fontType) renderGlyph(layerEntry *types.LayerEntryType, font *type
 }
 
 // PrintText renders a string onto a layer using the specified font.
-func (shared *fontType) PrintText(layerEntry *types.LayerEntryType, fontInstance fontInstanceType, x, y int, str string) {
+func (manager *fontType) PrintText(layerEntry *types.LayerEntryType, fontInstance fontInstanceType, xLocation, yLocation int, textToPrint string) {
 	fontFamily := getFontFamilyFromMemory(fontInstance.fontAlias)
 	if fontInstance.fontIndex >= len(fontFamily.Fonts) {
 		safeSttyPanic(fmt.Sprintf("Font index %d not found in font alias '%s'.", fontInstance.fontIndex, fontInstance.fontAlias))
 	}
 	font := fontFamily.Fonts[fontInstance.fontIndex]
-	currentX := x
-	for _, ch := range str {
-		width := shared.renderGlyph(layerEntry, font, ch, currentX, y)
-		currentX += width
+	currentXLocation := xLocation
+	for _, character := range textToPrint {
+		characterWidth := manager.renderGlyph(layerEntry, font, character, currentXLocation, yLocation)
+		currentXLocation += characterWidth
 	}
 }
 
 // PrintTextDialog renders a string onto a layer with a typewriter effect using the specified font.
 // If widthOfLineInCharacters is greater than 0, text will wrap after that many characters.
-func (shared *fontType) PrintTextDialog(layerEntry *types.LayerEntryType, fontInstance fontInstanceType, x, y, widthOfLineInCharacters, printDelayInMilliseconds int, isSkipable bool, str string) {
+func (manager *fontType) PrintTextDialog(layerEntry *types.LayerEntryType, fontInstance fontInstanceType, xLocation, yLocation, widthOfLineInCharacters, printDelayInMilliseconds int, isSkipable bool, textToPrint string) {
 	fontFamily := getFontFamilyFromMemory(fontInstance.fontAlias)
 	if fontInstance.fontIndex >= len(fontFamily.Fonts) {
 		safeSttyPanic(fmt.Sprintf("Font index %d not found in font alias '%s'.", fontInstance.fontIndex, fontInstance.fontAlias))
@@ -371,49 +371,49 @@ func (shared *fontType) PrintTextDialog(layerEntry *types.LayerEntryType, fontIn
 	if printDelayInMilliseconds <= 0 {
 		if widthOfLineInCharacters <= 0 {
 			// Inline the PrintText functionality
-			currentX := x
-			for _, ch := range str {
-				width := shared.renderGlyph(layerEntry, font, ch, currentX, y)
-				currentX += width
+			currentXLocation := xLocation
+			for _, character := range textToPrint {
+				characterWidth := manager.renderGlyph(layerEntry, font, character, currentXLocation, yLocation)
+				currentXLocation += characterWidth
 			}
 		} else {
 			// Implement non-typewriter font printing with line wrapping
-			currentX := x
-			currentY := y
-			charCount := 0
+			currentXLocation := xLocation
+			currentYLocation := yLocation
+			characterCount := 0
 
-			for _, ch := range str {
+			for _, character := range textToPrint {
 				// Check if we need to wrap to the next line
-				if charCount >= widthOfLineInCharacters {
-					charCount = 0
-					currentX = x
-					currentY += font.Height + 1 // Move down by font height + 1
+				if characterCount >= widthOfLineInCharacters {
+					characterCount = 0
+					currentXLocation = xLocation
+					currentYLocation += font.Height + 1 // Move down by font height + 1
 				}
 
-				width := shared.renderGlyph(layerEntry, font, ch, currentX, currentY)
-				currentX += width
-				charCount++
+				characterWidth := manager.renderGlyph(layerEntry, font, character, currentXLocation, currentYLocation)
+				currentXLocation += characterWidth
+				characterCount++
 			}
 		}
 		return
 	}
 
 	isPrintDelaySkipped := false
-	currentX := x
-	currentY := y
-	charCount := 0
+	currentXLocation := xLocation
+	currentYLocation := yLocation
+	characterCount := 0
 
-	for _, ch := range str {
+	for _, character := range textToPrint {
 		// Check if we need to wrap to the next line
-		if widthOfLineInCharacters > 0 && charCount >= widthOfLineInCharacters {
-			charCount = 0
-			currentX = x
-			currentY += font.Height + 1 // Move down by font height + 1
+		if widthOfLineInCharacters > 0 && characterCount >= widthOfLineInCharacters {
+			characterCount = 0
+			currentXLocation = xLocation
+			currentYLocation += font.Height + 1 // Move down by font height + 1
 		}
 
-		width := shared.renderGlyph(layerEntry, font, ch, currentX, currentY)
-		currentX += width
-		charCount++
+		characterWidth := manager.renderGlyph(layerEntry, font, character, currentXLocation, currentYLocation)
+		currentXLocation += characterWidth
+		characterCount++
 
 		// Check for skip input
 		if isSkipable {
@@ -434,18 +434,18 @@ func (shared *fontType) PrintTextDialog(layerEntry *types.LayerEntryType, fontIn
 }
 
 // convertTdfColorToRgb converts a TDF color byte to RGBA ColorType values.
-func (shared *fontType) convertTdfColorToRgb(c byte) (constants.ColorType, constants.ColorType) {
-	fgIndex := int(c & 0x0F)
-	bgIndex := int((c & 0xF0) >> 4)
+func (manager *fontType) convertTdfColorToRgb(tdfColor byte) (constants.ColorType, constants.ColorType) {
+	foregroundIndex := int(tdfColor & 0x0F)
+	backgroundIndex := int((tdfColor & 0xF0) >> 4)
 
-	if fgIndex >= len(constants.TdfToRgbMap) {
-		fgIndex = 0 // Default to black if out of bounds
+	if foregroundIndex >= len(constants.TdfToRgbMap) {
+		foregroundIndex = 0 // Default to black if out of bounds
 	}
-	if bgIndex >= len(constants.TdfToRgbMap) {
-		bgIndex = 0 // Default to black if out of bounds
+	if backgroundIndex >= len(constants.TdfToRgbMap) {
+		backgroundIndex = 0 // Default to black if out of bounds
 	}
 
-	return constants.TdfToRgbMap[fgIndex], constants.TdfToRgbMap[bgIndex]
+	return constants.TdfToRgbMap[foregroundIndex], constants.TdfToRgbMap[backgroundIndex]
 }
 
 // LoadFont loads a TDF font from the given file path (kept for backward compatibility).
@@ -454,10 +454,10 @@ func LoadFont(fontFile string) fontInstanceType {
 	return Font.Load(fontFile)
 }
 
-func getFontFamilyFromMemory(alias string) *types.FontFamilyType {
-	fontFamily := fonts.Get(alias)
+func getFontFamilyFromMemory(fontAlias string) *types.FontFamilyType {
+	fontFamily := fonts.Get(fontAlias)
 	if fontFamily == nil {
-		safeSttyPanic(fmt.Sprintf("font with alias '%s' not found", alias))
+		safeSttyPanic(fmt.Sprintf("font with alias '%s' not found", fontAlias))
 	}
 	return fontFamily
 }
