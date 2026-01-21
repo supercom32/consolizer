@@ -15,6 +15,7 @@ import (
 	"image/draw"
 	"image/png"
 	"io"
+	"math"
 	"math/rand"
 	"strings"
 	"sync"
@@ -551,7 +552,234 @@ func GetImageLayerAsAsciiColorArt(sourceImageData image.Image, imageStyle types.
 // It divides each character cell into an 8x8 grid and finds the best block element
 // to represent the image in that cell.
 func getImageLayerAsBlockElements(sourceImageData image.Image, imageStyle types.ImageStyleEntryType, widthInCharacters int, heightInCharacters int, blurSigma float64) types.LayerEntryType {
-	return getImageLayerAsBlockElements2(sourceImageData, imageStyle, widthInCharacters, heightInCharacters, blurSigma)
+	// Calculate the dimensions
+	bounds := sourceImageData.Bounds()
+	imageWidth, imageHeight := bounds.Dx(), bounds.Dy()
+
+	// Calculate width and height
+	width, height := widthInCharacters, heightInCharacters
+
+	// If both width and height are 0, use the image's dimensions
+	if width == 0 && height == 0 {
+		width, height = imageWidth, imageHeight
+		if adjustedWidth := imageWidth * height / imageHeight; adjustedWidth < width {
+			width = adjustedWidth
+		} else {
+			height = imageHeight * width / imageWidth
+		}
+	} else {
+		// If only one dimension is specified, calculate the other to preserve aspect ratio
+		if width == 0 {
+			width = imageWidth * height / imageHeight
+		} else if height == 0 {
+			height = imageHeight * width / imageWidth
+		}
+	}
+
+	// Create the layer entry
+	layerEntry := types.NewLayerEntry("", "", width, height)
+
+	// Resize the image (8x8 pixels per cell)
+	tgtWidth, tgtHeight := width*8, height*8
+	coverageWidth, coverageHeight := float64(tgtWidth)/float64(imageWidth), float64(tgtHeight)/float64(imageHeight)
+	pixels := make([][3]float64, tgtWidth*tgtHeight)
+	weights := make([]float64, tgtWidth*tgtHeight)
+
+	// Resize the image
+	for srcY := bounds.Min.Y; srcY < bounds.Max.Y; srcY++ {
+		for srcX := bounds.Min.X; srcX < bounds.Max.X; srcX++ {
+			r32, g32, b32, _ := sourceImageData.At(srcX, srcY).RGBA()
+			r, g, b := float64(r32)/0xffff, float64(g32)/0xffff, float64(b32)/0xffff
+
+			// Calculate target pixels
+			startY := float64(srcY-bounds.Min.Y) * coverageHeight
+			endY := startY + coverageHeight
+			fromY, toY := int(startY), int(endY)
+
+			for tgtY := fromY; tgtY <= toY && tgtY < tgtHeight; tgtY++ {
+				coverageY := 1.0
+				if tgtY == fromY {
+					coverageY -= math.Mod(startY, 1.0)
+				}
+				if tgtY == toY {
+					coverageY -= 1.0 - math.Mod(endY, 1.0)
+				}
+
+				startX := float64(srcX-bounds.Min.X) * coverageWidth
+				endX := startX + coverageWidth
+				fromX, toX := int(startX), int(endX)
+
+				for tgtX := fromX; tgtX <= toX && tgtX < tgtWidth; tgtX++ {
+					coverageX := 1.0
+					if tgtX == fromX {
+						coverageX -= math.Mod(startX, 1.0)
+					}
+					if tgtX == toX {
+						coverageX -= 1.0 - math.Mod(endX, 1.0)
+					}
+
+					coverage := coverageX * coverageY
+					if coverage <= 0 {
+						continue
+					}
+
+					index := tgtY*tgtWidth + tgtX
+					pixels[index][0] += r * coverage
+					pixels[index][1] += g * coverage
+					pixels[index][2] += b * coverage
+					weights[index] += coverage
+				}
+			}
+		}
+	}
+
+	// Normalize the pixels
+	for index, weight := range weights {
+		if weight > 0 {
+			pixels[index][0] /= weight
+			pixels[index][1] /= weight
+			pixels[index][2] /= weight
+		}
+	}
+
+	// Process each cell (8x8 pixels) to find the best block element
+	for row := 0; row < height; row++ {
+		for col := 0; col < width; col++ {
+			// Find the best block element for this cell
+			minMSE := math.MaxFloat64 // Mean squared error
+			var bestElement rune
+			var bestFg, bestBg [3]float64
+
+			// Try each block element
+			for element, bits := range constants.BlockElements {
+				// Calculate average colors for set and unset bits
+				var fg, bg [3]float64
+				var setBits float64
+				bit := uint64(1)
+
+				for y := 0; y < 8; y++ {
+					for x := 0; x < 8; x++ {
+						index := (row*8+y)*width*8 + (col*8 + x)
+						if bits&bit != 0 {
+							fg[0] += pixels[index][0]
+							fg[1] += pixels[index][1]
+							fg[2] += pixels[index][2]
+							setBits++
+						} else {
+							bg[0] += pixels[index][0]
+							bg[1] += pixels[index][1]
+							bg[2] += pixels[index][2]
+						}
+						bit <<= 1
+					}
+				}
+
+				// Normalize colors
+				for ch := 0; ch < 3; ch++ {
+					fg[ch] /= setBits
+					if fg[ch] < 0 {
+						fg[ch] = 0
+					} else if fg[ch] > 1 {
+						fg[ch] = 1
+					}
+
+					bg[ch] /= 64 - setBits
+					if bg[ch] < 0 {
+						bg[ch] = 0
+					} else if bg[ch] > 1 {
+						bg[ch] = 1
+					}
+				}
+
+				// Calculate error
+				var mse float64
+				bit = 1
+				for y := 0; y < 8; y++ {
+					for x := 0; x < 8; x++ {
+						index := (row*8+y)*width*8 + (col*8 + x)
+						var color [3]float64
+						if bits&bit != 0 {
+							color = fg
+						} else {
+							color = bg
+						}
+
+						for ch := 0; ch < 3; ch++ {
+							err := pixels[index][ch] - color[ch]
+							mse += err * err
+						}
+						bit <<= 1
+					}
+				}
+
+				// Check if this is the best match so far
+				if mse < minMSE {
+					minMSE = mse
+					bestElement = element
+					bestFg = fg
+					bestBg = bg
+				}
+			}
+
+			// Check if a shade block would be better
+			var avg [3]float64
+			for y := 0; y < 8; y++ {
+				for x := 0; x < 8; x++ {
+					index := (row*8+y)*width*8 + (col*8 + x)
+					for ch := 0; ch < 3; ch++ {
+						avg[ch] += pixels[index][ch] / 64
+					}
+				}
+			}
+
+			// Normalize average color
+			for ch := 0; ch < 3; ch++ {
+				if avg[ch] < 0 {
+					avg[ch] = 0
+				} else if avg[ch] > 1 {
+					avg[ch] = 1
+				}
+			}
+
+			// Calculate error for shade block
+			var mse float64
+			for y := 0; y < 8; y++ {
+				for x := 0; x < 8; x++ {
+					index := (row*8+y)*width*8 + (col*8 + x)
+					for ch := 0; ch < 3; ch++ {
+						err := pixels[index][ch] - avg[ch]
+						mse += err * err
+					}
+				}
+			}
+
+			// If shade block is better, use it
+			if mse < minMSE {
+				// Calculate shade level
+				gray := 0.299*avg[0] + 0.587*avg[1] + 0.114*avg[2]
+				shades := []rune{' ', constants.BlockLightShade, constants.BlockMediumShade, constants.BlockDarkShade, constants.BlockFullBlock}
+				shade := int(math.Round(gray * 4))
+				bestElement = shades[shade]
+				bestFg = avg
+				bestBg = avg
+			}
+
+			// Set the character and colors in the layer entry
+			r := int32(math.Min(255, bestFg[0]*255))
+			g := int32(math.Min(255, bestFg[1]*255))
+			b := int32(math.Min(255, bestFg[2]*255))
+			layerEntry.CharacterMemory[row][col].AttributeEntry.ForegroundColor = GetRGBColor(r, g, b)
+
+			r = int32(math.Min(255, bestBg[0]*255))
+			g = int32(math.Min(255, bestBg[1]*255))
+			b = int32(math.Min(255, bestBg[2]*255))
+			layerEntry.CharacterMemory[row][col].AttributeEntry.BackgroundColor = GetRGBColor(r, g, b)
+
+			layerEntry.CharacterMemory[row][col].Character = bestElement
+		}
+	}
+
+	return layerEntry
 }
 
 /*

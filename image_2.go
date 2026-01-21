@@ -1,6 +1,7 @@
 package consolizer
 
 import (
+	"github.com/supercom32/consolizer/constants"
 	"github.com/supercom32/consolizer/types"
 	"image"
 	"math"
@@ -28,27 +29,7 @@ const TrueColor = 16777216
 // pixel that is drawn, a 0 bit represents a pixel that is not drawn. The least
 // significant bit is the top left pixel, the most significant bit is the bottom
 // right pixel, moving row by row from left to right, top to bottom.
-var blockElements = map[rune]uint64{
-	BlockLowerOneEighthBlock:            0b1111111100000000000000000000000000000000000000000000000000000000,
-	BlockLowerOneQuarterBlock:           0b1111111111111111000000000000000000000000000000000000000000000000,
-	BlockLowerThreeEighthsBlock:         0b1111111111111111111111110000000000000000000000000000000000000000,
-	BlockLowerHalfBlock:                 0b1111111111111111111111111111111100000000000000000000000000000000,
-	BlockLowerFiveEighthsBlock:          0b1111111111111111111111111111111111111111000000000000000000000000,
-	BlockLowerThreeQuartersBlock:        0b1111111111111111111111111111111111111111111111110000000000000000,
-	BlockLowerSevenEighthsBlock:         0b1111111111111111111111111111111111111111111111111111111100000000,
-	BlockLeftSevenEighthsBlock:          0b0111111101111111011111110111111101111111011111110111111101111111,
-	BlockLeftThreeQuartersBlock:         0b0011111100111111001111110011111100111111001111110011111100111111,
-	BlockLeftFiveEighthsBlock:           0b0001111100011111000111110001111100011111000111110001111100011111,
-	BlockLeftHalfBlock:                  0b0000111100001111000011110000111100001111000011110000111100001111,
-	BlockLeftThreeEighthsBlock:          0b0000011100000111000001110000011100000111000001110000011100000111,
-	BlockLeftOneQuarterBlock:            0b0000001100000011000000110000001100000011000000110000001100000011,
-	BlockLeftOneEighthBlock:             0b0000000100000001000000010000000100000001000000010000000100000001,
-	BlockQuadrantLowerLeft:              0b0000111100001111000011110000111100000000000000000000000000000000,
-	BlockQuadrantLowerRight:             0b1111000011110000111100001111000000000000000000000000000000000000,
-	BlockQuadrantUpperLeft:              0b0000000000000000000000000000000000001111000011110000111100001111,
-	BlockQuadrantUpperRight:             0b0000000000000000000000000000000011110000111100001111000011110000,
-	BlockQuadrantUpperLeftAndLowerRight: 0b1111000011110000111100001111000000001111000011110000111100001111,
-}
+var blockElements = constants.BlockElements
 
 // pixel represents a character on screen used to draw part of an image.
 type pixel struct {
@@ -595,9 +576,9 @@ func (i *Image_2) stamp(resized [][3]float64) {
 			}
 
 			// Quantize and choose shade element.
-			element := BlockFullBlock
+			element := constants.BlockFullBlock
 			var fg, bg tcell.Color
-			shades := []rune{' ', BlockLightShade, BlockMediumShade, BlockDarkShade, BlockFullBlock}
+			shades := []rune{' ', constants.BlockLightShade, constants.BlockMediumShade, constants.BlockDarkShade, constants.BlockFullBlock}
 			if colors == 2 {
 				// Monochrome.
 				gray := 0.299*avg[0] + 0.587*avg[1] + 0.114*avg[2] // See above for details.
@@ -2298,25 +2279,25 @@ var Borders = struct {
 	BottomLeftFocus  rune
 	BottomRightFocus rune
 }{
-	Horizontal:  BoxDrawingsLightHorizontal,
-	Vertical:    BoxDrawingsLightVertical,
-	TopLeft:     BoxDrawingsLightDownAndRight,
-	TopRight:    BoxDrawingsLightDownAndLeft,
-	BottomLeft:  BoxDrawingsLightUpAndRight,
-	BottomRight: BoxDrawingsLightUpAndLeft,
+	Horizontal:  constants.BoxDrawingsLightHorizontal,
+	Vertical:    constants.BoxDrawingsLightVertical,
+	TopLeft:     constants.BoxDrawingsLightDownAndRight,
+	TopRight:    constants.BoxDrawingsLightDownAndLeft,
+	BottomLeft:  constants.BoxDrawingsLightUpAndRight,
+	BottomRight: constants.BoxDrawingsLightUpAndLeft,
 
-	LeftT:   BoxDrawingsLightVerticalAndRight,
-	RightT:  BoxDrawingsLightVerticalAndLeft,
-	TopT:    BoxDrawingsLightDownAndHorizontal,
-	BottomT: BoxDrawingsLightUpAndHorizontal,
-	Cross:   BoxDrawingsLightVerticalAndHorizontal,
+	LeftT:   constants.BoxDrawingsLightVerticalAndRight,
+	RightT:  constants.BoxDrawingsLightVerticalAndLeft,
+	TopT:    constants.BoxDrawingsLightDownAndHorizontal,
+	BottomT: constants.BoxDrawingsLightUpAndHorizontal,
+	Cross:   constants.BoxDrawingsLightVerticalAndHorizontal,
 
-	HorizontalFocus:  BoxDrawingsDoubleHorizontal,
-	VerticalFocus:    BoxDrawingsDoubleVertical,
-	TopLeftFocus:     BoxDrawingsDoubleDownAndRight,
-	TopRightFocus:    BoxDrawingsDoubleDownAndLeft,
-	BottomLeftFocus:  BoxDrawingsDoubleUpAndRight,
-	BottomRightFocus: BoxDrawingsDoubleUpAndLeft,
+	HorizontalFocus:  constants.BoxDrawingsDoubleHorizontal,
+	VerticalFocus:    constants.BoxDrawingsDoubleVertical,
+	TopLeftFocus:     constants.BoxDrawingsDoubleDownAndRight,
+	TopRightFocus:    constants.BoxDrawingsDoubleDownAndLeft,
+	BottomLeftFocus:  constants.BoxDrawingsDoubleUpAndRight,
+	BottomRightFocus: constants.BoxDrawingsDoubleUpAndLeft,
 }
 
 // Semigraphics provides an easy way to access unicode characters for drawing.
@@ -2325,171 +2306,7 @@ var Borders = struct {
 // isn't prefixed itself.
 const (
 	// Block: General Punctuation U+2000-U+206F (http://unicode.org/charts/PDF/U2000.pdf)
-	SemigraphicsHorizontalEllipsis rune = '\u2026' // …
-
-	// Block: Box Drawing U+2500-U+257F (http://unicode.org/charts/PDF/U2500.pdf)
-	BoxDrawingsLightHorizontal                    rune = '\u2500' // ─
-	BoxDrawingsHeavyHorizontal                    rune = '\u2501' // ━
-	BoxDrawingsLightVertical                      rune = '\u2502' // │
-	BoxDrawingsHeavyVertical                      rune = '\u2503' // ┃
-	BoxDrawingsLightTripleDashHorizontal          rune = '\u2504' // ┄
-	BoxDrawingsHeavyTripleDashHorizontal          rune = '\u2505' // ┅
-	BoxDrawingsLightTripleDashVertical            rune = '\u2506' // ┆
-	BoxDrawingsHeavyTripleDashVertical            rune = '\u2507' // ┇
-	BoxDrawingsLightQuadrupleDashHorizontal       rune = '\u2508' // ┈
-	BoxDrawingsHeavyQuadrupleDashHorizontal       rune = '\u2509' // ┉
-	BoxDrawingsLightQuadrupleDashVertical         rune = '\u250a' // ┊
-	BoxDrawingsHeavyQuadrupleDashVertical         rune = '\u250b' // ┋
-	BoxDrawingsLightDownAndRight                  rune = '\u250c' // ┌
-	BoxDrawingsDownLightAndRightHeavy             rune = '\u250d' // ┍
-	BoxDrawingsDownHeavyAndRightLight             rune = '\u250e' // ┎
-	BoxDrawingsHeavyDownAndRight                  rune = '\u250f' // ┏
-	BoxDrawingsLightDownAndLeft                   rune = '\u2510' // ┐
-	BoxDrawingsDownLightAndLeftHeavy              rune = '\u2511' // ┑
-	BoxDrawingsDownHeavyAndLeftLight              rune = '\u2512' // ┒
-	BoxDrawingsHeavyDownAndLeft                   rune = '\u2513' // ┓
-	BoxDrawingsLightUpAndRight                    rune = '\u2514' // └
-	BoxDrawingsUpLightAndRightHeavy               rune = '\u2515' // ┕
-	BoxDrawingsUpHeavyAndRightLight               rune = '\u2516' // ┖
-	BoxDrawingsHeavyUpAndRight                    rune = '\u2517' // ┗
-	BoxDrawingsLightUpAndLeft                     rune = '\u2518' // ┘
-	BoxDrawingsUpLightAndLeftHeavy                rune = '\u2519' // ┙
-	BoxDrawingsUpHeavyAndLeftLight                rune = '\u251a' // ┚
-	BoxDrawingsHeavyUpAndLeft                     rune = '\u251b' // ┛
-	BoxDrawingsLightVerticalAndRight              rune = '\u251c' // ├
-	BoxDrawingsVerticalLightAndRightHeavy         rune = '\u251d' // ┝
-	BoxDrawingsUpHeavyAndRightDownLight           rune = '\u251e' // ┞
-	BoxDrawingsDownHeavyAndRightUpLight           rune = '\u251f' // ┟
-	BoxDrawingsVerticalHeavyAndRightLight         rune = '\u2520' // ┠
-	BoxDrawingsDownLightAndRightUpHeavy           rune = '\u2521' // ┡
-	BoxDrawingsUpLightAndRightDownHeavy           rune = '\u2522' // ┢
-	BoxDrawingsHeavyVerticalAndRight              rune = '\u2523' // ┣
-	BoxDrawingsLightVerticalAndLeft               rune = '\u2524' // ┤
-	BoxDrawingsVerticalLightAndLeftHeavy          rune = '\u2525' // ┥
-	BoxDrawingsUpHeavyAndLeftDownLight            rune = '\u2526' // ┦
-	BoxDrawingsDownHeavyAndLeftUpLight            rune = '\u2527' // ┧
-	BoxDrawingsVerticalHeavyAndLeftLight          rune = '\u2528' // ┨
-	BoxDrawingsDownLightAndLeftUpHeavy            rune = '\u2529' // ┨
-	BoxDrawingsUpLightAndLeftDownHeavy            rune = '\u252a' // ┪
-	BoxDrawingsHeavyVerticalAndLeft               rune = '\u252b' // ┫
-	BoxDrawingsLightDownAndHorizontal             rune = '\u252c' // ┬
-	BoxDrawingsLeftHeavyAndRightDownLight         rune = '\u252d' // ┭
-	BoxDrawingsRightHeavyAndLeftDownLight         rune = '\u252e' // ┮
-	BoxDrawingsDownLightAndHorizontalHeavy        rune = '\u252f' // ┯
-	BoxDrawingsDownHeavyAndHorizontalLight        rune = '\u2530' // ┰
-	BoxDrawingsRightLightAndLeftDownHeavy         rune = '\u2531' // ┱
-	BoxDrawingsLeftLightAndRightDownHeavy         rune = '\u2532' // ┲
-	BoxDrawingsHeavyDownAndHorizontal             rune = '\u2533' // ┳
-	BoxDrawingsLightUpAndHorizontal               rune = '\u2534' // ┴
-	BoxDrawingsLeftHeavyAndRightUpLight           rune = '\u2535' // ┵
-	BoxDrawingsRightHeavyAndLeftUpLight           rune = '\u2536' // ┶
-	BoxDrawingsUpLightAndHorizontalHeavy          rune = '\u2537' // ┷
-	BoxDrawingsUpHeavyAndHorizontalLight          rune = '\u2538' // ┸
-	BoxDrawingsRightLightAndLeftUpHeavy           rune = '\u2539' // ┹
-	BoxDrawingsLeftLightAndRightUpHeavy           rune = '\u253a' // ┺
-	BoxDrawingsHeavyUpAndHorizontal               rune = '\u253b' // ┻
-	BoxDrawingsLightVerticalAndHorizontal         rune = '\u253c' // ┼
-	BoxDrawingsLeftHeavyAndRightVerticalLight     rune = '\u253d' // ┽
-	BoxDrawingsRightHeavyAndLeftVerticalLight     rune = '\u253e' // ┾
-	BoxDrawingsVerticalLightAndHorizontalHeavy    rune = '\u253f' // ┿
-	BoxDrawingsUpHeavyAndDownHorizontalLight      rune = '\u2540' // ╀
-	BoxDrawingsDownHeavyAndUpHorizontalLight      rune = '\u2541' // ╁
-	BoxDrawingsVerticalHeavyAndHorizontalLight    rune = '\u2542' // ╂
-	BoxDrawingsLeftUpHeavyAndRightDownLight       rune = '\u2543' // ╃
-	BoxDrawingsRightUpHeavyAndLeftDownLight       rune = '\u2544' // ╄
-	BoxDrawingsLeftDownHeavyAndRightUpLight       rune = '\u2545' // ╅
-	BoxDrawingsRightDownHeavyAndLeftUpLight       rune = '\u2546' // ╆
-	BoxDrawingsDownLightAndUpHorizontalHeavy      rune = '\u2547' // ╇
-	BoxDrawingsUpLightAndDownHorizontalHeavy      rune = '\u2548' // ╈
-	BoxDrawingsRightLightAndLeftVerticalHeavy     rune = '\u2549' // ╉
-	BoxDrawingsLeftLightAndRightVerticalHeavy     rune = '\u254a' // ╊
-	BoxDrawingsHeavyVerticalAndHorizontal         rune = '\u254b' // ╋
-	BoxDrawingsLightDoubleDashHorizontal          rune = '\u254c' // ╌
-	BoxDrawingsHeavyDoubleDashHorizontal          rune = '\u254d' // ╍
-	BoxDrawingsLightDoubleDashVertical            rune = '\u254e' // ╎
-	BoxDrawingsHeavyDoubleDashVertical            rune = '\u254f' // ╏
-	BoxDrawingsDoubleHorizontal                   rune = '\u2550' // ═
-	BoxDrawingsDoubleVertical                     rune = '\u2551' // ║
-	BoxDrawingsDownSingleAndRightDouble           rune = '\u2552' // ╒
-	BoxDrawingsDownDoubleAndRightSingle           rune = '\u2553' // ╓
-	BoxDrawingsDoubleDownAndRight                 rune = '\u2554' // ╔
-	BoxDrawingsDownSingleAndLeftDouble            rune = '\u2555' // ╕
-	BoxDrawingsDownDoubleAndLeftSingle            rune = '\u2556' // ╖
-	BoxDrawingsDoubleDownAndLeft                  rune = '\u2557' // ╗
-	BoxDrawingsUpSingleAndRightDouble             rune = '\u2558' // ╘
-	BoxDrawingsUpDoubleAndRightSingle             rune = '\u2559' // ╙
-	BoxDrawingsDoubleUpAndRight                   rune = '\u255a' // ╚
-	BoxDrawingsUpSingleAndLeftDouble              rune = '\u255b' // ╛
-	BoxDrawingsUpDoubleAndLeftSingle              rune = '\u255c' // ╜
-	BoxDrawingsDoubleUpAndLeft                    rune = '\u255d' // ╝
-	BoxDrawingsVerticalSingleAndRightDouble       rune = '\u255e' // ╞
-	BoxDrawingsVerticalDoubleAndRightSingle       rune = '\u255f' // ╟
-	BoxDrawingsDoubleVerticalAndRight             rune = '\u2560' // ╠
-	BoxDrawingsVerticalSingleAndLeftDouble        rune = '\u2561' // ╡
-	BoxDrawingsVerticalDoubleAndLeftSingle        rune = '\u2562' // ╢
-	BoxDrawingsDoubleVerticalAndLeft              rune = '\u2563' // ╣
-	BoxDrawingsDownSingleAndHorizontalDouble      rune = '\u2564' // ╤
-	BoxDrawingsDownDoubleAndHorizontalSingle      rune = '\u2565' // ╥
-	BoxDrawingsDoubleDownAndHorizontal            rune = '\u2566' // ╦
-	BoxDrawingsUpSingleAndHorizontalDouble        rune = '\u2567' // ╧
-	BoxDrawingsUpDoubleAndHorizontalSingle        rune = '\u2568' // ╨
-	BoxDrawingsDoubleUpAndHorizontal              rune = '\u2569' // ╩
-	BoxDrawingsVerticalSingleAndHorizontalDouble  rune = '\u256a' // ╪
-	BoxDrawingsVerticalDoubleAndHorizontalSingle  rune = '\u256b' // ╫
-	BoxDrawingsDoubleVerticalAndHorizontal        rune = '\u256c' // ╬
-	BoxDrawingsLightArcDownAndRight               rune = '\u256d' // ╭
-	BoxDrawingsLightArcDownAndLeft                rune = '\u256e' // ╮
-	BoxDrawingsLightArcUpAndLeft                  rune = '\u256f' // ╯
-	BoxDrawingsLightArcUpAndRight                 rune = '\u2570' // ╰
-	BoxDrawingsLightDiagonalUpperRightToLowerLeft rune = '\u2571' // ╱
-	BoxDrawingsLightDiagonalUpperLeftToLowerRight rune = '\u2572' // ╲
-	BoxDrawingsLightDiagonalCross                 rune = '\u2573' // ╳
-	BoxDrawingsLightLeft                          rune = '\u2574' // ╴
-	BoxDrawingsLightUp                            rune = '\u2575' // ╵
-	BoxDrawingsLightRight                         rune = '\u2576' // ╶
-	BoxDrawingsLightDown                          rune = '\u2577' // ╷
-	BoxDrawingsHeavyLeft                          rune = '\u2578' // ╸
-	BoxDrawingsHeavyUp                            rune = '\u2579' // ╹
-	BoxDrawingsHeavyRight                         rune = '\u257a' // ╺
-	BoxDrawingsHeavyDown                          rune = '\u257b' // ╻
-	BoxDrawingsLightLeftAndHeavyRight             rune = '\u257c' // ╼
-	BoxDrawingsLightUpAndHeavyDown                rune = '\u257d' // ╽
-	BoxDrawingsHeavyLeftAndLightRight             rune = '\u257e' // ╾
-	BoxDrawingsHeavyUpAndLightDown                rune = '\u257f' // ╿
-
-	// Block Elements.
-	BlockUpperHalfBlock                              rune = '\u2580' // ▀
-	BlockLowerOneEighthBlock                         rune = '\u2581' // ▁
-	BlockLowerOneQuarterBlock                        rune = '\u2582' // ▂
-	BlockLowerThreeEighthsBlock                      rune = '\u2583' // ▃
-	BlockLowerHalfBlock                              rune = '\u2584' // ▄
-	BlockLowerFiveEighthsBlock                       rune = '\u2585' // ▅
-	BlockLowerThreeQuartersBlock                     rune = '\u2586' // ▆
-	BlockLowerSevenEighthsBlock                      rune = '\u2587' // ▇
-	BlockFullBlock                                   rune = '\u2588' // █
-	BlockLeftSevenEighthsBlock                       rune = '\u2589' // ▉
-	BlockLeftThreeQuartersBlock                      rune = '\u258A' // ▊
-	BlockLeftFiveEighthsBlock                        rune = '\u258B' // ▋
-	BlockLeftHalfBlock                               rune = '\u258C' // ▌
-	BlockLeftThreeEighthsBlock                       rune = '\u258D' // ▍
-	BlockLeftOneQuarterBlock                         rune = '\u258E' // ▎
-	BlockLeftOneEighthBlock                          rune = '\u258F' // ▏
-	BlockRightHalfBlock                              rune = '\u2590' // ▐
-	BlockLightShade                                  rune = '\u2591' // ░
-	BlockMediumShade                                 rune = '\u2592' // ▒
-	BlockDarkShade                                   rune = '\u2593' // ▓
-	BlockUpperOneEighthBlock                         rune = '\u2594' // ▔
-	BlockRightOneEighthBlock                         rune = '\u2595' // ▕
-	BlockQuadrantLowerLeft                           rune = '\u2596' // ▖
-	BlockQuadrantLowerRight                          rune = '\u2597' // ▗
-	BlockQuadrantUpperLeft                           rune = '\u2598' // ▘
-	BlockQuadrantUpperLeftAndLowerLeftAndLowerRight  rune = '\u2599' // ▙
-	BlockQuadrantUpperLeftAndLowerRight              rune = '\u259A' // ▚
-	BlockQuadrantUpperLeftAndUpperRightAndLowerLeft  rune = '\u259B' // ▛
-	BlockQuadrantUpperLeftAndUpperRightAndLowerRight rune = '\u259C' // ▜
-	BlockQuadrantUpperRight                          rune = '\u259D' // ▝
-	BlockQuadrantUpperRightAndLowerLeft              rune = '\u259E' // ▞
-	BlockQuadrantUpperRightAndLowerLeftAndLowerRight rune = '\u259F' // ▟
+	SemigraphicsHorizontalEllipsis = constants.SemigraphicsHorizontalEllipsis
 )
 
 // MouseAction indicates one of the actions the mouse is logically doing.
