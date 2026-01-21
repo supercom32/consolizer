@@ -17,6 +17,7 @@ import (
 	"io"
 	"math"
 	"math/rand"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -385,7 +386,7 @@ func getImageLayerAsHighColor(sourceImageData image.Image, imageStyle types.Imag
 				} else {
 					// In bounds, get the actual pixel color
 					lowerPixel := processedImageData.At(currentXLocation, currentImageYLocation+1)
-					redColorIndex, greenColorIndex, blueColorIndex, _ := get8BitColorComponents(lowerPixel)
+					redColorIndex, greenColorIndex, blueColorIndex, _ = get8BitColorComponents(lowerPixel)
 					currentCharacter.AttributeEntry.BackgroundColor = GetRGBColor(int32(redColorIndex), int32(greenColorIndex), int32(blueColorIndex))
 				}
 			}
@@ -551,74 +552,134 @@ func GetImageLayerAsAsciiColorArt(sourceImageData image.Image, imageStyle types.
 // resizeImageForBlockElements resizes the source image using an area-averaging
 // method to prepare it for block element rendering. It returns the raw pixel
 // color data and the weight of each pixel's contribution.
-func resizeImageForBlockElements(sourceImageData image.Image, targetWidth, targetHeight int) ([][3]float64, []float64) {
+func resizeImageForBlockElements(sourceImageData image.Image, targetWidth, targetHeight int) ([][][3]float64, [][]float64) {
 	sourceBounds := sourceImageData.Bounds()
 	sourceImageWidth, sourceImageHeight := sourceBounds.Dx(), sourceBounds.Dy()
 	coverageWidth := float64(targetWidth) / float64(sourceImageWidth)
 	coverageHeight := float64(targetHeight) / float64(sourceImageHeight)
-	pixelColorData := make([][3]float64, targetWidth*targetHeight)
-	pixelWeights := make([]float64, targetWidth*targetHeight)
 
-	for sourceYLocation := sourceBounds.Min.Y; sourceYLocation < sourceBounds.Max.Y; sourceYLocation++ {
-		for sourceXLocation := sourceBounds.Min.X; sourceXLocation < sourceBounds.Max.X; sourceXLocation++ {
-			redComponent, greenComponent, blueComponent, _ := sourceImageData.At(sourceXLocation, sourceYLocation).RGBA()
-			red, green, blue := float64(redComponent)/0xffff, float64(greenComponent)/0xffff, float64(blueComponent)/0xffff
+	numberOfWorkers := runtime.NumCPU()
+	var waitGroup sync.WaitGroup
 
-			targetYLocationStart := float64(sourceYLocation-sourceBounds.Min.Y) * coverageHeight
-			targetYLocationEnd := targetYLocationStart + coverageHeight
-			fromYLocation := int(targetYLocationStart)
-			toYLocation := int(targetYLocationEnd)
+	// Slices to hold results from each goroutine
+	partialPixelColorInformation := make([][][3]float64, numberOfWorkers)
+	partialPixelWeightInformation := make([][]float64, numberOfWorkers)
 
-			for targetYLocation := fromYLocation; targetYLocation <= toYLocation && targetYLocation < targetHeight; targetYLocation++ {
-				yCoverage := 1.0
-				if targetYLocation == fromYLocation {
-					yCoverage -= math.Mod(targetYLocationStart, 1.0)
-				}
-				if targetYLocation == toYLocation {
-					yCoverage -= 1.0 - math.Mod(targetYLocationEnd, 1.0)
-				}
+	rowsPerWorker := (sourceImageHeight + numberOfWorkers - 1) / numberOfWorkers
 
-				targetXLocationStart := float64(sourceXLocation-sourceBounds.Min.X) * coverageWidth
-				targetXLocationEnd := targetXLocationStart + coverageWidth
-				fromXLocation := int(targetXLocationStart)
-				toXLocation := int(targetXLocationEnd)
+	for workerIndex := 0; workerIndex < numberOfWorkers; workerIndex++ {
+		// Initialize slices for this worker
+		partialPixelColorInformation[workerIndex] = make([][3]float64, targetWidth*targetHeight)
+		partialPixelWeightInformation[workerIndex] = make([]float64, targetWidth*targetHeight)
 
-				for targetXLocation := fromXLocation; targetXLocation <= toXLocation && targetXLocation < targetWidth; targetXLocation++ {
-					xCoverage := 1.0
-					if targetXLocation == fromXLocation {
-						xCoverage -= math.Mod(targetXLocationStart, 1.0)
+		// Calculate row range for this worker
+		startSourceYLocation := sourceBounds.Min.Y + workerIndex*rowsPerWorker
+		endSourceYLocation := startSourceYLocation + rowsPerWorker
+		if endSourceYLocation > sourceBounds.Max.Y {
+			endSourceYLocation = sourceBounds.Max.Y
+		}
+
+		waitGroup.Add(1)
+		go func(currentWorkerIndex int, currentStartSourceYLocation, currentEndSourceYLocation int) {
+			defer waitGroup.Done()
+			localPixelColorInformation := partialPixelColorInformation[currentWorkerIndex]
+			localPixelWeightInformation := partialPixelWeightInformation[currentWorkerIndex]
+
+			for sourceYLocation := currentStartSourceYLocation; sourceYLocation < currentEndSourceYLocation; sourceYLocation++ {
+				for sourceXLocation := sourceBounds.Min.X; sourceXLocation < sourceBounds.Max.X; sourceXLocation++ {
+					redComponent, greenComponent, blueComponent, _ := sourceImageData.At(sourceXLocation, sourceYLocation).RGBA()
+					redColorValue := float64(redComponent) / 0xffff
+					greenColorValue := float64(greenComponent) / 0xffff
+					blueColorValue := float64(blueComponent) / 0xffff
+
+					targetYLocationStartingPoint := float64(sourceYLocation-sourceBounds.Min.Y) * coverageHeight
+					targetYLocationEndingPoint := targetYLocationStartingPoint + coverageHeight
+					fromTargetYLocation := int(targetYLocationStartingPoint)
+					toTargetYLocation := int(targetYLocationEndingPoint)
+
+					for targetYLocation := fromTargetYLocation; targetYLocation <= toTargetYLocation && targetYLocation < targetHeight; targetYLocation++ {
+						yAxisCoverage := 1.0
+						if targetYLocation == fromTargetYLocation {
+							yAxisCoverage -= math.Mod(targetYLocationStartingPoint, 1.0)
+						}
+						if targetYLocation == toTargetYLocation {
+							yAxisCoverage -= 1.0 - math.Mod(targetYLocationEndingPoint, 1.0)
+						}
+
+						targetXLocationStartingPoint := float64(sourceXLocation-sourceBounds.Min.X) * coverageWidth
+						targetXLocationEndingPoint := targetXLocationStartingPoint + coverageWidth
+						fromTargetXLocation := int(targetXLocationStartingPoint)
+						toTargetXLocation := int(targetXLocationEndingPoint)
+
+						for targetXLocation := fromTargetXLocation; targetXLocation <= toTargetXLocation && targetXLocation < targetWidth; targetXLocation++ {
+							xAxisCoverage := 1.0
+							if targetXLocation == fromTargetXLocation {
+								xAxisCoverage -= math.Mod(targetXLocationStartingPoint, 1.0)
+							}
+							if targetXLocation == toTargetXLocation {
+								xAxisCoverage -= 1.0 - math.Mod(targetXLocationEndingPoint, 1.0)
+							}
+
+							totalCoverage := xAxisCoverage * yAxisCoverage
+							if totalCoverage <= 0 {
+								continue
+							}
+
+							currentPixelIndex := targetYLocation*targetWidth + targetXLocation
+							localPixelColorInformation[currentPixelIndex][0] += redColorValue * totalCoverage
+							localPixelColorInformation[currentPixelIndex][1] += greenColorValue * totalCoverage
+							localPixelColorInformation[currentPixelIndex][2] += blueColorValue * totalCoverage
+							localPixelWeightInformation[currentPixelIndex] += totalCoverage
+						}
 					}
-					if targetXLocation == toXLocation {
-						xCoverage -= 1.0 - math.Mod(targetXLocationEnd, 1.0)
-					}
-
-					coverage := xCoverage * yCoverage
-					if coverage <= 0 {
-						continue
-					}
-
-					pixelIndex := targetYLocation*targetWidth + targetXLocation
-					pixelColorData[pixelIndex][0] += red * coverage
-					pixelColorData[pixelIndex][1] += green * coverage
-					pixelColorData[pixelIndex][2] += blue * coverage
-					pixelWeights[pixelIndex] += coverage
 				}
 			}
-		}
+		}(workerIndex, startSourceYLocation, endSourceYLocation)
 	}
-	return pixelColorData, pixelWeights
+
+	waitGroup.Wait()
+
+	return partialPixelColorInformation, partialPixelWeightInformation
 }
 
-// normalizePixels calculates the final average color for each pixel based on the
-// weighted sums from the resizing process.
-func normalizePixels(pixelColorData [][3]float64, pixelWeights []float64) {
-	for pixelIndex, weight := range pixelWeights {
-		if weight > 0 {
-			pixelColorData[pixelIndex][0] /= weight
-			pixelColorData[pixelIndex][1] /= weight
-			pixelColorData[pixelIndex][2] /= weight
+// mergeAndNormalizeInParallel merges and normalizes pixel data in parallel.
+func mergeAndNormalizeInParallel(partialPixelColorInformation [][][3]float64, partialPixelWeightInformation [][]float64, targetWidth, targetHeight int) [][3]float64 {
+	numberOfWorkers := runtime.NumCPU()
+	var waitGroup sync.WaitGroup
+
+	finalPixelColorInformation := make([][3]float64, targetWidth*targetHeight)
+	pixelsPerWorker := (len(finalPixelColorInformation) + numberOfWorkers - 1) / numberOfWorkers
+
+	for workerIndex := 0; workerIndex < numberOfWorkers; workerIndex++ {
+		startPixelIndex := workerIndex * pixelsPerWorker
+		endPixelIndex := startPixelIndex + pixelsPerWorker
+		if endPixelIndex > len(finalPixelColorInformation) {
+			endPixelIndex = len(finalPixelColorInformation)
 		}
+
+		waitGroup.Add(1)
+		go func(start, end int) {
+			defer waitGroup.Done()
+			for pixelDataIndex := start; pixelDataIndex < end; pixelDataIndex++ {
+				var totalRed, totalGreen, totalBlue, totalWeight float64
+				for i := 0; i < numberOfWorkers; i++ {
+					totalRed += partialPixelColorInformation[i][pixelDataIndex][0]
+					totalGreen += partialPixelColorInformation[i][pixelDataIndex][1]
+					totalBlue += partialPixelColorInformation[i][pixelDataIndex][2]
+					totalWeight += partialPixelWeightInformation[i][pixelDataIndex]
+				}
+
+				if totalWeight > 0 {
+					finalPixelColorInformation[pixelDataIndex][0] = totalRed / totalWeight
+					finalPixelColorInformation[pixelDataIndex][1] = totalGreen / totalWeight
+					finalPixelColorInformation[pixelDataIndex][2] = totalBlue / totalWeight
+				}
+			}
+		}(startPixelIndex, endPixelIndex)
 	}
+
+	waitGroup.Wait()
+	return finalPixelColorInformation
 }
 
 // findBestBlockElementForCell analyzes an 8x8 grid of pixels to find the optimal
@@ -675,8 +736,8 @@ func findBestBlockElementForCell(pixelColorData [][3]float64, cellRowLocation, c
 			}
 		}
 
-		// Calculate error
-		var meanSquaredError float64
+		// Calculate error using Sum of Absolute Differences (SAD)
+		var sumAbsoluteDifferences float64
 		currentBit = 1
 		for pixelYLocation := 0; pixelYLocation < 8; pixelYLocation++ {
 			for pixelXLocation := 0; pixelXLocation < 8; pixelXLocation++ {
@@ -690,15 +751,15 @@ func findBestBlockElementForCell(pixelColorData [][3]float64, cellRowLocation, c
 
 				for channel := 0; channel < 3; channel++ {
 					colorError := pixelColorData[pixelIndex][channel] - pixelColor[channel]
-					meanSquaredError += colorError * colorError
+					sumAbsoluteDifferences += math.Abs(colorError)
 				}
 				currentBit <<= 1
 			}
 		}
 
 		// Check if this is the best match so far
-		if meanSquaredError < minimumMeanSquaredError {
-			minimumMeanSquaredError = meanSquaredError
+		if sumAbsoluteDifferences < minimumMeanSquaredError { // Renamed variable to reflect SAD
+			minimumMeanSquaredError = sumAbsoluteDifferences
 			bestBlockElement = blockElement
 			bestForegroundColor = foregroundColor
 			bestBackgroundColor = backgroundColor
@@ -725,20 +786,20 @@ func findBestBlockElementForCell(pixelColorData [][3]float64, cellRowLocation, c
 		}
 	}
 
-	// Calculate error for shade block
-	var meanSquaredError float64
+	// Calculate error for shade block using Sum of Absolute Differences (SAD)
+	var sumAbsoluteDifferences float64
 	for pixelYLocation := 0; pixelYLocation < 8; pixelYLocation++ {
 		for pixelXLocation := 0; pixelXLocation < 8; pixelXLocation++ {
 			pixelIndex := (cellRowLocation*8+pixelYLocation)*characterGridWidth*8 + (cellColumnLocation*8 + pixelXLocation)
 			for channel := 0; channel < 3; channel++ {
 				colorError := pixelColorData[pixelIndex][channel] - averageColor[channel]
-				meanSquaredError += colorError * colorError
+				sumAbsoluteDifferences += math.Abs(colorError)
 			}
 		}
 	}
 
 	// If shade block is better, use it
-	if meanSquaredError < minimumMeanSquaredError {
+	if sumAbsoluteDifferences < minimumMeanSquaredError { // Renamed variable to reflect SAD
 		grayscaleValue := 0.299*averageColor[0] + 0.587*averageColor[1] + 0.114*averageColor[2]
 		shadeCharacters := []rune{' ', constants.CharBlockLightShade, constants.CharBlockMediumShade, constants.CharBlockDarkShade, constants.CharBlockFull}
 		shadeIndex := int(math.Round(grayscaleValue * 4))
@@ -750,12 +811,74 @@ func findBestBlockElementForCell(pixelColorData [][3]float64, cellRowLocation, c
 	return bestBlockElement, bestForegroundColor, bestBackgroundColor
 }
 
+type cellJob struct {
+	rowLocation    int
+	columnLocation int
+}
+
+// processCellsInParallel processes all character cells in parallel using a worker pool.
+func processCellsInParallel(pixelColorData [][3]float64, characterWidth, characterHeight int, layerEntry *types.LayerEntryType) {
+	numberOfWorkers := runtime.NumCPU()
+	jobs := make(chan cellJob, characterWidth*characterHeight)
+	var waitGroup sync.WaitGroup
+
+	for workerIndex := 0; workerIndex < numberOfWorkers; workerIndex++ {
+		waitGroup.Add(1)
+		go func() {
+			defer waitGroup.Done()
+			for job := range jobs {
+				bestBlockElement, bestForegroundColor, bestBackgroundColor := findBestBlockElementForCell(pixelColorData, job.rowLocation, job.columnLocation, characterWidth, characterHeight)
+
+				// Set the character and colors in the layer entry
+				red := int32(math.Min(255, bestForegroundColor[0]*255))
+				green := int32(math.Min(255, bestForegroundColor[1]*255))
+				blue := int32(math.Min(255, bestForegroundColor[2]*255))
+				layerEntry.CharacterMemory[job.rowLocation][job.columnLocation].AttributeEntry.ForegroundColor = GetRGBColor(red, green, blue)
+
+				red = int32(math.Min(255, bestBackgroundColor[0]*255))
+				green = int32(math.Min(255, bestBackgroundColor[1]*255))
+				blue = int32(math.Min(255, bestBackgroundColor[2]*255))
+				layerEntry.CharacterMemory[job.rowLocation][job.columnLocation].AttributeEntry.BackgroundColor = GetRGBColor(red, green, blue)
+
+				layerEntry.CharacterMemory[job.rowLocation][job.columnLocation].Character = bestBlockElement
+			}
+		}()
+	}
+
+	for rowLocation := 0; rowLocation < characterHeight; rowLocation++ {
+		for columnLocation := 0; columnLocation < characterWidth; columnLocation++ {
+			jobs <- cellJob{rowLocation: rowLocation, columnLocation: columnLocation}
+		}
+	}
+	close(jobs)
+	waitGroup.Wait()
+}
+
 // getImageLayerAsBlockElements renders an image using block elements.
 // It divides each character cell into an 8x8 grid and finds the best block element
 // to represent the image in that cell.
 func getImageLayerAsBlockElements(sourceImageData image.Image, imageStyle types.ImageStyleEntryType, widthInCharacters int, heightInCharacters int, blurSigma float64) types.LayerEntryType {
+	if !imageStyle.IsWidthAspectRatioPreserved && !imageStyle.IsHeightAspectRatioPreserved {
+		if widthInCharacters <= 0 || heightInCharacters <= 0 {
+			safeSttyPanic(fmt.Sprintf("The specified width and height of %dx%d for your image is not valid when aspect ratio is not preserved.", widthInCharacters, heightInCharacters))
+		}
+	} else {
+		if widthInCharacters <= 0 && heightInCharacters <= 0 {
+			safeSttyPanic(fmt.Sprintf("The specified width and height of %dx%d for your image is not valid.", widthInCharacters, heightInCharacters))
+		}
+	}
+
+	// Apply blur and grayscale if specified
+	processedImageData := sourceImageData
+	if blurSigma > 0 {
+		processedImageData = imaging.Blur(sourceImageData, blurSigma)
+	}
+	if imageStyle.IsGrayscale {
+		processedImageData = ConvertImageToGrayscale(processedImageData)
+	}
+
 	// Calculate the dimensions
-	sourceBounds := sourceImageData.Bounds()
+	sourceBounds := processedImageData.Bounds()
 	sourceImageWidth, sourceImageHeight := sourceBounds.Dx(), sourceBounds.Dy()
 
 	// Calculate width and height in characters
@@ -771,9 +894,9 @@ func getImageLayerAsBlockElements(sourceImageData image.Image, imageStyle types.
 		}
 	} else {
 		// If only one dimension is specified, calculate the other to preserve aspect ratio
-		if characterWidth == 0 {
+		if imageStyle.IsWidthAspectRatioPreserved && characterWidth == 0 {
 			characterWidth = sourceImageWidth * characterHeight / sourceImageHeight
-		} else if characterHeight == 0 {
+		} else if imageStyle.IsHeightAspectRatioPreserved && characterHeight == 0 {
 			characterHeight = sourceImageHeight * characterWidth / sourceImageWidth
 		}
 	}
@@ -783,30 +906,13 @@ func getImageLayerAsBlockElements(sourceImageData image.Image, imageStyle types.
 
 	// Resize the image to an 8x8 grid per character cell
 	targetPixelWidth, targetPixelHeight := characterWidth*8, characterHeight*8
-	pixelColorData, pixelWeights := resizeImageForBlockElements(sourceImageData, targetPixelWidth, targetPixelHeight)
+	partialPixelColorInformation, partialPixelWeightInformation := resizeImageForBlockElements(processedImageData, targetPixelWidth, targetPixelHeight)
 
-	// Normalize the resized pixels
-	normalizePixels(pixelColorData, pixelWeights)
+	// Merge and normalize the resized pixels in parallel
+	finalPixelColorInformation := mergeAndNormalizeInParallel(partialPixelColorInformation, partialPixelWeightInformation, targetPixelWidth, targetPixelHeight)
 
 	// Process each cell to find the best block element
-	for rowLocation := 0; rowLocation < characterHeight; rowLocation++ {
-		for columnLocation := 0; columnLocation < characterWidth; columnLocation++ {
-			bestBlockElement, bestForegroundColor, bestBackgroundColor := findBestBlockElementForCell(pixelColorData, rowLocation, columnLocation, characterWidth, characterHeight)
-
-			// Set the character and colors in the layer entry
-			red := int32(math.Min(255, bestForegroundColor[0]*255))
-			green := int32(math.Min(255, bestForegroundColor[1]*255))
-			blue := int32(math.Min(255, bestForegroundColor[2]*255))
-			layerEntry.CharacterMemory[rowLocation][columnLocation].AttributeEntry.ForegroundColor = GetRGBColor(red, green, blue)
-
-			red = int32(math.Min(255, bestBackgroundColor[0]*255))
-			green = int32(math.Min(255, bestBackgroundColor[1]*255))
-			blue = int32(math.Min(255, bestBackgroundColor[2]*255))
-			layerEntry.CharacterMemory[rowLocation][columnLocation].AttributeEntry.BackgroundColor = GetRGBColor(red, green, blue)
-
-			layerEntry.CharacterMemory[rowLocation][columnLocation].Character = bestBlockElement
-		}
-	}
+	processCellsInParallel(finalPixelColorInformation, characterWidth, characterHeight, &layerEntry)
 
 	return layerEntry
 }
