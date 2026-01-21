@@ -651,7 +651,7 @@ func getImageLayerAsBlockElements(sourceImageData image.Image, imageStyle types.
 			var bestFg, bestBg [3]float64
 
 			// Try each block element
-			for element, bits := range constants.BlockElements {
+			for element, bits := range constants.CharBlockBitmasks {
 				// Calculate average colors for set and unset bits
 				var fg, bg [3]float64
 				var setBits float64
@@ -757,7 +757,7 @@ func getImageLayerAsBlockElements(sourceImageData image.Image, imageStyle types.
 			if mse < minMSE {
 				// Calculate shade level
 				gray := 0.299*avg[0] + 0.587*avg[1] + 0.114*avg[2]
-				shades := []rune{' ', constants.BlockLightShade, constants.BlockMediumShade, constants.BlockDarkShade, constants.BlockFullBlock}
+				shades := []rune{' ', constants.CharBlockLightShade, constants.CharBlockMediumShade, constants.CharBlockDarkShade, constants.CharBlockFull}
 				shade := int(math.Round(gray * 4))
 				bestElement = shades[shade]
 				bestFg = avg

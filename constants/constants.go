@@ -87,114 +87,122 @@ var CP437ToUnicode = [256]rune{
 }
 
 const (
-	CharDot                                 = '\u2022'
-	CharArrowLeft                           = '\u2190'
-	CharArrowUp                             = '\u2191'
-	CharArrowDown                           = '\u2193'
-	CharHLine                               = '\u2500'
-	CharSingleLineHorizontal                = '\u2500'
-	CharSingleLineVertical                  = '\u2502'
-	CharVLine                               = '\u2502'
-	CharSingleLineUpLeftCorner              = '\u250C'
-	CharULCorner                            = '\u250C'
-	CharSingleLineUpRightCorner             = '\u2510'
-	CharURCorner                            = '\u2510'
-	CharSingleLineTRight                    = '\u251C'
-	CharSingleLineTLeft                     = '\u2524'
-	CharSingleLineTDown                     = '\u252C'
-	CharSingleLineTUp                       = '\u2534'
-	CharSingleLineCross                     = '\u253C'
-	CharLLCorner                            = '\u2514'
-	CharSingleLineLowerLeftCorner           = '\u2514'
-	CharLRCorner                            = '\u2518'
-	CharSingleLineLowerRightCorner          = '\u2518'
-	CharDoubleLineHorizontal                = '\u2550'
-	CharDoubleLineVertical                  = '\u2551'
-	CharDoubleLineUpLeftCorner              = '\u2554'
-	CharDoubleLineUpRightCorner             = '\u2557'
-	CharDoubleLineLowerLeftCorner           = '\u255A'
-	CharDoubleLineLowerRightCorner          = '\u255D'
-	CharSingleLineDoubleRight               = '\u255E'
-	CharDoubleLineTSingleRight              = '\u255F'
-	CharDoubleLineTRight                    = '\u2560'
-	CharSingleLineDoubleLeft                = '\u2561'
-	CharDoubleLineTSingleLeft               = '\u2562'
-	CharDoubleLineTLeft                     = '\u2563'
-	CharDoubleLineTSingleDown               = '\u2564'
-	CharSingleLineDoubleDown                = '\u2565'
-	CharDoubleLineTDown                     = '\u2566'
-	CharDoubleLineTSingleUp                 = '\u2567'
-	CharDoubleLineTUp                       = '\u2569'
-	CharSingleLineDoubleUp                  = '\u256B'
-	CharDoubleLineCross                     = '\u256C'
-	CharRoundedULCorner                     = '\u256D'
-	CharRoundedURCorner                     = '\u256E'
-	CharRoundedLRCorner                     = '\u256F'
-	CharRoundedLLCorner                     = '\u2570'
-	CharBlockUpperHalf                      = '\u2580'
-	CharBlockLowerOneEighth                 = '\u2581'
-	CharBlockLowerOneQuarter                = '\u2582'
-	CharBlockLowerThreeEighths              = '\u2583'
-	CharBlockLowerHalf                      = '\u2584'
-	CharBlockLowerFiveEighths               = '\u2585'
-	CharBlockLowerThreeQuarters             = '\u2586'
-	CharBlockLowerSevenEighths              = '\u2587'
-	CharBlockFull                           = '\u2588'
-	CharBlockSolid                          = '\u2588'
-	CharBlockLeftSevenEighths               = '\u2589'
-	CharBlockLeftThreeQuarters              = '\u258A'
-	CharBlockLeftFiveEighths                = '\u258B'
-	CharBlockLeftHalf                       = '\u258C'
-	CharBlockLeftThreeEighths               = '\u258D'
-	CharBlockLeftOneQuarter                 = '\u258E'
-	CharBlockLeftOneEighth                  = '\u258F'
-	CharBlockLightShade                     = '\u2591'
-	CharBlockSparce                         = '\u2591'
-	CharBlockMedium                         = '\u2592'
-	CharBlockMediumShade                    = '\u2592'
-	CharBlockDarkShade                      = '\u2593'
-	CharBlockDense                          = '\u2593'
-	CharBlockQuadrantLowerLeft              = '\u2596'
-	CharBlockQuadrantLowerRight             = '\u2597'
-	CharBlockQuadrantUpperLeft              = '\u2598'
-	CharBlockQuadrantUpperRight             = '\u2599'
-	CharBlockQuadrantUpperLeftAndLowerRight = '\u259A'
-	CharTriangleUp                          = '\u25B4'
-	CharTriangleRight                       = '\u25B8'
-	CharTriangleDown                        = '\u25BE'
-	CharTriangleLeft                        = '\u25C2'
-	CharCheckedRadioButton                  = '\u25CB'
-	CharUncheckedRadioButton                = '\u25C9'
-	CharCheckedBox                          = '\u2610'
-	CharUncheckedBox                        = '\u2611'
-	CharFaceWhite                           = '\u263A'
-	CharFaceBlack                           = '\u263B'
-	CharSpades                              = '\u2660'
-	CharClub                                = '\u2663'
-	CharHeart                               = '\u2665'
-	CharDiamond                             = '\u2666'
+	CharDot                                              = '\u2022' // •
+	CharArrowLeft                                        = '\u2190' // ←
+	CharArrowUp                                          = '\u2191' // ↑
+	CharArrowDown                                        = '\u2193' // ↓
+	CharHLine                                            = '\u2500' // ─
+	CharSingleLineHorizontal                             = '\u2500' // ─
+	CharSingleLineVertical                               = '\u2502' // │
+	CharVLine                                            = '\u2502' // │
+	CharSingleLineUpLeftCorner                           = '\u250C' // ┌
+	CharULCorner                                         = '\u250C' // ┌
+	CharSingleLineUpRightCorner                          = '\u2510' // ┐
+	CharURCorner                                         = '\u2510' // ┐
+	CharSingleLineTRight                                 = '\u251C' // ├
+	CharSingleLineTLeft                                  = '\u2524' // ┤
+	CharSingleLineTDown                                  = '\u252C' // ┬
+	CharSingleLineTUp                                    = '\u2534' // ┴
+	CharSingleLineCross                                  = '\u253C' // ┼
+	CharLLCorner                                         = '\u2514' // └
+	CharSingleLineLowerLeftCorner                        = '\u2514' // └
+	CharLRCorner                                         = '\u2518' // ┘
+	CharSingleLineLowerRightCorner                       = '\u2518' // ┘
+	CharDoubleLineHorizontal                             = '\u2550' // ═
+	CharDoubleLineVertical                               = '\u2551' // ║
+	CharDoubleLineUpLeftCorner                           = '\u2554' // ╔
+	CharDoubleLineUpRightCorner                          = '\u2557' // ╗
+	CharDoubleLineLowerLeftCorner                        = '\u255A' // ╚
+	CharDoubleLineLowerRightCorner                       = '\u255D' // ╝
+	CharSingleLineDoubleRight                            = '\u255E' // ╞
+	CharDoubleLineTSingleRight                           = '\u255F' // ╟
+	CharDoubleLineTRight                                 = '\u2560' // ╠
+	CharSingleLineDoubleLeft                             = '\u2561' // ╡
+	CharDoubleLineTSingleLeft                            = '\u2562' // ╢
+	CharDoubleLineTLeft                                  = '\u2563' // ╣
+	CharDoubleLineTSingleDown                            = '\u2564' // ╤
+	CharSingleLineDoubleDown                             = '\u2565' // ╥
+	CharDoubleLineTDown                                  = '\u2566' // ╦
+	CharDoubleLineTSingleUp                              = '\u2567' // ╧
+	CharDoubleLineTUp                                    = '\u2569' // ╩
+	CharSingleLineDoubleUp                               = '\u256B' // ╪
+	CharDoubleLineCross                                  = '\u256C' // ╬
+	CharRoundedULCorner                                  = '\u256D' // ╭
+	CharRoundedURCorner                                  = '\u256E' // ╮
+	CharRoundedLRCorner                                  = '\u256F' // ╯
+	CharRoundedLLCorner                                  = '\u2570' // ╰
+	CharBlockUpperHalf                                   = '\u2580' // ▀
+	CharBlockLowerOneEighth                              = '\u2581' //
+	CharBlockLowerOneQuarter                             = '\u2582' // ▂
+	CharBlockLowerThreeEighths                           = '\u2583' // ▃
+	CharBlockLowerHalf                                   = '\u2584' // ▄
+	CharBlockLowerFiveEighths                            = '\u2585' // ▅
+	CharBlockLowerThreeQuarters                          = '\u2586' // ▆
+	CharBlockLowerSevenEighths                           = '\u2587' // ▇
+	CharBlockFull                                        = '\u2588' // █
+	CharBlockSolid                                       = '\u2588' // █
+	CharBlockLeftSevenEighths                            = '\u2589' // ▉
+	CharBlockLeftThreeQuarters                           = '\u258A' // ▊
+	CharBlockLeftFiveEighths                             = '\u258B' // ▋
+	CharBlockLeftHalf                                    = '\u258C' // ▌
+	CharBlockLeftThreeEighths                            = '\u258D' // ▍
+	CharBlockLeftOneQuarter                              = '\u258E' // ▎
+	CharBlockLeftOneEighth                               = '\u258F' // ▏
+	CharBlockRightHalf                                   = '\u2590' // ▐
+	CharBlockLightShade                                  = '\u2591' // ░
+	CharBlockSparce                                      = '\u2591' // ░
+	CharBlockMedium                                      = '\u2592' // ▒
+	CharBlockMediumShade                                 = '\u2592' // ▒
+	CharBlockDarkShade                                   = '\u2593' // ▓
+	CharBlockDense                                       = '\u2593' // ▓
+	CharBlockUpperOneEighth                              = '\u2594' // ▔
+	CharBlockRightOneEighth                              = '\u2595' // ▕
+	CharBlockQuadrantLowerLeft                           = '\u2596' // ▖
+	CharBlockQuadrantLowerRight                          = '\u2597' // ▗
+	CharBlockQuadrantUpperLeft                           = '\u2598' // ▘
+	CharBlockQuadrantUpperLeftAndLowerLeftAndLowerRight  = '\u2599' // ▙
+	CharBlockQuadrantUpperLeftAndLowerRight              = '\u259A' // ▚
+	CharBlockQuadrantUpperLeftAndUpperRightAndLowerLeft  = '\u259B' // ▛
+	CharBlockQuadrantUpperLeftAndUpperRightAndLowerRight = '\u259C' // ▜
+	CharBlockQuadrantUpperRight                          = '\u259D' // ▝
+	CharBlockQuadrantUpperRightAndLowerLeft              = '\u259E' // ▞
+	CharBlockQuadrantUpperRightAndLowerLeftAndLowerRight = '\u259F' // ▟
+	CharTriangleUp                                       = '\u25B4' // ▴
+	CharTriangleRight                                    = '\u25B8' // ▸
+	CharTriangleDown                                     = '\u25BE' // ▾
+	CharTriangleLeft                                     = '\u25C2' // ◂
+	CharCheckedRadioButton                               = '\u25CB' // ○
+	CharUncheckedRadioButton                             = '\u25C9' // ◉
+	CharCheckedBox                                       = '\u2610' // ☐
+	CharUncheckedBox                                     = '\u2611' // ☑
+	CharFaceWhite                                        = '\u263A' // ☺
+	CharFaceBlack                                        = '\u263B' // ☻
+	CharSpades                                           = '\u2660' // ♠
+	CharClub                                             = '\u2663' // ♣
+	CharHeart                                            = '\u2665' // ♥
+	CharDiamond                                          = '\u2666' // ♦
 )
 
-var BlockElementRunes = []rune{
-	CharBlockLowerOneEighth,
-	CharBlockLowerOneQuarter,
-	CharBlockLowerThreeEighths,
-	CharBlockLowerHalf,
-	CharBlockLowerFiveEighths,
-	CharBlockLowerThreeQuarters,
-	CharBlockLowerSevenEighths,
-	CharBlockLeftSevenEighths,
-	CharBlockLeftThreeQuarters,
-	CharBlockLeftFiveEighths,
-	CharBlockLeftHalf,
-	CharBlockLeftThreeEighths,
-	CharBlockLeftOneQuarter,
-	CharBlockLeftOneEighth,
-	CharBlockQuadrantLowerLeft,
-	CharBlockQuadrantLowerRight,
-	CharBlockQuadrantUpperLeft,
-	CharBlockQuadrantUpperRight,
-	CharBlockQuadrantUpperLeftAndLowerRight,
+var CharBlockBitmasks = map[rune]uint64{
+	CharBlockQuadrantUpperLeftAndLowerRight: 0b1111000011110000111100001111000000001111000011110000111100001111,
+	CharBlockQuadrantUpperRight:             0b0000000000000000000000000000000011110000111100001111000011110000,
+	CharBlockQuadrantUpperLeft:              0b0000000000000000000000000000000000001111000011110000111100001111,
+	CharBlockQuadrantLowerRight:             0b1111000011110000111100001111000000000000000000000000000000000000,
+	CharBlockQuadrantLowerLeft:              0b0000111100001111000011110000111100000000000000000000000000000000,
+	CharBlockLeftOneEighth:                  0b0000000100000001000000010000000100000001000000010000000100000001,
+	CharBlockLeftOneQuarter:                 0b0000001100000011000000110000001100000011000000110000001100000011,
+	CharBlockLeftThreeEighths:               0b0000011100000111000001110000011100000111000001110000011100000111,
+	CharBlockLeftHalf:                       0b0000111100001111000011110000111100001111000011110000111100001111,
+	CharBlockLeftFiveEighths:                0b0001111100011111000111110001111100011111000111110001111100011111,
+	CharBlockLeftThreeQuarters:              0b0011111100111111001111110011111100111111001111110011111100111111,
+	CharBlockLeftSevenEighths:               0b0111111101111111011111110111111101111111011111110111111101111111,
+	CharBlockLowerSevenEighths:              0b1111111111111111111111111111111111111111111111111111111100000000,
+	CharBlockLowerThreeQuarters:             0b1111111111111111111111111111111111111111111111110000000000000000,
+	CharBlockLowerFiveEighths:               0b1111111111111111111111111111111111111111000000000000000000000000,
+	CharBlockLowerHalf:                      0b1111111111111111111111111111111100000000000000000000000000000000,
+	CharBlockLowerThreeEighths:              0b1111111111111111111111110000000000000000000000000000000000000000,
+	CharBlockLowerOneQuarter:                0b1111111111111111000000000000000000000000000000000000000000000000,
+	CharBlockLowerOneEighth:                 0b1111111100000000000000000000000000000000000000000000000000000000,
 }
 
 // Black
