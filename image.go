@@ -548,234 +548,263 @@ func GetImageLayerAsAsciiColorArt(sourceImageData image.Image, imageStyle types.
 	return layerEntry
 }
 
+// resizeImageForBlockElements resizes the source image using an area-averaging
+// method to prepare it for block element rendering. It returns the raw pixel
+// color data and the weight of each pixel's contribution.
+func resizeImageForBlockElements(sourceImageData image.Image, targetWidth, targetHeight int) ([][3]float64, []float64) {
+	sourceBounds := sourceImageData.Bounds()
+	sourceImageWidth, sourceImageHeight := sourceBounds.Dx(), sourceBounds.Dy()
+	coverageWidth := float64(targetWidth) / float64(sourceImageWidth)
+	coverageHeight := float64(targetHeight) / float64(sourceImageHeight)
+	pixelColorData := make([][3]float64, targetWidth*targetHeight)
+	pixelWeights := make([]float64, targetWidth*targetHeight)
+
+	for sourceYLocation := sourceBounds.Min.Y; sourceYLocation < sourceBounds.Max.Y; sourceYLocation++ {
+		for sourceXLocation := sourceBounds.Min.X; sourceXLocation < sourceBounds.Max.X; sourceXLocation++ {
+			redComponent, greenComponent, blueComponent, _ := sourceImageData.At(sourceXLocation, sourceYLocation).RGBA()
+			red, green, blue := float64(redComponent)/0xffff, float64(greenComponent)/0xffff, float64(blueComponent)/0xffff
+
+			targetYLocationStart := float64(sourceYLocation-sourceBounds.Min.Y) * coverageHeight
+			targetYLocationEnd := targetYLocationStart + coverageHeight
+			fromYLocation := int(targetYLocationStart)
+			toYLocation := int(targetYLocationEnd)
+
+			for targetYLocation := fromYLocation; targetYLocation <= toYLocation && targetYLocation < targetHeight; targetYLocation++ {
+				yCoverage := 1.0
+				if targetYLocation == fromYLocation {
+					yCoverage -= math.Mod(targetYLocationStart, 1.0)
+				}
+				if targetYLocation == toYLocation {
+					yCoverage -= 1.0 - math.Mod(targetYLocationEnd, 1.0)
+				}
+
+				targetXLocationStart := float64(sourceXLocation-sourceBounds.Min.X) * coverageWidth
+				targetXLocationEnd := targetXLocationStart + coverageWidth
+				fromXLocation := int(targetXLocationStart)
+				toXLocation := int(targetXLocationEnd)
+
+				for targetXLocation := fromXLocation; targetXLocation <= toXLocation && targetXLocation < targetWidth; targetXLocation++ {
+					xCoverage := 1.0
+					if targetXLocation == fromXLocation {
+						xCoverage -= math.Mod(targetXLocationStart, 1.0)
+					}
+					if targetXLocation == toXLocation {
+						xCoverage -= 1.0 - math.Mod(targetXLocationEnd, 1.0)
+					}
+
+					coverage := xCoverage * yCoverage
+					if coverage <= 0 {
+						continue
+					}
+
+					pixelIndex := targetYLocation*targetWidth + targetXLocation
+					pixelColorData[pixelIndex][0] += red * coverage
+					pixelColorData[pixelIndex][1] += green * coverage
+					pixelColorData[pixelIndex][2] += blue * coverage
+					pixelWeights[pixelIndex] += coverage
+				}
+			}
+		}
+	}
+	return pixelColorData, pixelWeights
+}
+
+// normalizePixels calculates the final average color for each pixel based on the
+// weighted sums from the resizing process.
+func normalizePixels(pixelColorData [][3]float64, pixelWeights []float64) {
+	for pixelIndex, weight := range pixelWeights {
+		if weight > 0 {
+			pixelColorData[pixelIndex][0] /= weight
+			pixelColorData[pixelIndex][1] /= weight
+			pixelColorData[pixelIndex][2] /= weight
+		}
+	}
+}
+
+// findBestBlockElementForCell analyzes an 8x8 grid of pixels to find the optimal
+// block element character and corresponding foreground/background colors to
+// represent that portion of the image.
+func findBestBlockElementForCell(pixelColorData [][3]float64, cellRowLocation, cellColumnLocation, characterGridWidth, characterGridHeight int) (rune, [3]float64, [3]float64) {
+	minimumMeanSquaredError := math.MaxFloat64
+	var bestBlockElement rune
+	var bestForegroundColor, bestBackgroundColor [3]float64
+
+	// Try each block element
+	for blockElement, bitmask := range constants.CharBlockBitmasks {
+		var foregroundColor, backgroundColor [3]float64
+		var setBitCount float64
+		currentBit := uint64(1)
+
+		for pixelYLocation := 0; pixelYLocation < 8; pixelYLocation++ {
+			for pixelXLocation := 0; pixelXLocation < 8; pixelXLocation++ {
+				pixelIndex := (cellRowLocation*8+pixelYLocation)*characterGridWidth*8 + (cellColumnLocation*8 + pixelXLocation)
+				if bitmask&currentBit != 0 {
+					foregroundColor[0] += pixelColorData[pixelIndex][0]
+					foregroundColor[1] += pixelColorData[pixelIndex][1]
+					foregroundColor[2] += pixelColorData[pixelIndex][2]
+					setBitCount++
+				} else {
+					backgroundColor[0] += pixelColorData[pixelIndex][0]
+					backgroundColor[1] += pixelColorData[pixelIndex][1]
+					backgroundColor[2] += pixelColorData[pixelIndex][2]
+				}
+				currentBit <<= 1
+			}
+		}
+
+		// Normalize colors
+		unsetBitCount := 64.0 - setBitCount
+		if setBitCount > 0 {
+			for channel := 0; channel < 3; channel++ {
+				foregroundColor[channel] /= setBitCount
+				if foregroundColor[channel] < 0 {
+					foregroundColor[channel] = 0
+				} else if foregroundColor[channel] > 1 {
+					foregroundColor[channel] = 1
+				}
+			}
+		}
+		if unsetBitCount > 0 {
+			for channel := 0; channel < 3; channel++ {
+				backgroundColor[channel] /= unsetBitCount
+				if backgroundColor[channel] < 0 {
+					backgroundColor[channel] = 0
+				} else if backgroundColor[channel] > 1 {
+					backgroundColor[channel] = 1
+				}
+			}
+		}
+
+		// Calculate error
+		var meanSquaredError float64
+		currentBit = 1
+		for pixelYLocation := 0; pixelYLocation < 8; pixelYLocation++ {
+			for pixelXLocation := 0; pixelXLocation < 8; pixelXLocation++ {
+				pixelIndex := (cellRowLocation*8+pixelYLocation)*characterGridWidth*8 + (cellColumnLocation*8 + pixelXLocation)
+				var pixelColor [3]float64
+				if bitmask&currentBit != 0 {
+					pixelColor = foregroundColor
+				} else {
+					pixelColor = backgroundColor
+				}
+
+				for channel := 0; channel < 3; channel++ {
+					colorError := pixelColorData[pixelIndex][channel] - pixelColor[channel]
+					meanSquaredError += colorError * colorError
+				}
+				currentBit <<= 1
+			}
+		}
+
+		// Check if this is the best match so far
+		if meanSquaredError < minimumMeanSquaredError {
+			minimumMeanSquaredError = meanSquaredError
+			bestBlockElement = blockElement
+			bestForegroundColor = foregroundColor
+			bestBackgroundColor = backgroundColor
+		}
+	}
+
+	// Check if a shade block would be better
+	var averageColor [3]float64
+	for pixelYLocation := 0; pixelYLocation < 8; pixelYLocation++ {
+		for pixelXLocation := 0; pixelXLocation < 8; pixelXLocation++ {
+			pixelIndex := (cellRowLocation*8+pixelYLocation)*characterGridWidth*8 + (cellColumnLocation*8 + pixelXLocation)
+			for channel := 0; channel < 3; channel++ {
+				averageColor[channel] += pixelColorData[pixelIndex][channel] / 64
+			}
+		}
+	}
+
+	// Normalize average color
+	for channel := 0; channel < 3; channel++ {
+		if averageColor[channel] < 0 {
+			averageColor[channel] = 0
+		} else if averageColor[channel] > 1 {
+			averageColor[channel] = 1
+		}
+	}
+
+	// Calculate error for shade block
+	var meanSquaredError float64
+	for pixelYLocation := 0; pixelYLocation < 8; pixelYLocation++ {
+		for pixelXLocation := 0; pixelXLocation < 8; pixelXLocation++ {
+			pixelIndex := (cellRowLocation*8+pixelYLocation)*characterGridWidth*8 + (cellColumnLocation*8 + pixelXLocation)
+			for channel := 0; channel < 3; channel++ {
+				colorError := pixelColorData[pixelIndex][channel] - averageColor[channel]
+				meanSquaredError += colorError * colorError
+			}
+		}
+	}
+
+	// If shade block is better, use it
+	if meanSquaredError < minimumMeanSquaredError {
+		grayscaleValue := 0.299*averageColor[0] + 0.587*averageColor[1] + 0.114*averageColor[2]
+		shadeCharacters := []rune{' ', constants.CharBlockLightShade, constants.CharBlockMediumShade, constants.CharBlockDarkShade, constants.CharBlockFull}
+		shadeIndex := int(math.Round(grayscaleValue * 4))
+		bestBlockElement = shadeCharacters[shadeIndex]
+		bestForegroundColor = averageColor
+		bestBackgroundColor = averageColor
+	}
+
+	return bestBlockElement, bestForegroundColor, bestBackgroundColor
+}
+
 // getImageLayerAsBlockElements renders an image using block elements.
 // It divides each character cell into an 8x8 grid and finds the best block element
 // to represent the image in that cell.
 func getImageLayerAsBlockElements(sourceImageData image.Image, imageStyle types.ImageStyleEntryType, widthInCharacters int, heightInCharacters int, blurSigma float64) types.LayerEntryType {
 	// Calculate the dimensions
-	bounds := sourceImageData.Bounds()
-	imageWidth, imageHeight := bounds.Dx(), bounds.Dy()
+	sourceBounds := sourceImageData.Bounds()
+	sourceImageWidth, sourceImageHeight := sourceBounds.Dx(), sourceBounds.Dy()
 
-	// Calculate width and height
-	width, height := widthInCharacters, heightInCharacters
+	// Calculate width and height in characters
+	characterWidth, characterHeight := widthInCharacters, heightInCharacters
 
 	// If both width and height are 0, use the image's dimensions
-	if width == 0 && height == 0 {
-		width, height = imageWidth, imageHeight
-		if adjustedWidth := imageWidth * height / imageHeight; adjustedWidth < width {
-			width = adjustedWidth
+	if characterWidth == 0 && characterHeight == 0 {
+		characterWidth, characterHeight = sourceImageWidth, sourceImageHeight
+		if adjustedWidth := sourceImageWidth * characterHeight / sourceImageHeight; adjustedWidth < characterWidth {
+			characterWidth = adjustedWidth
 		} else {
-			height = imageHeight * width / imageWidth
+			characterHeight = sourceImageHeight * characterWidth / sourceImageWidth
 		}
 	} else {
 		// If only one dimension is specified, calculate the other to preserve aspect ratio
-		if width == 0 {
-			width = imageWidth * height / imageHeight
-		} else if height == 0 {
-			height = imageHeight * width / imageWidth
+		if characterWidth == 0 {
+			characterWidth = sourceImageWidth * characterHeight / sourceImageHeight
+		} else if characterHeight == 0 {
+			characterHeight = sourceImageHeight * characterWidth / sourceImageWidth
 		}
 	}
 
 	// Create the layer entry
-	layerEntry := types.NewLayerEntry("", "", width, height)
+	layerEntry := types.NewLayerEntry("", "", characterWidth, characterHeight)
 
-	// Resize the image (8x8 pixels per cell)
-	tgtWidth, tgtHeight := width*8, height*8
-	coverageWidth, coverageHeight := float64(tgtWidth)/float64(imageWidth), float64(tgtHeight)/float64(imageHeight)
-	pixels := make([][3]float64, tgtWidth*tgtHeight)
-	weights := make([]float64, tgtWidth*tgtHeight)
+	// Resize the image to an 8x8 grid per character cell
+	targetPixelWidth, targetPixelHeight := characterWidth*8, characterHeight*8
+	pixelColorData, pixelWeights := resizeImageForBlockElements(sourceImageData, targetPixelWidth, targetPixelHeight)
 
-	// Resize the image
-	for srcY := bounds.Min.Y; srcY < bounds.Max.Y; srcY++ {
-		for srcX := bounds.Min.X; srcX < bounds.Max.X; srcX++ {
-			r32, g32, b32, _ := sourceImageData.At(srcX, srcY).RGBA()
-			r, g, b := float64(r32)/0xffff, float64(g32)/0xffff, float64(b32)/0xffff
+	// Normalize the resized pixels
+	normalizePixels(pixelColorData, pixelWeights)
 
-			// Calculate target pixels
-			startY := float64(srcY-bounds.Min.Y) * coverageHeight
-			endY := startY + coverageHeight
-			fromY, toY := int(startY), int(endY)
-
-			for tgtY := fromY; tgtY <= toY && tgtY < tgtHeight; tgtY++ {
-				coverageY := 1.0
-				if tgtY == fromY {
-					coverageY -= math.Mod(startY, 1.0)
-				}
-				if tgtY == toY {
-					coverageY -= 1.0 - math.Mod(endY, 1.0)
-				}
-
-				startX := float64(srcX-bounds.Min.X) * coverageWidth
-				endX := startX + coverageWidth
-				fromX, toX := int(startX), int(endX)
-
-				for tgtX := fromX; tgtX <= toX && tgtX < tgtWidth; tgtX++ {
-					coverageX := 1.0
-					if tgtX == fromX {
-						coverageX -= math.Mod(startX, 1.0)
-					}
-					if tgtX == toX {
-						coverageX -= 1.0 - math.Mod(endX, 1.0)
-					}
-
-					coverage := coverageX * coverageY
-					if coverage <= 0 {
-						continue
-					}
-
-					index := tgtY*tgtWidth + tgtX
-					pixels[index][0] += r * coverage
-					pixels[index][1] += g * coverage
-					pixels[index][2] += b * coverage
-					weights[index] += coverage
-				}
-			}
-		}
-	}
-
-	// Normalize the pixels
-	for index, weight := range weights {
-		if weight > 0 {
-			pixels[index][0] /= weight
-			pixels[index][1] /= weight
-			pixels[index][2] /= weight
-		}
-	}
-
-	// Process each cell (8x8 pixels) to find the best block element
-	for row := 0; row < height; row++ {
-		for col := 0; col < width; col++ {
-			// Find the best block element for this cell
-			minMSE := math.MaxFloat64 // Mean squared error
-			var bestElement rune
-			var bestFg, bestBg [3]float64
-
-			// Try each block element
-			for element, bits := range constants.CharBlockBitmasks {
-				// Calculate average colors for set and unset bits
-				var fg, bg [3]float64
-				var setBits float64
-				bit := uint64(1)
-
-				for y := 0; y < 8; y++ {
-					for x := 0; x < 8; x++ {
-						index := (row*8+y)*width*8 + (col*8 + x)
-						if bits&bit != 0 {
-							fg[0] += pixels[index][0]
-							fg[1] += pixels[index][1]
-							fg[2] += pixels[index][2]
-							setBits++
-						} else {
-							bg[0] += pixels[index][0]
-							bg[1] += pixels[index][1]
-							bg[2] += pixels[index][2]
-						}
-						bit <<= 1
-					}
-				}
-
-				// Normalize colors
-				for ch := 0; ch < 3; ch++ {
-					fg[ch] /= setBits
-					if fg[ch] < 0 {
-						fg[ch] = 0
-					} else if fg[ch] > 1 {
-						fg[ch] = 1
-					}
-
-					bg[ch] /= 64 - setBits
-					if bg[ch] < 0 {
-						bg[ch] = 0
-					} else if bg[ch] > 1 {
-						bg[ch] = 1
-					}
-				}
-
-				// Calculate error
-				var mse float64
-				bit = 1
-				for y := 0; y < 8; y++ {
-					for x := 0; x < 8; x++ {
-						index := (row*8+y)*width*8 + (col*8 + x)
-						var color [3]float64
-						if bits&bit != 0 {
-							color = fg
-						} else {
-							color = bg
-						}
-
-						for ch := 0; ch < 3; ch++ {
-							err := pixels[index][ch] - color[ch]
-							mse += err * err
-						}
-						bit <<= 1
-					}
-				}
-
-				// Check if this is the best match so far
-				if mse < minMSE {
-					minMSE = mse
-					bestElement = element
-					bestFg = fg
-					bestBg = bg
-				}
-			}
-
-			// Check if a shade block would be better
-			var avg [3]float64
-			for y := 0; y < 8; y++ {
-				for x := 0; x < 8; x++ {
-					index := (row*8+y)*width*8 + (col*8 + x)
-					for ch := 0; ch < 3; ch++ {
-						avg[ch] += pixels[index][ch] / 64
-					}
-				}
-			}
-
-			// Normalize average color
-			for ch := 0; ch < 3; ch++ {
-				if avg[ch] < 0 {
-					avg[ch] = 0
-				} else if avg[ch] > 1 {
-					avg[ch] = 1
-				}
-			}
-
-			// Calculate error for shade block
-			var mse float64
-			for y := 0; y < 8; y++ {
-				for x := 0; x < 8; x++ {
-					index := (row*8+y)*width*8 + (col*8 + x)
-					for ch := 0; ch < 3; ch++ {
-						err := pixels[index][ch] - avg[ch]
-						mse += err * err
-					}
-				}
-			}
-
-			// If shade block is better, use it
-			if mse < minMSE {
-				// Calculate shade level
-				gray := 0.299*avg[0] + 0.587*avg[1] + 0.114*avg[2]
-				shades := []rune{' ', constants.CharBlockLightShade, constants.CharBlockMediumShade, constants.CharBlockDarkShade, constants.CharBlockFull}
-				shade := int(math.Round(gray * 4))
-				bestElement = shades[shade]
-				bestFg = avg
-				bestBg = avg
-			}
+	// Process each cell to find the best block element
+	for rowLocation := 0; rowLocation < characterHeight; rowLocation++ {
+		for columnLocation := 0; columnLocation < characterWidth; columnLocation++ {
+			bestBlockElement, bestForegroundColor, bestBackgroundColor := findBestBlockElementForCell(pixelColorData, rowLocation, columnLocation, characterWidth, characterHeight)
 
 			// Set the character and colors in the layer entry
-			r := int32(math.Min(255, bestFg[0]*255))
-			g := int32(math.Min(255, bestFg[1]*255))
-			b := int32(math.Min(255, bestFg[2]*255))
-			layerEntry.CharacterMemory[row][col].AttributeEntry.ForegroundColor = GetRGBColor(r, g, b)
+			red := int32(math.Min(255, bestForegroundColor[0]*255))
+			green := int32(math.Min(255, bestForegroundColor[1]*255))
+			blue := int32(math.Min(255, bestForegroundColor[2]*255))
+			layerEntry.CharacterMemory[rowLocation][columnLocation].AttributeEntry.ForegroundColor = GetRGBColor(red, green, blue)
 
-			r = int32(math.Min(255, bestBg[0]*255))
-			g = int32(math.Min(255, bestBg[1]*255))
-			b = int32(math.Min(255, bestBg[2]*255))
-			layerEntry.CharacterMemory[row][col].AttributeEntry.BackgroundColor = GetRGBColor(r, g, b)
+			red = int32(math.Min(255, bestBackgroundColor[0]*255))
+			green = int32(math.Min(255, bestBackgroundColor[1]*255))
+			blue = int32(math.Min(255, bestBackgroundColor[2]*255))
+			layerEntry.CharacterMemory[rowLocation][columnLocation].AttributeEntry.BackgroundColor = GetRGBColor(red, green, blue)
 
-			layerEntry.CharacterMemory[row][col].Character = bestElement
+			layerEntry.CharacterMemory[rowLocation][columnLocation].Character = bestBlockElement
 		}
 	}
 
