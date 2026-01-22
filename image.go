@@ -376,32 +376,98 @@ func getImageLayerAsHighColor(sourceImageData image.Image, imageStyle types.Imag
 			var greenColorIndex int32
 			var blueColorIndex int32
 			imageBounds := processedImageData.Bounds()
-			if currentXLocation < imageBounds.Min.X || currentXLocation >= imageBounds.Max.X ||
-				currentImageYLocation < imageBounds.Min.Y || currentImageYLocation >= imageBounds.Max.Y {
-				// Out of bounds, treat as transparent
+
+			// Check if upper pixel is out of bounds or fully transparent
+			upperPixelTransparent := currentXLocation < imageBounds.Min.X || currentXLocation >= imageBounds.Max.X ||
+				currentImageYLocation < imageBounds.Min.Y || currentImageYLocation >= imageBounds.Max.Y ||
+				(currentXLocation >= imageBounds.Min.X && currentXLocation < imageBounds.Max.X &&
+					currentImageYLocation >= imageBounds.Min.Y && currentImageYLocation < imageBounds.Max.Y &&
+					isTransparentPixel(processedImageData, currentXLocation, currentImageYLocation))
+
+			if upperPixelTransparent {
+				// Upper pixel is transparent
 				currentCharacter.Character = constants.NullRune
 			} else {
-				// In bounds, get the actual pixel color
+				// Upper pixel is opaque, get the actual pixel color
 				upperPixel = processedImageData.At(currentXLocation, currentImageYLocation)
 				redColorIndex, greenColorIndex, blueColorIndex, _ = get8BitColorComponents(upperPixel)
+				currentCharacter.AttributeEntry.ForegroundColor = GetRGBColor(int32(redColorIndex), int32(greenColorIndex), int32(blueColorIndex))
 			}
-			currentCharacter.AttributeEntry.ForegroundColor = GetRGBColor(int32(redColorIndex), int32(greenColorIndex), int32(blueColorIndex))
+
 			if currentImageYLocation < calculatedCharacterHeight*2 {
-				// Check for null parts of an image.
-				if currentXLocation < imageBounds.Min.X || currentXLocation >= imageBounds.Max.X ||
-					currentImageYLocation+1 < imageBounds.Min.Y || currentImageYLocation+1 >= imageBounds.Max.Y {
-					// Out of bounds, treat as transparent
-					currentCharacter.Character = constants.NullRune // For now we blank upper square since black bar may be less desierable.
-					// lowerPixel := processedImageData.At(currentXLocation, currentImageYLocation+1)
-					// redColorIndex, greenColorIndex, blueColorIndex, _ := get8BitColorComponents(lowerPixel)
-					// currentCharacter.AttributeEntry.BackgroundColor = GetRGBColor(0, 0, 0)
+				// Check if lower pixel is out of bounds or fully transparent
+				lowerPixelTransparent := currentXLocation < imageBounds.Min.X || currentXLocation >= imageBounds.Max.X ||
+					currentImageYLocation+1 < imageBounds.Min.Y || currentImageYLocation+1 >= imageBounds.Max.Y ||
+					(currentXLocation >= imageBounds.Min.X && currentXLocation < imageBounds.Max.X &&
+						currentImageYLocation+1 >= imageBounds.Min.Y && currentImageYLocation+1 < imageBounds.Max.Y &&
+						isTransparentPixel(processedImageData, currentXLocation, currentImageYLocation+1))
+
+				if lowerPixelTransparent {
+					// Lower pixel is transparent
+					if upperPixelTransparent {
+						// Both pixels are transparent, set character to null
+						currentCharacter.Character = constants.NullRune
+					} else {
+						// Only lower pixel is transparent, set character to upper half block
+						currentCharacter.Character = constants.CharBlockUpperHalf
+
+						// Set background color based on TransparencyMode
+						switch imageStyle.TransparencyMode {
+						case constants.TransparencyModeForeground:
+							// Use the cell's foreground color for transparent areas
+							currentCharacter.AttributeEntry.BackgroundColor = currentCharacter.AttributeEntry.ForegroundColor
+						case constants.TransparencyModeBackground:
+							// Keep the cell's background color for transparent areas
+							// This is the default behavior, so we don't need to do anything
+						case constants.TransparencyModeBlended:
+							// Use a blend of foreground and background colors
+							// For simplicity, we'll use 50% blend
+							fgColor := currentCharacter.AttributeEntry.ForegroundColor
+							bgColor := currentCharacter.AttributeEntry.BackgroundColor
+							r1, g1, b1 := GetRGBComponents(fgColor)
+							r2, g2, b2 := GetRGBComponents(bgColor)
+							blendedColor := GetRGBColor((r1+r2)/2, (g1+g2)/2, (b1+b2)/2)
+							currentCharacter.AttributeEntry.BackgroundColor = blendedColor
+						}
+					}
 				} else {
-					// In bounds, get the actual pixel color
+					// Lower pixel is opaque, get the actual pixel color
 					lowerPixel := processedImageData.At(currentXLocation, currentImageYLocation+1)
 					redColorIndex, greenColorIndex, blueColorIndex, _ = get8BitColorComponents(lowerPixel)
 					currentCharacter.AttributeEntry.BackgroundColor = GetRGBColor(int32(redColorIndex), int32(greenColorIndex), int32(blueColorIndex))
+
+					if upperPixelTransparent {
+						// Only upper pixel is transparent, set character to lower half block
+						currentCharacter.Character = constants.CharBlockLowerHalf
+
+						// Swap foreground and background colors
+						tempColor := currentCharacter.AttributeEntry.ForegroundColor
+						currentCharacter.AttributeEntry.ForegroundColor = currentCharacter.AttributeEntry.BackgroundColor
+						currentCharacter.AttributeEntry.BackgroundColor = tempColor
+
+						// Set foreground color based on TransparencyMode
+						switch imageStyle.TransparencyMode {
+						case constants.TransparencyModeForeground:
+							// Use the cell's foreground color for transparent areas
+							// We've already swapped colors, so we use background color
+							currentCharacter.AttributeEntry.BackgroundColor = currentCharacter.AttributeEntry.ForegroundColor
+						case constants.TransparencyModeBackground:
+							// Keep the cell's background color for transparent areas
+							// This is the default behavior, so we don't need to do anything
+						case constants.TransparencyModeBlended:
+							// Use a blend of foreground and background colors
+							// For simplicity, we'll use 50% blend
+							fgColor := currentCharacter.AttributeEntry.ForegroundColor
+							bgColor := currentCharacter.AttributeEntry.BackgroundColor
+							r1, g1, b1 := GetRGBComponents(fgColor)
+							r2, g2, b2 := GetRGBComponents(bgColor)
+							blendedColor := GetRGBColor((r1+r2)/2, (g1+g2)/2, (b1+b2)/2)
+							currentCharacter.AttributeEntry.BackgroundColor = blendedColor
+						}
+					}
 				}
 			}
+
 			layerEntry.CharacterMemory[currentYLocation][currentXLocation] = currentCharacter
 		}
 		currentImageYLocation += 2
@@ -418,6 +484,11 @@ func isTransparentPixel(processedImageData image.Image, x, y int) bool {
 
 	// Check if alpha value is 0 (fully transparent)
 	return rgba.A == 0
+}
+
+// GetRGBComponents is a wrapper for GetRGBColorComponents
+func GetRGBComponents(color constants.ColorType) (int32, int32, int32) {
+	return GetRGBColorComponents(color)
 }
 
 /*
@@ -564,7 +635,7 @@ func GetImageLayerAsAsciiColorArt(sourceImageData image.Image, imageStyle types.
 // resizeImageForBlockElements resizes the source image using an area-averaging
 // method to prepare it for block element rendering. It returns the raw pixel
 // color data and the weight of each pixel's contribution.
-func resizeImageForBlockElements(sourceImageData image.Image, targetWidth, targetHeight int) ([][][3]float64, [][]float64) {
+func resizeImageForBlockElements(sourceImageData image.Image, targetWidth, targetHeight int) ([][][4]float64, [][]float64) {
 	sourceBounds := sourceImageData.Bounds()
 	sourceImageWidth, sourceImageHeight := sourceBounds.Dx(), sourceBounds.Dy()
 	coverageWidth := float64(targetWidth) / float64(sourceImageWidth)
@@ -574,14 +645,14 @@ func resizeImageForBlockElements(sourceImageData image.Image, targetWidth, targe
 	var waitGroup sync.WaitGroup
 
 	// Slices to hold results from each goroutine
-	partialPixelColorInformation := make([][][3]float64, numberOfWorkers)
+	partialPixelColorInformation := make([][][4]float64, numberOfWorkers)
 	partialPixelWeightInformation := make([][]float64, numberOfWorkers)
 
 	rowsPerWorker := (sourceImageHeight + numberOfWorkers - 1) / numberOfWorkers
 
 	for workerIndex := 0; workerIndex < numberOfWorkers; workerIndex++ {
 		// Initialize slices for this worker
-		partialPixelColorInformation[workerIndex] = make([][3]float64, targetWidth*targetHeight)
+		partialPixelColorInformation[workerIndex] = make([][4]float64, targetWidth*targetHeight)
 		partialPixelWeightInformation[workerIndex] = make([]float64, targetWidth*targetHeight)
 
 		// Calculate row range for this worker
@@ -599,10 +670,11 @@ func resizeImageForBlockElements(sourceImageData image.Image, targetWidth, targe
 
 			for sourceYLocation := currentStartSourceYLocation; sourceYLocation < currentEndSourceYLocation; sourceYLocation++ {
 				for sourceXLocation := sourceBounds.Min.X; sourceXLocation < sourceBounds.Max.X; sourceXLocation++ {
-					redComponent, greenComponent, blueComponent, _ := sourceImageData.At(sourceXLocation, sourceYLocation).RGBA()
+					redComponent, greenComponent, blueComponent, alphaComponent := sourceImageData.At(sourceXLocation, sourceYLocation).RGBA()
 					redColorValue := float64(redComponent) / 0xffff
 					greenColorValue := float64(greenComponent) / 0xffff
 					blueColorValue := float64(blueComponent) / 0xffff
+					alphaColorValue := float64(alphaComponent) / 0xffff
 
 					targetYLocationStartingPoint := float64(sourceYLocation-sourceBounds.Min.Y) * coverageHeight
 					targetYLocationEndingPoint := targetYLocationStartingPoint + coverageHeight
@@ -641,6 +713,7 @@ func resizeImageForBlockElements(sourceImageData image.Image, targetWidth, targe
 							localPixelColorInformation[currentPixelIndex][0] += redColorValue * totalCoverage
 							localPixelColorInformation[currentPixelIndex][1] += greenColorValue * totalCoverage
 							localPixelColorInformation[currentPixelIndex][2] += blueColorValue * totalCoverage
+							localPixelColorInformation[currentPixelIndex][3] += alphaColorValue * totalCoverage
 							localPixelWeightInformation[currentPixelIndex] += totalCoverage
 						}
 					}
@@ -655,11 +728,11 @@ func resizeImageForBlockElements(sourceImageData image.Image, targetWidth, targe
 }
 
 // mergeAndNormalizeInParallel merges and normalizes pixel data in parallel.
-func mergeAndNormalizeInParallel(partialPixelColorInformation [][][3]float64, partialPixelWeightInformation [][]float64, targetWidth, targetHeight int) [][3]float64 {
+func mergeAndNormalizeInParallel(partialPixelColorInformation [][][4]float64, partialPixelWeightInformation [][]float64, targetWidth, targetHeight int) [][4]float64 {
 	numberOfWorkers := runtime.NumCPU()
 	var waitGroup sync.WaitGroup
 
-	finalPixelColorInformation := make([][3]float64, targetWidth*targetHeight)
+	finalPixelColorInformation := make([][4]float64, targetWidth*targetHeight)
 	pixelsPerWorker := (len(finalPixelColorInformation) + numberOfWorkers - 1) / numberOfWorkers
 
 	for workerIndex := 0; workerIndex < numberOfWorkers; workerIndex++ {
@@ -673,11 +746,12 @@ func mergeAndNormalizeInParallel(partialPixelColorInformation [][][3]float64, pa
 		go func(start, end int) {
 			defer waitGroup.Done()
 			for pixelDataIndex := start; pixelDataIndex < end; pixelDataIndex++ {
-				var totalRed, totalGreen, totalBlue, totalWeight float64
+				var totalRed, totalGreen, totalBlue, totalAlpha, totalWeight float64
 				for i := 0; i < numberOfWorkers; i++ {
 					totalRed += partialPixelColorInformation[i][pixelDataIndex][0]
 					totalGreen += partialPixelColorInformation[i][pixelDataIndex][1]
 					totalBlue += partialPixelColorInformation[i][pixelDataIndex][2]
+					totalAlpha += partialPixelColorInformation[i][pixelDataIndex][3]
 					totalWeight += partialPixelWeightInformation[i][pixelDataIndex]
 				}
 
@@ -685,6 +759,7 @@ func mergeAndNormalizeInParallel(partialPixelColorInformation [][][3]float64, pa
 					finalPixelColorInformation[pixelDataIndex][0] = totalRed / totalWeight
 					finalPixelColorInformation[pixelDataIndex][1] = totalGreen / totalWeight
 					finalPixelColorInformation[pixelDataIndex][2] = totalBlue / totalWeight
+					finalPixelColorInformation[pixelDataIndex][3] = totalAlpha / totalWeight
 				}
 			}
 		}(startPixelIndex, endPixelIndex)
@@ -697,7 +772,7 @@ func mergeAndNormalizeInParallel(partialPixelColorInformation [][][3]float64, pa
 // findBestBlockElementForCell analyzes an 8x8 grid of pixels to find the optimal
 // block element character and corresponding foreground/background colors to
 // represent that portion of the image.
-func findBestBlockElementForCell(pixelColorData [][3]float64, cellRowLocation, cellColumnLocation, characterGridWidth, characterGridHeight int) (rune, [3]float64, [3]float64) {
+func findBestBlockElementForCell(pixelColorData [][4]float64, cellRowLocation, cellColumnLocation, characterGridWidth, characterGridHeight int) (rune, [3]float64, [3]float64) {
 	minimumMeanSquaredError := math.MaxFloat64
 	var bestBlockElement rune
 	var bestForegroundColor, bestBackgroundColor [3]float64
@@ -705,28 +780,38 @@ func findBestBlockElementForCell(pixelColorData [][3]float64, cellRowLocation, c
 	// Try each block element
 	for blockElement, bitmask := range constants.CharBlockBitmasks {
 		var foregroundColor, backgroundColor [3]float64
-		var setBitCount float64
+		var foregroundAlpha, backgroundAlpha float64
+		var setBitCount, unsetBitCount float64
 		currentBit := uint64(1)
 
 		for pixelYLocation := 0; pixelYLocation < 8; pixelYLocation++ {
 			for pixelXLocation := 0; pixelXLocation < 8; pixelXLocation++ {
 				pixelIndex := (cellRowLocation*8+pixelYLocation)*characterGridWidth*8 + (cellColumnLocation*8 + pixelXLocation)
+				// Skip fully transparent pixels (alpha = 0)
+				if pixelColorData[pixelIndex][3] < 0.1 {
+					// Don't count transparent pixels in either foreground or background
+					currentBit <<= 1
+					continue
+				}
+
 				if bitmask&currentBit != 0 {
 					foregroundColor[0] += pixelColorData[pixelIndex][0]
 					foregroundColor[1] += pixelColorData[pixelIndex][1]
 					foregroundColor[2] += pixelColorData[pixelIndex][2]
+					foregroundAlpha += pixelColorData[pixelIndex][3]
 					setBitCount++
 				} else {
 					backgroundColor[0] += pixelColorData[pixelIndex][0]
 					backgroundColor[1] += pixelColorData[pixelIndex][1]
 					backgroundColor[2] += pixelColorData[pixelIndex][2]
+					backgroundAlpha += pixelColorData[pixelIndex][3]
+					unsetBitCount++
 				}
 				currentBit <<= 1
 			}
 		}
 
 		// Normalize colors
-		unsetBitCount := 64.0 - setBitCount
 		if setBitCount > 0 {
 			for channel := 0; channel < 3; channel++ {
 				foregroundColor[channel] /= setBitCount
@@ -754,6 +839,19 @@ func findBestBlockElementForCell(pixelColorData [][3]float64, cellRowLocation, c
 		for pixelYLocation := 0; pixelYLocation < 8; pixelYLocation++ {
 			for pixelXLocation := 0; pixelXLocation < 8; pixelXLocation++ {
 				pixelIndex := (cellRowLocation*8+pixelYLocation)*characterGridWidth*8 + (cellColumnLocation*8 + pixelXLocation)
+
+				// Skip fully transparent pixels in error calculation
+				if pixelColorData[pixelIndex][3] < 0.1 {
+					// For transparent pixels, we want block elements that leave them transparent
+					// If this bit is set in the bitmask (would be foreground), that's bad
+					if bitmask&currentBit != 0 {
+						// Penalize block elements that would fill transparent areas
+						sumAbsoluteDifferences += 3.0 // Higher penalty to strongly prefer transparency
+					}
+					currentBit <<= 1
+					continue
+				}
+
 				var pixelColor [3]float64
 				if bitmask&currentBit != 0 {
 					pixelColor = foregroundColor
@@ -780,21 +878,36 @@ func findBestBlockElementForCell(pixelColorData [][3]float64, cellRowLocation, c
 
 	// Check if a shade block would be better
 	var averageColor [3]float64
+	var totalPixels float64
+	var transparentPixelCount float64
+
+	// First pass: count transparent pixels and calculate average color of opaque pixels
 	for pixelYLocation := 0; pixelYLocation < 8; pixelYLocation++ {
 		for pixelXLocation := 0; pixelXLocation < 8; pixelXLocation++ {
 			pixelIndex := (cellRowLocation*8+pixelYLocation)*characterGridWidth*8 + (cellColumnLocation*8 + pixelXLocation)
-			for channel := 0; channel < 3; channel++ {
-				averageColor[channel] += pixelColorData[pixelIndex][channel] / 64
+
+			// Skip fully transparent pixels
+			if pixelColorData[pixelIndex][3] < 0.1 {
+				transparentPixelCount++
+				continue
 			}
+
+			for channel := 0; channel < 3; channel++ {
+				averageColor[channel] += pixelColorData[pixelIndex][channel]
+			}
+			totalPixels++
 		}
 	}
 
-	// Normalize average color
-	for channel := 0; channel < 3; channel++ {
-		if averageColor[channel] < 0 {
-			averageColor[channel] = 0
-		} else if averageColor[channel] > 1 {
-			averageColor[channel] = 1
+	// Normalize average color (only for non-transparent pixels)
+	if totalPixels > 0 {
+		for channel := 0; channel < 3; channel++ {
+			averageColor[channel] /= totalPixels
+			if averageColor[channel] < 0 {
+				averageColor[channel] = 0
+			} else if averageColor[channel] > 1 {
+				averageColor[channel] = 1
+			}
 		}
 	}
 
@@ -803,6 +916,13 @@ func findBestBlockElementForCell(pixelColorData [][3]float64, cellRowLocation, c
 	for pixelYLocation := 0; pixelYLocation < 8; pixelYLocation++ {
 		for pixelXLocation := 0; pixelXLocation < 8; pixelXLocation++ {
 			pixelIndex := (cellRowLocation*8+pixelYLocation)*characterGridWidth*8 + (cellColumnLocation*8 + pixelXLocation)
+
+			// For transparent pixels, we want to preserve transparency
+			if pixelColorData[pixelIndex][3] < 0.1 {
+				// No error for transparent pixels with space character
+				continue
+			}
+
 			for channel := 0; channel < 3; channel++ {
 				colorError := pixelColorData[pixelIndex][channel] - averageColor[channel]
 				sumAbsoluteDifferences += math.Abs(colorError)
@@ -812,12 +932,54 @@ func findBestBlockElementForCell(pixelColorData [][3]float64, cellRowLocation, c
 
 	// If shade block is better, use it
 	if sumAbsoluteDifferences < minimumMeanSquaredError { // Renamed variable to reflect SAD
+		// Calculate transparency percentage
+		transparencyPercentage := transparentPixelCount / 64.0
+
+		// Determine shade character based on both grayscale value and transparency
 		grayscaleValue := 0.299*averageColor[0] + 0.587*averageColor[1] + 0.114*averageColor[2]
 		shadeCharacters := []rune{' ', constants.CharBlockLightShade, constants.CharBlockMediumShade, constants.CharBlockDarkShade, constants.CharBlockFull}
-		shadeIndex := int(math.Round(grayscaleValue * 4))
+
+		// Adjust shade index based on transparency
+		var shadeIndex int
+		if transparencyPercentage > 0.75 {
+			// If more than 75% transparent, use space character
+			shadeIndex = 0
+		} else if transparencyPercentage > 0.5 {
+			// If more than 50% transparent, use light shade or space
+			shadeIndex = int(math.Min(1, math.Round(grayscaleValue*4)))
+		} else if transparencyPercentage > 0.25 {
+			// If more than 25% transparent, cap at medium shade
+			shadeIndex = int(math.Min(2, math.Round(grayscaleValue*4)))
+		} else {
+			// Less than 25% transparent, use normal shade calculation
+			shadeIndex = int(math.Round(grayscaleValue * 4))
+		}
+
 		bestBlockElement = shadeCharacters[shadeIndex]
-		bestForegroundColor = averageColor
-		bestBackgroundColor = averageColor
+
+		// For shade blocks, we need to maintain distinct foreground and background colors
+		// so that the TransparencyMode can be properly applied
+		if shadeIndex == 0 { // Space character (fully transparent)
+			// Keep the existing best colors
+		} else if shadeIndex == 4 { // Full block (fully opaque)
+			bestForegroundColor = averageColor
+			bestBackgroundColor = averageColor
+		} else {
+			// For partially transparent blocks (light, medium, dark shade),
+			// create distinct foreground and background colors
+			// We'll use white for foreground and black for background as a base
+			var foregroundBase, backgroundBase [3]float64
+			foregroundBase = [3]float64{1.0, 1.0, 1.0} // White
+			backgroundBase = [3]float64{0.0, 0.0, 0.0} // Black
+
+			// Adjust the intensity based on the shade level
+			intensity := float64(shadeIndex) / 4.0
+			for channel := 0; channel < 3; channel++ {
+				// Blend the base colors with the average color based on intensity
+				bestForegroundColor[channel] = averageColor[channel]*intensity + foregroundBase[channel]*(1.0-intensity)
+				bestBackgroundColor[channel] = averageColor[channel]*intensity + backgroundBase[channel]*(1.0-intensity)
+			}
+		}
 	}
 
 	return bestBlockElement, bestForegroundColor, bestBackgroundColor
@@ -829,7 +991,7 @@ type cellJob struct {
 }
 
 // processCellsInParallel processes all character cells in parallel using a worker pool.
-func processCellsInParallel(pixelColorData [][3]float64, characterWidth, characterHeight int, layerEntry *types.LayerEntryType) {
+func processCellsInParallel(pixelColorData [][4]float64, characterWidth, characterHeight int, layerEntry *types.LayerEntryType, imageStyle types.ImageStyleEntryType) {
 	numberOfWorkers := runtime.NumCPU()
 	jobs := make(chan cellJob, characterWidth*characterHeight)
 	var waitGroup sync.WaitGroup
@@ -845,14 +1007,51 @@ func processCellsInParallel(pixelColorData [][3]float64, characterWidth, charact
 				red := int32(math.Min(255, bestForegroundColor[0]*255))
 				green := int32(math.Min(255, bestForegroundColor[1]*255))
 				blue := int32(math.Min(255, bestForegroundColor[2]*255))
-				layerEntry.CharacterMemory[job.rowLocation][job.columnLocation].AttributeEntry.ForegroundColor = GetRGBColor(red, green, blue)
+				foregroundColor := GetRGBColor(red, green, blue)
 
 				red = int32(math.Min(255, bestBackgroundColor[0]*255))
 				green = int32(math.Min(255, bestBackgroundColor[1]*255))
 				blue = int32(math.Min(255, bestBackgroundColor[2]*255))
-				layerEntry.CharacterMemory[job.rowLocation][job.columnLocation].AttributeEntry.BackgroundColor = GetRGBColor(red, green, blue)
+				backgroundColor := GetRGBColor(red, green, blue)
 
-				layerEntry.CharacterMemory[job.rowLocation][job.columnLocation].Character = bestBlockElement
+				// Check if the block element is a transparent block (space character)
+				if bestBlockElement == ' ' {
+					// For fully transparent blocks, set the character to NullRune
+					layerEntry.CharacterMemory[job.rowLocation][job.columnLocation].Character = constants.NullRune
+				} else if bestBlockElement == constants.CharBlockLightShade ||
+					bestBlockElement == constants.CharBlockMediumShade ||
+					bestBlockElement == constants.CharBlockDarkShade {
+					// For partially transparent blocks, apply the TransparencyMode
+					layerEntry.CharacterMemory[job.rowLocation][job.columnLocation].Character = bestBlockElement
+
+					// Apply transparency mode for partially covered blocks
+					switch imageStyle.TransparencyMode {
+					case constants.TransparencyModeForeground:
+						// Use the foreground color for both foreground and background
+						layerEntry.CharacterMemory[job.rowLocation][job.columnLocation].AttributeEntry.ForegroundColor = foregroundColor
+						layerEntry.CharacterMemory[job.rowLocation][job.columnLocation].AttributeEntry.BackgroundColor = foregroundColor
+					case constants.TransparencyModeBackground:
+						// Use the background color for both foreground and background
+						layerEntry.CharacterMemory[job.rowLocation][job.columnLocation].AttributeEntry.ForegroundColor = backgroundColor
+						layerEntry.CharacterMemory[job.rowLocation][job.columnLocation].AttributeEntry.BackgroundColor = backgroundColor
+					case constants.TransparencyModeBlended:
+						// Use a blend of foreground and background colors
+						r1, g1, b1 := GetRGBComponents(foregroundColor)
+						r2, g2, b2 := GetRGBComponents(backgroundColor)
+						blendedColor := GetRGBColor((r1+r2)/2, (g1+g2)/2, (b1+b2)/2)
+						layerEntry.CharacterMemory[job.rowLocation][job.columnLocation].AttributeEntry.ForegroundColor = blendedColor
+						layerEntry.CharacterMemory[job.rowLocation][job.columnLocation].AttributeEntry.BackgroundColor = blendedColor
+					default:
+						// Default behavior: use the calculated colors
+						layerEntry.CharacterMemory[job.rowLocation][job.columnLocation].AttributeEntry.ForegroundColor = foregroundColor
+						layerEntry.CharacterMemory[job.rowLocation][job.columnLocation].AttributeEntry.BackgroundColor = backgroundColor
+					}
+				} else {
+					// For fully opaque blocks, use the calculated colors
+					layerEntry.CharacterMemory[job.rowLocation][job.columnLocation].Character = bestBlockElement
+					layerEntry.CharacterMemory[job.rowLocation][job.columnLocation].AttributeEntry.ForegroundColor = foregroundColor
+					layerEntry.CharacterMemory[job.rowLocation][job.columnLocation].AttributeEntry.BackgroundColor = backgroundColor
+				}
 			}
 		}()
 	}
@@ -924,7 +1123,7 @@ func getImageLayerAsBlockElements(sourceImageData image.Image, imageStyle types.
 	finalPixelColorInformation := mergeAndNormalizeInParallel(partialPixelColorInformation, partialPixelWeightInformation, targetPixelWidth, targetPixelHeight)
 
 	// Process each cell to find the best block element
-	processCellsInParallel(finalPixelColorInformation, characterWidth, characterHeight, &layerEntry)
+	processCellsInParallel(finalPixelColorInformation, characterWidth, characterHeight, &layerEntry, imageStyle)
 
 	return layerEntry
 }

@@ -49,6 +49,14 @@ const (
 	EffectHorizontalCurtainTransition
 )
 
+type TransparencyMode int
+
+const (
+	TransparencyModeBackground TransparencyMode = iota
+	TransparencyModeForeground
+	TransparencyModeBlended
+)
+
 type ColorType uint64
 
 var CP437ToUnicode = [256]rune{

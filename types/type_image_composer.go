@@ -32,6 +32,7 @@ type ImageStyleEntryType struct {
 	DitheringStyle               constants.DitheringStyle
 	DitheringIntensity           float64
 	BlurSigmaIntensity           float64
+	TransparencyMode             constants.TransparencyMode
 }
 
 func NewImageStyleEntry(existingImageStyleEntry ...*ImageStyleEntryType) ImageStyleEntryType {
@@ -41,6 +42,10 @@ func NewImageStyleEntry(existingImageStyleEntry ...*ImageStyleEntryType) ImageSt
 		imageStyleEntry.IsHistogramEqualized = existingImageStyleEntry[0].IsHistogramEqualized
 		imageStyleEntry.IsGrayscale = existingImageStyleEntry[0].IsGrayscale
 		imageStyleEntry.DitheringIntensity = existingImageStyleEntry[0].DitheringIntensity
+		imageStyleEntry.TransparencyMode = existingImageStyleEntry[0].TransparencyMode
+	} else {
+		// Default to background mode if not specified
+		imageStyleEntry.TransparencyMode = constants.TransparencyModeBackground
 	}
 	imageStyleEntry.DitheringIntensity = 1 // We set it to 1, which is no change.
 	return imageStyleEntry
