@@ -26,11 +26,6 @@ func (shared *LabelInstanceType) AddToTabIndex() {
 	addTabIndex(shared.layerAlias, shared.controlAlias, constants.CellTypeLabel)
 }
 
-func (shared *LabelInstanceType) SetLabelValue(value string) {
-	labelEntry := Labels.Get(shared.layerAlias, shared.controlAlias)
-	labelEntry.Text = value
-}
-
 func (shared *LabelInstanceType) SetIsTooltipEnabled(isEnabled bool) {
 	labelEntry := Labels.Get(shared.layerAlias, shared.controlAlias)
 	if labelEntry != nil && labelEntry.TooltipAlias != "" {
@@ -42,7 +37,7 @@ func (shared *LabelInstanceType) SetIsTooltipEnabled(isEnabled bool) {
 func (shared *LabelInstanceType) SetTooltipText(text string) {
 	labelEntry := Labels.Get(shared.layerAlias, shared.controlAlias)
 	tooltipEntry := Tooltips.Get(shared.layerAlias, labelEntry.TooltipAlias)
-	tooltipEntry.Text = text
+	tooltipEntry.Label = text
 }
 
 func (shared *LabelInstanceType) Delete() *LabelInstanceType {
@@ -54,7 +49,7 @@ func (shared *labelType) Add(layerAlias string, labelAlias string, labelValue st
 	labelEntry := types.NewLabelEntry()
 	labelEntry.StyleEntry = styleEntry
 	labelEntry.Alias = labelAlias
-	labelEntry.Text = labelValue
+	labelEntry.Label = labelValue
 	labelEntry.XLocation = xLocation
 	labelEntry.YLocation = yLocation
 	labelEntry.Width = width
@@ -94,7 +89,7 @@ func (shared *labelType) drawLabelsOnLayer(layerEntry types.LayerEntryType) {
 	layerAlias := layerEntry.LayerAlias
 	for _, currentLabelEntry := range Labels.GetAllEntries(layerAlias) {
 		labelEntry := currentLabelEntry
-		drawLabel(&layerEntry, labelEntry.Alias, labelEntry.Text, labelEntry.StyleEntry, labelEntry.XLocation, labelEntry.YLocation, labelEntry.Width)
+		drawLabel(&layerEntry, labelEntry.Alias, labelEntry.Label, labelEntry.StyleEntry, labelEntry.XLocation, labelEntry.YLocation, labelEntry.Width)
 	}
 }
 

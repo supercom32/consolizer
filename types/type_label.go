@@ -7,7 +7,6 @@ import (
 // func DrawButton(LayerAlias string, Text string, StyleEntry TuiStyleEntryType, IsPressed bool, IsSelected bool, XLocation int, YLocation int, Width int, Height int) {
 type LabelEntryType struct {
 	BaseControlType
-	Text                    string
 	IsBackgroundTransparent bool
 }
 
@@ -25,7 +24,7 @@ func (shared LabelEntryType) MarshalJSON() ([]byte, error) {
 		LabelValue string
 	}{
 		BaseControlType: shared.BaseControlType,
-		LabelValue:      shared.Text,
+		LabelValue:      shared.Label,
 	})
 	if err != nil {
 		return nil, err
@@ -64,7 +63,7 @@ func NewLabelEntry(existingLabelEntry ...*LabelEntryType) LabelEntryType {
 	if existingLabelEntry != nil {
 		labelEntry.StyleEntry = NewTuiStyleEntry(&existingLabelEntry[0].StyleEntry)
 		labelEntry.Alias = existingLabelEntry[0].Alias
-		labelEntry.Text = existingLabelEntry[0].Text
+		labelEntry.Label = existingLabelEntry[0].Label
 		labelEntry.XLocation = existingLabelEntry[0].XLocation
 		labelEntry.YLocation = existingLabelEntry[0].YLocation
 		labelEntry.Width = existingLabelEntry[0].Width
@@ -84,6 +83,6 @@ information should be noted:
 */
 func IsLabelEntryEqual(sourceLabelEntry *LabelEntryType, targetLabelEntry *LabelEntryType) bool {
 	return sourceLabelEntry.BaseControlType.IsEqual(&targetLabelEntry.BaseControlType) &&
-		sourceLabelEntry.Text == targetLabelEntry.Text &&
+		sourceLabelEntry.Label == targetLabelEntry.Label &&
 		sourceLabelEntry.IsBackgroundTransparent == targetLabelEntry.IsBackgroundTransparent
 }

@@ -297,7 +297,7 @@ This function updates the value of the tooltip label identified by the layerAlia
 */
 func (shared *TooltipInstanceType) SetTooltipValue(text string) *TooltipInstanceType {
 	labelEntry := Labels.Get(shared.layerAlias, shared.controlAlias)
-	labelEntry.Text = text
+	labelEntry.Label = text
 	return shared
 }
 
