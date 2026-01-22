@@ -538,7 +538,13 @@ func (shared *LayerInstanceType) DrawImage(fileName string, drawingStyle types.I
 			UnloadImage(fileName)
 		}()
 	}
-	DrawImageToLayer(shared.layerAlias, fileName, drawingStyle, xLocation, yLocation, widthInCharacters, heightInCharacters, blurSigma)
+	imageEntryType := getImage(fileName)
+	imageLayer := imageEntryType.LayerEntry
+	if imageEntryType.ImageData != nil {
+		imageData := imageEntryType.ImageData
+		imageLayer = getImageLayer(imageData, drawingStyle, widthInCharacters, heightInCharacters, blurSigma)
+	}
+	drawImageToLayer(shared.layerAlias, imageLayer, xLocation, yLocation)
 	return err
 }
 

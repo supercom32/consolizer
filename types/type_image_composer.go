@@ -56,20 +56,3 @@ func NewImageComposerImageEntry() ImageComposerImageEntryType {
 	var imageComposerImageEntry ImageComposerImageEntryType
 	return imageComposerImageEntry
 }
-
-/*func (shared *ImageComposerEntryType) AddLayer(imageAlias string, xLocation int, yLocation int, imageStyle ImageStyleEntryType, zOrder int) *ImageComposerImageEntryType {
-	imageComposerImage := NewImageComposerImageEntry()
-	imageComposerImage.ZOrder = zOrder
-	imageComposerImage.HotspotXLocation = xLocation
-	imageComposerImage.HotspotXLocation = yLocation
-	imageComposerImage.ImageStyle = imageStyle
-	imageComposerImage.IsVisible = true
-	imageEntry := memory.GetImage(imageAlias)
-	imageComposerImage.ImageData = imageEntry.ImageData
-	shared.images[imageAlias] = &imageComposerImage
-	return &imageComposerImage
-}
-
-func (shared *ImageComposerEntryType) Clear() {
-	shared.images = make(map[string]*ImageComposerImageEntryType)
-}*/

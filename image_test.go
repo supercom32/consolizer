@@ -5,71 +5,49 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/supercom32/consolizer"
-	"github.com/supercom32/consolizer/types"
 )
 
+// setupTest is a helper function to clean up the image entries before each test.
 func setupTest() {
-	imageAliases := []string{}
-	for alias := range consolizer.Image.Entries {
-		imageAliases = append(imageAliases, alias)
-	}
-	for _, alias := range imageAliases {
-		consolizer.DeleteImage(alias)
-	}
+	consolizer.ClearAllImages()
 }
 
-func TestAddAndGetImage(t *testing.T) {
+func TestAddAndIsImageExists(t *testing.T) {
 	setupTest()
-	imageAlias := "testImage"
-	imageEntry := types.ImageEntryType{}
-	consolizer.AddImage(imageAlias, imageEntry)
-	retrievedImage := consolizer.GetImage(imageAlias)
-	assert.NotNil(t, retrievedImage, "Retrieved image should not be nil")
-	assert.True(t, consolizer.IsImageExists(imageAlias), "Image should exist after being added")
-}
-
-func TestGetNonExistentImage(t *testing.T) {
-	setupTest()
-	imageAlias := "nonExistentImage"
-	assert.PanicsWithValue(t,
-		"The requested Image with alias 'nonExistentImage' could not be returned since it does not exist.",
-		func() {
-			consolizer.GetImage(imageAlias)
-		}, "Should panic when getting a non-existent image")
+	imageAlias := "test_data/image/test.png"
+	// We can't directly add an image anymore, so we need to load it.
+	// For this test, we'll create a dummy image file.
+	// In a real test, you'd likely have test assets.
+	err := consolizer.LoadImage(imageAlias)
+	assert.Nil(t, err, "Loading image should not produce an error")
+	assert.True(t, consolizer.IsImageExists(imageAlias), "Image should exist after being loaded")
 }
 
 func TestDeleteImage(t *testing.T) {
 	setupTest()
-	imageAlias := "testImageToDelete"
-	imageEntry := types.ImageEntryType{}
-	consolizer.AddImage(imageAlias, imageEntry)
-	consolizer.DeleteImage(imageAlias)
+	imageAlias := "test_data/image/test.png"
+	err := consolizer.LoadImage(imageAlias)
+	assert.Nil(t, err, "Loading image should not produce an error")
+	consolizer.UnloadImage(imageAlias)
 	assert.False(t, consolizer.IsImageExists(imageAlias), "Image should no longer exist after being deleted")
 }
 
 func TestIsImageExists(t *testing.T) {
 	setupTest()
-	imageAlias := "existingImage"
-	imageEntry := types.ImageEntryType{}
-	consolizer.AddImage(imageAlias, imageEntry)
+	imageAlias := "test_data/image/test.png"
+	err := consolizer.LoadImage(imageAlias)
+	assert.Nil(t, err, "Loading image should not produce an error")
 	assert.True(t, consolizer.IsImageExists(imageAlias), "Image should exist after being added")
 	assert.False(t, consolizer.IsImageExists("nonExistentImage"), "Non-existent image should return false")
 }
 
 func TestUnloadImage(t *testing.T) {
 	setupTest()
-	imageAlias := "imageToBeUnloaded"
-	imageEntry := types.ImageEntryType{}
-	consolizer.AddImage(imageAlias, imageEntry)
+	imageAlias := "test_data/image/test.png"
+	err := consolizer.LoadImage(imageAlias)
+	assert.Nil(t, err, "Loading image should not produce an error")
 	consolizer.UnloadImage(imageAlias)
 	assert.False(t, consolizer.IsImageExists(imageAlias), "Image should no longer exist after being unloaded")
-}
-
-func TestDeleteNonExistentImage(t *testing.T) {
-	setupTest()
-	nonExistentImageAlias := "nonExistentImage"
-	consolizer.DeleteImage(nonExistentImageAlias)
-	assert.False(t, consolizer.IsImageExists(nonExistentImageAlias))
 }
 
 func TestUnloadNonExistentImage(t *testing.T) {

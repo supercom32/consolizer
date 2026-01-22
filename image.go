@@ -23,18 +23,18 @@ import (
 	"time"
 )
 
-type imageMemoryType struct {
+type ImageMemoryType struct {
 	sync.Mutex
 	Entries map[string]*types.ImageEntryType
 }
 
-var Image imageMemoryType
+var Image ImageMemoryType
 
 func init() {
 	Image.Entries = make(map[string]*types.ImageEntryType)
 }
 
-func AddImage(imageAlias string, imageEntry types.ImageEntryType) {
+func addImage(imageAlias string, imageEntry types.ImageEntryType) {
 	Image.Lock()
 	defer func() {
 		Image.Unlock()
@@ -43,7 +43,7 @@ func AddImage(imageAlias string, imageEntry types.ImageEntryType) {
 	Image.Entries[imageAlias] = &imageEntry
 }
 
-func GetImage(imageAlias string) *types.ImageEntryType {
+func getImage(imageAlias string) *types.ImageEntryType {
 	Image.Lock()
 	defer func() {
 		Image.Unlock()
@@ -53,13 +53,16 @@ func GetImage(imageAlias string) *types.ImageEntryType {
 	}
 	return Image.Entries[imageAlias]
 }
-func DeleteImage(imageAlias string) {
+
+func deleteImage(imageAlias string) {
 	Image.Lock()
 	defer func() {
 		Image.Unlock()
 	}()
 	delete(Image.Entries, imageAlias)
 }
+
+// IsImageExists allows you to check if an image with the given alias exists in memory.
 func IsImageExists(imageAlias string) bool {
 	Image.Lock()
 	defer func() {
@@ -69,6 +72,15 @@ func IsImageExists(imageAlias string) bool {
 		return false
 	}
 	return true
+}
+
+// ClearAllImages removes all loaded images from memory.
+func ClearAllImages() {
+	Image.Lock()
+	defer func() {
+		Image.Unlock()
+	}()
+	Image.Entries = make(map[string]*types.ImageEntryType)
 }
 
 /*
@@ -83,7 +95,7 @@ be noted:
 operation will be ignored.
 */
 func UnloadImage(imageAlias string) {
-	DeleteImage(imageAlias)
+	deleteImage(imageAlias)
 }
 
 /*
@@ -98,7 +110,7 @@ func LoadImage(imageFile string) error {
 	if err != nil {
 		return err
 	}
-	AddImage(imageFile, imageEntry)
+	addImage(imageFile, imageEntry)
 	return err
 }
 
@@ -179,7 +191,7 @@ func LoadPreRenderedImage(imageFile string, imageAlias string, imageStyle types.
 	}
 	imageEntry.LayerEntry = getImageLayerAsHighColor(imageEntry.ImageData, imageStyle, widthInCharacters, heightInCharacters, blurSigma)
 	imageEntry.ImageData = nil
-	AddImage(imageAlias, imageEntry)
+	addImage(imageAlias, imageEntry)
 	return err
 }
 
@@ -199,7 +211,7 @@ func LoadBase64Image(imageDataAsBase64 string, imageAlias string) error {
 		return err
 	}
 	imageEntry.ImageData = imageData
-	AddImage(imageAlias, imageEntry)
+	addImage(imageAlias, imageEntry)
 	return err
 }
 
@@ -244,7 +256,7 @@ func LoadPreRenderedBase64Image(imageDataAsBase64 string, imageAlias string, ima
 		return err
 	}
 	imageEntry.LayerEntry = getImageLayerAsHighColor(imageData, imageStyle, widthInCharacters, heightInCharacters, blurSigma)
-	AddImage(imageAlias, imageEntry)
+	addImage(imageAlias, imageEntry)
 	return err
 }
 
@@ -917,47 +929,6 @@ func getImageLayerAsBlockElements(sourceImageData image.Image, imageStyle types.
 	return layerEntry
 }
 
-/*
-DrawImageToLayer allows you to draw a loaded image to the specified layer.
-In addition, the following information should be noted:
-
-- If the location specified falls outside the range for the layer, then
-only the visible portion of the image will be drawn.
-
-- If you are drawing an image which has already been pre-rendered, then
-your width, height, and blur factor will be ignored.
-
-- If you specify a value of 0 for ether the width or height, then that
-dimension will be automatically calculated to a value that best maintain
-the images aspect ratio. This is useful since it removes the need to
-calculate this manually.
-
-- If you specify a value less than or equal to 0 for both the width and
-height, a panic will be generated to fail as fast as possible.
-
-- When pre-rendering an image, it should be noted that each text cell assigned
-contains a top and bottom pixel. This is done to provide as much resolution as
-possible for your image. That means for a pre-rendered image with a size of
-10x10 characters, the actual image being rendered would be 10x20 pixels tall.
-If the user wishes to maintain proper aspect ratios, they must manually select
-a height that appropriately compensates for this effect, or leave the height
-value as 0 to have it done automatically.
-
-- The blur sigma controls how much blurring occurs after your image has been
-resized. This allows you to soften your image before it is rendered in ansi
-so that hard edges are removed. A value of 0.0 means no blurring will occur,
-with higher values increasing the blur factor.
-*/
-func DrawImageToLayer(layerAlias string, imageAlias string, imageStyle types.ImageStyleEntryType, xLocation int, yLocation int, widthInCharacters int, heightInCharacters int, blurSigma float64) {
-	imageEntryType := GetImage(imageAlias)
-	imageLayer := imageEntryType.LayerEntry
-	if Image.Entries[imageAlias].ImageData != nil {
-		imageData := Image.Entries[imageAlias].ImageData
-		imageLayer = getImageLayer(imageData, imageStyle, widthInCharacters, heightInCharacters, blurSigma)
-	}
-	drawImageToLayer(layerAlias, imageLayer, xLocation, yLocation)
-}
-
 func getImageLayer(sourceImageData image.Image, imageStyle types.ImageStyleEntryType, widthInCharacters int, heightInCharacters int, blurSigma float64) types.LayerEntryType {
 	imageLayer := types.NewLayerEntry("", "", widthInCharacters, heightInCharacters)
 	if imageStyle.DrawingStyle == constants.ImageStyleHighColor {
@@ -982,7 +953,7 @@ func drawImageToLayer(layerAlias string, imageLayer types.LayerEntryType, xLocat
 	overlayLayers(&imageLayer, layerEntry)
 }
 
-func getImage(fileName string) (*types.ImageEntryType, error) {
+func loadImageAndGetEntry(fileName string) (*types.ImageEntryType, error) {
 	var err error
 	if !IsImageExists(fileName) {
 		err = LoadImage(fileName)
@@ -993,7 +964,7 @@ func getImage(fileName string) (*types.ImageEntryType, error) {
 			UnloadImage(fileName)
 		}()
 	}
-	imageEntry := GetImage(fileName)
+	imageEntry := getImage(fileName)
 	return imageEntry, err
 }
 
@@ -1076,7 +1047,7 @@ func FloydSteinbergDithering8x8(inputImage image.Image) image.Image {
 			} else {
 				grayValue = 0
 			}
-			newColor := color.Gray{grayValue}
+			newColor := color.Gray{Y: grayValue}
 			newImage.SetGray(xLocation, yLocation, newColor)
 		}
 	}
@@ -1360,7 +1331,7 @@ func LoadPreRenderedLayerImage(filePath string, imageAlias string) error {
 	imageEntry.ImageData = nil
 
 	// Add the image to the image system
-	AddImage(imageAlias, imageEntry)
+	addImage(imageAlias, imageEntry)
 
 	return nil
 }

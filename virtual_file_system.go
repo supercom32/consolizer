@@ -221,7 +221,7 @@ func getImageEntryFromFileSystem(imageFile string) (types.ImageEntryType, error)
 		return imageEntry, err
 	}
 	imageEntry.ImageData = imageData
-	AddImage(imageFile, imageEntry)
+	addImage(imageFile, imageEntry)
 	return imageEntry, err
 }
 

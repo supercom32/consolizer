@@ -29,7 +29,7 @@ func (shared *ImageComposerEntryType) New() ImageComposerEntryType {
 	return newImageComposer
 }
 
-// Specifying 0 widht and height means use native image size
+// Specifying 0 width and height means use native image size
 func (shared *ImageComposerEntryType) Add(fileName string, xLocation int, yLocation int, width int, height int, imageStyle types.ImageStyleEntryType, effectStyle constants.EffectStyle, effectStep float64, zOrder int, alphaValue float32) *types.ImageComposerImageEntryType {
 	imageComposerImage := types.NewImageComposerImageEntry()
 	imageComposerImage.ZOrder = zOrder
@@ -42,10 +42,9 @@ func (shared *ImageComposerEntryType) Add(fileName string, xLocation int, yLocat
 	imageComposerImage.EffectStep = effectStep
 	imageComposerImage.IsVisible = true
 	imageComposerImage.AlphaValue = alphaValue
-	imageEntry, err := getImage(fileName)
+	imageEntry, err := loadImageAndGetEntry(fileName)
 	if err != nil {
-		// Here we perform this action anyway to trigger a panic, so we don't need to duplicate the panic code.
-		safeSttyPanic(err)
+		safeSttyPanic(fmt.Sprintf("Could not load image '%s': %s", fileName, err.Error()))
 	}
 	imageComposerImage.ImageData = imageEntry.ImageData
 	shared.images[fileName] = &imageComposerImage
@@ -54,6 +53,10 @@ func (shared *ImageComposerEntryType) Add(fileName string, xLocation int, yLocat
 
 func (shared *ImageComposerEntryType) Delete(imageAlias string) {
 	delete(shared.images, imageAlias)
+}
+
+func (shared *ImageComposerEntryType) Clear() {
+	shared.images = make(map[string]*types.ImageComposerImageEntryType)
 }
 
 func (shared *ImageComposerEntryType) RenderImage() image.Image {
@@ -273,7 +276,7 @@ func getBrailleImageData(inputImage image.Image, imageStyle types.ImageStyleEntr
 
 func adjustContrast(inputImage image.Image, contrastFactor float64) image.Image {
 	bounds := inputImage.Bounds()
-	width, height := bounds.Dx(), bounds.Dy()
+	width, height := bounds.Max.X, bounds.Max.Y
 
 	// Create a new RGBA image to store the modified image.
 	outputImage := image.NewRGBA(bounds)
