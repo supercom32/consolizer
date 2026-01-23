@@ -527,6 +527,19 @@ func (shared *LayerInstanceType) Clear() {
 	fillArea(layerEntry, localAttributeEntry, "", 0, 0, shared.LayerWidth, shared.LayerHeight, 0)
 }
 
+/*
+DrawImage allows you to draw an image on a given text layer. This method
+supports various image formats and drawing styles, allowing for flexible
+rendering of images as text-based art. In addition, the following information
+should be noted:
+
+- If the image to be drawn is not already loaded in memory, it will be
+loaded automatically and then unloaded after the drawing operation is complete.
+
+- When drawing images with transparencies, the transparent edges are only
+computed once against the layer. Moving the layer around or changing the
+underlying layers will not make the image update.
+*/
 func (shared *LayerInstanceType) DrawImage(fileName string, drawingStyle types.ImageStyleEntryType, xLocation int, yLocation int, widthInCharacters int, heightInCharacters int, blurSigma float64) error {
 	var err error
 	if !IsImageExists(fileName) {
