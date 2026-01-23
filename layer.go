@@ -576,7 +576,7 @@ func (shared *LayerInstanceType) DrawComposedImage(imageComposeEntry ImageCompos
 	if drawingStyle.DrawingStyle == constants.ImageStyleHighColor {
 		imageLayer = getImageLayerAsHighColor(baseImage, drawingStyle, widthInCharacters, heightInCharacters, drawingStyle.BlurSigmaIntensity, currentLayer)
 	} else if drawingStyle.DrawingStyle == constants.ImageStyleCharacters {
-		imageLayer = GetImageLayerAsAsciiColorArt(baseImage, drawingStyle, widthInCharacters, heightInCharacters, drawingStyle.BlurSigmaIntensity, currentLayer)
+		imageLayer = GetImageLayerAsAsciiColorArt(baseImage, drawingStyle, widthInCharacters, heightInCharacters, drawingStyle.BlurSigmaIntensity)
 	} else if drawingStyle.DrawingStyle == constants.ImageStyleBlockElements {
 		imageLayer = getImageLayerAsBlockElements(baseImage, drawingStyle, widthInCharacters, heightInCharacters, drawingStyle.BlurSigmaIntensity, currentLayer)
 	} else if drawingStyle.DrawingStyle == constants.ImageStyleBraille {

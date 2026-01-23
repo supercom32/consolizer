@@ -179,15 +179,19 @@ func getImageLayerAsBraille(sourceImageData image.Image, imageStyle types.ImageS
 		processedImageData = imaging.Blur(processedImageData, blurSigma)
 	}
 
-	// Use existing layer if provided, otherwise create a new one
-	var layerEntry types.LayerEntryType
-	if len(existingLayer) > 0 && existingLayer[0] != nil {
-		layerEntry = *existingLayer[0]
-	} else {
-		layerEntry = types.NewLayerEntry("", "", widthInCharacters, heightInCharacters)
+	layerEntry := types.NewLayerEntry("", "", widthInCharacters, heightInCharacters)
+
+	// Get the braille image data
+	brailleImageData := getBrailleImageData(processedImageData, imageStyle)
+
+	// Safely copy the braille image data to the layer entry
+	// Only copy data that fits within the bounds of the layer entry
+	for y := 0; y < len(brailleImageData) && y < len(layerEntry.CharacterMemory); y++ {
+		for x := 0; x < len(brailleImageData[y]) && x < len(layerEntry.CharacterMemory[y]); x++ {
+			layerEntry.CharacterMemory[y][x] = brailleImageData[y][x]
+		}
 	}
 
-	layerEntry.CharacterMemory = getBrailleImageData(processedImageData, imageStyle)
 	return layerEntry
 }
 
@@ -258,11 +262,17 @@ func getBrailleImageData(inputImage image.Image, imageStyle types.ImageStyleEntr
 			var redColor, greenColor, blueColor int32
 			var totalRed, totalGreen, totalBlue int32
 			numPixels := int32(2 * 4)
+			isTransparentBlock := false
 			for xBlockLocation := 0; xBlockLocation < 2; xBlockLocation++ {
 				for yBlockLocation := 0; yBlockLocation < 4; yBlockLocation++ {
 					pixelX := xCanvasLocation*2 + xBlockLocation
 					pixelY := yCanvasLocation*4 + yBlockLocation
 					pixelColor := inputImage.At(pixelX, pixelY)
+					_, _, _, a := pixelColor.RGBA()
+					if a == 0 {
+						isTransparentBlock = true
+						break
+					}
 					redColor, greenColor, blueColor, _ = get8BitColorComponents(pixelColor)
 					totalRed += redColor
 					totalGreen += greenColor
@@ -273,7 +283,19 @@ func getBrailleImageData(inputImage image.Image, imageStyle types.ImageStyleEntr
 						dots[xBlockLocation*4+yBlockLocation] = true
 					}
 				}
+				if isTransparentBlock {
+					break
+				}
 			}
+
+			if isTransparentBlock {
+				result[yCanvasLocation][xCanvasLocation] = types.CharacterEntryType{
+					Character:      rune(0),
+					AttributeEntry: types.NewAttributeEntry(),
+				}
+				continue
+			}
+
 			avgRed := totalRed / numPixels
 			avgGreen := totalGreen / numPixels
 			avgBlue := totalBlue / numPixels

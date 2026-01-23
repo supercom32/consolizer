@@ -564,7 +564,7 @@ func mapBrightnessToCharacter(brightness float64) rune {
 }
 
 // Function to process the image and convert it to ASCII art
-func GetImageLayerAsAsciiColorArt(sourceImageData image.Image, imageStyle types.ImageStyleEntryType, widthInCharacters int, heightInCharacters int, blurSigma float64, existingLayer ...*types.LayerEntryType) types.LayerEntryType {
+func GetImageLayerAsAsciiColorArt(sourceImageData image.Image, imageStyle types.ImageStyleEntryType, widthInCharacters int, heightInCharacters int, blurSigma float64) types.LayerEntryType {
 	if widthInCharacters <= 0 && heightInCharacters <= 0 {
 		safeSttyPanic(fmt.Sprintf("The specified width and height of %dx%d for your image is not valid.", widthInCharacters, heightInCharacters))
 	}
@@ -598,18 +598,33 @@ func GetImageLayerAsAsciiColorArt(sourceImageData image.Image, imageStyle types.
 	calculatedCharacterWidth := calculatedPixelWidth
 	calculatedCharacterHeight := calculatedPixelHeight / 2
 
-	// Use existing layer if provided, otherwise create a new one
-	var layerEntry types.LayerEntryType
-	if len(existingLayer) > 0 && existingLayer[0] != nil {
-		layerEntry = *existingLayer[0]
-	} else {
-		layerEntry = types.NewLayerEntry("", "", calculatedCharacterWidth, calculatedCharacterHeight)
-	}
+	layerEntry := types.NewLayerEntry("", "", calculatedCharacterWidth, calculatedCharacterHeight)
 
 	// Loop through each character position in the grid
 	for currentYLocation := 0; currentYLocation < calculatedCharacterHeight; currentYLocation++ {
 		for currentXLocation := 0; currentXLocation < calculatedCharacterWidth; currentXLocation++ {
-			currentCharacter := layerEntry.CharacterMemory[currentYLocation][currentXLocation]
+			// Get the current character, checking bounds first
+			var currentCharacter types.CharacterEntryType
+
+			// Check if we're accessing within bounds of the layer
+			if currentYLocation < len(layerEntry.CharacterMemory) && currentXLocation < len(layerEntry.CharacterMemory[currentYLocation]) {
+				currentCharacter = layerEntry.CharacterMemory[currentYLocation][currentXLocation]
+			} else {
+				// Skip this cell if it's out of bounds
+				continue
+			}
+
+			// Check for transparency at the upper pixel location.
+			// If transparent, set the character to NullRune and continue.
+			if isTransparentPixel(processedImageData, currentXLocation, currentYLocation*2) {
+				currentCharacter.Character = constants.NullRune
+				if currentYLocation < len(layerEntry.CharacterMemory) && currentXLocation < len(layerEntry.CharacterMemory[currentYLocation]) {
+					layerEntry.CharacterMemory[currentYLocation][currentXLocation].Character = constants.NullRune
+					layerEntry.CharacterMemory[currentYLocation][currentXLocation].AttributeEntry.IsBackgroundTransparent = true
+					layerEntry.CharacterMemory[currentYLocation][currentXLocation].AttributeEntry.CellType = constants.CellTypeShadow
+				}
+				continue
+			}
 
 			// Get the upper pixel's color (as uint8)
 			upperPixel := processedImageData.At(currentXLocation, currentYLocation*2) // Upper half of the character
@@ -627,20 +642,13 @@ func GetImageLayerAsAsciiColorArt(sourceImageData image.Image, imageStyle types.
 			// Set the foreground color based on the pixel color
 			currentCharacter.AttributeEntry.ForegroundColor = GetRGBColor(redColor, greenColor, blueColor)
 
-			// Get the lower pixel's color for the background (if applicable)
-			lowerPixel := processedImageData.At(currentXLocation, currentYLocation*2+1) // Lower half of the character
-			redColor, greenColor, blueColor, _ = get8BitColorComponents(lowerPixel)
-
 			// Set the background color
 			currentCharacter.AttributeEntry.BackgroundColor = GetRGBColor(0, 0, 0)
 
-			// If the alpha value is low, set character to null rune
-			if redColor <= 150 || greenColor <= 150 || blueColor <= 150 {
-				currentCharacter.Character = constants.NullRune
+			// Update the layer entry with the character and its color attributes, checking bounds again
+			if currentYLocation < len(layerEntry.CharacterMemory) && currentXLocation < len(layerEntry.CharacterMemory[currentYLocation]) {
+				layerEntry.CharacterMemory[currentYLocation][currentXLocation] = currentCharacter
 			}
-
-			// Update the layer entry with the character and its color attributes
-			layerEntry.CharacterMemory[currentYLocation][currentXLocation] = currentCharacter
 		}
 	}
 
@@ -1141,7 +1149,7 @@ func getImageLayer(sourceImageData image.Image, imageStyle types.ImageStyleEntry
 	if imageStyle.DrawingStyle == constants.ImageStyleHighColor {
 		imageLayer = getImageLayerAsHighColor(sourceImageData, imageStyle, widthInCharacters, heightInCharacters, blurSigma, existingLayer)
 	} else if imageStyle.DrawingStyle == constants.ImageStyleCharacters {
-		imageLayer = GetImageLayerAsAsciiColorArt(sourceImageData, imageStyle, widthInCharacters, heightInCharacters, blurSigma, existingLayer)
+		imageLayer = GetImageLayerAsAsciiColorArt(sourceImageData, imageStyle, widthInCharacters, heightInCharacters, blurSigma)
 	} else if imageStyle.DrawingStyle == constants.ImageStyleBlockElements {
 		imageLayer = getImageLayerAsBlockElements(sourceImageData, imageStyle, widthInCharacters, heightInCharacters, blurSigma, existingLayer)
 	} else {
