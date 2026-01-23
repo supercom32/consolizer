@@ -191,17 +191,22 @@ func getImageLayerAsBraille(sourceImageData image.Image, imageStyle types.ImageS
 	return layerEntry
 }
 
-func ConvertImageToGrayscale(inputImage image.Image) *image.Gray {
+func ConvertImageToGrayscale(inputImage image.Image) image.Image {
 	bounds := inputImage.Bounds()
-	width, height := bounds.Max.X, bounds.Max.Y
-	// Create a new grayscale image with the same dimensions as the input image.
-	grayImage := image.NewGray(bounds)
+	// Create a new RGBA image to support alpha channel.
+	grayImage := image.NewRGBA(bounds)
 	// Iterate through each pixel in the input image and convert it to grayscale.
-	for yLocation := 0; yLocation < height; yLocation++ {
-		for xLocation := 0; xLocation < width; xLocation++ {
+	for yLocation := bounds.Min.Y; yLocation < bounds.Max.Y; yLocation++ {
+		for xLocation := bounds.Min.X; xLocation < bounds.Max.X; xLocation++ {
 			pixel := inputImage.At(xLocation, yLocation)
-			grayValue := color.GrayModel.Convert(pixel).(color.Gray)
-			grayImage.Set(xLocation, yLocation, grayValue)
+			_, _, _, a := pixel.RGBA()
+			if a == 0 {
+				grayImage.Set(xLocation, yLocation, color.Transparent)
+			} else {
+				grayValue := color.GrayModel.Convert(pixel).(color.Gray)
+				newColor := color.RGBA{R: grayValue.Y, G: grayValue.Y, B: grayValue.Y, A: uint8(a >> 8)}
+				grayImage.Set(xLocation, yLocation, newColor)
+			}
 		}
 	}
 	return grayImage
@@ -214,7 +219,11 @@ func getBrailleImageData(inputImage image.Image, imageStyle types.ImageStyleEntr
 	if imageStyle.DitheringIntensity != 1 {
 		contrastAdjustedImage = adjustContrast(contrastAdjustedImage, imageStyle.DitheringIntensity)
 	}
-	grayscaleImage = ConvertImageToGrayscale(contrastAdjustedImage)
+	grayscaleWithAlpha := ConvertImageToGrayscale(contrastAdjustedImage)
+	bounds := grayscaleWithAlpha.Bounds()
+	grayscaleImage = image.NewGray(bounds)
+	draw.Draw(grayscaleImage, bounds, grayscaleWithAlpha, bounds.Min, draw.Src)
+
 	if imageStyle.IsHistogramEqualized {
 		monochromeImage = HistogramEqualization(grayscaleImage)
 	}
@@ -235,7 +244,7 @@ func getBrailleImageData(inputImage image.Image, imageStyle types.ImageStyleEntr
 	if err := contextForImage.SavePNG("dithered_output.png"); err != nil {
 		safeSttyPanic(err)
 	}*/
-	bounds := inputImage.Bounds()
+	bounds = inputImage.Bounds()
 	width, height := bounds.Dx(), bounds.Dy()
 	brailleWidth := width / 2
 	brailleHeight := height / 4
