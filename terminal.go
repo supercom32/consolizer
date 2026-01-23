@@ -805,19 +805,24 @@ text layer data underneath them is preserved.
 */
 func renderLayers(rootLayerEntry *types.LayerEntryType, sortedLayerAliasSlice LayerAliasZOrderPairList) types.LayerEntryType {
 	baseLayerEntry := types.NewLayerEntry("", "", 0, 0, rootLayerEntry)
+	isOpaque := false
 	for currentListIndex := 0; currentListIndex < len(sortedLayerAliasSlice); currentListIndex++ {
 		if !Layers.IsExists(sortedLayerAliasSlice[currentListIndex].Key) {
 			continue
+		}
+		// If the first layer, do not propagate transparencies.
+		if currentListIndex == 0 {
+			isOpaque = true
 		}
 		currentLayerEntry := types.NewLayerEntry("", "", 0, 0, Layers.Get(sortedLayerAliasSlice[currentListIndex].Key))
 		if currentLayerEntry.IsVisible {
 			renderControls(currentLayerEntry)
 			if currentLayerEntry.IsParent && (currentLayerEntry.LayerAlias != baseLayerEntry.LayerAlias && currentLayerEntry.ParentAlias == baseLayerEntry.LayerAlias) {
 				renderedLayer := renderLayers(&currentLayerEntry, sortedLayerAliasSlice)
-				overlayLayers(&renderedLayer, &baseLayerEntry)
+				overlayLayers(&renderedLayer, &baseLayerEntry, isOpaque)
 			} else {
 				if currentLayerEntry.ParentAlias == baseLayerEntry.LayerAlias {
-					overlayLayers(&currentLayerEntry, &baseLayerEntry)
+					overlayLayers(&currentLayerEntry, &baseLayerEntry, isOpaque)
 				}
 			}
 		}
@@ -858,7 +863,7 @@ know the alias of the layer you wish to overlay.
 func overlayLayersByLayerAlias(sourceLayerAlias string, targetLayerEntry *types.LayerEntryType) {
 	validateLayer(sourceLayerAlias)
 	layerEntry := Layers.Get(sourceLayerAlias)
-	overlayLayers(layerEntry, targetLayerEntry)
+	overlayLayers(layerEntry, targetLayerEntry, false)
 }
 
 /*
@@ -878,12 +883,13 @@ transparent.
 then it will be drawn as a shadow with the color and intensity matching
 the rune underneath it.
 */
-func overlayLayers(sourceLayerEntry *types.LayerEntryType, targetLayerEntry *types.LayerEntryType) {
+func overlayLayers(sourceLayerEntry *types.LayerEntryType, targetLayerEntry *types.LayerEntryType, isOpaque bool) {
 	sourceCharacterMemory := sourceLayerEntry.CharacterMemory
 	targetCharacterMemory := targetLayerEntry.CharacterMemory
 	sourceWidthToCopy := sourceLayerEntry.Width
 	sourceHeightToCopy := sourceLayerEntry.Height
-	// Calculate how much of the source Width to copy.
+
+	// Calculate how much of the source Width to copy
 	sourceWidthToCopy = sourceLayerEntry.Width - int(math.GetAbsoluteValueAsFloat64(sourceLayerEntry.ScreenXLocation))
 	if sourceLayerEntry.ScreenXLocation < 0 {
 		if sourceWidthToCopy > targetLayerEntry.Width {
@@ -894,7 +900,8 @@ func overlayLayers(sourceLayerEntry *types.LayerEntryType, targetLayerEntry *typ
 			sourceWidthToCopy = sourceLayerEntry.Width
 		}
 	}
-	// Calculate how much of the source Length to copy.
+
+	// Calculate how much of the source Height to copy
 	sourceHeightToCopy = sourceLayerEntry.Height - int(math.GetAbsoluteValueAsFloat64(sourceLayerEntry.ScreenYLocation))
 	if sourceLayerEntry.ScreenYLocation < 0 {
 		if sourceHeightToCopy > targetLayerEntry.Height {
@@ -905,11 +912,13 @@ func overlayLayers(sourceLayerEntry *types.LayerEntryType, targetLayerEntry *typ
 			sourceHeightToCopy = sourceLayerEntry.Height
 		}
 	}
-	// Adjust where rendering on the layer should start.
+
+	// Adjust where rendering on the layer should start
 	startingSourceXLocation := 0
 	startingSourceYLocation := 0
 	startingTargetXLocation := 0
 	startingTargetYLocation := 0
+
 	if sourceLayerEntry.ScreenXLocation < 0 {
 		startingSourceXLocation = int(math.GetAbsoluteValueAsFloat64(sourceLayerEntry.ScreenXLocation))
 	} else {
@@ -920,18 +929,21 @@ func overlayLayers(sourceLayerEntry *types.LayerEntryType, targetLayerEntry *typ
 	} else {
 		startingTargetYLocation = int(math.GetAbsoluteValueAsFloat64(sourceLayerEntry.ScreenYLocation))
 	}
+
 	if sourceWidthToCopy+startingTargetXLocation > targetLayerEntry.Width {
 		sourceWidthToCopy = targetLayerEntry.Width - startingTargetXLocation
 	}
 	if sourceHeightToCopy+startingTargetYLocation > targetLayerEntry.Height {
 		sourceHeightToCopy = targetLayerEntry.Height - startingTargetYLocation
 	}
-	// If the layer is totally off screen, don't bother to render it.
+
+	// If the layer is totally off screen, don't bother to render it
 	if startingSourceXLocation+sourceWidthToCopy < 0 || sourceLayerEntry.ScreenXLocation+sourceWidthToCopy > targetLayerEntry.Width ||
 		startingSourceYLocation+sourceHeightToCopy < 0 || sourceLayerEntry.ScreenYLocation+sourceHeightToCopy > targetLayerEntry.Height {
 		return
 	}
-	// Perform the actual copy using the starting offsets previously calculated.
+
+	// Perform the actual copy
 	for currentRow := 0; currentRow < sourceHeightToCopy; currentRow++ {
 		for currentColumn := 0; currentColumn < sourceWidthToCopy; currentColumn++ {
 			sourceCharacterEntry := &sourceCharacterMemory[currentRow+startingSourceYLocation][currentColumn+startingSourceXLocation]
@@ -939,7 +951,7 @@ func overlayLayers(sourceLayerEntry *types.LayerEntryType, targetLayerEntry *typ
 			sourceAttributeEntry := sourceCharacterEntry.AttributeEntry
 			targetAttributeEntry := targetCharacterEntry.AttributeEntry
 
-			// Handle transformations
+			// Handle NullRune (transparent) cells
 			if sourceCharacterEntry.Character == constants.NullRune {
 				if sourceAttributeEntry.ForegroundTransformValue < 1 {
 					targetAttributeEntry.ForegroundColor = GetTransitionedColor(targetAttributeEntry.ForegroundColor, GetRGBColor(0, 0, 0), sourceAttributeEntry.ForegroundTransformValue)
@@ -948,43 +960,56 @@ func overlayLayers(sourceLayerEntry *types.LayerEntryType, targetLayerEntry *typ
 					targetAttributeEntry.BackgroundColor = GetTransitionedColor(targetAttributeEntry.BackgroundColor, GetRGBColor(0, 0, 0), sourceAttributeEntry.BackgroundTransformValue)
 				}
 				targetCharacterEntry.AttributeEntry = targetAttributeEntry
-				// Here if we detect that our transparent rune is a tooltip, we propagate it to the cell underneath it.
-				if sourceCharacterEntry.AttributeEntry.CellType == constants.CellTypeTooltip {
+
+				if sourceAttributeEntry.CellType == constants.CellTypeTooltip {
 					targetCharacterEntry.AttributeEntry.CellType = constants.CellTypeTooltip
-					targetCharacterEntry.AttributeEntry.CellControlAlias = sourceCharacterEntry.AttributeEntry.CellControlAlias
+					targetCharacterEntry.AttributeEntry.CellControlAlias = sourceAttributeEntry.CellControlAlias
 					targetCharacterEntry.LayerAlias = sourceCharacterEntry.LayerAlias
 				}
-				if sourceCharacterEntry.AttributeEntry.CellType == constants.CellTypeShadow {
+				if sourceAttributeEntry.CellType == constants.CellTypeShadow {
 					targetCharacterEntry.AttributeEntry.CellType = constants.CellTypeShadow
 				}
+
 				targetCharacterMemory[currentRow+startingTargetYLocation][currentColumn+startingTargetXLocation] = *targetCharacterEntry
-			} else {
-				// If your copying a composed image, don't clobber the target layer alias
-				if sourceCharacterEntry.LayerAlias != "" {
-					targetCharacterEntry.LayerAlias = sourceCharacterEntry.LayerAlias
-				}
-				if sourceCharacterEntry.ParentAlias != "" {
-					targetCharacterEntry.ParentAlias = sourceCharacterEntry.ParentAlias
-				}
-				targetCharacterEntry.AttributeEntry = types.NewAttributeEntry(&sourceAttributeEntry)
-				targetCharacterEntry.Character = sourceCharacterEntry.Character
-				// If there is no local color transforming being done on cells
-				if sourceAttributeEntry.ForegroundTransformValue != 1 || sourceAttributeEntry.BackgroundTransformValue != 1 {
-					if sourceAttributeEntry.ForegroundTransformValue < 1 {
-						targetCharacterEntry.AttributeEntry.ForegroundColor = GetTransitionedColor(targetAttributeEntry.ForegroundColor, sourceAttributeEntry.ForegroundColor, sourceAttributeEntry.ForegroundTransformValue)
-					}
-					if sourceAttributeEntry.BackgroundTransformValue < 1 {
-						targetCharacterEntry.AttributeEntry.BackgroundColor = GetTransitionedColor(targetAttributeEntry.BackgroundColor, sourceAttributeEntry.BackgroundColor, sourceAttributeEntry.BackgroundTransformValue)
-					}
-				} else {
-					if sourceLayerEntry.DefaultAttribute.ForegroundTransformValue < 1 {
-						targetCharacterEntry.AttributeEntry.ForegroundColor = GetTransitionedColor(targetAttributeEntry.ForegroundColor, sourceAttributeEntry.ForegroundColor, sourceLayerEntry.DefaultAttribute.ForegroundTransformValue)
-					}
-					if sourceLayerEntry.DefaultAttribute.BackgroundTransformValue < 1 {
-						targetCharacterEntry.AttributeEntry.BackgroundColor = GetTransitionedColor(targetAttributeEntry.BackgroundColor, sourceAttributeEntry.BackgroundColor, sourceLayerEntry.DefaultAttribute.BackgroundTransformValue)
-					}
-				}
+				continue
 			}
+
+			// Copy layer and parent aliases
+			if sourceCharacterEntry.LayerAlias != "" {
+				targetCharacterEntry.LayerAlias = sourceCharacterEntry.LayerAlias
+			}
+			if sourceCharacterEntry.ParentAlias != "" {
+				targetCharacterEntry.ParentAlias = sourceCharacterEntry.ParentAlias
+			}
+
+			newAttributeEntry := types.NewAttributeEntry(&sourceAttributeEntry)
+			targetCharacterEntry.Character = sourceCharacterEntry.Character
+
+			// --- Efficient transparency handling ---
+			if isOpaque == false && sourceAttributeEntry.IsForegroundTransparent {
+				newAttributeEntry.ForegroundColor = targetAttributeEntry.ForegroundColor
+				newAttributeEntry.IsForegroundTransparent = true
+			}
+			if isOpaque == false && sourceAttributeEntry.IsBackgroundTransparent {
+				newAttributeEntry.BackgroundColor = targetAttributeEntry.BackgroundColor
+				newAttributeEntry.IsBackgroundTransparent = true
+			}
+
+			// Apply color transformations
+			if sourceAttributeEntry.ForegroundTransformValue < 1 {
+				newAttributeEntry.ForegroundColor = GetTransitionedColor(targetAttributeEntry.ForegroundColor, sourceAttributeEntry.ForegroundColor, sourceAttributeEntry.ForegroundTransformValue)
+			} else if sourceLayerEntry.DefaultAttribute.ForegroundTransformValue < 1 {
+				newAttributeEntry.ForegroundColor = GetTransitionedColor(targetAttributeEntry.ForegroundColor, sourceAttributeEntry.ForegroundColor, sourceLayerEntry.DefaultAttribute.ForegroundTransformValue)
+			}
+
+			if sourceAttributeEntry.BackgroundTransformValue < 1 {
+				newAttributeEntry.BackgroundColor = GetTransitionedColor(targetAttributeEntry.BackgroundColor, sourceAttributeEntry.BackgroundColor, sourceAttributeEntry.BackgroundTransformValue)
+			} else if sourceLayerEntry.DefaultAttribute.BackgroundTransformValue < 1 {
+				newAttributeEntry.BackgroundColor = GetTransitionedColor(targetAttributeEntry.BackgroundColor, sourceAttributeEntry.BackgroundColor, sourceLayerEntry.DefaultAttribute.BackgroundTransformValue)
+			}
+
+			targetCharacterEntry.AttributeEntry = newAttributeEntry
+			targetCharacterMemory[currentRow+startingTargetYLocation][currentColumn+startingTargetXLocation] = *targetCharacterEntry
 		}
 	}
 }

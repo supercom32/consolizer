@@ -10,9 +10,9 @@ import (
 
 func dumpScreenComparisons(originalScreenAsBase64 string, expectedScreenAsBase64 string) {
 	originalScreen := stringformat.GetStringFromBase64(originalScreenAsBase64)
-	os.WriteFile("/tmp/original.txt", []byte(originalScreen), 0644)
+	os.WriteFile("/tmp/test_output/original.txt", []byte(originalScreen), 0644)
 	expectedScreen := stringformat.GetStringFromBase64(expectedScreenAsBase64)
-	os.WriteFile("/tmp/expected.txt", []byte(expectedScreen), 0644)
+	os.WriteFile("/tmp/test_output/expected.txt", []byte(expectedScreen), 0644)
 }
 
 func LogInfo(info string, parameters ...any) {
@@ -23,5 +23,5 @@ func LogInfo(info string, parameters ...any) {
 	stringToAppend = fmt.Sprintf(info, parameters...)
 	stringToAppend = time.Now().String() + " - " + stringToAppend
 	// }
-	filesystem.AppendLineToFile("/tmp/debug.log", stringToAppend+"\n", 0)
+	filesystem.AppendLineToFile("/tmp/test_output/debug.log", stringToAppend+"\n", 0)
 }

@@ -19,3 +19,17 @@ func CommonTestSetup() (*LayerInstanceType, *LayerInstanceType, *LayerInstanceTy
 	layer2.FillLayer("a1a2a3a4a5")
 	return layer1, layer2, layer3, styleEntry
 }
+
+func CommonTestSetupImages() (*LayerInstanceType, *LayerInstanceType, *LayerInstanceType, types.TuiStyleEntryType) {
+	commonResource.isDebugEnabled = true
+	layerWidth := 50
+	layerHeight := 20
+	styleEntry := types.NewTuiStyleEntry()
+	styleEntry.Window.LineDrawingTextForegroundColor = GetRGBColor(255, 0, 255)
+	styleEntry.Window.LineDrawingTextBackgroundColor = GetRGBColor(0, 0, 255)
+	InitializeTerminal(layerWidth, layerHeight)
+	layer1 := AddLayer(0, 0, layerWidth, layerHeight, 1, nil)
+	layer2 := AddLayer(0, 0, layerWidth, layerHeight, 2, nil)
+	layer3 := AddLayer(0, 0, layerWidth, layerHeight, 3, nil)
+	return layer1, layer2, layer3, styleEntry
+}

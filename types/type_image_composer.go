@@ -3,6 +3,7 @@ package types
 import (
 	"github.com/supercom32/consolizer/constants"
 	"image"
+	"time"
 )
 
 type ImageComposerEntryType struct {
@@ -36,6 +37,7 @@ type ImageStyleEntryType struct {
 	TransparentForegroundPenalty float64
 	AggressiveCoverageThreshold  float64
 	AggressiveErrorThreshold     float64
+	RandomSeed                   int64
 }
 
 func NewImageStyleEntry(existingImageStyleEntry ...*ImageStyleEntryType) ImageStyleEntryType {
@@ -49,12 +51,16 @@ func NewImageStyleEntry(existingImageStyleEntry ...*ImageStyleEntryType) ImageSt
 		imageStyleEntry.TransparentForegroundPenalty = existingImageStyleEntry[0].TransparentForegroundPenalty
 		imageStyleEntry.AggressiveCoverageThreshold = existingImageStyleEntry[0].AggressiveCoverageThreshold
 		imageStyleEntry.AggressiveErrorThreshold = existingImageStyleEntry[0].AggressiveErrorThreshold
+		imageStyleEntry.RandomSeed = existingImageStyleEntry[0].RandomSeed
 	} else {
 		// Default to background mode if not specified
 		imageStyleEntry.TransparencyMode = constants.TransparencyModeBackground
 		imageStyleEntry.TransparentForegroundPenalty = 30.0
 		imageStyleEntry.AggressiveCoverageThreshold = 0.35
 		imageStyleEntry.AggressiveErrorThreshold = 1.5
+	}
+	if imageStyleEntry.RandomSeed == 0 {
+		imageStyleEntry.RandomSeed = time.Now().UnixNano()
 	}
 	imageStyleEntry.DitheringIntensity = 1 // We set it to 1, which is no change.
 	return imageStyleEntry

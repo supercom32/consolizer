@@ -15,6 +15,7 @@ type AttributeEntryType struct {
 	IsBlinking               bool
 	IsItalic                 bool
 	IsBackgroundTransparent  bool
+	IsForegroundTransparent  bool
 	ForegroundTransformValue float32
 	BackgroundTransformValue float32
 	CellUserId               int
@@ -110,6 +111,7 @@ func NewAttributeEntry(existingAttributeEntry ...*AttributeEntryType) AttributeE
 		attributeEntry.IsBlinking = existingAttributeEntry[0].IsBlinking
 		attributeEntry.IsItalic = existingAttributeEntry[0].IsItalic
 		attributeEntry.IsBackgroundTransparent = existingAttributeEntry[0].IsBackgroundTransparent
+		attributeEntry.IsForegroundTransparent = existingAttributeEntry[0].IsForegroundTransparent
 		attributeEntry.ForegroundTransformValue = existingAttributeEntry[0].ForegroundTransformValue
 		attributeEntry.BackgroundTransformValue = existingAttributeEntry[0].BackgroundTransformValue
 		attributeEntry.CellUserAlias = existingAttributeEntry[0].CellUserAlias

@@ -20,7 +20,6 @@ import (
 	"runtime"
 	"strings"
 	"sync"
-	"time"
 )
 
 type ImageMemoryType struct {
@@ -349,9 +348,7 @@ func getImageLayerAsHighColor(
 	imageStyle types.ImageStyleEntryType,
 	widthInCharacters int,
 	heightInCharacters int,
-	blurSigma float64,
-	existingLayer ...*types.LayerEntryType,
-) types.LayerEntryType {
+	blurSigma float64) types.LayerEntryType {
 
 	if widthInCharacters <= 0 && heightInCharacters <= 0 {
 		safeSttyPanic(fmt.Sprintf("The specified width and height of %dx%d for your image is not valid.", widthInCharacters, heightInCharacters))
@@ -382,84 +379,40 @@ func getImageLayerAsHighColor(
 	// Create new layer
 	layerEntry := types.NewLayerEntry("", "", calculatedCharacterWidth, calculatedCharacterHeight)
 
-	// Prepare underlying layer (optional)
-	var underlyingLayer *types.LayerEntryType
-	var underlyingWidth, underlyingHeight int
-	if len(existingLayer) > 0 && existingLayer[0] != nil {
-		underlyingLayer = existingLayer[0]
-		underlyingHeight = len(underlyingLayer.CharacterMemory)
-		if underlyingHeight > 0 {
-			underlyingWidth = len(underlyingLayer.CharacterMemory[0])
-		}
-	}
-
 	imageBounds := processedImageData.Bounds()
 	currentImageY := 0
 
 	for charY := 0; charY < calculatedCharacterHeight; charY++ {
 		for charX := 0; charX < calculatedCharacterWidth; charX++ {
 			currentChar := layerEntry.CharacterMemory[charY][charX]
-
-			// Underlying cell
-			var underlyingCell types.CharacterEntryType
-			if underlyingLayer != nil && charY < underlyingHeight && charX < underlyingWidth {
-				underlyingCell = underlyingLayer.CharacterMemory[charY][charX]
-			} else {
-				underlyingCell = types.NewCharacterEntry()
-			}
-
 			// Check transparency for upper and lower pixels
 			upperTransparent := currentImageY < imageBounds.Min.Y || currentImageY >= imageBounds.Max.Y ||
 				isTransparentPixel(processedImageData, charX, currentImageY)
 			lowerTransparent := currentImageY+1 < imageBounds.Min.Y || currentImageY+1 >= imageBounds.Max.Y ||
 				isTransparentPixel(processedImageData, charX, currentImageY+1)
-
 			switch {
 			case upperTransparent && lowerTransparent:
 				// Fully transparent → use underlying cell's character and colors
-				if underlyingLayer != nil {
-					// Copy the underlying cell's properties
-					currentChar = underlyingCell
-				} else {
-					// If no underlying layer, use NullRune + transparent background
-					currentChar.Character = constants.NullRune
-					currentChar.AttributeEntry.IsBackgroundTransparent = true
-				}
-
+				currentChar.Character = constants.NullRune
+				currentChar.AttributeEntry.IsBackgroundTransparent = true
+				currentChar.AttributeEntry.IsForegroundTransparent = true
 			case upperTransparent && !lowerTransparent:
 				// Only lower visible → lower half block
 				currentChar.Character = constants.CharBlockLowerHalf
-
-				// Get color from lower pixel
+				currentChar.AttributeEntry.IsBackgroundTransparent = true
+				// Get color from the lower pixel
 				lowerPixel := processedImageData.At(charX, currentImageY+1)
 				r, g, b, _ := get8BitColorComponents(lowerPixel)
 				currentChar.AttributeEntry.ForegroundColor = GetRGBColor(r, g, b)
 
-				// Use underlying cell's background color
-				if underlyingLayer != nil {
-					currentChar.AttributeEntry.BackgroundColor = underlyingCell.AttributeEntry.BackgroundColor
-				} else {
-					// Default background if no underlying layer
-					currentChar.AttributeEntry.BackgroundColor = constants.ColorBlack
-				}
-
 			case !upperTransparent && lowerTransparent:
 				// Only upper visible → upper half block
 				currentChar.Character = constants.CharBlockUpperHalf
-
-				// Get color from upper pixel
+				currentChar.AttributeEntry.IsBackgroundTransparent = true
+				// Get color from the upper pixel
 				upperPixel := processedImageData.At(charX, currentImageY)
 				r, g, b, _ := get8BitColorComponents(upperPixel)
 				currentChar.AttributeEntry.ForegroundColor = GetRGBColor(r, g, b)
-
-				// Use underlying cell's background color
-				if underlyingLayer != nil {
-					currentChar.AttributeEntry.BackgroundColor = underlyingCell.AttributeEntry.BackgroundColor
-				} else {
-					// Default background if no underlying layer
-					currentChar.AttributeEntry.BackgroundColor = constants.ColorBlack
-				}
-
 			case !upperTransparent && !lowerTransparent:
 				// Both visible → full block (upper = foreground, lower = background)
 				currentChar.Character = constants.CharBlockUpperHalf
@@ -515,49 +468,53 @@ func calculateBrightness(r, g, b uint8) float64 {
 	return (0.2126*float64(r) + 0.7152*float64(g) + 0.0722*float64(b)) / 255.0
 }
 
-// Function to map brightness to an ASCII character from the bToC_full mapping
-func mapBrightnessToCharacter(brightness float64) rune {
-	// Mapping brightness (0 to 1) to corresponding ASCII character from bToC_full
-	bToC_full := map[float64][]rune{
-		0.0:      {'.'},
-		0.1:      {'.', '`'},
-		0.133333: {'.', '`'},
-		0.155556: {'-'},
-		0.177778: {'\'', ',', '_'},
-		0.266667: {':', '=', '^'},
-		0.311111: {'"', '+', '/', '\\'},
-		0.333333: {'~'},
-		0.355556: {';', '|'},
-		0.4:      {'(', ')', '<', '>'},
-		0.444444: {'%', '?', 'c', 's', '{', '}'},
-		0.488889: {'!', 'I', '[', ']', 'i', 't', 'v', 'x', 'z'},
-		0.511111: {'1', 'r'},
-		0.533333: {'*', 'a', 'e', 'l', 'o'},
-		0.555556: {'n', 'u'},
-		0.577778: {'T', 'f', 'w'},
-		0.6:      {'3', '7'},
-		0.622222: {'J', 'j', 'y'},
-		0.644444: {'5'},
-		0.666667: {'$', '2', '6', '9', 'C', 'L', 'Y', 'm'},
-		0.688889: {'S'},
-		0.711111: {'4', 'g', 'k', 'p', 'q'},
-		0.733333: {'F', 'P', 'b', 'd', 'h'},
-		0.755556: {'G', 'O', 'V', 'X'},
-		0.777778: {'E', 'Z'},
-		0.8:      {'8', 'A', 'U'},
-		0.844444: {'D', 'H', 'K', 'W'},
-		0.888889: {'&', '@', 'R'},
-		0.911111: {'B', 'Q'},
-		0.933333: {'#'},
-		1.0:      {'0', 'M', 'N'},
-	}
+type brightnessMapping struct {
+	threshold  float64
+	characters []rune
+}
 
+var bToC_full_sorted = []brightnessMapping{
+	{0.0, []rune{'.'}},
+	{0.1, []rune{'.', '`'}},
+	{0.133333, []rune{'.', '`'}},
+	{0.155556, []rune{'-'}},
+	{0.177778, []rune{'\'', ',', '_'}},
+	{0.266667, []rune{':', '=', '^'}},
+	{0.311111, []rune{'"', '+', '/', '\\'}},
+	{0.333333, []rune{'~'}},
+	{0.355556, []rune{';', '|'}},
+	{0.4, []rune{'(', ')', '<', '>'}},
+	{0.444444, []rune{'%', '?', 'c', 's', '{', '}'}},
+	{0.488889, []rune{'!', 'I', '[', ']', 'i', 't', 'v', 'x', 'z'}},
+	{0.511111, []rune{'1', 'r'}},
+	{0.533333, []rune{'*', 'a', 'e', 'l', 'o'}},
+	{0.555556, []rune{'n', 'u'}},
+	{0.577778, []rune{'T', 'f', 'w'}},
+	{0.6, []rune{'3', '7'}},
+	{0.622222, []rune{'J', 'j', 'y'}},
+	{0.644444, []rune{'5'}},
+	{0.666667, []rune{'$', '2', '6', '9', 'C', 'L', 'Y', 'm'}},
+	{0.688889, []rune{'S'}},
+	{0.711111, []rune{'4', 'g', 'k', 'p', 'q'}},
+	{0.733333, []rune{'F', 'P', 'b', 'd', 'h'}},
+	{0.755556, []rune{'G', 'O', 'V', 'X'}},
+	{0.777778, []rune{'E', 'Z'}},
+	{0.8, []rune{'8', 'A', 'U'}},
+	{0.844444, []rune{'D', 'H', 'K', 'W'}},
+	{0.888889, []rune{'&', '@', 'R'}},
+	{0.911111, []rune{'B', 'Q'}},
+	{0.933333, []rune{'#'}},
+	{1.0, []rune{'0', 'M', 'N'}},
+}
+
+// Function to map brightness to an ASCII character from the bToC_full mapping
+func mapBrightnessToCharacter(brightness float64, random *rand.Rand) rune {
 	// Find the appropriate character for the brightness level
-	for threshold, characters := range bToC_full {
-		if brightness <= threshold {
+	for _, mapping := range bToC_full_sorted {
+		if brightness <= mapping.threshold {
 			// Pick a random character from the list at this threshold
-			randomIndex := rand.Intn(len(characters)) // Generates a random index within the range of available characters
-			return characters[randomIndex]
+			randomIndex := random.Intn(len(mapping.characters)) // Generates a random index within the range of available characters
+			return mapping.characters[randomIndex]
 		}
 	}
 	return ' ' // Default to space if no match
@@ -570,7 +527,7 @@ func GetImageLayerAsAsciiColorArt(sourceImageData image.Image, imageStyle types.
 	}
 
 	// Seed the random number generator for random character selection
-	rand.Seed(time.Now().UnixNano())
+	random := rand.New(rand.NewSource(imageStyle.RandomSeed))
 
 	calculatedPixelWidth := widthInCharacters
 	calculatedPixelHeight := heightInCharacters * 2
@@ -634,7 +591,7 @@ func GetImageLayerAsAsciiColorArt(sourceImageData image.Image, imageStyle types.
 			brightness := calculateBrightness(uint8(redColor), uint8(greenColor), uint8(blueColor))
 
 			// Map the brightness to an ASCII character using bToC_full mapping
-			asciiCharacter := mapBrightnessToCharacter(brightness)
+			asciiCharacter := mapBrightnessToCharacter(brightness, random)
 
 			// Set the ASCII character
 			currentCharacter.Character = asciiCharacter
@@ -1147,7 +1104,7 @@ func getImageLayer(sourceImageData image.Image, imageStyle types.ImageStyleEntry
 	}
 
 	if imageStyle.DrawingStyle == constants.ImageStyleHighColor {
-		imageLayer = getImageLayerAsHighColor(sourceImageData, imageStyle, widthInCharacters, heightInCharacters, blurSigma, existingLayer)
+		imageLayer = getImageLayerAsHighColor(sourceImageData, imageStyle, widthInCharacters, heightInCharacters, blurSigma)
 	} else if imageStyle.DrawingStyle == constants.ImageStyleCharacters {
 		imageLayer = GetImageLayerAsAsciiColorArt(sourceImageData, imageStyle, widthInCharacters, heightInCharacters, blurSigma)
 	} else if imageStyle.DrawingStyle == constants.ImageStyleBlockElements {
@@ -1164,7 +1121,7 @@ drawImageToLayer allows you to draw a loaded image to the specified layer.
 func drawImageToLayer(layerEntry *types.LayerEntryType, imageLayer types.LayerEntryType, xLocation int, yLocation int) {
 	imageLayer.ScreenXLocation = xLocation
 	imageLayer.ScreenYLocation = yLocation
-	overlayLayers(&imageLayer, layerEntry)
+	overlayLayers(&imageLayer, layerEntry, false)
 }
 
 func loadImageAndGetEntry(fileName string) (*types.ImageEntryType, error) {
