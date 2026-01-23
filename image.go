@@ -416,32 +416,55 @@ func getImageLayerAsHighColor(
 
 			switch {
 			case upperTransparent && lowerTransparent:
-				// Fully transparent → NullRune + transparent background
-				currentChar.Character = constants.NullRune
-				currentChar.AttributeEntry.IsBackgroundTransparent = true
+				// Fully transparent → use underlying cell's character and colors
+				if underlyingLayer != nil {
+					// Copy the underlying cell's properties
+					currentChar = underlyingCell
+				} else {
+					// If no underlying layer, use NullRune + transparent background
+					currentChar.Character = constants.NullRune
+					currentChar.AttributeEntry.IsBackgroundTransparent = true
+				}
 
 			case upperTransparent && !lowerTransparent:
 				// Only lower visible → lower half block
 				currentChar.Character = constants.CharBlockLowerHalf
 
+				// Get color from lower pixel
 				lowerPixel := processedImageData.At(charX, currentImageY+1)
 				r, g, b, _ := get8BitColorComponents(lowerPixel)
 				currentChar.AttributeEntry.ForegroundColor = GetRGBColor(r, g, b)
-				currentChar.AttributeEntry.BackgroundColor = underlyingCell.AttributeEntry.BackgroundColor
+
+				// Use underlying cell's background color
+				if underlyingLayer != nil {
+					currentChar.AttributeEntry.BackgroundColor = underlyingCell.AttributeEntry.BackgroundColor
+				} else {
+					// Default background if no underlying layer
+					currentChar.AttributeEntry.BackgroundColor = constants.ColorBlack
+				}
 
 			case !upperTransparent && lowerTransparent:
 				// Only upper visible → upper half block
 				currentChar.Character = constants.CharBlockUpperHalf
 
+				// Get color from upper pixel
 				upperPixel := processedImageData.At(charX, currentImageY)
 				r, g, b, _ := get8BitColorComponents(upperPixel)
 				currentChar.AttributeEntry.ForegroundColor = GetRGBColor(r, g, b)
-				currentChar.AttributeEntry.BackgroundColor = underlyingCell.AttributeEntry.BackgroundColor
+
+				// Use underlying cell's background color
+				if underlyingLayer != nil {
+					currentChar.AttributeEntry.BackgroundColor = underlyingCell.AttributeEntry.BackgroundColor
+				} else {
+					// Default background if no underlying layer
+					currentChar.AttributeEntry.BackgroundColor = constants.ColorBlack
+				}
 
 			case !upperTransparent && !lowerTransparent:
 				// Both visible → full block (upper = foreground, lower = background)
 				currentChar.Character = constants.CharBlockUpperHalf
 
+				// Get colors from both pixels
 				upperPixel := processedImageData.At(charX, currentImageY)
 				r, g, b, _ := get8BitColorComponents(upperPixel)
 				currentChar.AttributeEntry.ForegroundColor = GetRGBColor(r, g, b)
@@ -466,8 +489,9 @@ func isTransparentPixel(processedImageData image.Image, x, y int) bool {
 	// Convert to RGBA to get access to individual channels
 	rgba := color.RGBAModel.Convert(c).(color.RGBA)
 
-	// Check if alpha value is 0 (fully transparent)
-	return rgba.A == 0
+	// Check if alpha value is below threshold (128 = ~50% transparency)
+	// Pixels with alpha < 128 are considered transparent
+	return rgba.A < 128
 }
 
 // GetRGBComponents is a wrapper for GetRGBColorComponents
