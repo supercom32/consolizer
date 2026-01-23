@@ -162,7 +162,7 @@ func BrailleFromDots(dot0, dot1, dot2, dot3, dot4, dot5, dot6, dot7 bool) rune {
 	return brailleChar
 }
 
-func getImageLayerAsBraille(sourceImageData image.Image, imageStyle types.ImageStyleEntryType, widthInCharacters int, heightInCharacters int, blurSigma float64) types.LayerEntryType {
+func getImageLayerAsBraille(sourceImageData image.Image, imageStyle types.ImageStyleEntryType, widthInCharacters int, heightInCharacters int, blurSigma float64, existingLayer ...*types.LayerEntryType) types.LayerEntryType {
 	if widthInCharacters <= 0 && heightInCharacters <= 0 {
 		safeSttyPanic(fmt.Sprintf("The specified width and height of %dx%d for your image is not valid.", widthInCharacters, heightInCharacters))
 	}
@@ -178,7 +178,15 @@ func getImageLayerAsBraille(sourceImageData image.Image, imageStyle types.ImageS
 	if blurSigma > 0 {
 		processedImageData = imaging.Blur(processedImageData, blurSigma)
 	}
-	layerEntry := types.NewLayerEntry("", "", widthInCharacters, heightInCharacters)
+
+	// Use existing layer if provided, otherwise create a new one
+	var layerEntry types.LayerEntryType
+	if len(existingLayer) > 0 && existingLayer[0] != nil {
+		layerEntry = *existingLayer[0]
+	} else {
+		layerEntry = types.NewLayerEntry("", "", widthInCharacters, heightInCharacters)
+	}
+
 	layerEntry.CharacterMemory = getBrailleImageData(processedImageData, imageStyle)
 	return layerEntry
 }

@@ -344,7 +344,7 @@ resized. This allows you to soften your image before it is rendered in ansi
 so that hard edges are removed. A value of 0.0 means no blurring will occur,
 with higher values increasing the blur factor.
 */
-func getImageLayerAsHighColor(sourceImageData image.Image, imageStyle types.ImageStyleEntryType, widthInCharacters int, heightInCharacters int, blurSigma float64) types.LayerEntryType {
+func getImageLayerAsHighColor(sourceImageData image.Image, imageStyle types.ImageStyleEntryType, widthInCharacters int, heightInCharacters int, blurSigma float64, existingLayer ...*types.LayerEntryType) types.LayerEntryType {
 	if widthInCharacters <= 0 && heightInCharacters <= 0 {
 		safeSttyPanic(fmt.Sprintf("The specified width and height of %dx%d for your image is not valid.", widthInCharacters, heightInCharacters))
 	}
@@ -365,7 +365,14 @@ func getImageLayerAsHighColor(sourceImageData image.Image, imageStyle types.Imag
 	}
 	calculatedCharacterWidth := calculatedPixelWidth
 	calculatedCharacterHeight := calculatedPixelHeight / 2
-	layerEntry := types.NewLayerEntry("", "", calculatedCharacterWidth, calculatedCharacterHeight)
+
+	// Use existing layer if provided, otherwise create a new one
+	var layerEntry types.LayerEntryType
+	if len(existingLayer) > 0 && existingLayer[0] != nil {
+		layerEntry = *existingLayer[0]
+	} else {
+		layerEntry = types.NewLayerEntry("", "", calculatedCharacterWidth, calculatedCharacterHeight)
+	}
 	currentImageYLocation := 0
 	for currentYLocation := 0; currentYLocation < calculatedCharacterHeight; currentYLocation++ {
 		for currentXLocation := 0; currentXLocation < calculatedCharacterWidth; currentXLocation++ {
@@ -556,7 +563,7 @@ func mapBrightnessToCharacter(brightness float64) rune {
 }
 
 // Function to process the image and convert it to ASCII art
-func GetImageLayerAsAsciiColorArt(sourceImageData image.Image, imageStyle types.ImageStyleEntryType, widthInCharacters int, heightInCharacters int, blurSigma float64) types.LayerEntryType {
+func GetImageLayerAsAsciiColorArt(sourceImageData image.Image, imageStyle types.ImageStyleEntryType, widthInCharacters int, heightInCharacters int, blurSigma float64, existingLayer ...*types.LayerEntryType) types.LayerEntryType {
 	if widthInCharacters <= 0 && heightInCharacters <= 0 {
 		safeSttyPanic(fmt.Sprintf("The specified width and height of %dx%d for your image is not valid.", widthInCharacters, heightInCharacters))
 	}
@@ -589,7 +596,14 @@ func GetImageLayerAsAsciiColorArt(sourceImageData image.Image, imageStyle types.
 	// Initialize the layer entry for the image
 	calculatedCharacterWidth := calculatedPixelWidth
 	calculatedCharacterHeight := calculatedPixelHeight / 2
-	layerEntry := types.NewLayerEntry("", "", calculatedCharacterWidth, calculatedCharacterHeight)
+
+	// Use existing layer if provided, otherwise create a new one
+	var layerEntry types.LayerEntryType
+	if len(existingLayer) > 0 && existingLayer[0] != nil {
+		layerEntry = *existingLayer[0]
+	} else {
+		layerEntry = types.NewLayerEntry("", "", calculatedCharacterWidth, calculatedCharacterHeight)
+	}
 
 	// Loop through each character position in the grid
 	for currentYLocation := 0; currentYLocation < calculatedCharacterHeight; currentYLocation++ {
@@ -1008,18 +1022,43 @@ type cellJob struct {
 }
 
 // processCellsInParallel processes all character cells in parallel using a worker pool.
-func processCellsInParallel(pixelColorData [][4]float64, characterWidth, characterHeight int, layerEntry *types.LayerEntryType, imageStyle types.ImageStyleEntryType) {
+func processCellsInParallel(pixelColorData [][4]float64, characterWidth, characterHeight int, targetLayerEntry *types.LayerEntryType, underlyingLayerEntry *types.LayerEntryType, imageStyle types.ImageStyleEntryType) {
 	numberOfWorkers := runtime.NumCPU()
 	jobs := make(chan cellJob, characterWidth*characterHeight)
 	var waitGroup sync.WaitGroup
+
+	// Get the actual dimensions of the layer
+	layerHeight := len(targetLayerEntry.CharacterMemory)
+	var layerWidth int
+	if layerHeight > 0 {
+		layerWidth = len(targetLayerEntry.CharacterMemory[0])
+	}
+
+	underlyingLayerHeight := len(underlyingLayerEntry.CharacterMemory)
+	var underlyingLayerWidth int
+	if underlyingLayerHeight > 0 {
+		underlyingLayerWidth = len(underlyingLayerEntry.CharacterMemory[0])
+	}
 
 	for workerIndex := 0; workerIndex < numberOfWorkers; workerIndex++ {
 		waitGroup.Add(1)
 		go func() {
 			defer waitGroup.Done()
 			for job := range jobs {
+				// Skip processing if the cell is out of bounds
+				if job.rowLocation < 0 || job.rowLocation >= layerHeight ||
+					job.columnLocation < 0 || job.columnLocation >= layerWidth {
+					continue
+				}
+
 				// Get the underlying cell from the destination layer before modification.
-				underlyingCell := layerEntry.CharacterMemory[job.rowLocation][job.columnLocation]
+				var underlyingCell types.CharacterEntryType
+				if job.rowLocation >= 0 && job.rowLocation < underlyingLayerHeight &&
+					job.columnLocation >= 0 && job.columnLocation < underlyingLayerWidth {
+					underlyingCell = underlyingLayerEntry.CharacterMemory[job.rowLocation][job.columnLocation]
+				} else {
+					underlyingCell = types.NewCharacterEntry()
+				}
 
 				bestBlockElement, bestForegroundColor, bestBackgroundColor, isForegroundColorTransparent, isBackgroundColorTransparent := findBestBlockElementForCell(pixelColorData, job.rowLocation, job.columnLocation, characterWidth, characterHeight)
 
@@ -1070,16 +1109,21 @@ func processCellsInParallel(pixelColorData [][4]float64, characterWidth, charact
 				if bestBlockElement == ' ' {
 					// A space character indicates the entire 8x8 grid is transparent.
 					// We mark it as NullRune so the overlay process skips it, preserving the underlying cell.
-					layerEntry.CharacterMemory[job.rowLocation][job.columnLocation].Character = constants.NullRune
+					targetLayerEntry.CharacterMemory[job.rowLocation][job.columnLocation].Character = constants.NullRune
+					targetLayerEntry.CharacterMemory[job.rowLocation][job.columnLocation].AttributeEntry.IsBackgroundTransparent = true
+					targetLayerEntry.CharacterMemory[job.rowLocation][job.columnLocation].AttributeEntry.CellType = constants.CellTypeShadow
+					//layerEntry.CharacterMemory[job.rowLocation][job.columnLocation].AttributeEntry.ForegroundColor = underlyingCell.AttributeEntry.ForegroundColor
+					//layerEntry.CharacterMemory[job.rowLocation][job.columnLocation].AttributeEntry.ForegroundColor = underlyingCell.AttributeEntry.BackgroundColor
 				} else {
-					layerEntry.CharacterMemory[job.rowLocation][job.columnLocation].Character = bestBlockElement
-					layerEntry.CharacterMemory[job.rowLocation][job.columnLocation].AttributeEntry.ForegroundColor = foregroundColor
-					layerEntry.CharacterMemory[job.rowLocation][job.columnLocation].AttributeEntry.BackgroundColor = backgroundColor
+					targetLayerEntry.CharacterMemory[job.rowLocation][job.columnLocation].Character = bestBlockElement
+					targetLayerEntry.CharacterMemory[job.rowLocation][job.columnLocation].AttributeEntry.ForegroundColor = foregroundColor
+					targetLayerEntry.CharacterMemory[job.rowLocation][job.columnLocation].AttributeEntry.BackgroundColor = backgroundColor
 				}
 			}
 		}()
 	}
 
+	// Only process cells that are within the bounds of both the image and the layer
 	for rowLocation := 0; rowLocation < characterHeight; rowLocation++ {
 		for columnLocation := 0; columnLocation < characterWidth; columnLocation++ {
 			jobs <- cellJob{rowLocation: rowLocation, columnLocation: columnLocation}
@@ -1092,7 +1136,7 @@ func processCellsInParallel(pixelColorData [][4]float64, characterWidth, charact
 // getImageLayerAsBlockElements renders an image using block elements.
 // It divides each character cell into an 8x8 grid and finds the best block element
 // to represent the image in that cell.
-func getImageLayerAsBlockElements(sourceImageData image.Image, imageStyle types.ImageStyleEntryType, widthInCharacters int, heightInCharacters int, blurSigma float64) types.LayerEntryType {
+func getImageLayerAsBlockElements(sourceImageData image.Image, imageStyle types.ImageStyleEntryType, widthInCharacters int, heightInCharacters int, blurSigma float64, existingLayer ...*types.LayerEntryType) types.LayerEntryType {
 	if !imageStyle.IsWidthAspectRatioPreserved && !imageStyle.IsHeightAspectRatioPreserved {
 		if widthInCharacters <= 0 || heightInCharacters <= 0 {
 			safeSttyPanic(fmt.Sprintf("The specified width and height of %dx%d for your image is not valid when aspect ratio is not preserved.", widthInCharacters, heightInCharacters))
@@ -1136,7 +1180,7 @@ func getImageLayerAsBlockElements(sourceImageData image.Image, imageStyle types.
 		}
 	}
 
-	// Create the layer entry
+	// Use existing layer if provided, otherwise create a new one
 	layerEntry := types.NewLayerEntry("", "", characterWidth, characterHeight)
 
 	// Resize the image to an 8x8 grid per character cell
@@ -1147,21 +1191,28 @@ func getImageLayerAsBlockElements(sourceImageData image.Image, imageStyle types.
 	finalPixelColorInformation := mergeAndNormalizeInParallel(partialPixelColorInformation, partialPixelWeightInformation, targetPixelWidth, targetPixelHeight)
 
 	// Process each cell to find the best block element
-	processCellsInParallel(finalPixelColorInformation, characterWidth, characterHeight, &layerEntry, imageStyle)
+	processCellsInParallel(finalPixelColorInformation, characterWidth, characterHeight, &layerEntry, existingLayer[0], imageStyle)
 
 	return layerEntry
 }
 
-func getImageLayer(sourceImageData image.Image, imageStyle types.ImageStyleEntryType, widthInCharacters int, heightInCharacters int, blurSigma float64) types.LayerEntryType {
-	imageLayer := types.NewLayerEntry("", "", widthInCharacters, heightInCharacters)
+func getImageLayer(sourceImageData image.Image, imageStyle types.ImageStyleEntryType, widthInCharacters int, heightInCharacters int, blurSigma float64, layerEntry ...*types.LayerEntryType) types.LayerEntryType {
+	var imageLayer types.LayerEntryType
+	var existingLayer *types.LayerEntryType
+
+	// If a layer entry is provided, use it
+	if len(layerEntry) > 0 && layerEntry[0] != nil {
+		existingLayer = layerEntry[0]
+	}
+
 	if imageStyle.DrawingStyle == constants.ImageStyleHighColor {
-		imageLayer = getImageLayerAsHighColor(sourceImageData, imageStyle, widthInCharacters, heightInCharacters, blurSigma)
+		imageLayer = getImageLayerAsHighColor(sourceImageData, imageStyle, widthInCharacters, heightInCharacters, blurSigma, existingLayer)
 	} else if imageStyle.DrawingStyle == constants.ImageStyleCharacters {
-		imageLayer = GetImageLayerAsAsciiColorArt(sourceImageData, imageStyle, widthInCharacters, heightInCharacters, blurSigma)
+		imageLayer = GetImageLayerAsAsciiColorArt(sourceImageData, imageStyle, widthInCharacters, heightInCharacters, blurSigma, existingLayer)
 	} else if imageStyle.DrawingStyle == constants.ImageStyleBlockElements {
-		imageLayer = getImageLayerAsBlockElements(sourceImageData, imageStyle, widthInCharacters, heightInCharacters, blurSigma)
+		imageLayer = getImageLayerAsBlockElements(sourceImageData, imageStyle, widthInCharacters, heightInCharacters, blurSigma, existingLayer)
 	} else {
-		imageLayer = getImageLayerAsBraille(sourceImageData, imageStyle, widthInCharacters, heightInCharacters, blurSigma)
+		imageLayer = getImageLayerAsBraille(sourceImageData, imageStyle, widthInCharacters, heightInCharacters, blurSigma, existingLayer)
 	}
 	return imageLayer
 }
@@ -1169,8 +1220,7 @@ func getImageLayer(sourceImageData image.Image, imageStyle types.ImageStyleEntry
 /*
 drawImageToLayer allows you to draw a loaded image to the specified layer.
 */
-func drawImageToLayer(layerAlias string, imageLayer types.LayerEntryType, xLocation int, yLocation int) {
-	layerEntry := Layers.Get(layerAlias)
+func drawImageToLayer(layerEntry *types.LayerEntryType, imageLayer types.LayerEntryType, xLocation int, yLocation int) {
 	imageLayer.ScreenXLocation = xLocation
 	imageLayer.ScreenYLocation = yLocation
 	overlayLayers(&imageLayer, layerEntry)
