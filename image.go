@@ -772,10 +772,11 @@ func mergeAndNormalizeInParallel(partialPixelColorInformation [][][4]float64, pa
 // findBestBlockElementForCell analyzes an 8x8 grid of pixels to find the optimal
 // block element character and corresponding foreground/background colors to
 // represent that portion of the image.
-func findBestBlockElementForCell(pixelColorData [][4]float64, cellRowLocation, cellColumnLocation, characterGridWidth, characterGridHeight int) (rune, [3]float64, [3]float64) {
+func findBestBlockElementForCell(pixelColorData [][4]float64, cellRowLocation, cellColumnLocation, characterGridWidth, characterGridHeight int) (rune, [3]float64, [3]float64, bool, bool) {
 	minimumMeanSquaredError := math.MaxFloat64
 	var bestBlockElement rune
 	var bestForegroundColor, bestBackgroundColor [3]float64
+	var isForegroundColorTransparent, isBackgroundColorTransparent bool
 
 	// Try each block element
 	for blockElement, bitmask := range constants.CharBlockBitmasks {
@@ -873,6 +874,16 @@ func findBestBlockElementForCell(pixelColorData [][4]float64, cellRowLocation, c
 			bestBlockElement = blockElement
 			bestForegroundColor = foregroundColor
 			bestBackgroundColor = backgroundColor
+			if setBitCount > 0 {
+				isForegroundColorTransparent = (foregroundAlpha / setBitCount) < 0.5
+			} else {
+				isForegroundColorTransparent = true
+			}
+			if unsetBitCount > 0 {
+				isBackgroundColorTransparent = (backgroundAlpha / unsetBitCount) < 0.5
+			} else {
+				isBackgroundColorTransparent = true
+			}
 		}
 	}
 
@@ -961,9 +972,13 @@ func findBestBlockElementForCell(pixelColorData [][4]float64, cellRowLocation, c
 		// so that the TransparencyMode can be properly applied
 		if shadeIndex == 0 { // Space character (fully transparent)
 			// Keep the existing best colors
+			isForegroundColorTransparent = true
+			isBackgroundColorTransparent = true
 		} else if shadeIndex == 4 { // Full block (fully opaque)
 			bestForegroundColor = averageColor
 			bestBackgroundColor = averageColor
+			isForegroundColorTransparent = false
+			isBackgroundColorTransparent = false
 		} else {
 			// For partially transparent blocks (light, medium, dark shade),
 			// create distinct foreground and background colors
@@ -979,10 +994,12 @@ func findBestBlockElementForCell(pixelColorData [][4]float64, cellRowLocation, c
 				bestForegroundColor[channel] = averageColor[channel]*intensity + foregroundBase[channel]*(1.0-intensity)
 				bestBackgroundColor[channel] = averageColor[channel]*intensity + backgroundBase[channel]*(1.0-intensity)
 			}
+			isForegroundColorTransparent = false
+			isBackgroundColorTransparent = false
 		}
 	}
 
-	return bestBlockElement, bestForegroundColor, bestBackgroundColor
+	return bestBlockElement, bestForegroundColor, bestBackgroundColor, isForegroundColorTransparent, isBackgroundColorTransparent
 }
 
 type cellJob struct {
@@ -1001,9 +1018,12 @@ func processCellsInParallel(pixelColorData [][4]float64, characterWidth, charact
 		go func() {
 			defer waitGroup.Done()
 			for job := range jobs {
-				bestBlockElement, bestForegroundColor, bestBackgroundColor := findBestBlockElementForCell(pixelColorData, job.rowLocation, job.columnLocation, characterWidth, characterHeight)
+				// Get the underlying cell from the destination layer before modification.
+				underlyingCell := layerEntry.CharacterMemory[job.rowLocation][job.columnLocation]
 
-				// Set the character and colors in the layer entry
+				bestBlockElement, bestForegroundColor, bestBackgroundColor, isForegroundColorTransparent, isBackgroundColorTransparent := findBestBlockElementForCell(pixelColorData, job.rowLocation, job.columnLocation, characterWidth, characterHeight)
+
+				// Convert the calculated best colors for the incoming image cell to ColorType.
 				red := int32(math.Min(255, bestForegroundColor[0]*255))
 				green := int32(math.Min(255, bestForegroundColor[1]*255))
 				blue := int32(math.Min(255, bestForegroundColor[2]*255))
@@ -1014,40 +1034,44 @@ func processCellsInParallel(pixelColorData [][4]float64, characterWidth, charact
 				blue = int32(math.Min(255, bestBackgroundColor[2]*255))
 				backgroundColor := GetRGBColor(red, green, blue)
 
-				// Check if the block element is a transparent block (space character)
-				if bestBlockElement == ' ' {
-					// For fully transparent blocks, set the character to NullRune
-					layerEntry.CharacterMemory[job.rowLocation][job.columnLocation].Character = constants.NullRune
-				} else if bestBlockElement == constants.CharBlockLightShade ||
-					bestBlockElement == constants.CharBlockMediumShade ||
-					bestBlockElement == constants.CharBlockDarkShade {
-					// For partially transparent blocks, apply the TransparencyMode
-					layerEntry.CharacterMemory[job.rowLocation][job.columnLocation].Character = bestBlockElement
-
-					// Apply transparency mode for partially covered blocks
+				// If the foreground part of the incoming cell is transparent, determine its color
+				// based on the underlying cell and the transparency mode.
+				if isForegroundColorTransparent {
 					switch imageStyle.TransparencyMode {
 					case constants.TransparencyModeForeground:
-						// Use the foreground color for both foreground and background
-						layerEntry.CharacterMemory[job.rowLocation][job.columnLocation].AttributeEntry.ForegroundColor = foregroundColor
-						layerEntry.CharacterMemory[job.rowLocation][job.columnLocation].AttributeEntry.BackgroundColor = foregroundColor
+						foregroundColor = underlyingCell.AttributeEntry.ForegroundColor
 					case constants.TransparencyModeBackground:
-						// Use the background color for both foreground and background
-						layerEntry.CharacterMemory[job.rowLocation][job.columnLocation].AttributeEntry.ForegroundColor = backgroundColor
-						layerEntry.CharacterMemory[job.rowLocation][job.columnLocation].AttributeEntry.BackgroundColor = backgroundColor
+						foregroundColor = underlyingCell.AttributeEntry.BackgroundColor
 					case constants.TransparencyModeBlended:
-						// Use a blend of foreground and background colors
-						r1, g1, b1 := GetRGBComponents(foregroundColor)
-						r2, g2, b2 := GetRGBComponents(backgroundColor)
+						r1, g1, b1 := GetRGBComponents(underlyingCell.AttributeEntry.ForegroundColor)
+						r2, g2, b2 := GetRGBComponents(underlyingCell.AttributeEntry.BackgroundColor)
 						blendedColor := GetRGBColor((r1+r2)/2, (g1+g2)/2, (b1+b2)/2)
-						layerEntry.CharacterMemory[job.rowLocation][job.columnLocation].AttributeEntry.ForegroundColor = blendedColor
-						layerEntry.CharacterMemory[job.rowLocation][job.columnLocation].AttributeEntry.BackgroundColor = blendedColor
-					default:
-						// Default behavior: use the calculated colors
-						layerEntry.CharacterMemory[job.rowLocation][job.columnLocation].AttributeEntry.ForegroundColor = foregroundColor
-						layerEntry.CharacterMemory[job.rowLocation][job.columnLocation].AttributeEntry.BackgroundColor = backgroundColor
+						foregroundColor = blendedColor
 					}
+				}
+
+				// If the background part of the incoming cell is transparent, determine its color
+				// based on the underlying cell and the transparency mode.
+				if isBackgroundColorTransparent {
+					switch imageStyle.TransparencyMode {
+					case constants.TransparencyModeForeground:
+						backgroundColor = underlyingCell.AttributeEntry.ForegroundColor
+					case constants.TransparencyModeBackground:
+						backgroundColor = underlyingCell.AttributeEntry.BackgroundColor
+					case constants.TransparencyModeBlended:
+						r1, g1, b1 := GetRGBComponents(underlyingCell.AttributeEntry.ForegroundColor)
+						r2, g2, b2 := GetRGBComponents(underlyingCell.AttributeEntry.BackgroundColor)
+						blendedColor := GetRGBColor((r1+r2)/2, (g1+g2)/2, (b1+b2)/2)
+						backgroundColor = blendedColor
+					}
+				}
+
+				// Update the layer entry with the final character and colors.
+				if bestBlockElement == ' ' {
+					// A space character indicates the entire 8x8 grid is transparent.
+					// We mark it as NullRune so the overlay process skips it, preserving the underlying cell.
+					layerEntry.CharacterMemory[job.rowLocation][job.columnLocation].Character = constants.NullRune
 				} else {
-					// For fully opaque blocks, use the calculated colors
 					layerEntry.CharacterMemory[job.rowLocation][job.columnLocation].Character = bestBlockElement
 					layerEntry.CharacterMemory[job.rowLocation][job.columnLocation].AttributeEntry.ForegroundColor = foregroundColor
 					layerEntry.CharacterMemory[job.rowLocation][job.columnLocation].AttributeEntry.BackgroundColor = backgroundColor
