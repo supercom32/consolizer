@@ -8,10 +8,12 @@ import (
 	"github.com/nfnt/resize"
 	"github.com/supercom32/consolizer/constants"
 	"github.com/supercom32/consolizer/types"
+	"golang.org/x/image/draw"
+
 	"image"
 	"image/color"
-	"image/draw"
 	"image/png"
+	"io"
 	"math"
 	"math/rand"
 	"runtime"
@@ -111,6 +113,37 @@ func LoadImage(imageFile string) error {
 }
 
 /*
+getImageEntryFromFileSystem allows you to obtain an image entry from the
+default file system. If you have a virtual file system mounted, then the
+image file will be retrieved from it instead of your local.com file system.
+In addition, the following information should be noted:
+
+- If for some reason the requested image could not be obtained, an
+error will be returned so that your application can handle this case
+appropriately.
+*/
+func getImageEntryFromFileSystem(imageFile string) (types.ImageEntryType, error) {
+	imageEntry := types.NewImageEntry()
+	var err error
+	var imageData image.Image
+	if isValidPrerenderedLayerImage(imageFile) {
+		layerEntry, err := loadPrerenderedLayerImage(imageFile)
+		if err != nil {
+			return imageEntry, err
+		}
+		imageEntry.LayerEntry = layerEntry
+	} else {
+		imageData, err = getImageFromFileSystem(imageFile)
+		if err != nil {
+			return imageEntry, err
+		}
+		imageEntry.ImageData = imageData
+	}
+	addImage(imageFile, imageEntry)
+	return imageEntry, err
+}
+
+/*
 LoadImagesInBulk allows you to load multiple images into memory at once.
 This is useful since it eliminates the need for error checking over each
 image as they are loaded. An example use of this method is as follows:
@@ -185,7 +218,7 @@ func LoadPreRenderedImage(imageFile string, imageAlias string, imageStyle types.
 	if err != nil {
 		return err
 	}
-	imageEntry.LayerEntry = getImageLayerAsHighColor(imageEntry.ImageData, imageStyle, widthInCharacters, heightInCharacters, blurSigma)
+	imageEntry.LayerEntry = getImageLayer(imageEntry.ImageData, imageStyle, widthInCharacters, heightInCharacters, blurSigma)
 	imageEntry.ImageData = nil
 	addImage(imageAlias, imageEntry)
 	return err
@@ -251,7 +284,7 @@ func LoadPreRenderedBase64Image(imageDataAsBase64 string, imageAlias string, ima
 	if err != nil {
 		return err
 	}
-	imageEntry.LayerEntry = getImageLayerAsHighColor(imageData, imageStyle, widthInCharacters, heightInCharacters, blurSigma)
+	imageEntry.LayerEntry = getImageLayer(imageData, imageStyle, widthInCharacters, heightInCharacters, blurSigma)
 	addImage(imageAlias, imageEntry)
 	return err
 }
@@ -1305,7 +1338,7 @@ should be noted:
 */
 func LoadPreRenderedLayerImage(filePath string, imageAlias string) error {
 	// Load the layer from file
-	layerEntry, err := loadPrerenderedImage(filePath)
+	layerEntry, err := loadPrerenderedLayerImage(filePath)
 	if err != nil {
 		return err
 	}
@@ -1321,11 +1354,10 @@ func LoadPreRenderedLayerImage(filePath string, imageAlias string) error {
 
 	// Add the image to the image system
 	addImage(imageAlias, imageEntry)
-
 	return nil
 }
 
-func loadPrerenderedImage(filePath string) (types.LayerEntryType, error) {
+func loadPrerenderedLayerImage(filePath string) (types.LayerEntryType, error) {
 	// Create a new layer entry
 	layerEntry := types.NewLayerEntry("", "", 0, 0)
 
@@ -1340,4 +1372,35 @@ func loadPrerenderedImage(filePath string) (types.LayerEntryType, error) {
 		return layerEntry, err
 	}
 	return layerEntry, err
+}
+
+// isValidPrerenderedLayerImage checks if a file is a valid prerendered layer image
+// by reading only its header using the virtual file system if mounted.
+func isValidPrerenderedLayerImage(filePath string) bool {
+	headerLength := len(types.LayerMagicHeader)
+
+	// Get a reader for the file (supports virtual FS)
+	fileReader, err := getFileReaderFromFileSystem(filePath)
+	if err != nil {
+		return false
+	}
+	defer fileReader.Close()
+
+	// Read only the header bytes
+	header := make([]byte, headerLength)
+	n, err := fileReader.Read(header)
+	if err != nil && err != io.EOF {
+		return false
+	}
+
+	if n < headerLength {
+		// File too short to contain valid header
+		return false
+	}
+
+	// Compare header
+	if string(header) == types.LayerMagicHeader {
+		return true
+	}
+	return false
 }

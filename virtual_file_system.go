@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"github.com/nwaples/rardecode"
 	"github.com/supercom32/consolizer/constants"
-	"github.com/supercom32/consolizer/types"
 	"github.com/yeka/zip"
 	"image"
 	"image/jpeg"
@@ -202,27 +201,6 @@ func isArchiveFormatRar(archivePath string, password string) error {
 		_ = readCloser.Close()
 	}
 	return err
-}
-
-/*
-getImageEntryFromFileSystem allows you to obtain an image entry from the
-default file system. If you have a virtual file system mounted, then the
-image file will be retrieved from it instead of your local.com file system.
-In addition, the following information should be noted:
-
-- If for some reason the requested image could not be obtained, an
-error will be returned so that your application can handle this case
-appropriately.
-*/
-func getImageEntryFromFileSystem(imageFile string) (types.ImageEntryType, error) {
-	imageEntry := types.NewImageEntry()
-	imageData, err := getImageFromFileSystem(imageFile)
-	if err != nil {
-		return imageEntry, err
-	}
-	imageEntry.ImageData = imageData
-	addImage(imageFile, imageEntry)
-	return imageEntry, err
 }
 
 /*
@@ -435,4 +413,28 @@ func writeFileDataToFileSystem(fileName string, data []byte, permissions int) er
 		err = errors.New(fmt.Sprintf("Could not write data to the file '%s': %s", fileName, err.Error()))
 	}
 	return err
+}
+
+func getFileReaderFromFileSystem(fileName string) (io.ReadCloser, error) {
+	if virtualFileSystemArchiveType == constants.VirtualFileSystemEmbedded {
+		data, err := virtualEmbeddedFileSystem.ReadFile(fileName)
+		if err != nil {
+			return nil, err
+		}
+		return io.NopCloser(bytes.NewReader(data)), nil
+	} else if virtualFileSystemArchiveType == constants.VirtualFileSystemZip {
+		fileData, err := getFileDataFromZipArchive(fileName)
+		if err != nil {
+			return nil, err
+		}
+		return io.NopCloser(bytes.NewReader(fileData)), nil
+	} else if virtualFileSystemArchiveType == constants.VirtualFileSystemRar {
+		fileData, err := getFileDataFromRarArchive(fileName)
+		if err != nil {
+			return nil, err
+		}
+		return io.NopCloser(bytes.NewReader(fileData)), nil
+	}
+	// Fallback: local file system
+	return os.Open(fileName)
 }

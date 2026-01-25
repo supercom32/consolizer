@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	layerMagicHeader = "CONS"
+	LayerMagicHeader = "CONS"
 	layerVersion     = 1
 )
 
@@ -264,7 +264,7 @@ func (shared *LayerEntryType) SaveLayer(path string) error {
 	writer := bufio.NewWriter(zstdWriter)
 
 	// --- Header ---
-	if _, err := writer.Write([]byte(layerMagicHeader)); err != nil {
+	if _, err := writer.Write([]byte(LayerMagicHeader)); err != nil {
 		return fmt.Errorf("failed to write magic header: %w", err)
 	}
 	if err := binary.Write(writer, binary.LittleEndian, uint16(layerVersion)); err != nil {
@@ -346,11 +346,11 @@ func (shared *LayerEntryType) LoadLayerFromBytes(data []byte) error {
 	buffReader := bufio.NewReader(zstdReader)
 
 	// --- Header ---
-	magicHeader := make([]byte, len(layerMagicHeader))
+	magicHeader := make([]byte, len(LayerMagicHeader))
 	if _, err := io.ReadFull(buffReader, magicHeader); err != nil {
 		return fmt.Errorf("failed to read magic header: %w", err)
 	}
-	if string(magicHeader) != layerMagicHeader {
+	if string(magicHeader) != LayerMagicHeader {
 		return fmt.Errorf("not a valid layer file")
 	}
 

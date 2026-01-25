@@ -554,10 +554,10 @@ func (shared *LayerInstanceType) DrawImage(fileName string, drawingStyle types.I
 	imageEntryType := getImage(fileName)
 	imageLayer := imageEntryType.LayerEntry
 	var currentLayer *types.LayerEntryType
+	currentLayer = Layers.Get(shared.layerAlias)
 	if imageEntryType.ImageData != nil {
 		imageData := imageEntryType.ImageData
 		// Get the current layer to pass for transparency handling
-		currentLayer = Layers.Get(shared.layerAlias)
 		imageLayer = getImageLayer(imageData, drawingStyle, widthInCharacters, heightInCharacters, blurSigma)
 	}
 	drawImageToLayer(currentLayer, imageLayer, xLocation, yLocation)
