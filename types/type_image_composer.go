@@ -33,7 +33,6 @@ type ImageStyleEntryType struct {
 	DitheringStyle               constants.DitheringStyle
 	DitheringIntensity           float64
 	BlurSigmaIntensity           float64
-	TransparencyMode             constants.TransparencyMode
 	TransparentForegroundPenalty float64
 	AggressiveCoverageThreshold  float64
 	AggressiveErrorThreshold     float64
@@ -47,14 +46,12 @@ func NewImageStyleEntry(existingImageStyleEntry ...*ImageStyleEntryType) ImageSt
 		imageStyleEntry.IsHistogramEqualized = existingImageStyleEntry[0].IsHistogramEqualized
 		imageStyleEntry.IsGrayscale = existingImageStyleEntry[0].IsGrayscale
 		imageStyleEntry.DitheringIntensity = existingImageStyleEntry[0].DitheringIntensity
-		imageStyleEntry.TransparencyMode = existingImageStyleEntry[0].TransparencyMode
 		imageStyleEntry.TransparentForegroundPenalty = existingImageStyleEntry[0].TransparentForegroundPenalty
 		imageStyleEntry.AggressiveCoverageThreshold = existingImageStyleEntry[0].AggressiveCoverageThreshold
 		imageStyleEntry.AggressiveErrorThreshold = existingImageStyleEntry[0].AggressiveErrorThreshold
 		imageStyleEntry.RandomSeed = existingImageStyleEntry[0].RandomSeed
 	} else {
 		// Default to background mode if not specified
-		imageStyleEntry.TransparencyMode = constants.TransparencyModeBackground
 		imageStyleEntry.TransparentForegroundPenalty = 30.0
 		imageStyleEntry.AggressiveCoverageThreshold = 0.35
 		imageStyleEntry.AggressiveErrorThreshold = 1.5

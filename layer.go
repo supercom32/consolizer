@@ -558,7 +558,7 @@ func (shared *LayerInstanceType) DrawImage(fileName string, drawingStyle types.I
 		imageData := imageEntryType.ImageData
 		// Get the current layer to pass for transparency handling
 		currentLayer = Layers.Get(shared.layerAlias)
-		imageLayer = getImageLayer(imageData, drawingStyle, widthInCharacters, heightInCharacters, blurSigma, currentLayer)
+		imageLayer = getImageLayer(imageData, drawingStyle, widthInCharacters, heightInCharacters, blurSigma)
 	}
 	drawImageToLayer(currentLayer, imageLayer, xLocation, yLocation)
 	return err
@@ -578,9 +578,9 @@ func (shared *LayerInstanceType) DrawComposedImage(imageComposeEntry ImageCompos
 	} else if drawingStyle.DrawingStyle == constants.ImageStyleCharacters {
 		imageLayer = GetImageLayerAsAsciiColorArt(baseImage, drawingStyle, widthInCharacters, heightInCharacters, drawingStyle.BlurSigmaIntensity)
 	} else if drawingStyle.DrawingStyle == constants.ImageStyleBlockElements {
-		imageLayer = getImageLayerAsBlockElements(baseImage, drawingStyle, widthInCharacters, heightInCharacters, drawingStyle.BlurSigmaIntensity, currentLayer)
+		imageLayer = getImageLayerAsBlockElements(baseImage, drawingStyle, widthInCharacters, heightInCharacters, drawingStyle.BlurSigmaIntensity)
 	} else if drawingStyle.DrawingStyle == constants.ImageStyleBraille {
-		imageLayer = getImageLayerAsBraille(baseImage, drawingStyle, widthInCharacters, heightInCharacters, drawingStyle.BlurSigmaIntensity, currentLayer)
+		imageLayer = getImageLayerAsBraille(baseImage, drawingStyle, widthInCharacters, heightInCharacters, drawingStyle.BlurSigmaIntensity)
 	} else {
 		safeSttyPanic("Invalid image style rendering type!")
 	}

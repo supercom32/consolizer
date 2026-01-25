@@ -1,11 +1,28 @@
 package types
 
 import (
+	"bufio"
+	"bytes"
+	"encoding/binary"
 	"encoding/json"
+	"fmt"
 	"github.com/gdamore/tcell/v2"
+	"github.com/klauspost/compress/zstd"
 	"github.com/supercom32/consolizer/constants"
 	"github.com/supercom32/consolizer/stringformat"
 	"github.com/supercom32/filesystem"
+	"io"
+	"os"
+)
+
+const (
+	layerMagicHeader = "CONS"
+	layerVersion     = 1
+)
+
+const (
+	flagFgTransparent = 1 << 0
+	flagBgTransparent = 1 << 1
 )
 
 type LayerEntryType struct {
@@ -24,6 +41,135 @@ type LayerEntryType struct {
 	IsParent         bool
 	DefaultAttribute AttributeEntryType
 	CharacterMemory  [][]CharacterEntryType
+}
+
+func (shared *LayerEntryType) SaveLayer(path string) error {
+	file, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	zstdWriter, err := zstd.NewWriter(file)
+	if err != nil {
+		return err
+	}
+	defer zstdWriter.Close()
+
+	writer := bufio.NewWriter(zstdWriter)
+	defer writer.Flush()
+
+	// Header
+	writer.Write([]byte(layerMagicHeader))
+	binary.Write(writer, binary.LittleEndian, uint16(layerVersion)) // version
+
+	height := uint16(len(shared.CharacterMemory))
+	width := uint16(len(shared.CharacterMemory[0]))
+
+	binary.Write(writer, binary.LittleEndian, width)
+	binary.Write(writer, binary.LittleEndian, height)
+
+	for yPosition := range shared.CharacterMemory {
+		for xPosition := range shared.CharacterMemory[yPosition] {
+			characterEntry := shared.CharacterMemory[yPosition][xPosition]
+
+			// Rune
+			binary.Write(writer, binary.LittleEndian, int32(characterEntry.Character))
+
+			attributeEntry := characterEntry.AttributeEntry
+
+			// Colors
+			writer.Write([]byte{
+				byte(attributeEntry.ForegroundColor),
+				byte(attributeEntry.BackgroundColor),
+			})
+
+			// Flags
+			var flags byte
+			if attributeEntry.IsForegroundTransparent {
+				flags |= flagFgTransparent
+			}
+			if attributeEntry.IsBackgroundTransparent {
+				flags |= flagBgTransparent
+			}
+			writer.WriteByte(flags)
+		}
+	}
+
+	return nil
+}
+
+func (shared *LayerEntryType) LoadLayer(path string) error {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	return shared.LoadLayerFromBytes(data)
+}
+
+// LoadLayerFromBytes loads a layer from a byte slice instead of a file
+func (shared *LayerEntryType) LoadLayerFromBytes(data []byte) error {
+	// Create a bytes.Reader from the data
+	reader := bytes.NewReader(data)
+
+	// Create a zstd reader
+	zstdReader, err := zstd.NewReader(reader)
+	if err != nil {
+		return err
+	}
+	defer zstdReader.Close()
+
+	// Use a buffered reader for efficient reading
+	buffReader := bufio.NewReader(zstdReader)
+
+	// Magic
+	magicHeader := make([]byte, 4)
+	if _, err := io.ReadFull(buffReader, magicHeader); err != nil {
+		return err
+	}
+	if string(magicHeader) != layerMagicHeader {
+		return fmt.Errorf("not a layer file")
+	}
+
+	// Version
+	var fileVersion uint16
+	binary.Read(buffReader, binary.LittleEndian, &fileVersion)
+	if fileVersion != layerVersion {
+		return fmt.Errorf("unsupported version %d", fileVersion)
+	}
+
+	var width, height uint16
+	binary.Read(buffReader, binary.LittleEndian, &width)
+	binary.Read(buffReader, binary.LittleEndian, &height)
+
+	characterMemory := make([][]CharacterEntryType, height)
+	shared.Width = int(width)
+	shared.Height = int(height)
+
+	for yPosition := 0; yPosition < int(height); yPosition++ {
+		characterMemory[yPosition] = make([]CharacterEntryType, width)
+		for xPosition := 0; xPosition < int(width); xPosition++ {
+			var character int32
+			binary.Read(buffReader, binary.LittleEndian, &character)
+
+			colors := make([]byte, 2)
+			io.ReadFull(buffReader, colors)
+
+			flags, _ := buffReader.ReadByte()
+
+			characterMemory[yPosition][xPosition] = CharacterEntryType{
+				Character: rune(character),
+				AttributeEntry: AttributeEntryType{
+					ForegroundColor:         constants.ColorType(colors[0]),
+					BackgroundColor:         constants.ColorType(colors[1]),
+					IsForegroundTransparent: flags&flagFgTransparent != 0,
+					IsBackgroundTransparent: flags&flagBgTransparent != 0,
+				},
+			}
+		}
+	}
+	shared.CharacterMemory = characterMemory
+	return nil
 }
 
 func (shared LayerEntryType) MarshalJSON() ([]byte, error) {

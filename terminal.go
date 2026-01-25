@@ -805,14 +805,10 @@ text layer data underneath them is preserved.
 */
 func renderLayers(rootLayerEntry *types.LayerEntryType, sortedLayerAliasSlice LayerAliasZOrderPairList) types.LayerEntryType {
 	baseLayerEntry := types.NewLayerEntry("", "", 0, 0, rootLayerEntry)
-	isOpaque := false
+	isOpaque := true
 	for currentListIndex := 0; currentListIndex < len(sortedLayerAliasSlice); currentListIndex++ {
 		if !Layers.IsExists(sortedLayerAliasSlice[currentListIndex].Key) {
 			continue
-		}
-		// If the first layer, do not propagate transparencies.
-		if currentListIndex == 0 {
-			isOpaque = true
 		}
 		currentLayerEntry := types.NewLayerEntry("", "", 0, 0, Layers.Get(sortedLayerAliasSlice[currentListIndex].Key))
 		if currentLayerEntry.IsVisible {
@@ -825,6 +821,10 @@ func renderLayers(rootLayerEntry *types.LayerEntryType, sortedLayerAliasSlice La
 					overlayLayers(&currentLayerEntry, &baseLayerEntry, isOpaque)
 				}
 			}
+		}
+		// After the first layer is rendered to the base, allow for transparencies.
+		if isOpaque {
+			isOpaque = false
 		}
 	}
 	return baseLayerEntry

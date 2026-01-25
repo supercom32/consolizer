@@ -2,9 +2,7 @@ package consolizer
 
 import (
 	"bytes"
-	"compress/gzip"
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"github.com/disintegration/imaging"
 	"github.com/nfnt/resize"
@@ -14,7 +12,6 @@ import (
 	"image/color"
 	"image/draw"
 	"image/png"
-	"io"
 	"math"
 	"math/rand"
 	"runtime"
@@ -920,7 +917,7 @@ type cellJob struct {
 }
 
 // processCellsInParallel processes all character cells in parallel using a worker pool.
-func processCellsInParallel(pixelColorData [][4]float64, characterWidth, characterHeight int, targetLayerEntry *types.LayerEntryType, underlyingLayerEntry *types.LayerEntryType, imageStyle types.ImageStyleEntryType) {
+func processCellsInParallel(pixelColorData [][4]float64, characterWidth, characterHeight int, targetLayerEntry *types.LayerEntryType, imageStyle types.ImageStyleEntryType) {
 	numberOfWorkers := runtime.NumCPU()
 	jobs := make(chan cellJob, characterWidth*characterHeight)
 	var waitGroup sync.WaitGroup
@@ -930,12 +927,6 @@ func processCellsInParallel(pixelColorData [][4]float64, characterWidth, charact
 	var layerWidth int
 	if layerHeight > 0 {
 		layerWidth = len(targetLayerEntry.CharacterMemory[0])
-	}
-
-	underlyingLayerHeight := len(underlyingLayerEntry.CharacterMemory)
-	var underlyingLayerWidth int
-	if underlyingLayerHeight > 0 {
-		underlyingLayerWidth = len(underlyingLayerEntry.CharacterMemory[0])
 	}
 
 	for workerIndex := 0; workerIndex < numberOfWorkers; workerIndex++ {
@@ -949,17 +940,8 @@ func processCellsInParallel(pixelColorData [][4]float64, characterWidth, charact
 					continue
 				}
 
-				// Get the underlying cell from the destination layer before modification.
-				var underlyingCell types.CharacterEntryType
-				if job.rowLocation >= 0 && job.rowLocation < underlyingLayerHeight &&
-					job.columnLocation >= 0 && job.columnLocation < underlyingLayerWidth {
-					underlyingCell = underlyingLayerEntry.CharacterMemory[job.rowLocation][job.columnLocation]
-				} else {
-					underlyingCell = types.NewCharacterEntry()
-				}
-
 				bestBlockElement, bestForegroundColor, bestBackgroundColor, isForegroundColorTransparent, isBackgroundColorTransparent := findBestBlockElementForCell(pixelColorData, job.rowLocation, job.columnLocation, characterWidth, characterHeight, imageStyle.TransparentForegroundPenalty, imageStyle.AggressiveCoverageThreshold, imageStyle.AggressiveErrorThreshold)
-
+				attributeEntry := targetLayerEntry.CharacterMemory[job.rowLocation][job.columnLocation].AttributeEntry
 				// Convert the calculated best colors for the incoming image cell to ColorType.
 				red := int32(math.Min(255, bestForegroundColor[0]*255))
 				green := int32(math.Min(255, bestForegroundColor[1]*255))
@@ -971,36 +953,14 @@ func processCellsInParallel(pixelColorData [][4]float64, characterWidth, charact
 				blue = int32(math.Min(255, bestBackgroundColor[2]*255))
 				backgroundColor := GetRGBColor(red, green, blue)
 
-				// If the foreground part of the incoming cell is transparent, determine its color
-				// based on the underlying cell and the transparency mode.
+				// If the foreground part of the incoming cell is transparent.
 				if isForegroundColorTransparent {
-					switch imageStyle.TransparencyMode {
-					case constants.TransparencyModeForeground:
-						foregroundColor = underlyingCell.AttributeEntry.ForegroundColor
-					case constants.TransparencyModeBackground:
-						foregroundColor = underlyingCell.AttributeEntry.BackgroundColor
-					case constants.TransparencyModeBlended:
-						r1, g1, b1 := GetRGBComponents(underlyingCell.AttributeEntry.ForegroundColor)
-						r2, g2, b2 := GetRGBComponents(underlyingCell.AttributeEntry.BackgroundColor)
-						blendedColor := GetRGBColor((r1+r2)/2, (g1+g2)/2, (b1+b2)/2)
-						foregroundColor = blendedColor
-					}
+					attributeEntry.IsForegroundTransparent = true
 				}
 
-				// If the background part of the incoming cell is transparent, determine its color
-				// based on the underlying cell and the transparency mode.
+				// If the background part of the incoming cell is transparent.
 				if isBackgroundColorTransparent {
-					switch imageStyle.TransparencyMode {
-					case constants.TransparencyModeForeground:
-						backgroundColor = underlyingCell.AttributeEntry.ForegroundColor
-					case constants.TransparencyModeBackground:
-						backgroundColor = underlyingCell.AttributeEntry.BackgroundColor
-					case constants.TransparencyModeBlended:
-						r1, g1, b1 := GetRGBComponents(underlyingCell.AttributeEntry.ForegroundColor)
-						r2, g2, b2 := GetRGBComponents(underlyingCell.AttributeEntry.BackgroundColor)
-						blendedColor := GetRGBColor((r1+r2)/2, (g1+g2)/2, (b1+b2)/2)
-						backgroundColor = blendedColor
-					}
+					attributeEntry.IsBackgroundTransparent = true
 				}
 
 				// Update the layer entry with the final character and colors.
@@ -1008,15 +968,16 @@ func processCellsInParallel(pixelColorData [][4]float64, characterWidth, charact
 					// A space character indicates the entire 8x8 grid is transparent.
 					// We mark it as NullRune so the overlay process skips it, preserving the underlying cell.
 					targetLayerEntry.CharacterMemory[job.rowLocation][job.columnLocation].Character = constants.NullRune
-					targetLayerEntry.CharacterMemory[job.rowLocation][job.columnLocation].AttributeEntry.IsBackgroundTransparent = true
-					targetLayerEntry.CharacterMemory[job.rowLocation][job.columnLocation].AttributeEntry.CellType = constants.CellTypeShadow
+					attributeEntry.IsBackgroundTransparent = true
+					attributeEntry.CellType = constants.CellTypeShadow
 					//layerEntry.CharacterMemory[job.rowLocation][job.columnLocation].AttributeEntry.ForegroundColor = underlyingCell.AttributeEntry.ForegroundColor
 					//layerEntry.CharacterMemory[job.rowLocation][job.columnLocation].AttributeEntry.ForegroundColor = underlyingCell.AttributeEntry.BackgroundColor
 				} else {
 					targetLayerEntry.CharacterMemory[job.rowLocation][job.columnLocation].Character = bestBlockElement
-					targetLayerEntry.CharacterMemory[job.rowLocation][job.columnLocation].AttributeEntry.ForegroundColor = foregroundColor
-					targetLayerEntry.CharacterMemory[job.rowLocation][job.columnLocation].AttributeEntry.BackgroundColor = backgroundColor
+					attributeEntry.ForegroundColor = foregroundColor
+					attributeEntry.BackgroundColor = backgroundColor
 				}
+				targetLayerEntry.CharacterMemory[job.rowLocation][job.columnLocation].AttributeEntry = attributeEntry
 			}
 		}()
 	}
@@ -1034,7 +995,7 @@ func processCellsInParallel(pixelColorData [][4]float64, characterWidth, charact
 // getImageLayerAsBlockElements renders an image using block elements.
 // It divides each character cell into an 8x8 grid and finds the best block element
 // to represent the image in that cell.
-func getImageLayerAsBlockElements(sourceImageData image.Image, imageStyle types.ImageStyleEntryType, widthInCharacters int, heightInCharacters int, blurSigma float64, existingLayer ...*types.LayerEntryType) types.LayerEntryType {
+func getImageLayerAsBlockElements(sourceImageData image.Image, imageStyle types.ImageStyleEntryType, widthInCharacters int, heightInCharacters int, blurSigma float64) types.LayerEntryType {
 	if !imageStyle.IsWidthAspectRatioPreserved && !imageStyle.IsHeightAspectRatioPreserved {
 		if widthInCharacters <= 0 || heightInCharacters <= 0 {
 			safeSttyPanic(fmt.Sprintf("The specified width and height of %dx%d for your image is not valid when aspect ratio is not preserved.", widthInCharacters, heightInCharacters))
@@ -1089,28 +1050,22 @@ func getImageLayerAsBlockElements(sourceImageData image.Image, imageStyle types.
 	finalPixelColorInformation := mergeAndNormalizeInParallel(partialPixelColorInformation, partialPixelWeightInformation, targetPixelWidth, targetPixelHeight)
 
 	// Process each cell to find the best block element
-	processCellsInParallel(finalPixelColorInformation, characterWidth, characterHeight, &layerEntry, existingLayer[0], imageStyle)
+	processCellsInParallel(finalPixelColorInformation, characterWidth, characterHeight, &layerEntry, imageStyle)
 
 	return layerEntry
 }
 
-func getImageLayer(sourceImageData image.Image, imageStyle types.ImageStyleEntryType, widthInCharacters int, heightInCharacters int, blurSigma float64, layerEntry ...*types.LayerEntryType) types.LayerEntryType {
+func getImageLayer(sourceImageData image.Image, imageStyle types.ImageStyleEntryType, widthInCharacters int, heightInCharacters int, blurSigma float64) types.LayerEntryType {
 	var imageLayer types.LayerEntryType
-	var existingLayer *types.LayerEntryType
-
-	// If a layer entry is provided, use it
-	if len(layerEntry) > 0 && layerEntry[0] != nil {
-		existingLayer = layerEntry[0]
-	}
 
 	if imageStyle.DrawingStyle == constants.ImageStyleHighColor {
 		imageLayer = getImageLayerAsHighColor(sourceImageData, imageStyle, widthInCharacters, heightInCharacters, blurSigma)
 	} else if imageStyle.DrawingStyle == constants.ImageStyleCharacters {
 		imageLayer = GetImageLayerAsAsciiColorArt(sourceImageData, imageStyle, widthInCharacters, heightInCharacters, blurSigma)
 	} else if imageStyle.DrawingStyle == constants.ImageStyleBlockElements {
-		imageLayer = getImageLayerAsBlockElements(sourceImageData, imageStyle, widthInCharacters, heightInCharacters, blurSigma, existingLayer)
+		imageLayer = getImageLayerAsBlockElements(sourceImageData, imageStyle, widthInCharacters, heightInCharacters, blurSigma)
 	} else {
-		imageLayer = getImageLayerAsBraille(sourceImageData, imageStyle, widthInCharacters, heightInCharacters, blurSigma, existingLayer)
+		imageLayer = getImageLayerAsBraille(sourceImageData, imageStyle, widthInCharacters, heightInCharacters, blurSigma)
 	}
 	return imageLayer
 }
@@ -1356,122 +1311,13 @@ func SaveLayer(layerAlias string, filePath string) error {
 		filePath += ".clayer"
 	}
 
-	// Marshal the layer to JSON
-	jsonData, err := json.Marshal(layerEntry)
+	// Use the SaveLayer method from type_layer.go
+	err := layerEntry.SaveLayer(filePath)
 	if err != nil {
-		return fmt.Errorf("failed to marshal layer: %w", err)
-	}
-
-	// Compress the JSON data
-	var compressedData bytes.Buffer
-	gzipWriter := gzip.NewWriter(&compressedData)
-	_, err = gzipWriter.Write(jsonData)
-	if err != nil {
-		return fmt.Errorf("failed to compress layer data: %w", err)
-	}
-
-	// Close the gzip writer to flush any remaining data
-	if err = gzipWriter.Close(); err != nil {
-		return fmt.Errorf("failed to finalize compression: %w", err)
-	}
-
-	// Write the compressed data to file system (local only, as virtual file systems are read-only)
-	err = writeFileDataToFileSystem(filePath, compressedData.Bytes(), 0644)
-	if err != nil {
-		return fmt.Errorf("failed to write layer to file: %w", err)
+		return fmt.Errorf("failed to save layer to file: %w", err)
 	}
 
 	return nil
-}
-
-/*
-LoadLayer allows you to load a pre-rendered layer from disk. This is useful for quickly
-loading complex layers that were previously saved, such as image layers. The layer is
-loaded from a compressed format that was created by SaveLayer. In addition, the following
-information should be noted:
-
-- The file extension ".clayer" is automatically appended to the filename if not provided.
-- If the file cannot be read or is not a valid layer file, an error is returned.
-- The loaded layer is returned and can be added to the layer system as needed.
-*/
-func LoadLayer(filePath string) (types.LayerEntryType, error) {
-	var layerEntry types.LayerEntryType
-
-	// Ensure the file has the correct extension
-	if len(filePath) < 7 || filePath[len(filePath)-7:] != ".clayer" {
-		filePath += ".clayer"
-	}
-
-	// Read the compressed data from file system (local or virtual)
-	compressedData, err := getFileDataFromFileSystem(filePath)
-	if err != nil {
-		return layerEntry, fmt.Errorf("failed to read layer file: %w", err)
-	}
-
-	// Create a reader for the compressed data
-	gzipReader, err := gzip.NewReader(bytes.NewReader(compressedData))
-	if err != nil {
-		return layerEntry, fmt.Errorf("failed to decompress layer data: %w", err)
-	}
-	defer gzipReader.Close()
-
-	// Read all the decompressed data
-	jsonData, err := io.ReadAll(gzipReader)
-	if err != nil {
-		return layerEntry, fmt.Errorf("failed to read decompressed data: %w", err)
-	}
-
-	// Unmarshal the JSON data into a layer entry
-	err = json.Unmarshal(jsonData, &layerEntry)
-	if err != nil {
-		return layerEntry, fmt.Errorf("failed to unmarshal layer data: %w", err)
-	}
-
-	return layerEntry, nil
-}
-
-/*
-LoadLayerFromFile allows you to load a pre-rendered layer from disk and add it to the layer system.
-This is useful for quickly loading complex layers that were previously saved, such as image layers.
-The layer is loaded from a compressed format that was created by SaveLayer. In addition, the following
-information should be noted:
-
-- The file extension ".clayer" is automatically appended to the filename if not provided.
-- If the file cannot be read or is not a valid layer file, an error is returned.
-- The loaded layer is added to the layer system with the specified alias, position, and z-order.
-- The function returns a LayerInstanceType that can be used to manipulate the loaded layer.
-*/
-func LoadLayerFromFile(layerAlias string, xLocation int, yLocation int, zOrderPriority int, parentAlias string, filePath string) (LayerInstanceType, error) {
-	// Load the layer from file
-	layerEntry, err := LoadLayer(filePath)
-	if err != nil {
-		return LayerInstanceType{}, err
-	}
-
-	// Add the loaded layer to the layer system
-	layer.Add(layerAlias, xLocation, yLocation, layerEntry.Width, layerEntry.Height, zOrderPriority, parentAlias)
-
-	// Get the layer entry from the layer system
-	newLayerEntry := Layers.Get(layerAlias)
-
-	// Copy the character memory from the loaded layer to the new layer
-	for y := 0; y < layerEntry.Height; y++ {
-		for x := 0; x < layerEntry.Width; x++ {
-			newLayerEntry.CharacterMemory[y][x] = layerEntry.CharacterMemory[y][x]
-			newLayerEntry.CharacterMemory[y][x].LayerAlias = layerAlias
-			newLayerEntry.CharacterMemory[y][x].ParentAlias = parentAlias
-		}
-	}
-
-	// Create and return a LayerInstanceType for the new layer
-	layerInstance := LayerInstanceType{
-		layerAlias:  layerAlias,
-		parentAlias: parentAlias,
-		LayerWidth:  layerEntry.Width,
-		LayerHeight: layerEntry.Height,
-	}
-
-	return layerInstance, nil
 }
 
 /*
