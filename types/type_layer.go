@@ -43,135 +43,6 @@ type LayerEntryType struct {
 	CharacterMemory  [][]CharacterEntryType
 }
 
-func (shared *LayerEntryType) SaveLayer(path string) error {
-	file, err := os.Create(path)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	zstdWriter, err := zstd.NewWriter(file)
-	if err != nil {
-		return err
-	}
-	defer zstdWriter.Close()
-
-	writer := bufio.NewWriter(zstdWriter)
-	defer writer.Flush()
-
-	// Header
-	writer.Write([]byte(layerMagicHeader))
-	binary.Write(writer, binary.LittleEndian, uint16(layerVersion)) // version
-
-	height := uint16(len(shared.CharacterMemory))
-	width := uint16(len(shared.CharacterMemory[0]))
-
-	binary.Write(writer, binary.LittleEndian, width)
-	binary.Write(writer, binary.LittleEndian, height)
-
-	for yPosition := range shared.CharacterMemory {
-		for xPosition := range shared.CharacterMemory[yPosition] {
-			characterEntry := shared.CharacterMemory[yPosition][xPosition]
-
-			// Rune
-			binary.Write(writer, binary.LittleEndian, int32(characterEntry.Character))
-
-			attributeEntry := characterEntry.AttributeEntry
-
-			// Colors
-			writer.Write([]byte{
-				byte(attributeEntry.ForegroundColor),
-				byte(attributeEntry.BackgroundColor),
-			})
-
-			// Flags
-			var flags byte
-			if attributeEntry.IsForegroundTransparent {
-				flags |= flagFgTransparent
-			}
-			if attributeEntry.IsBackgroundTransparent {
-				flags |= flagBgTransparent
-			}
-			writer.WriteByte(flags)
-		}
-	}
-
-	return nil
-}
-
-func (shared *LayerEntryType) LoadLayer(path string) error {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return err
-	}
-	return shared.LoadLayerFromBytes(data)
-}
-
-// LoadLayerFromBytes loads a layer from a byte slice instead of a file
-func (shared *LayerEntryType) LoadLayerFromBytes(data []byte) error {
-	// Create a bytes.Reader from the data
-	reader := bytes.NewReader(data)
-
-	// Create a zstd reader
-	zstdReader, err := zstd.NewReader(reader)
-	if err != nil {
-		return err
-	}
-	defer zstdReader.Close()
-
-	// Use a buffered reader for efficient reading
-	buffReader := bufio.NewReader(zstdReader)
-
-	// Magic
-	magicHeader := make([]byte, 4)
-	if _, err := io.ReadFull(buffReader, magicHeader); err != nil {
-		return err
-	}
-	if string(magicHeader) != layerMagicHeader {
-		return fmt.Errorf("not a layer file")
-	}
-
-	// Version
-	var fileVersion uint16
-	binary.Read(buffReader, binary.LittleEndian, &fileVersion)
-	if fileVersion != layerVersion {
-		return fmt.Errorf("unsupported version %d", fileVersion)
-	}
-
-	var width, height uint16
-	binary.Read(buffReader, binary.LittleEndian, &width)
-	binary.Read(buffReader, binary.LittleEndian, &height)
-
-	characterMemory := make([][]CharacterEntryType, height)
-	shared.Width = int(width)
-	shared.Height = int(height)
-
-	for yPosition := 0; yPosition < int(height); yPosition++ {
-		characterMemory[yPosition] = make([]CharacterEntryType, width)
-		for xPosition := 0; xPosition < int(width); xPosition++ {
-			var character int32
-			binary.Read(buffReader, binary.LittleEndian, &character)
-
-			colors := make([]byte, 2)
-			io.ReadFull(buffReader, colors)
-
-			flags, _ := buffReader.ReadByte()
-
-			characterMemory[yPosition][xPosition] = CharacterEntryType{
-				Character: rune(character),
-				AttributeEntry: AttributeEntryType{
-					ForegroundColor:         constants.ColorType(colors[0]),
-					BackgroundColor:         constants.ColorType(colors[1]),
-					IsForegroundTransparent: flags&flagFgTransparent != 0,
-					IsBackgroundTransparent: flags&flagBgTransparent != 0,
-				},
-			}
-		}
-	}
-	shared.CharacterMemory = characterMemory
-	return nil
-}
-
 func (shared LayerEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
 		Width            int
@@ -371,4 +242,172 @@ func InitializeCharacterMemory(layerEntry *LayerEntryType) {
 		}
 		layerEntry.CharacterMemory = append(layerEntry.CharacterMemory, characterObjectArray)
 	}
+}
+
+// SaveLayer writes the layer to a file with zstd compression
+func (shared *LayerEntryType) SaveLayer(path string) error {
+	// Open file
+	file, err := os.Create(path)
+	if err != nil {
+		return fmt.Errorf("failed to create file: %w", err)
+	}
+	defer file.Close()
+
+	// Create zstd writer
+	zstdWriter, err := zstd.NewWriter(file)
+	if err != nil {
+		return fmt.Errorf("failed to create zstd writer: %w", err)
+	}
+	defer zstdWriter.Close()
+
+	// Buffered writer
+	writer := bufio.NewWriter(zstdWriter)
+
+	// --- Header ---
+	if _, err := writer.Write([]byte(layerMagicHeader)); err != nil {
+		return fmt.Errorf("failed to write magic header: %w", err)
+	}
+	if err := binary.Write(writer, binary.LittleEndian, uint16(layerVersion)); err != nil {
+		return fmt.Errorf("failed to write version: %w", err)
+	}
+
+	height := uint16(len(shared.CharacterMemory))
+	var width uint16
+	if height > 0 {
+		width = uint16(len(shared.CharacterMemory[0]))
+	}
+	if err := binary.Write(writer, binary.LittleEndian, width); err != nil {
+		return fmt.Errorf("failed to write width: %w", err)
+	}
+	if err := binary.Write(writer, binary.LittleEndian, height); err != nil {
+		return fmt.Errorf("failed to write height: %w", err)
+	}
+
+	// --- Layer Data ---
+	for y := 0; y < int(height); y++ {
+		for x := 0; x < int(width); x++ {
+			entry := shared.CharacterMemory[y][x]
+
+			// Rune
+			if err := binary.Write(writer, binary.LittleEndian, int32(entry.Character)); err != nil {
+				return fmt.Errorf("failed to write character at (%d,%d): %w", x, y, err)
+			}
+
+			// Colors (write full uint64 exactly)
+			if err := binary.Write(writer, binary.LittleEndian, entry.AttributeEntry.ForegroundColor); err != nil {
+				return fmt.Errorf("failed to write foreground color at (%d,%d): %w", x, y, err)
+			}
+			if err := binary.Write(writer, binary.LittleEndian, entry.AttributeEntry.BackgroundColor); err != nil {
+				return fmt.Errorf("failed to write background color at (%d,%d): %w", x, y, err)
+			}
+
+			// Flags
+			var flags byte
+			if entry.AttributeEntry.IsForegroundTransparent {
+				flags |= flagFgTransparent
+			}
+			if entry.AttributeEntry.IsBackgroundTransparent {
+				flags |= flagBgTransparent
+			}
+			if err := writer.WriteByte(flags); err != nil {
+				return fmt.Errorf("failed to write flags at (%d,%d): %w", x, y, err)
+			}
+		}
+	}
+
+	// Flush before closing zstd
+	if err := writer.Flush(); err != nil {
+		return fmt.Errorf("failed to flush writer: %w", err)
+	}
+
+	return nil
+}
+
+// LoadLayer reads a layer from a file
+func (shared *LayerEntryType) LoadLayer(path string) error {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return fmt.Errorf("failed to read file: %w", err)
+	}
+	return shared.LoadLayerFromBytes(data)
+}
+
+// LoadLayerFromBytes reads a layer from a byte slice
+func (shared *LayerEntryType) LoadLayerFromBytes(data []byte) error {
+	reader := bytes.NewReader(data)
+
+	// Create zstd reader
+	zstdReader, err := zstd.NewReader(reader)
+	if err != nil {
+		return fmt.Errorf("failed to create zstd reader: %w", err)
+	}
+	defer zstdReader.Close()
+
+	buffReader := bufio.NewReader(zstdReader)
+
+	// --- Header ---
+	magicHeader := make([]byte, len(layerMagicHeader))
+	if _, err := io.ReadFull(buffReader, magicHeader); err != nil {
+		return fmt.Errorf("failed to read magic header: %w", err)
+	}
+	if string(magicHeader) != layerMagicHeader {
+		return fmt.Errorf("not a valid layer file")
+	}
+
+	var fileVersion uint16
+	if err := binary.Read(buffReader, binary.LittleEndian, &fileVersion); err != nil {
+		return fmt.Errorf("failed to read version: %w", err)
+	}
+	if fileVersion != layerVersion {
+		return fmt.Errorf("unsupported version %d", fileVersion)
+	}
+
+	var width, height uint16
+	if err := binary.Read(buffReader, binary.LittleEndian, &width); err != nil {
+		return fmt.Errorf("failed to read width: %w", err)
+	}
+	if err := binary.Read(buffReader, binary.LittleEndian, &height); err != nil {
+		return fmt.Errorf("failed to read height: %w", err)
+	}
+
+	shared.Width = int(width)
+	shared.Height = int(height)
+	characterMemory := make([][]CharacterEntryType, height)
+
+	// --- Layer Data ---
+	for y := 0; y < int(height); y++ {
+		characterMemory[y] = make([]CharacterEntryType, width)
+		for x := 0; x < int(width); x++ {
+			var char int32
+			if err := binary.Read(buffReader, binary.LittleEndian, &char); err != nil {
+				return fmt.Errorf("failed to read character at (%d,%d): %w", x, y, err)
+			}
+
+			var fgColor, bgColor uint64
+			if err := binary.Read(buffReader, binary.LittleEndian, &fgColor); err != nil {
+				return fmt.Errorf("failed to read foreground color at (%d,%d): %w", x, y, err)
+			}
+			if err := binary.Read(buffReader, binary.LittleEndian, &bgColor); err != nil {
+				return fmt.Errorf("failed to read background color at (%d,%d): %w", x, y, err)
+			}
+
+			flags, err := buffReader.ReadByte()
+			if err != nil {
+				return fmt.Errorf("failed to read flags at (%d,%d): %w", x, y, err)
+			}
+
+			characterMemory[y][x] = CharacterEntryType{
+				Character: char,
+				AttributeEntry: AttributeEntryType{
+					ForegroundColor:         constants.ColorType(fgColor),
+					BackgroundColor:         constants.ColorType(bgColor),
+					IsForegroundTransparent: flags&flagFgTransparent != 0,
+					IsBackgroundTransparent: flags&flagBgTransparent != 0,
+				},
+			}
+		}
+	}
+
+	shared.CharacterMemory = characterMemory
+	return nil
 }

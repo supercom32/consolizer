@@ -997,7 +997,7 @@ func (shared *LayerInstanceType) GetAlpha() float32 {
 }
 
 /*
-LoadLayerFromFile allows you to load a pre-rendered layer from disk and add it to the layer system.
+LoadLayer allows you to load a pre-rendered layer from disk and add it to the layer system.
 This is useful for quickly loading complex layers that were previously saved, such as image layers.
 The layer is loaded from a compressed format that was created by SaveLayer. In addition, the following
 information should be noted:
@@ -1007,17 +1007,14 @@ information should be noted:
 - The loaded layer is added to the layer system with the specified alias, position, and z-order.
 - The function returns a LayerInstanceType that can be used to manipulate the loaded layer.
 */
-func (shared *LayerInstanceType) LoadLayerFromFile(xLocation int, yLocation int, zOrderPriority int, filePath string) error {
-	// Load the layer from file using the image.go function
-	layerInstance, err := LoadLayerFromFile(shared.layerAlias, xLocation, yLocation, zOrderPriority, shared.parentAlias, filePath)
+func (shared *LayerInstanceType) LoadLayer(xLocation int, yLocation int, zOrderPriority int, filePath string) error {
+	// Get the file data using the virtual file system
+	fileData, err := getFileDataFromFileSystem(filePath)
 	if err != nil {
 		return err
 	}
-
-	// Update the current instance with the loaded layer's properties
-	shared.LayerWidth = layerInstance.LayerWidth
-	shared.LayerHeight = layerInstance.LayerHeight
-
+	layerEntry := Layers.Get(shared.layerAlias)
+	layerEntry.LoadLayerFromBytes(fileData)
 	return nil
 }
 
@@ -1049,7 +1046,8 @@ should be noted:
 */
 func (shared *LayerInstanceType) SaveLayer(filePath string) error {
 	validateLayer(shared.layerAlias)
-	return SaveLayer(shared.layerAlias, filePath)
+	layerEntry := Layers.Get(shared.layerAlias)
+	return layerEntry.SaveLayer(filePath)
 }
 
 func (shared *LayerInstanceType) ColorStyle(styleEntry types.TuiStyleEntryType) {

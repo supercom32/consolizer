@@ -1293,34 +1293,6 @@ func HistogramEqualization(inputImage *image.Gray) *image.Gray {
 }
 
 /*
-SaveLayer allows you to save a pre-rendered layer to disk. This is useful for caching
-complex layers that take time to render, such as image layers. The layer is saved in a
-compressed format to minimize disk space usage. In addition, the following information
-should be noted:
-
-- The file extension ".clayer" is automatically appended to the filename if not provided.
-- The layer is saved using gzip compression to minimize disk space.
-- If the file cannot be written, an error is returned.
-*/
-func SaveLayer(layerAlias string, filePath string) error {
-	validateLayer(layerAlias)
-	layerEntry := Layers.Get(layerAlias)
-
-	// Ensure the file has the correct extension
-	if len(filePath) < 7 || filePath[len(filePath)-7:] != ".clayer" {
-		filePath += ".clayer"
-	}
-
-	// Use the SaveLayer method from type_layer.go
-	err := layerEntry.SaveLayer(filePath)
-	if err != nil {
-		return fmt.Errorf("failed to save layer to file: %w", err)
-	}
-
-	return nil
-}
-
-/*
 LoadPreRenderedLayerImage allows you to load a pre-rendered layer image directly into image memory.
 This is different from loading an image and pre-rendering it afterwards, as it directly loads
 a layer that has already been rendered. This is useful for quickly loading complex images
@@ -1333,7 +1305,7 @@ should be noted:
 */
 func LoadPreRenderedLayerImage(filePath string, imageAlias string) error {
 	// Load the layer from file
-	layerEntry, err := LoadLayer(filePath)
+	layerEntry, err := loadPrerenderedImage(filePath)
 	if err != nil {
 		return err
 	}
@@ -1351,4 +1323,21 @@ func LoadPreRenderedLayerImage(filePath string, imageAlias string) error {
 	addImage(imageAlias, imageEntry)
 
 	return nil
+}
+
+func loadPrerenderedImage(filePath string) (types.LayerEntryType, error) {
+	// Create a new layer entry
+	layerEntry := types.NewLayerEntry("", "", 0, 0)
+
+	// Get the file data using the virtual file system
+	fileData, err := getFileDataFromFileSystem(filePath)
+	if err != nil {
+		return layerEntry, err
+	}
+	// Load the layer data from the file bytes
+	err = layerEntry.LoadLayerFromBytes(fileData)
+	if err != nil {
+		return layerEntry, err
+	}
+	return layerEntry, err
 }

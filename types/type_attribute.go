@@ -43,6 +43,8 @@ func (shared AttributeEntryType) MarshalJSON() ([]byte, error) {
 		IsReversed               bool
 		IsBlinking               bool
 		IsItalic                 bool
+		IsBackgroundTransparent  bool
+		IsForegroundTransparent  bool
 		ForegroundTransformValue float32
 		BackgroundTransformValue float32
 		CellUserAlias            string
@@ -59,8 +61,10 @@ func (shared AttributeEntryType) MarshalJSON() ([]byte, error) {
 		IsReversed:               shared.IsReversed,
 		IsBlinking:               shared.IsBlinking,
 		IsItalic:                 shared.IsItalic,
+		IsBackgroundTransparent:  shared.IsBackgroundTransparent,
+		IsForegroundTransparent:  shared.IsForegroundTransparent,
 		ForegroundTransformValue: shared.ForegroundTransformValue,
-		BackgroundTransformValue: shared.ForegroundTransformValue,
+		BackgroundTransformValue: shared.BackgroundTransformValue,
 		CellUserAlias:            shared.CellUserAlias, // A string that represents some kind of string id.
 		CellUserId:               shared.CellUserId,    // An identifier for the instance of a cell type (Ie. button instance, etc).
 		CellControlAlias:         shared.CellControlAlias,
