@@ -47,9 +47,9 @@ func TestTerminalSetAlpha(test *testing.T) {
 	layer1 := AddLayer(0, 0, 20, 20, 1, nil)
 	SetLayerAlpha(layer1, 50)
 	layerEntry := Layers.Get(layer1.layerAlias)
-	alphaValue := layerEntry.DefaultAttribute.ForegroundTransformValue
+	alphaValue := layerEntry.DefaultAttribute.ForegroundAlphaValue
 	assert.Equalf(test, float32(50), alphaValue, "Setting the foreground alpha value for a layer failed.")
-	alphaValue = layerEntry.DefaultAttribute.BackgroundTransformValue
+	alphaValue = layerEntry.DefaultAttribute.BackgroundAlphaValue
 	assert.Equalf(test, float32(50), alphaValue, "Setting the background alpha value for a layer failed.")
 }
 

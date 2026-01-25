@@ -385,8 +385,8 @@ func SetLayerAlpha(layerInstance *LayerInstanceType, alphaValue float32) {
 
 func setLayerAlpha(layerInstance *LayerInstanceType, alphaValue float32) {
 	layerEntry := Layers.Get(layerInstance.layerAlias)
-	layerEntry.DefaultAttribute.ForegroundTransformValue = alphaValue
-	layerEntry.DefaultAttribute.BackgroundTransformValue = alphaValue
+	layerEntry.DefaultAttribute.ForegroundAlphaValue = alphaValue
+	layerEntry.DefaultAttribute.BackgroundAlphaValue = alphaValue
 }
 
 func SetLayer(alphaValue float32) {
@@ -953,11 +953,11 @@ func overlayLayers(sourceLayerEntry *types.LayerEntryType, targetLayerEntry *typ
 
 			// Handle NullRune (transparent) cells
 			if sourceCharacterEntry.Character == constants.NullRune {
-				if sourceAttributeEntry.ForegroundTransformValue < 1 {
-					targetAttributeEntry.ForegroundColor = GetTransitionedColor(targetAttributeEntry.ForegroundColor, GetRGBColor(0, 0, 0), sourceAttributeEntry.ForegroundTransformValue)
+				if sourceAttributeEntry.CellType == constants.CellTypeShadow && sourceAttributeEntry.ForegroundAlphaValue < 1 {
+					targetAttributeEntry.ForegroundColor = GetTransitionedColor(targetAttributeEntry.ForegroundColor, GetRGBColor(0, 0, 0), sourceAttributeEntry.ForegroundAlphaValue)
 				}
-				if sourceAttributeEntry.BackgroundTransformValue < 1 {
-					targetAttributeEntry.BackgroundColor = GetTransitionedColor(targetAttributeEntry.BackgroundColor, GetRGBColor(0, 0, 0), sourceAttributeEntry.BackgroundTransformValue)
+				if sourceAttributeEntry.CellType == constants.CellTypeShadow && sourceAttributeEntry.BackgroundAlphaValue < 1 {
+					targetAttributeEntry.BackgroundColor = GetTransitionedColor(targetAttributeEntry.BackgroundColor, GetRGBColor(0, 0, 0), sourceAttributeEntry.BackgroundAlphaValue)
 				}
 				targetCharacterEntry.AttributeEntry = targetAttributeEntry
 
@@ -996,16 +996,16 @@ func overlayLayers(sourceLayerEntry *types.LayerEntryType, targetLayerEntry *typ
 			}
 
 			// Apply color transformations
-			if sourceAttributeEntry.ForegroundTransformValue < 1 {
-				newAttributeEntry.ForegroundColor = GetTransitionedColor(targetAttributeEntry.ForegroundColor, sourceAttributeEntry.ForegroundColor, sourceAttributeEntry.ForegroundTransformValue)
-			} else if sourceLayerEntry.DefaultAttribute.ForegroundTransformValue < 1 {
-				newAttributeEntry.ForegroundColor = GetTransitionedColor(targetAttributeEntry.ForegroundColor, sourceAttributeEntry.ForegroundColor, sourceLayerEntry.DefaultAttribute.ForegroundTransformValue)
+			if sourceAttributeEntry.ForegroundAlphaValue < 1 {
+				newAttributeEntry.ForegroundColor = GetTransitionedColor(targetAttributeEntry.ForegroundColor, sourceAttributeEntry.ForegroundColor, sourceAttributeEntry.ForegroundAlphaValue)
+			} else if sourceLayerEntry.DefaultAttribute.ForegroundAlphaValue < 1 {
+				newAttributeEntry.ForegroundColor = GetTransitionedColor(targetAttributeEntry.ForegroundColor, sourceAttributeEntry.ForegroundColor, sourceLayerEntry.DefaultAttribute.ForegroundAlphaValue)
 			}
 
-			if sourceAttributeEntry.BackgroundTransformValue < 1 {
-				newAttributeEntry.BackgroundColor = GetTransitionedColor(targetAttributeEntry.BackgroundColor, sourceAttributeEntry.BackgroundColor, sourceAttributeEntry.BackgroundTransformValue)
-			} else if sourceLayerEntry.DefaultAttribute.BackgroundTransformValue < 1 {
-				newAttributeEntry.BackgroundColor = GetTransitionedColor(targetAttributeEntry.BackgroundColor, sourceAttributeEntry.BackgroundColor, sourceLayerEntry.DefaultAttribute.BackgroundTransformValue)
+			if sourceAttributeEntry.BackgroundAlphaValue < 1 {
+				newAttributeEntry.BackgroundColor = GetTransitionedColor(targetAttributeEntry.BackgroundColor, sourceAttributeEntry.BackgroundColor, sourceAttributeEntry.BackgroundAlphaValue)
+			} else if sourceLayerEntry.DefaultAttribute.BackgroundAlphaValue < 1 {
+				newAttributeEntry.BackgroundColor = GetTransitionedColor(targetAttributeEntry.BackgroundColor, sourceAttributeEntry.BackgroundColor, sourceLayerEntry.DefaultAttribute.BackgroundAlphaValue)
 			}
 
 			targetCharacterEntry.AttributeEntry = newAttributeEntry

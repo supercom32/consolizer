@@ -982,8 +982,8 @@ out at RGB(0, 0, 0) or RGB(255, 255, 255) respectively.
 func (shared *LayerInstanceType) SetAlpha(alphaValue float32) {
 	validateLayer(shared.layerAlias)
 	layerEntry := Layers.Get(shared.layerAlias)
-	layerEntry.DefaultAttribute.ForegroundTransformValue = alphaValue
-	layerEntry.DefaultAttribute.BackgroundTransformValue = alphaValue
+	layerEntry.DefaultAttribute.ForegroundAlphaValue = alphaValue
+	layerEntry.DefaultAttribute.BackgroundAlphaValue = alphaValue
 }
 
 /*
@@ -993,7 +993,7 @@ This value represents the layer's transparency level.
 func (shared *LayerInstanceType) GetAlpha() float32 {
 	validateLayer(shared.layerAlias)
 	layerEntry := Layers.Get(shared.layerAlias)
-	return layerEntry.DefaultAttribute.ForegroundTransformValue
+	return layerEntry.DefaultAttribute.ForegroundAlphaValue
 }
 
 /*

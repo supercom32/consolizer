@@ -7,23 +7,23 @@ import (
 )
 
 type AttributeEntryType struct {
-	ForegroundColor          constants.ColorType
-	BackgroundColor          constants.ColorType
-	IsBold                   bool
-	IsUnderlined             bool
-	IsReversed               bool
-	IsBlinking               bool
-	IsItalic                 bool
-	IsBackgroundTransparent  bool
-	IsForegroundTransparent  bool
-	ForegroundTransformValue float32
-	BackgroundTransformValue float32
-	CellUserId               int
-	CellControlId            int // The unique ID of a control type
-	CellControlLocation      int // The relative location of a cell from within a control
-	CellControlAlias         string
-	CellType                 int    // The type of control a cell belongs to
-	CellUserAlias            string // The alias of the cell control.
+	ForegroundColor         constants.ColorType
+	BackgroundColor         constants.ColorType
+	IsBold                  bool
+	IsUnderlined            bool
+	IsReversed              bool
+	IsBlinking              bool
+	IsItalic                bool
+	IsBackgroundTransparent bool
+	IsForegroundTransparent bool
+	ForegroundAlphaValue    float32
+	BackgroundAlphaValue    float32
+	CellUserId              int
+	CellControlId           int // The unique ID of a control type
+	CellControlLocation     int // The relative location of a cell from within a control
+	CellControlAlias        string
+	CellType                int    // The type of control a cell belongs to
+	CellUserAlias           string // The alias of the cell control.
 }
 
 /*
@@ -63,8 +63,8 @@ func (shared AttributeEntryType) MarshalJSON() ([]byte, error) {
 		IsItalic:                 shared.IsItalic,
 		IsBackgroundTransparent:  shared.IsBackgroundTransparent,
 		IsForegroundTransparent:  shared.IsForegroundTransparent,
-		ForegroundTransformValue: shared.ForegroundTransformValue,
-		BackgroundTransformValue: shared.BackgroundTransformValue,
+		ForegroundTransformValue: shared.ForegroundAlphaValue,
+		BackgroundTransformValue: shared.BackgroundAlphaValue,
 		CellUserAlias:            shared.CellUserAlias, // A string that represents some kind of string id.
 		CellUserId:               shared.CellUserId,    // An identifier for the instance of a cell type (Ie. button instance, etc).
 		CellControlAlias:         shared.CellControlAlias,
@@ -116,8 +116,8 @@ func NewAttributeEntry(existingAttributeEntry ...*AttributeEntryType) AttributeE
 		attributeEntry.IsItalic = existingAttributeEntry[0].IsItalic
 		attributeEntry.IsBackgroundTransparent = existingAttributeEntry[0].IsBackgroundTransparent
 		attributeEntry.IsForegroundTransparent = existingAttributeEntry[0].IsForegroundTransparent
-		attributeEntry.ForegroundTransformValue = existingAttributeEntry[0].ForegroundTransformValue
-		attributeEntry.BackgroundTransformValue = existingAttributeEntry[0].BackgroundTransformValue
+		attributeEntry.ForegroundAlphaValue = existingAttributeEntry[0].ForegroundAlphaValue
+		attributeEntry.BackgroundAlphaValue = existingAttributeEntry[0].BackgroundAlphaValue
 		attributeEntry.CellUserAlias = existingAttributeEntry[0].CellUserAlias
 		attributeEntry.CellUserId = existingAttributeEntry[0].CellUserId
 		attributeEntry.CellType = existingAttributeEntry[0].CellType
@@ -125,8 +125,8 @@ func NewAttributeEntry(existingAttributeEntry ...*AttributeEntryType) AttributeE
 		attributeEntry.CellControlAlias = existingAttributeEntry[0].CellControlAlias
 		attributeEntry.CellControlLocation = existingAttributeEntry[0].CellControlLocation
 	} else {
-		attributeEntry.ForegroundTransformValue = 1
-		attributeEntry.BackgroundTransformValue = 1
+		attributeEntry.ForegroundAlphaValue = 1
+		attributeEntry.BackgroundAlphaValue = 1
 		attributeEntry.ForegroundColor = constants.AnsiColorByIndex[15]
 		attributeEntry.BackgroundColor = constants.AnsiColorByIndex[0]
 		attributeEntry.CellUserId = constants.NullCellId

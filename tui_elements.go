@@ -539,16 +539,16 @@ drawShadow allows you to draw shadows on a given text layer. Shadows are simply
 transparent areas which darken whatever text layers are underneath it by a
 specified degree. In addition, the following information should be noted:
 
-- The alpha value can range from 0.0 (no shadow) to 1.0 (totally black).
-- If the shadow is drawn over a non-null (non-empty) character, it applies an
-  "in-layer shadow" effect (i.e., darkens the existing content).
-- If the shadow is drawn over an empty area, it keeps the current behavior
-  (drawing the solid shadow color).
+  - The alpha value can range from 0.0 (no shadow) to 1.0 (totally black).
+  - If the shadow is drawn over a non-null (non-empty) character, it applies an
+    "in-layer shadow" effect (i.e., darkens the existing content).
+  - If the shadow is drawn over an empty area, it keeps the current behavior
+    (drawing the solid shadow color).
 */
 func drawShadow(layerEntry *types.LayerEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, width int, height int, alphaValue float32) {
 	localAttributeEntry := types.NewAttributeEntry(&attributeEntry)
-	localAttributeEntry.ForegroundTransformValue = alphaValue
-	localAttributeEntry.BackgroundTransformValue = alphaValue
+	localAttributeEntry.ForegroundAlphaValue = alphaValue
+	localAttributeEntry.BackgroundAlphaValue = alphaValue
 	localAttributeEntry.CellType = constants.CellTypeShadow
 	// For empty areas, use the current behavior (null runes with transform values)
 	// For non-empty cells, darken the existing content
