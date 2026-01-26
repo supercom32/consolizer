@@ -1088,71 +1088,26 @@ func processCellsInParallel(pixelColorData [][4]float64, characterWidth, charact
 	waitGroup.Wait()
 }
 
-// getImageLayerAsBlockElementsAccurate renders an image using block elements with high precision.
-// It divides each character cell into an 8x8 grid and finds the best block element
-// to represent the image in that cell.
-func getImageLayerAsBlockElementsAccurate(sourceImageData image.Image, imageStyle types.ImageStyleEntryType, widthInCharacters int, heightInCharacters int, blurSigma float64) types.LayerEntryType {
-	if !imageStyle.IsWidthAspectRatioPreserved && !imageStyle.IsHeightAspectRatioPreserved {
-		if widthInCharacters <= 0 || heightInCharacters <= 0 {
-			safeSttyPanic(fmt.Sprintf("The specified width and height of %dx%d for your image is not valid when aspect ratio is not preserved.", widthInCharacters, heightInCharacters))
-		}
-	} else {
-		if widthInCharacters <= 0 && heightInCharacters <= 0 {
-			safeSttyPanic(fmt.Sprintf("The specified width and height of %dx%d for your image is not valid.", widthInCharacters, heightInCharacters))
-		}
-	}
+// blockElementResizerType defines a function type for resizing an image for block element rendering.
+type blockElementResizerType func(sourceImageData image.Image, targetPixelWidth, targetPixelHeight int) [][4]float64
 
-	// Apply blur and grayscale if specified
-	processedImageData := sourceImageData
-	if blurSigma > 0 {
-		processedImageData = imaging.Blur(sourceImageData, blurSigma)
-	}
-	if imageStyle.IsGrayscale {
-		processedImageData = ConvertImageToGrayscale(processedImageData)
-	}
-
-	// Calculate the dimensions
-	sourceBounds := processedImageData.Bounds()
-	sourceImageWidth, sourceImageHeight := sourceBounds.Dx(), sourceBounds.Dy()
-
-	// Calculate width and height in characters
-	characterWidth, characterHeight := widthInCharacters, heightInCharacters
-
-	// If both width and height are 0, use the image's dimensions
-	if characterWidth == 0 && characterHeight == 0 {
-		characterWidth, characterHeight = sourceImageWidth, sourceImageHeight
-		if adjustedWidth := sourceImageWidth * characterHeight / sourceImageHeight; adjustedWidth < characterWidth {
-			characterWidth = adjustedWidth
-		} else {
-			characterHeight = sourceImageHeight * characterWidth / sourceImageWidth
-		}
-	} else {
-		// If only one dimension is specified, calculate the other to preserve aspect ratio
-		if imageStyle.IsWidthAspectRatioPreserved && characterWidth == 0 {
-			characterWidth = sourceImageWidth * characterHeight / sourceImageHeight
-		} else if imageStyle.IsHeightAspectRatioPreserved && characterHeight == 0 {
-			characterHeight = sourceImageHeight * characterWidth / sourceImageWidth
-		}
-	}
-
-	// Use existing layer if provided, otherwise create a new one
-	layerEntry := types.NewLayerEntry("", "", characterWidth, characterHeight)
-
-	// Resize the image to an 8x8 grid per character cell
-	targetPixelWidth, targetPixelHeight := characterWidth*8, characterHeight*8
+// resizeAccurate performs high-precision resizing using an area-averaging method.
+func resizeAccurate(processedImageData image.Image, targetPixelWidth, targetPixelHeight int) [][4]float64 {
 	partialPixelColorInformation, partialPixelWeightInformation := resizeImageForBlockElements(processedImageData, targetPixelWidth, targetPixelHeight)
-
-	// Merge and normalize the resized pixels in parallel
 	finalPixelColorInformation := mergeAndNormalizeInParallel(partialPixelColorInformation, partialPixelWeightInformation, targetPixelWidth, targetPixelHeight)
-
-	// Process each cell to find the best block element
-	processCellsInParallel(finalPixelColorInformation, characterWidth, characterHeight, &layerEntry, imageStyle)
-
-	return layerEntry
+	return finalPixelColorInformation
 }
 
-// getImageLayerAsBlockElementsFast renders an image using block elements with a faster algorithm.
-func getImageLayerAsBlockElementsFast(sourceImageData image.Image, imageStyle types.ImageStyleEntryType, widthInCharacters int, heightInCharacters int, blurSigma float64) types.LayerEntryType {
+// resizeFast performs faster resizing using a standard library function.
+func resizeFast(processedImageData image.Image, targetPixelWidth, targetPixelHeight int) [][4]float64 {
+	resizedImage := imaging.Resize(processedImageData, targetPixelWidth, targetPixelHeight, imaging.Lanczos)
+	pixelData := convertImageToPixelData(resizedImage)
+	return pixelData
+}
+
+// getImageLayerAsBlockElements is the shared core logic for rendering an image using block elements.
+// It accepts a resizer function to handle the specific image scaling method.
+func getImageLayerAsBlockElements(sourceImageData image.Image, imageStyle types.ImageStyleEntryType, widthInCharacters int, heightInCharacters int, blurSigma float64, resizer blockElementResizerType) types.LayerEntryType {
 	if !imageStyle.IsWidthAspectRatioPreserved && !imageStyle.IsHeightAspectRatioPreserved {
 		if widthInCharacters <= 0 || heightInCharacters <= 0 {
 			safeSttyPanic(fmt.Sprintf("The specified width and height of %dx%d for your image is not valid when aspect ratio is not preserved.", widthInCharacters, heightInCharacters))
@@ -1199,17 +1154,26 @@ func getImageLayerAsBlockElementsFast(sourceImageData image.Image, imageStyle ty
 	// Use existing layer if provided, otherwise create a new one
 	layerEntry := types.NewLayerEntry("", "", characterWidth, characterHeight)
 
-	// Resize the image to an 8x8 grid per character cell
+	// Resize the image to an 8x8 grid per character cell using the provided resizer
 	targetPixelWidth, targetPixelHeight := characterWidth*8, characterHeight*8
-	resizedImage := imaging.Resize(processedImageData, targetPixelWidth, targetPixelHeight, imaging.Lanczos)
-
-	// Convert the resized image to our pixel data format
-	pixelData := convertImageToPixelData(resizedImage)
+	pixelData := resizer(processedImageData, targetPixelWidth, targetPixelHeight)
 
 	// Process each cell to find the best block element
 	processCellsInParallel(pixelData, characterWidth, characterHeight, &layerEntry, imageStyle)
 
 	return layerEntry
+}
+
+// getImageLayerAsBlockElementsAccurate renders an image using block elements with high precision.
+// It divides each character cell into an 8x8 grid and finds the best block element
+// to represent the image in that cell.
+func getImageLayerAsBlockElementsAccurate(sourceImageData image.Image, imageStyle types.ImageStyleEntryType, widthInCharacters int, heightInCharacters int, blurSigma float64) types.LayerEntryType {
+	return getImageLayerAsBlockElements(sourceImageData, imageStyle, widthInCharacters, heightInCharacters, blurSigma, resizeAccurate)
+}
+
+// getImageLayerAsBlockElementsFast renders an image using block elements with a faster algorithm.
+func getImageLayerAsBlockElementsFast(sourceImageData image.Image, imageStyle types.ImageStyleEntryType, widthInCharacters int, heightInCharacters int, blurSigma float64) types.LayerEntryType {
+	return getImageLayerAsBlockElements(sourceImageData, imageStyle, widthInCharacters, heightInCharacters, blurSigma, resizeFast)
 }
 
 // convertImageToPixelData converts an image.Image to the [][4]float64 format.
