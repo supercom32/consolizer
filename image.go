@@ -347,8 +347,71 @@ func resizeImage(imageData image.Image, targetWidth, targetHeight uint, isWidthA
 	return outputImage
 }
 
+func getImageLayerAsFullBlock(
+	sourceImageData image.Image,
+	imageStyle types.ImageStyleEntryType,
+	widthInCharacters int,
+	heightInCharacters int,
+	blurSigma float64) types.LayerEntryType {
+
+	if widthInCharacters <= 0 && heightInCharacters <= 0 {
+		safeSttyPanic(fmt.Sprintf("The specified width and height of %dx%d for your image is not valid.", widthInCharacters, heightInCharacters))
+	}
+
+	// Calculate pixel dimensions
+	calculatedPixelWidth := widthInCharacters
+	calculatedPixelHeight := heightInCharacters
+	if widthInCharacters == 0 {
+		calculatedPixelWidth = (heightInCharacters * sourceImageData.Bounds().Max.X) / sourceImageData.Bounds().Max.Y
+	}
+	if heightInCharacters == 0 {
+		calculatedPixelHeight = (widthInCharacters * sourceImageData.Bounds().Max.Y) / sourceImageData.Bounds().Max.X
+	}
+
+	// Resize and optionally blur / grayscale
+	processedImageData := resizeImage(sourceImageData, uint(calculatedPixelWidth), uint(calculatedPixelHeight), imageStyle.IsWidthAspectRatioPreserved, imageStyle.IsHeightAspectRatioPreserved)
+	if blurSigma > 0 {
+		processedImageData = imaging.Blur(processedImageData, blurSigma)
+	}
+	if imageStyle.IsGrayscale {
+		processedImageData = ConvertImageToGrayscale(processedImageData)
+	}
+
+	// Create new layer
+	layerEntry := types.NewLayerEntry("", "", calculatedPixelWidth, calculatedPixelHeight)
+
+	imageBounds := processedImageData.Bounds()
+
+	for charY := 0; charY < calculatedPixelHeight; charY++ {
+		for charX := 0; charX < calculatedPixelWidth; charX++ {
+			currentChar := layerEntry.CharacterMemory[charY][charX]
+			// Check transparency for the pixel
+			isTransparent := charY < imageBounds.Min.Y || charY >= imageBounds.Max.Y ||
+				isTransparentPixel(processedImageData, charX, charY)
+
+			if isTransparent {
+				// Fully transparent → use underlying cell's character and colors
+				currentChar.Character = constants.NullRune
+				currentChar.AttributeEntry.IsBackgroundTransparent = true
+				currentChar.AttributeEntry.IsForegroundTransparent = true
+			} else {
+				// Visible pixel → full block
+				currentChar.Character = constants.CharBlockFull
+				currentChar.AttributeEntry.IsBackgroundTransparent = true
+				// Get color from the pixel
+				pixel := processedImageData.At(charX, charY)
+				r, g, b, _ := get8BitColorComponents(pixel)
+				currentChar.AttributeEntry.ForegroundColor = GetRGBColor(r, g, b)
+			}
+			layerEntry.CharacterMemory[charY][charX] = currentChar
+		}
+	}
+
+	return layerEntry
+}
+
 /*
-getImageLayerAsHighColor allows you to specify an image and convert it into a text layer
+getImageLayerAsHalfBlock allows you to specify an image and convert it into a text layer
 suitable for drawing with. In addition, the following information should be
 noted:
 
@@ -373,7 +436,7 @@ resized. This allows you to soften your image before it is rendered in ansi
 so that hard edges are removed. A value of 0.0 means no blurring will occur,
 with higher values increasing the blur factor.
 */
-func getImageLayerAsHighColor(
+func getImageLayerAsHalfBlock(
 	sourceImageData image.Image,
 	imageStyle types.ImageStyleEntryType,
 	widthInCharacters int,
@@ -1025,20 +1088,10 @@ func processCellsInParallel(pixelColorData [][4]float64, characterWidth, charact
 	waitGroup.Wait()
 }
 
-// getImageLayerAsBlockElements renders an image using block elements.
+// getImageLayerAsBlockElementsAccurate renders an image using block elements with high precision.
 // It divides each character cell into an 8x8 grid and finds the best block element
 // to represent the image in that cell.
-func getImageLayerAsBlockElements(sourceImageData image.Image, imageStyle types.ImageStyleEntryType, widthInCharacters int, heightInCharacters int, blurSigma float64) types.LayerEntryType {
-	if imageStyle.BlockElementRenderStyle == constants.RenderStyleFast {
-		return getImageLayerAsBlockElementsFast(sourceImageData, imageStyle, widthInCharacters, heightInCharacters, blurSigma)
-	}
-	return getImageLayerAsBlockElementsHighPrecision(sourceImageData, imageStyle, widthInCharacters, heightInCharacters, blurSigma)
-}
-
-// getImageLayerAsBlockElementsHighPrecision renders an image using block elements with high precision.
-// It divides each character cell into an 8x8 grid and finds the best block element
-// to represent the image in that cell.
-func getImageLayerAsBlockElementsHighPrecision(sourceImageData image.Image, imageStyle types.ImageStyleEntryType, widthInCharacters int, heightInCharacters int, blurSigma float64) types.LayerEntryType {
+func getImageLayerAsBlockElementsAccurate(sourceImageData image.Image, imageStyle types.ImageStyleEntryType, widthInCharacters int, heightInCharacters int, blurSigma float64) types.LayerEntryType {
 	if !imageStyle.IsWidthAspectRatioPreserved && !imageStyle.IsHeightAspectRatioPreserved {
 		if widthInCharacters <= 0 || heightInCharacters <= 0 {
 			safeSttyPanic(fmt.Sprintf("The specified width and height of %dx%d for your image is not valid when aspect ratio is not preserved.", widthInCharacters, heightInCharacters))
@@ -1180,12 +1233,16 @@ func convertImageToPixelData(img image.Image) [][4]float64 {
 func getImageLayer(sourceImageData image.Image, imageStyle types.ImageStyleEntryType, widthInCharacters int, heightInCharacters int, blurSigma float64) types.LayerEntryType {
 	var imageLayer types.LayerEntryType
 
-	if imageStyle.DrawingStyle == constants.ImageStyleHighColor {
-		imageLayer = getImageLayerAsHighColor(sourceImageData, imageStyle, widthInCharacters, heightInCharacters, blurSigma)
+	if imageStyle.DrawingStyle == constants.ImageStyleHalfBlock {
+		imageLayer = getImageLayerAsHalfBlock(sourceImageData, imageStyle, widthInCharacters, heightInCharacters, blurSigma)
 	} else if imageStyle.DrawingStyle == constants.ImageStyleCharacters {
 		imageLayer = GetImageLayerAsAsciiColorArt(sourceImageData, imageStyle, widthInCharacters, heightInCharacters, blurSigma)
-	} else if imageStyle.DrawingStyle == constants.ImageStyleBlockElements {
-		imageLayer = getImageLayerAsBlockElements(sourceImageData, imageStyle, widthInCharacters, heightInCharacters, blurSigma)
+	} else if imageStyle.DrawingStyle == constants.ImageStyleBlockElementsAccurate {
+		imageLayer = getImageLayerAsBlockElementsAccurate(sourceImageData, imageStyle, widthInCharacters, heightInCharacters, blurSigma)
+	} else if imageStyle.DrawingStyle == constants.ImageStyleBlockElementsFast {
+		imageLayer = getImageLayerAsBlockElementsFast(sourceImageData, imageStyle, widthInCharacters, heightInCharacters, blurSigma)
+	} else if imageStyle.DrawingStyle == constants.ImageStyleFullBlock {
+		imageLayer = getImageLayerAsFullBlock(sourceImageData, imageStyle, widthInCharacters, heightInCharacters, blurSigma)
 	} else {
 		imageLayer = getImageLayerAsBraille(sourceImageData, imageStyle, widthInCharacters, heightInCharacters, blurSigma)
 	}

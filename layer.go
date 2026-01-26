@@ -573,14 +573,18 @@ func (shared *LayerInstanceType) DrawComposedImage(imageComposeEntry ImageCompos
 	var currentLayer *types.LayerEntryType
 	currentLayer = Layers.Get(shared.layerAlias)
 
-	if drawingStyle.DrawingStyle == constants.ImageStyleHighColor {
-		imageLayer = getImageLayerAsHighColor(baseImage, drawingStyle, widthInCharacters, heightInCharacters, drawingStyle.BlurSigmaIntensity)
+	if drawingStyle.DrawingStyle == constants.ImageStyleHalfBlock {
+		imageLayer = getImageLayerAsHalfBlock(baseImage, drawingStyle, widthInCharacters, heightInCharacters, drawingStyle.BlurSigmaIntensity)
 	} else if drawingStyle.DrawingStyle == constants.ImageStyleCharacters {
 		imageLayer = GetImageLayerAsAsciiColorArt(baseImage, drawingStyle, widthInCharacters, heightInCharacters, drawingStyle.BlurSigmaIntensity)
-	} else if drawingStyle.DrawingStyle == constants.ImageStyleBlockElements {
-		imageLayer = getImageLayerAsBlockElements(baseImage, drawingStyle, widthInCharacters, heightInCharacters, drawingStyle.BlurSigmaIntensity)
+	} else if drawingStyle.DrawingStyle == constants.ImageStyleBlockElementsAccurate {
+		imageLayer = getImageLayerAsBlockElementsAccurate(baseImage, drawingStyle, widthInCharacters, heightInCharacters, drawingStyle.BlurSigmaIntensity)
+	} else if drawingStyle.DrawingStyle == constants.ImageStyleBlockElementsFast {
+		imageLayer = getImageLayerAsBlockElementsFast(baseImage, drawingStyle, widthInCharacters, heightInCharacters, drawingStyle.BlurSigmaIntensity)
 	} else if drawingStyle.DrawingStyle == constants.ImageStyleBraille {
 		imageLayer = getImageLayerAsBraille(baseImage, drawingStyle, widthInCharacters, heightInCharacters, drawingStyle.BlurSigmaIntensity)
+	} else if drawingStyle.DrawingStyle == constants.ImageStyleFullBlock {
+		imageLayer = getImageLayerAsFullBlock(baseImage, drawingStyle, widthInCharacters, heightInCharacters, drawingStyle.BlurSigmaIntensity)
 	} else {
 		safeSttyPanic("Invalid image style rendering type!")
 	}

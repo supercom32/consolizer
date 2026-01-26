@@ -123,7 +123,7 @@ func TestTransparentImageBlockStyleBlendedTransparency(test *testing.T) {
 
 func TestTransparentImageMediumResolutionStyleBackgroundTransparency(test *testing.T) {
 	layer1, _, _, _, imageStyle := setupTest()
-	imageStyle.DrawingStyle = constants.ImageStyleHighColor
+	imageStyle.DrawingStyle = constants.ImageStyleHalfBlock
 	imageStyle.TransparencyMode = constants.TransparencyModeBackground
 	layer1.DrawImage(IMAGE_TRANSPARENCY, imageStyle, 1, 0, 40, 20, 0)
 	UpdateDisplay(false)
@@ -140,7 +140,7 @@ func TestTransparentImageMediumResolutionStyleBackgroundTransparency(test *testi
 
 func TestTransparentImageMediumResolutionStyleForegroundTransparency(test *testing.T) {
 	layer1, _, _, _, imageStyle := setupTest()
-	imageStyle.DrawingStyle = constants.ImageStyleHighColor
+	imageStyle.DrawingStyle = constants.ImageStyleHalfBlock
 	imageStyle.TransparencyMode = constants.TransparencyModeForeground
 	layer1.DrawImage(IMAGE_TRANSPARENCY, imageStyle, 1, 0, 40, 20, 0)
 	UpdateDisplay(false)
@@ -157,7 +157,7 @@ func TestTransparentImageMediumResolutionStyleForegroundTransparency(test *testi
 
 func TestTransparentImageMediumResolutionStyleBlendedTransparency(test *testing.T) {
 	layer1, _, _, _, imageStyle := setupTest()
-	imageStyle.DrawingStyle = constants.ImageStyleHighColor
+	imageStyle.DrawingStyle = constants.ImageStyleHalfBlock
 	imageStyle.TransparencyMode = constants.TransparencyModeBlended
 	layer1.DrawImage(IMAGE_TRANSPARENCY, imageStyle, 1, 0, 40, 20, 0)
 	UpdateDisplay(false)

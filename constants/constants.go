@@ -5,7 +5,6 @@ import (
 )
 
 type ImageStyle int
-type BlockElementRenderStyle int
 
 const (
 	OS_WINDOWS = "windows"
@@ -15,15 +14,12 @@ const (
 )
 
 const (
-	ImageStyleHighColor ImageStyle = iota
+	ImageStyleHalfBlock ImageStyle = iota
 	ImageStyleBraille
 	ImageStyleCharacters
-	ImageStyleBlockElements
-)
-
-const (
-	RenderStyleHighPrecision BlockElementRenderStyle = iota
-	RenderStyleFast
+	ImageStyleBlockElementsAccurate
+	ImageStyleBlockElementsFast
+	ImageStyleFullBlock
 )
 
 type DitheringStyle int
