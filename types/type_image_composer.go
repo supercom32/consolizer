@@ -26,6 +26,7 @@ type ImageComposerImageEntryType struct {
 
 type ImageStyleEntryType struct {
 	DrawingStyle                 constants.ImageStyle
+	BlockElementRenderStyle      constants.BlockElementRenderStyle
 	IsHistogramEqualized         bool
 	IsGrayscale                  bool
 	IsWidthAspectRatioPreserved  bool
@@ -43,6 +44,7 @@ func NewImageStyleEntry(existingImageStyleEntry ...*ImageStyleEntryType) ImageSt
 	var imageStyleEntry ImageStyleEntryType
 	if existingImageStyleEntry != nil {
 		imageStyleEntry.DrawingStyle = existingImageStyleEntry[0].DrawingStyle
+		imageStyleEntry.BlockElementRenderStyle = existingImageStyleEntry[0].BlockElementRenderStyle
 		imageStyleEntry.IsHistogramEqualized = existingImageStyleEntry[0].IsHistogramEqualized
 		imageStyleEntry.IsGrayscale = existingImageStyleEntry[0].IsGrayscale
 		imageStyleEntry.DitheringIntensity = existingImageStyleEntry[0].DitheringIntensity

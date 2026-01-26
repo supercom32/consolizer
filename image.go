@@ -1029,6 +1029,16 @@ func processCellsInParallel(pixelColorData [][4]float64, characterWidth, charact
 // It divides each character cell into an 8x8 grid and finds the best block element
 // to represent the image in that cell.
 func getImageLayerAsBlockElements(sourceImageData image.Image, imageStyle types.ImageStyleEntryType, widthInCharacters int, heightInCharacters int, blurSigma float64) types.LayerEntryType {
+	if imageStyle.BlockElementRenderStyle == constants.RenderStyleFast {
+		return getImageLayerAsBlockElementsFast(sourceImageData, imageStyle, widthInCharacters, heightInCharacters, blurSigma)
+	}
+	return getImageLayerAsBlockElementsHighPrecision(sourceImageData, imageStyle, widthInCharacters, heightInCharacters, blurSigma)
+}
+
+// getImageLayerAsBlockElementsHighPrecision renders an image using block elements with high precision.
+// It divides each character cell into an 8x8 grid and finds the best block element
+// to represent the image in that cell.
+func getImageLayerAsBlockElementsHighPrecision(sourceImageData image.Image, imageStyle types.ImageStyleEntryType, widthInCharacters int, heightInCharacters int, blurSigma float64) types.LayerEntryType {
 	if !imageStyle.IsWidthAspectRatioPreserved && !imageStyle.IsHeightAspectRatioPreserved {
 		if widthInCharacters <= 0 || heightInCharacters <= 0 {
 			safeSttyPanic(fmt.Sprintf("The specified width and height of %dx%d for your image is not valid when aspect ratio is not preserved.", widthInCharacters, heightInCharacters))
@@ -1086,6 +1096,85 @@ func getImageLayerAsBlockElements(sourceImageData image.Image, imageStyle types.
 	processCellsInParallel(finalPixelColorInformation, characterWidth, characterHeight, &layerEntry, imageStyle)
 
 	return layerEntry
+}
+
+// getImageLayerAsBlockElementsFast renders an image using block elements with a faster algorithm.
+func getImageLayerAsBlockElementsFast(sourceImageData image.Image, imageStyle types.ImageStyleEntryType, widthInCharacters int, heightInCharacters int, blurSigma float64) types.LayerEntryType {
+	if !imageStyle.IsWidthAspectRatioPreserved && !imageStyle.IsHeightAspectRatioPreserved {
+		if widthInCharacters <= 0 || heightInCharacters <= 0 {
+			safeSttyPanic(fmt.Sprintf("The specified width and height of %dx%d for your image is not valid when aspect ratio is not preserved.", widthInCharacters, heightInCharacters))
+		}
+	} else {
+		if widthInCharacters <= 0 && heightInCharacters <= 0 {
+			safeSttyPanic(fmt.Sprintf("The specified width and height of %dx%d for your image is not valid.", widthInCharacters, heightInCharacters))
+		}
+	}
+
+	// Apply blur and grayscale if specified
+	processedImageData := sourceImageData
+	if blurSigma > 0 {
+		processedImageData = imaging.Blur(sourceImageData, blurSigma)
+	}
+	if imageStyle.IsGrayscale {
+		processedImageData = ConvertImageToGrayscale(processedImageData)
+	}
+
+	// Calculate the dimensions
+	sourceBounds := processedImageData.Bounds()
+	sourceImageWidth, sourceImageHeight := sourceBounds.Dx(), sourceBounds.Dy()
+
+	// Calculate width and height in characters
+	characterWidth, characterHeight := widthInCharacters, heightInCharacters
+
+	// If both width and height are 0, use the image's dimensions
+	if characterWidth == 0 && characterHeight == 0 {
+		characterWidth, characterHeight = sourceImageWidth, sourceImageHeight
+		if adjustedWidth := sourceImageWidth * characterHeight / sourceImageHeight; adjustedWidth < characterWidth {
+			characterWidth = adjustedWidth
+		} else {
+			characterHeight = sourceImageHeight * characterWidth / sourceImageWidth
+		}
+	} else {
+		// If only one dimension is specified, calculate the other to preserve aspect ratio
+		if imageStyle.IsWidthAspectRatioPreserved && characterWidth == 0 {
+			characterWidth = sourceImageWidth * characterHeight / sourceImageHeight
+		} else if imageStyle.IsHeightAspectRatioPreserved && characterHeight == 0 {
+			characterHeight = sourceImageHeight * characterWidth / sourceImageWidth
+		}
+	}
+
+	// Use existing layer if provided, otherwise create a new one
+	layerEntry := types.NewLayerEntry("", "", characterWidth, characterHeight)
+
+	// Resize the image to an 8x8 grid per character cell
+	targetPixelWidth, targetPixelHeight := characterWidth*8, characterHeight*8
+	resizedImage := imaging.Resize(processedImageData, targetPixelWidth, targetPixelHeight, imaging.Lanczos)
+
+	// Convert the resized image to our pixel data format
+	pixelData := convertImageToPixelData(resizedImage)
+
+	// Process each cell to find the best block element
+	processCellsInParallel(pixelData, characterWidth, characterHeight, &layerEntry, imageStyle)
+
+	return layerEntry
+}
+
+// convertImageToPixelData converts an image.Image to the [][4]float64 format.
+func convertImageToPixelData(img image.Image) [][4]float64 {
+	bounds := img.Bounds()
+	width, height := bounds.Dx(), bounds.Dy()
+	pixelData := make([][4]float64, width*height)
+	for y := 0; y < height; y++ {
+		for x := 0; x < width; x++ {
+			r, g, b, a := img.At(x+bounds.Min.X, y+bounds.Min.Y).RGBA()
+			pixelIndex := y*width + x
+			pixelData[pixelIndex][0] = float64(r) / 0xffff
+			pixelData[pixelIndex][1] = float64(g) / 0xffff
+			pixelData[pixelIndex][2] = float64(b) / 0xffff
+			pixelData[pixelIndex][3] = float64(a) / 0xffff
+		}
+	}
+	return pixelData
 }
 
 func getImageLayer(sourceImageData image.Image, imageStyle types.ImageStyleEntryType, widthInCharacters int, heightInCharacters int, blurSigma float64) types.LayerEntryType {
