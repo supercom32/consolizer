@@ -17,7 +17,7 @@ const (
 func setupTest() (*LayerInstanceType, *LayerInstanceType, *LayerInstanceType, types.TuiStyleEntryType, types.ImageStyleEntryType) {
 	ClearAllImages()
 	imageStyle := NewImageStyle()
-	imageStyle.DrawingStyle = constants.ImageStyleBlockElements
+	imageStyle.DrawingStyle = constants.ImageStyleBlockElementsAccurate
 	imageStyle.DitheringStyle = constants.DitheringStyle4x4BayerMatrix
 	imageStyle.IsHistogramEqualized = true
 	imageStyle.IsGrayscale = false
@@ -25,7 +25,6 @@ func setupTest() (*LayerInstanceType, *LayerInstanceType, *LayerInstanceType, ty
 	imageStyle.TransparentForegroundPenalty = 5000 // Strongly penalize foreground on transparent pixels
 	imageStyle.AggressiveErrorThreshold = 0.8      // Only very well-fitting blocks survive
 	imageStyle.AggressiveCoverageThreshold = 0.5   // Cells must be at least 50% filled to survive
-	imageStyle.TransparencyMode = constants.TransparencyModeBlended
 	layer1, layer2, layer3, tuiStyleEntry := CommonTestSetupImages()
 	layer1.Color24Bit(GetRGBColor(255, 0, 0), GetRGBColor(0, 0, 255))
 	layer1.FillLayer("$")
@@ -75,7 +74,6 @@ func TestUnloadNonExistentImage(test *testing.T) {
 
 func TestTransparentImageBlockStyleBackgroundTransparency(test *testing.T) {
 	layer1, _, _, _, imageStyle := setupTest()
-	imageStyle.TransparencyMode = constants.TransparencyModeBackground
 	layer1.DrawImage(IMAGE_TRANSPARENCY, imageStyle, 1, 0, 40, 20, 0)
 	UpdateDisplay(false)
 	layerEntry := commonResource.screenLayer
@@ -91,7 +89,6 @@ func TestTransparentImageBlockStyleBackgroundTransparency(test *testing.T) {
 
 func TestTransparentImageBlockStyleForegroundTransparency(test *testing.T) {
 	_, layer2, _, _, imageStyle := setupTest()
-	imageStyle.TransparencyMode = constants.TransparencyModeForeground
 	layer2.DrawImage(IMAGE_TRANSPARENCY, imageStyle, 1, 0, 40, 20, 0)
 	UpdateDisplay(false)
 	layerEntry := commonResource.screenLayer
@@ -107,7 +104,6 @@ func TestTransparentImageBlockStyleForegroundTransparency(test *testing.T) {
 
 func TestTransparentImageBlockStyleBlendedTransparency(test *testing.T) {
 	_, layer2, _, _, imageStyle := setupTest()
-	imageStyle.TransparencyMode = constants.TransparencyModeBlended
 	layer2.DrawImage(IMAGE_TRANSPARENCY, imageStyle, 1, 0, 40, 20, 0)
 	UpdateDisplay(false)
 	layerEntry := commonResource.screenLayer
@@ -124,7 +120,6 @@ func TestTransparentImageBlockStyleBlendedTransparency(test *testing.T) {
 func TestTransparentImageMediumResolutionStyleBackgroundTransparency(test *testing.T) {
 	layer1, _, _, _, imageStyle := setupTest()
 	imageStyle.DrawingStyle = constants.ImageStyleHalfBlock
-	imageStyle.TransparencyMode = constants.TransparencyModeBackground
 	layer1.DrawImage(IMAGE_TRANSPARENCY, imageStyle, 1, 0, 40, 20, 0)
 	UpdateDisplay(false)
 	layerEntry := commonResource.screenLayer
@@ -141,7 +136,6 @@ func TestTransparentImageMediumResolutionStyleBackgroundTransparency(test *testi
 func TestTransparentImageMediumResolutionStyleForegroundTransparency(test *testing.T) {
 	layer1, _, _, _, imageStyle := setupTest()
 	imageStyle.DrawingStyle = constants.ImageStyleHalfBlock
-	imageStyle.TransparencyMode = constants.TransparencyModeForeground
 	layer1.DrawImage(IMAGE_TRANSPARENCY, imageStyle, 1, 0, 40, 20, 0)
 	UpdateDisplay(false)
 	layerEntry := commonResource.screenLayer
@@ -158,7 +152,6 @@ func TestTransparentImageMediumResolutionStyleForegroundTransparency(test *testi
 func TestTransparentImageMediumResolutionStyleBlendedTransparency(test *testing.T) {
 	layer1, _, _, _, imageStyle := setupTest()
 	imageStyle.DrawingStyle = constants.ImageStyleHalfBlock
-	imageStyle.TransparencyMode = constants.TransparencyModeBlended
 	layer1.DrawImage(IMAGE_TRANSPARENCY, imageStyle, 1, 0, 40, 20, 0)
 	UpdateDisplay(false)
 	layerEntry := commonResource.screenLayer
@@ -175,7 +168,6 @@ func TestTransparentImageMediumResolutionStyleBlendedTransparency(test *testing.
 func TestTransparentImageBrailleStyleBackgroundTransparency(test *testing.T) {
 	layer1, _, _, _, imageStyle := setupTest()
 	imageStyle.DrawingStyle = constants.ImageStyleBraille
-	imageStyle.TransparencyMode = constants.TransparencyModeBackground
 	layer1.DrawImage(IMAGE_TRANSPARENCY, imageStyle, 1, 0, 40, 20, 0)
 	UpdateDisplay(false)
 	layerEntry := commonResource.screenLayer
@@ -192,7 +184,6 @@ func TestTransparentImageBrailleStyleBackgroundTransparency(test *testing.T) {
 func TestTransparentImageBrailleStyleForegroundTransparency(test *testing.T) {
 	layer1, _, _, _, imageStyle := setupTest()
 	imageStyle.DrawingStyle = constants.ImageStyleBraille
-	imageStyle.TransparencyMode = constants.TransparencyModeForeground
 	layer1.DrawImage(IMAGE_TRANSPARENCY, imageStyle, 1, 0, 40, 20, 0)
 	UpdateDisplay(false)
 	layerEntry := commonResource.screenLayer
@@ -209,7 +200,6 @@ func TestTransparentImageBrailleStyleForegroundTransparency(test *testing.T) {
 func TestTransparentImageBrailleStyleBlendedTransparency(test *testing.T) {
 	layer1, _, _, _, imageStyle := setupTest()
 	imageStyle.DrawingStyle = constants.ImageStyleBraille
-	imageStyle.TransparencyMode = constants.TransparencyModeBlended
 	layer1.DrawImage(IMAGE_TRANSPARENCY, imageStyle, 1, 0, 40, 20, 0)
 	UpdateDisplay(false)
 	layerEntry := commonResource.screenLayer
@@ -226,7 +216,6 @@ func TestTransparentImageBrailleStyleBlendedTransparency(test *testing.T) {
 func TestTransparentImageAsciiStyleBackgroundTransparency(test *testing.T) {
 	_, layer2, _, _, imageStyle := setupTest()
 	imageStyle.DrawingStyle = constants.ImageStyleCharacters
-	imageStyle.TransparencyMode = constants.TransparencyModeBackground
 	imageStyle.RandomSeed = 1
 	layer2.DrawImage(IMAGE_TRANSPARENCY, imageStyle, 1, 0, 40, 20, 0)
 	UpdateDisplay(false)
@@ -244,7 +233,6 @@ func TestTransparentImageAsciiStyleBackgroundTransparency(test *testing.T) {
 func TestTransparentImageAsciiStyleForegroundTransparency(test *testing.T) {
 	_, layer2, _, _, imageStyle := setupTest()
 	imageStyle.DrawingStyle = constants.ImageStyleCharacters
-	imageStyle.TransparencyMode = constants.TransparencyModeForeground
 	imageStyle.RandomSeed = 1
 	layer2.DrawImage(IMAGE_TRANSPARENCY, imageStyle, 1, 0, 40, 20, 0)
 	UpdateDisplay(false)
@@ -262,7 +250,6 @@ func TestTransparentImageAsciiStyleForegroundTransparency(test *testing.T) {
 func TestTransparentImageAsciiStyleBlendedTransparency(test *testing.T) {
 	_, layer2, _, _, imageStyle := setupTest()
 	imageStyle.DrawingStyle = constants.ImageStyleCharacters
-	imageStyle.TransparencyMode = constants.TransparencyModeBlended
 	imageStyle.RandomSeed = 1
 	layer2.DrawImage(IMAGE_TRANSPARENCY, imageStyle, 1, 0, 40, 20, 0)
 	UpdateDisplay(false)

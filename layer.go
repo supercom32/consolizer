@@ -1099,6 +1099,36 @@ func (shared *LayerInstanceType) Color24Bit(foregroundColor constants.ColorType,
 }
 
 /*
+Resize allows you to change the width and height of a layer. In addition,
+the following information should be noted:
+
+- If you pass in a zero or negative value for ether width or height a panic
+will be generated to fail as fast as possible.
+*/
+func (shared *LayerInstanceType) Resize(width int, height int) {
+	validateLayer(shared.layerAlias)
+	validateLayerSize(shared.layerAlias, width, height)
+	layerEntry := Layers.Get(shared.layerAlias)
+
+	// Create a new character memory with the new dimensions
+	newCharacterMemory := make([][]types.CharacterEntryType, height)
+	for i := range newCharacterMemory {
+		newCharacterMemory[i] = make([]types.CharacterEntryType, width)
+		for j := range newCharacterMemory[i] {
+			newCharacterMemory[i][j] = types.NewCharacterEntry()
+			newCharacterMemory[i][j].AttributeEntry = layerEntry.DefaultAttribute
+		}
+	}
+
+	// Copy the existing character memory to the new one
+	copyCharacterMemory(layerEntry.CharacterMemory, newCharacterMemory, 0, 0, layerEntry.Width, layerEntry.Height)
+
+	layerEntry.Width = width
+	layerEntry.Height = height
+	layerEntry.CharacterMemory = newCharacterMemory
+}
+
+/*
 Locate allows you to set the default cursor location on your specified text
 layer for printing with. This is useful for when you wish to print text
 at different locations of your text layer at any given time. If you wish to
@@ -1515,4 +1545,16 @@ func setLayerIsVisible(layerAlias string, isVisible bool) {
 	validateLayer(layerAlias)
 	layerEntry := Layers.Get(layerAlias)
 	layerEntry.IsVisible = isVisible
+}
+
+/*
+validateLayerSize checks if the given width and height are valid for a layer.
+*/
+func validateLayerSize(layerAlias string, width int, height int) {
+	if width <= 0 {
+		panic(fmt.Sprintf("The layer '%s' could not be resized since a width of '%d' was specified!", layerAlias, width))
+	}
+	if height <= 0 {
+		panic(fmt.Sprintf("The layer '%s' could not be resized since a height of '%d' was specified!", layerAlias, height))
+	}
 }
