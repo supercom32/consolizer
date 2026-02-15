@@ -330,12 +330,13 @@ func (shared *textFieldType) updateTextFieldCursor(textFieldEntry *types.TextFie
 	}
 }
 
-func (shared *textFieldType) updateKeyboardEventManually(layerAlias string, textFieldAlias string, keystroke []rune) bool {
+func (shared *textFieldType) updateKeyboardEventManually(layerAlias string, textFieldAlias string, keystroke []rune) (bool, bool) {
 	keystrokeAsString := string(keystroke)
 	isScreenUpdateRequired := false
+	isKeystrokeConsumed := false
 	textFieldEntry := TextFields.Get(layerAlias, textFieldAlias)
 	if !textFieldEntry.IsEnabled {
-		return false
+		return false, false
 	}
 
 	// Windows Quirk: On Linux, the Shift key is only reported as "pressed" when used with non-character keys
@@ -364,6 +365,7 @@ func (shared *textFieldType) updateKeyboardEventManually(layerAlias string, text
 		textFieldEntry.HighlightEnd = len(textFieldEntry.CurrentValue) - 1
 		textFieldEntry.IsHighlightActive = true
 		isScreenUpdateRequired = true
+		isKeystrokeConsumed = true
 
 	case "ctrl+c", "ctrl+insert": // Copy
 		// Copy highlighted text
@@ -391,6 +393,7 @@ func (shared *textFieldType) updateKeyboardEventManually(layerAlias string, text
 			}
 		}
 		isScreenUpdateRequired = true
+		isKeystrokeConsumed = true
 
 	case "ctrl+x": // Cut
 		// Cut highlighted text
@@ -434,6 +437,7 @@ func (shared *textFieldType) updateKeyboardEventManually(layerAlias string, text
 			textFieldEntry.CursorPosition = start
 			textFieldEntry.IsHighlightActive = false
 			isScreenUpdateRequired = true
+			isKeystrokeConsumed = true
 		}
 
 	case "ctrl+v", "shift+insert": // Paste
@@ -489,6 +493,7 @@ func (shared *textFieldType) updateKeyboardEventManually(layerAlias string, text
 			}
 		}
 		isScreenUpdateRequired = true
+		isKeystrokeConsumed = true
 
 	case "delete", "shift+delete":
 		if textFieldEntry.IsHighlightActive {
@@ -518,6 +523,7 @@ func (shared *textFieldType) updateKeyboardEventManually(layerAlias string, text
 			shared.deleteCharacterAtPosition(textFieldEntry)
 		}
 		isScreenUpdateRequired = true
+		isKeystrokeConsumed = true
 
 	case "home", "shift+home":
 		if textFieldEntry.IsHighlightModeToggled == false {
@@ -529,6 +535,7 @@ func (shared *textFieldType) updateKeyboardEventManually(layerAlias string, text
 			textFieldEntry.HighlightEnd = textFieldEntry.CursorPosition
 		}
 		isScreenUpdateRequired = true
+		isKeystrokeConsumed = true
 
 	case "end", "shift+end":
 		if textFieldEntry.IsHighlightModeToggled == false {
@@ -540,6 +547,7 @@ func (shared *textFieldType) updateKeyboardEventManually(layerAlias string, text
 			textFieldEntry.HighlightEnd = textFieldEntry.CursorPosition
 		}
 		isScreenUpdateRequired = true
+		isKeystrokeConsumed = true
 
 	case "backspace", "backspace2", "shift+backspace", "shift+backspace2":
 		if textFieldEntry.IsHighlightActive {
@@ -572,6 +580,7 @@ func (shared *textFieldType) updateKeyboardEventManually(layerAlias string, text
 		shared.updateTextFieldCursor(textFieldEntry)
 		shared.updateTextFieldViewport(textFieldEntry)
 		isScreenUpdateRequired = true
+		isKeystrokeConsumed = true
 
 	case "left", "shift+left":
 		if textFieldEntry.IsHighlightModeToggled == false {
@@ -589,6 +598,7 @@ func (shared *textFieldType) updateKeyboardEventManually(layerAlias string, text
 		shared.updateTextFieldCursor(textFieldEntry)
 		shared.updateTextFieldViewport(textFieldEntry)
 		isScreenUpdateRequired = true
+		isKeystrokeConsumed = true
 
 	case "right", "shift+right":
 		if textFieldEntry.IsHighlightModeToggled == false {
@@ -601,6 +611,7 @@ func (shared *textFieldType) updateKeyboardEventManually(layerAlias string, text
 		shared.updateTextFieldCursor(textFieldEntry)
 		shared.updateTextFieldViewport(textFieldEntry)
 		isScreenUpdateRequired = true
+		isKeystrokeConsumed = true
 
 	default:
 		// Handle regular character input
@@ -636,6 +647,7 @@ func (shared *textFieldType) updateKeyboardEventManually(layerAlias string, text
 				shared.updateTextFieldCursor(textFieldEntry)
 				shared.updateTextFieldViewport(textFieldEntry)
 				isScreenUpdateRequired = true
+				isKeystrokeConsumed = true
 			}
 		}
 		if textFieldEntry.IsHighlightModeToggled == false {
@@ -649,9 +661,10 @@ func (shared *textFieldType) updateKeyboardEventManually(layerAlias string, text
 			}
 			textFieldEntry.HighlightEnd = textFieldEntry.CursorPosition
 			isScreenUpdateRequired = true
+			isKeystrokeConsumed = true
 		}
 	}
-	return isScreenUpdateRequired
+	return isScreenUpdateRequired, isKeystrokeConsumed
 }
 
 /*
@@ -664,12 +677,12 @@ keystroke event. In addition, the following information should be noted:
 - Manages text highlighting and selection.
 - Returns true if a screen update is required.
 */
-func (shared *textFieldType) updateKeyboardEvent(keystroke []rune) bool {
+func (shared *textFieldType) updateKeyboardEvent(keystroke []rune) (bool, bool) {
 	focusedLayerAlias := eventStateMemory.currentlyFocusedControl.layerAlias
 	focusedControlAlias := eventStateMemory.currentlyFocusedControl.controlAlias
 	focusedControlType := eventStateMemory.currentlyFocusedControl.controlType
 	if focusedControlType != constants.CellTypeTextField || !TextFields.IsExists(focusedLayerAlias, focusedControlAlias) {
-		return false
+		return false, false
 	}
 	return shared.updateKeyboardEventManually(focusedLayerAlias, focusedControlAlias, keystroke)
 }

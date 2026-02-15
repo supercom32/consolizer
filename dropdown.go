@@ -21,16 +21,17 @@ current keyboard event. In addition, the following information should be noted:
 - Handles Up/Down keys to navigate through dropdown options when open.
 - Returns true if the screen needs to be updated due to state changes.
 */
-func (shared *dropdownType) updateKeyboardEvent(keystroke []rune) bool {
+func (shared *dropdownType) updateKeyboardEvent(keystroke []rune) (bool, bool) {
 	keystrokeAsString := string(keystroke)
 	isScreenUpdateRequired := false
+	isKeystrokeConsumed := false
 	focusedLayerAlias := eventStateMemory.currentlyFocusedControl.layerAlias
 	focusedControlAlias := eventStateMemory.currentlyFocusedControl.controlAlias
 	focusedControlType := eventStateMemory.currentlyFocusedControl.controlType
 
 	// Only process if a dropdown is focused
 	if focusedControlType != constants.CellTypeDropdown || !Dropdowns.IsExists(focusedLayerAlias, focusedControlAlias) {
-		return isScreenUpdateRequired
+		return isScreenUpdateRequired, isKeystrokeConsumed
 	}
 
 	dropdownEntry := Dropdowns.Get(focusedLayerAlias, focusedControlAlias)
@@ -38,7 +39,7 @@ func (shared *dropdownType) updateKeyboardEvent(keystroke []rune) bool {
 	// If dropdown is open but focus is on the dropdown itself (not the selector),
 	// move focus to the selector for keyboard navigation
 	if dropdownEntry.IsTrayOpen && focusedControlType == constants.CellTypeDropdown {
-		isScreenUpdateRequired = Selector.updateKeyboardEventForSelector(focusedLayerAlias, dropdownEntry.SelectorAlias, keystroke)
+		isScreenUpdateRequired, isKeystrokeConsumed = Selector.updateKeyboardEventForSelector(focusedLayerAlias, dropdownEntry.SelectorAlias, keystroke)
 	}
 
 	// Handle Enter key to open/close dropdown
@@ -81,6 +82,7 @@ func (shared *dropdownType) updateKeyboardEvent(keystroke []rune) bool {
 			}
 		}
 		isScreenUpdateRequired = true
+		isKeystrokeConsumed = true
 	}
 
 	// Handle Escape key to close dropdown without changing selection
@@ -98,9 +100,10 @@ func (shared *dropdownType) updateKeyboardEvent(keystroke []rune) bool {
 		setFocusedControl(focusedLayerAlias, focusedControlAlias, constants.CellTypeDropdown)
 		eventStateMemory.stateId = constants.EventStateNone
 		isScreenUpdateRequired = true
+		isKeystrokeConsumed = true
 	}
 
-	return isScreenUpdateRequired
+	return isScreenUpdateRequired, isKeystrokeConsumed
 }
 
 var Dropdown dropdownType

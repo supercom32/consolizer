@@ -82,29 +82,29 @@ func UpdateEventQueues() {
 			isScreenUpdateRequired = true
 			isKeystrokeConsumed = true
 		}
-		if scrollbar.updateKeyboardEvent(keystroke) {
+		if updateRequired, consumed := scrollbar.updateKeyboardEvent(keystroke); updateRequired {
 			isScreenUpdateRequired = true
-			isKeystrokeConsumed = true
+			isKeystrokeConsumed = consumed
 		}
-		if TextField.updateKeyboardEvent(keystroke) {
+		if updateRequired, consumed := TextField.updateKeyboardEvent(keystroke); updateRequired {
 			isScreenUpdateRequired = true
-			isKeystrokeConsumed = true
+			isKeystrokeConsumed = consumed
 		}
-		if textbox.UpdateKeyboardEvent(keystroke) {
+		if updateRequired, consumed := textbox.UpdateKeyboardEvent(keystroke); updateRequired {
 			isScreenUpdateRequired = true
-			isKeystrokeConsumed = true
+			isKeystrokeConsumed = consumed
 		}
-		if Selector.updateKeyboardEvent(keystroke) {
+		if updateRequired, consumed := Selector.updateKeyboardEvent(keystroke); updateRequired {
 			isScreenUpdateRequired = true
-			isKeystrokeConsumed = true
+			isKeystrokeConsumed = consumed
 		}
-		if Dropdown.updateKeyboardEvent(keystroke) {
+		if updateRequired, consumed := Dropdown.updateKeyboardEvent(keystroke); updateRequired {
 			isScreenUpdateRequired = true
-			isKeystrokeConsumed = true
+			isKeystrokeConsumed = consumed
 		}
-		if FileMenu.updateKeyboardEvent(keystroke) {
+		if updateRequired, consumed := FileMenu.updateKeyboardEvent(keystroke); updateRequired {
 			isScreenUpdateRequired = true
-			isKeystrokeConsumed = true
+			isKeystrokeConsumed = consumed
 		}
 		if isScreenUpdateRequired == true {
 			UpdateDisplay(false)
@@ -118,6 +118,12 @@ func UpdateEventQueues() {
 		mouseXLocation, mouseYLocation := event.Position()
 		var mouseButtonNumber uint
 		mouseButton := event.Buttons()
+		// If a mouse button is pressed, find what control is under the mouse
+		// so we can set focus to it.
+		if mouseButton&tcell.Button1 != 0 {
+			characterEntry := getCellInformationUnderMouseCursor(mouseXLocation, mouseYLocation)
+			setFocusedControl(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias, characterEntry.AttributeEntry.CellType)
+		}
 		for index := uint(0); index < 8; index++ {
 			if int(mouseButton)&(1<<index) != 0 {
 				mouseButtonNumber = index + 1

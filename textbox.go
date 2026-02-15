@@ -1146,8 +1146,9 @@ func (shared *textboxType) UpdateKeyboardEventTextboxWithCommands(keystroke ...s
 	}
 }
 
-func (shared *textboxType) UpdateKeyboardEventManually(layerAlias string, textboxAlias string, keystroke []rune) bool {
+func (shared *textboxType) UpdateKeyboardEventManually(layerAlias string, textboxAlias string, keystroke []rune) (bool, bool) {
 	isScreenUpdateRequired := false
+	isKeystrokeConsumed := false
 	keystrokeAsString := string(keystroke)
 	textboxEntry := Textboxes.Get(layerAlias, textboxAlias)
 
@@ -1185,6 +1186,7 @@ func (shared *textboxType) UpdateKeyboardEventManually(layerAlias string, textbo
 			}
 		}
 		isScreenUpdateRequired = true
+		isKeystrokeConsumed = true
 
 	case "ctrl+x": // Cut
 		if textboxEntry.IsHighlightActive {
@@ -1199,6 +1201,7 @@ func (shared *textboxType) UpdateKeyboardEventManually(layerAlias string, textbo
 			textboxEntry.IsHighlightActive = false
 		}
 		isScreenUpdateRequired = true
+		isKeystrokeConsumed = true
 
 	case "ctrl+v", "shift+insert": // Paste
 		if textboxEntry.IsHighlightActive {
@@ -1219,6 +1222,7 @@ func (shared *textboxType) UpdateKeyboardEventManually(layerAlias string, textbo
 			}
 		}
 		isScreenUpdateRequired = true
+		isKeystrokeConsumed = true
 
 	case "ctrl+left", "ctrl+shift+left": // Word-based navigation left
 		if textboxEntry.IsHighlightModeToggled == false {
@@ -1234,6 +1238,7 @@ func (shared *textboxType) UpdateKeyboardEventManually(layerAlias string, textbo
 				textboxEntry.CursorYLocation--
 				textboxEntry.CursorXLocation = len(textboxEntry.TextData[textboxEntry.CursorYLocation]) - 1
 				isScreenUpdateRequired = true
+				isKeystrokeConsumed = true
 				break
 			}
 
@@ -1250,6 +1255,7 @@ func (shared *textboxType) UpdateKeyboardEventManually(layerAlias string, textbo
 			textboxEntry.CursorXLocation = pos
 		}
 		isScreenUpdateRequired = true
+		isKeystrokeConsumed = true
 
 	case "left", "shift+left":
 		if textboxEntry.IsHighlightModeToggled == false {
@@ -1265,6 +1271,7 @@ func (shared *textboxType) UpdateKeyboardEventManually(layerAlias string, textbo
 			}
 		}
 		isScreenUpdateRequired = true
+		isKeystrokeConsumed = true
 
 	case "ctrl+right", "ctrl+shift+right": // Word-based navigation right
 		if textboxEntry.IsHighlightModeToggled == false {
@@ -1281,6 +1288,7 @@ func (shared *textboxType) UpdateKeyboardEventManually(layerAlias string, textbo
 				textboxEntry.CursorYLocation++
 				textboxEntry.CursorXLocation = 0
 				isScreenUpdateRequired = true
+				isKeystrokeConsumed = true
 				break
 			}
 
@@ -1297,6 +1305,7 @@ func (shared *textboxType) UpdateKeyboardEventManually(layerAlias string, textbo
 			textboxEntry.CursorXLocation = pos
 		}
 		isScreenUpdateRequired = true
+		isKeystrokeConsumed = true
 
 	case "right", "shift+right":
 		if textboxEntry.IsHighlightModeToggled == false {
@@ -1312,6 +1321,7 @@ func (shared *textboxType) UpdateKeyboardEventManually(layerAlias string, textbo
 			}
 		}
 		isScreenUpdateRequired = true
+		isKeystrokeConsumed = true
 
 	case "up", "shift+up":
 		if textboxEntry.IsHighlightModeToggled == false {
@@ -1325,6 +1335,7 @@ func (shared *textboxType) UpdateKeyboardEventManually(layerAlias string, textbo
 			textboxEntry.CursorXLocation = len(textboxEntry.TextData[textboxEntry.CursorYLocation]) - 1
 		}
 		isScreenUpdateRequired = true
+		isKeystrokeConsumed = true
 
 	case "down", "shift+down":
 		if textboxEntry.IsHighlightModeToggled == false {
@@ -1338,6 +1349,7 @@ func (shared *textboxType) UpdateKeyboardEventManually(layerAlias string, textbo
 			textboxEntry.CursorXLocation = len(textboxEntry.TextData[textboxEntry.CursorYLocation]) - 1
 		}
 		isScreenUpdateRequired = true
+		isKeystrokeConsumed = true
 
 	case "ctrl+w": // Toggle word wrap
 		textboxEntry.IsWordWrapEnabled = !textboxEntry.IsWordWrapEnabled
@@ -1355,10 +1367,12 @@ func (shared *textboxType) UpdateKeyboardEventManually(layerAlias string, textbo
 			shared.setTextboxMaxScrollBarValues(layerAlias, textboxAlias)
 		}
 		isScreenUpdateRequired = true
+		isKeystrokeConsumed = true
 
 	case "ctrl+i": // Toggle auto-indent
 		textboxEntry.IsAutoIndentEnabled = !textboxEntry.IsAutoIndentEnabled
 		isScreenUpdateRequired = true
+		isKeystrokeConsumed = true
 
 	case "ctrl+home", "ctrl+shift+home": // Move to beginning of document
 		if textboxEntry.IsHighlightModeToggled == false {
@@ -1367,6 +1381,7 @@ func (shared *textboxType) UpdateKeyboardEventManually(layerAlias string, textbo
 		textboxEntry.CursorYLocation = 0
 		textboxEntry.CursorXLocation = 0
 		isScreenUpdateRequired = true
+		isKeystrokeConsumed = true
 
 	case "ctrl+end", "ctrl+shift+end": // Move to end of document
 		if textboxEntry.IsHighlightModeToggled == false {
@@ -1375,6 +1390,7 @@ func (shared *textboxType) UpdateKeyboardEventManually(layerAlias string, textbo
 		textboxEntry.CursorYLocation = len(textboxEntry.TextData) - 1
 		textboxEntry.CursorXLocation = len(textboxEntry.TextData[textboxEntry.CursorYLocation]) - 1
 		isScreenUpdateRequired = true
+		isKeystrokeConsumed = true
 
 	case "home", "shift+home": // Move to beginning of line
 		if textboxEntry.IsHighlightModeToggled == false {
@@ -1382,6 +1398,7 @@ func (shared *textboxType) UpdateKeyboardEventManually(layerAlias string, textbo
 		}
 		textboxEntry.CursorXLocation = 0
 		isScreenUpdateRequired = true
+		isKeystrokeConsumed = true
 
 	case "end", "shift+end": // Move to end of line
 		if textboxEntry.IsHighlightModeToggled == false {
@@ -1389,6 +1406,7 @@ func (shared *textboxType) UpdateKeyboardEventManually(layerAlias string, textbo
 		}
 		textboxEntry.CursorXLocation = len(textboxEntry.TextData[textboxEntry.CursorYLocation]) - 1
 		isScreenUpdateRequired = true
+		isKeystrokeConsumed = true
 
 	case "pgup", "shift+pgup":
 		if textboxEntry.IsHighlightModeToggled == false {
@@ -1399,6 +1417,7 @@ func (shared *textboxType) UpdateKeyboardEventManually(layerAlias string, textbo
 			textboxEntry.CursorYLocation = 0
 		}
 		isScreenUpdateRequired = true
+		isKeystrokeConsumed = true
 
 	case "pgdn", "shift+pgdn":
 		if textboxEntry.IsHighlightModeToggled == false {
@@ -1409,6 +1428,7 @@ func (shared *textboxType) UpdateKeyboardEventManually(layerAlias string, textbo
 			textboxEntry.CursorYLocation = len(textboxEntry.TextData) - 1
 		}
 		isScreenUpdateRequired = true
+		isKeystrokeConsumed = true
 
 	case "delete", "shift+delete":
 		if textboxEntry.IsHighlightActive {
@@ -1420,6 +1440,7 @@ func (shared *textboxType) UpdateKeyboardEventManually(layerAlias string, textbo
 			shared.deleteCharacterUsingAbsoluteCoordinates(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
 		}
 		isScreenUpdateRequired = true
+		isKeystrokeConsumed = true
 
 	case "backspace", "backspace2", "shift+backspace", "shift+backspace2":
 		if textboxEntry.IsHighlightActive {
@@ -1431,12 +1452,14 @@ func (shared *textboxType) UpdateKeyboardEventManually(layerAlias string, textbo
 			shared.backspaceCharacterUsingRelativeCoordinates(textboxEntry)
 		}
 		isScreenUpdateRequired = true
+		isKeystrokeConsumed = true
 	case "enter":
 		if textboxEntry.IsHighlightModeToggled == false {
 			textboxEntry.IsHighlightActive = false
 		}
 		shared.moveTextAfterCursorToNextLine(textboxEntry, textboxEntry.CursorYLocation)
 		isScreenUpdateRequired = true
+		isKeystrokeConsumed = true
 
 	default:
 		if len(keystroke) == 1 { // If a regular char is entered
@@ -1447,6 +1470,7 @@ func (shared *textboxType) UpdateKeyboardEventManually(layerAlias string, textbo
 			}
 			shared.insertCharacterUsingAbsoluteCoordinates(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation, []rune(keystrokeAsString)[0])
 			isScreenUpdateRequired = true
+			isKeystrokeConsumed = true
 		}
 	}
 
@@ -1455,13 +1479,14 @@ func (shared *textboxType) UpdateKeyboardEventManually(layerAlias string, textbo
 		textboxEntry.HighlightEndX = textboxEntry.CursorXLocation
 		textboxEntry.HighlightEndY = textboxEntry.CursorYLocation
 		isScreenUpdateRequired = true
+		isKeystrokeConsumed = true
 	}
 	// Update cursor position and viewport
 	shared.updateCursor(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
 	shared.updateViewport(textboxEntry)
 	shared.setTextboxMaxScrollBarValues(layerAlias, textboxAlias)
 	shared.updateScrollbarBasedOnTextboxViewport(layerAlias, textboxAlias)
-	return isScreenUpdateRequired
+	return isScreenUpdateRequired, isKeystrokeConsumed
 }
 
 /*
@@ -1472,12 +1497,12 @@ the following information should be noted:
 - Manages text highlighting and selection.
 - Returns true if a screen update is required.
 */
-func (shared *textboxType) UpdateKeyboardEvent(keystroke []rune) bool {
+func (shared *textboxType) UpdateKeyboardEvent(keystroke []rune) (bool, bool) {
 	focusedLayerAlias := eventStateMemory.currentlyFocusedControl.layerAlias
 	focusedControlAlias := eventStateMemory.currentlyFocusedControl.controlAlias
 	focusedControlType := eventStateMemory.currentlyFocusedControl.controlType
 	if focusedControlType != constants.CellTypeTextbox || !Textboxes.IsExists(focusedLayerAlias, focusedControlAlias) {
-		return false
+		return false, false
 	}
 	return shared.UpdateKeyboardEventManually(focusedLayerAlias, focusedControlAlias, keystroke)
 }

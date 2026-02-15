@@ -267,9 +267,10 @@ func (shared *scrollbarType) computeScrollbarHandlePositionByScrollValue(layerAl
 	}
 }
 
-func (shared *scrollbarType) updateKeyboardEventManually(layerAlias string, scrollbarAlias string, keystroke []rune) bool {
+func (shared *scrollbarType) updateKeyboardEventManually(layerAlias string, scrollbarAlias string, keystroke []rune) (bool, bool) {
 	keystrokeAsString := string(keystroke)
 	isScreenUpdateRequired := false
+	isKeystrokeConsumed := false
 	// Check for scrollbar input only if the scroll bar is not disabled (not null).
 	scrollbarEntry := ScrollBars.Get(layerAlias, scrollbarAlias)
 	if scrollbarEntry.IsEnabled {
@@ -282,6 +283,7 @@ func (shared *scrollbarType) updateKeyboardEventManually(layerAlias string, scro
 				if selectorEntry.ScrollbarAlias == scrollbarAlias {
 					selectorEntry.ViewportPosition = scrollbarEntry.ScrollValue
 					isScreenUpdateRequired = true
+					isKeystrokeConsumed = true
 					break
 				}
 			}
@@ -295,6 +297,7 @@ func (shared *scrollbarType) updateKeyboardEventManually(layerAlias string, scro
 				if selectorEntry.ScrollbarAlias == scrollbarAlias {
 					selectorEntry.ViewportPosition = scrollbarEntry.ScrollValue
 					isScreenUpdateRequired = true
+					isKeystrokeConsumed = true
 					break
 				}
 			}
@@ -308,6 +311,7 @@ func (shared *scrollbarType) updateKeyboardEventManually(layerAlias string, scro
 				if selectorEntry.ScrollbarAlias == scrollbarAlias {
 					selectorEntry.ViewportPosition = scrollbarEntry.ScrollValue
 					isScreenUpdateRequired = true
+					isKeystrokeConsumed = true
 					break
 				}
 			}
@@ -321,24 +325,25 @@ func (shared *scrollbarType) updateKeyboardEventManually(layerAlias string, scro
 				if selectorEntry.ScrollbarAlias == scrollbarAlias {
 					selectorEntry.ViewportPosition = scrollbarEntry.ScrollValue
 					isScreenUpdateRequired = true
+					isKeystrokeConsumed = true
 					break
 				}
 			}
 		}
 	}
-	return isScreenUpdateRequired
+	return isScreenUpdateRequired, isKeystrokeConsumed
 }
 
 /*
 updateKeyboardEvent allows you to update the state of all scrollbars according to the current keystroke event.
 In the event that a screen update is required this method returns true.
 */
-func (shared *scrollbarType) updateKeyboardEvent(keystroke []rune) bool {
+func (shared *scrollbarType) updateKeyboardEvent(keystroke []rune) (bool, bool) {
 	focusedLayerAlias := eventStateMemory.currentlyFocusedControl.layerAlias
 	focusedControlAlias := eventStateMemory.currentlyFocusedControl.controlAlias
 	focusedControlType := eventStateMemory.currentlyFocusedControl.controlType
 	if focusedControlType != constants.CellTypeScrollbar || !ScrollBars.IsExists(focusedLayerAlias, focusedControlAlias) {
-		return false
+		return false, false
 	}
 	return shared.updateKeyboardEventManually(focusedLayerAlias, focusedControlAlias, keystroke)
 }

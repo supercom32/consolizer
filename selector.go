@@ -747,9 +747,10 @@ In addition, the following information should be noted:
 - Updates the associated scrollbar position when the viewport changes.
 - Returns true if the screen needs to be updated due to state changes.
 */
-func (shared *selectorType) updateKeyboardEventForSelector(layerAlias string, selectorAlias string, keystroke []rune) bool {
+func (shared *selectorType) updateKeyboardEventForSelector(layerAlias string, selectorAlias string, keystroke []rune) (bool, bool) {
 	keystrokeAsString := string(keystroke)
 	isScreenUpdateRequired := false
+	isKeystrokeConsumed := false
 	selectorEntry := Selectors.Get(layerAlias, selectorAlias)
 
 	// Use full number of columns
@@ -771,6 +772,7 @@ func (shared *selectorType) updateKeyboardEventForSelector(layerAlias string, se
 			}
 		}
 		isScreenUpdateRequired = true
+		isKeystrokeConsumed = true
 	}
 	if keystrokeAsString == "up" {
 		selectorEntry.ItemHighlighted = selectorEntry.ItemHighlighted - effectiveColumns
@@ -787,6 +789,7 @@ func (shared *selectorType) updateKeyboardEventForSelector(layerAlias string, se
 			}
 		}
 		isScreenUpdateRequired = true
+		isKeystrokeConsumed = true
 	}
 	if keystrokeAsString == "left" {
 		if selectorEntry.ItemHighlighted%effectiveColumns != 0 {
@@ -795,6 +798,7 @@ func (shared *selectorType) updateKeyboardEventForSelector(layerAlias string, se
 				selectorEntry.ItemHighlighted = selectorEntry.ItemHighlighted + 1
 			}
 			isScreenUpdateRequired = true
+			isKeystrokeConsumed = true
 		}
 	}
 	if keystrokeAsString == "right" {
@@ -804,13 +808,15 @@ func (shared *selectorType) updateKeyboardEventForSelector(layerAlias string, se
 				selectorEntry.ItemHighlighted = selectorEntry.ItemHighlighted - 1
 			}
 			isScreenUpdateRequired = true
+			isKeystrokeConsumed = true
 		}
 	}
 	if keystrokeAsString == "enter" {
 		selectorEntry.ItemSelected = selectorEntry.ItemHighlighted
 		isScreenUpdateRequired = true
+		isKeystrokeConsumed = true
 	}
-	return isScreenUpdateRequired
+	return isScreenUpdateRequired, isKeystrokeConsumed
 }
 
 /*
@@ -821,10 +827,11 @@ In the event that a screen update is required this method returns true. In addit
 - Enter key selects the currently highlighted item.
 - Returns true if the screen needs to be updated due to state changes.
 */
-func (shared *selectorType) updateKeyboardEvent(keystroke []rune) bool {
+func (shared *selectorType) updateKeyboardEvent(keystroke []rune) (bool, bool) {
 	isScreenUpdateRequired := false
+	isKeystrokeConsumed := false
 	if eventStateMemory.currentlyFocusedControl.controlType != constants.CellTypeSelectorItem || !Selectors.IsExists(eventStateMemory.currentlyFocusedControl.layerAlias, eventStateMemory.currentlyFocusedControl.controlAlias) {
-		return isScreenUpdateRequired
+		return isScreenUpdateRequired, isKeystrokeConsumed
 	}
 	return shared.updateKeyboardEventForSelector(eventStateMemory.currentlyFocusedControl.layerAlias, eventStateMemory.currentlyFocusedControl.controlAlias, keystroke)
 }

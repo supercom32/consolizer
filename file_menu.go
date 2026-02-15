@@ -233,9 +233,10 @@ In addition, the following information should be noted:
 - This method is called internally by the input handling system.
 - It handles keyboard navigation for file menus.
 */
-func (shared *fileMenuType) updateKeyboardEvent(keystroke []rune) bool {
+func (shared *fileMenuType) updateKeyboardEvent(keystroke []rune) (bool, bool) {
 	keystrokeAsString := string(keystroke)
 	isScreenUpdateRequired := false
+	isKeystrokeConsumed := false
 
 	// Handle escape key to close open menus
 	if keystrokeAsString == "escape" {
@@ -248,12 +249,13 @@ func (shared *fileMenuType) updateKeyboardEvent(keystroke []rune) bool {
 					fileMenuEntry.IsSubmenuOpen = false
 					fileMenuEntry.ActiveHeadingIndex = -1
 					isScreenUpdateRequired = true
+					isKeystrokeConsumed = true
 				}
 			}
 		}
 	}
 
-	return isScreenUpdateRequired
+	return isScreenUpdateRequired, isKeystrokeConsumed
 }
 
 /*
