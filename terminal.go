@@ -849,9 +849,10 @@ func renderControls(currentLayerEntry types.LayerEntryType) {
 	textbox.drawTextboxesOnLayer(currentLayerEntry)
 	Tooltip.drawTooltipHotspotZonesOnLayer(currentLayerEntry)
 	viewport.drawViewportsOnLayer(currentLayerEntry)
+	FileMenu.drawFileMenusOnLayer(currentLayerEntry)
 	Dropdown.drawDropdownsOnLayer(currentLayerEntry) // Dropdowns must come before selectors, or it won't show on top.
 	Selector.drawSelectorsOnLayer(currentLayerEntry)
-	FileMenu.drawFileMenusOnLayer(currentLayerEntry)
+
 }
 
 /*
