@@ -43,3 +43,10 @@ func (shared *SelectionEntryType) Clear() {
 	shared.SelectionAlias = nil
 	shared.SelectionValue = nil
 }
+
+/*
+GetSelectionCount allows you to get the number of selections currently added.
+*/
+func (shared *SelectionEntryType) GetSelectionCount() int {
+	return len(shared.SelectionAlias)
+}
