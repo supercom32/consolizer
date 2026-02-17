@@ -20,10 +20,7 @@ var Layers *memory.MemoryManager[types.LayerEntryType]
 type LayerInstanceType struct {
 	layerAlias  string
 	parentAlias string
-	LayerWidth  int
-	LayerHeight int
 }
-
 type layerAliasZOrderPair struct {
 	Key   string
 	Value int
@@ -524,7 +521,12 @@ func getUUID() string {
 func (shared *LayerInstanceType) Clear() {
 	layerEntry := Layers.Get(shared.layerAlias)
 	localAttributeEntry := types.NewAttributeEntry()
-	fillArea(layerEntry, localAttributeEntry, "", 0, 0, shared.LayerWidth, shared.LayerHeight, 0)
+	fillArea(layerEntry, localAttributeEntry, "", 0, 0, layerEntry.Width, layerEntry.Height, 0)
+}
+
+// GetLayerAlias returns the layer alias of the current layer instance.
+func (shared *LayerInstanceType) GetLayerAlias() string {
+	return shared.layerAlias
 }
 
 /*
@@ -598,7 +600,7 @@ func (shared *LayerInstanceType) AddButton(buttonLabel string, styleEntry types.
 	return buttonInstance
 }
 
-func (shared *LayerInstanceType) AddCheckbox(checkboxLabel string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, isSelected bool, isEnabled bool) checkboxInstanceType {
+func (shared *LayerInstanceType) AddCheckbox(checkboxLabel string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, isSelected bool, isEnabled bool) CheckboxInstanceType {
 	checkboxAlias := getUUID()
 	checkboxInstance := Checkbox.Add(shared.layerAlias, checkboxAlias, checkboxLabel, styleEntry, xLocation, yLocation, isSelected, isEnabled)
 	return checkboxInstance
@@ -640,7 +642,7 @@ func (shared *LayerInstanceType) AddSelector(styleEntry types.TuiStyleEntryType,
 	return selectorInstance
 }
 
-func (shared *LayerInstanceType) AddTextField(styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, maxLengthAllowed int, isPasswordProtected bool, defaultValue string, isEnabled bool) textFieldInstanceType {
+func (shared *LayerInstanceType) AddTextField(styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, maxLengthAllowed int, isPasswordProtected bool, defaultValue string, isEnabled bool) TextFieldInstanceType {
 	textFieldAlias := getUUID()
 	textFieldInstance := TextField.Add(shared.layerAlias, textFieldAlias, styleEntry, xLocation, yLocation, width, maxLengthAllowed, isPasswordProtected, defaultValue, isEnabled)
 	return textFieldInstance
@@ -913,16 +915,7 @@ possible.
 will be ignored.
 */
 func (shared *LayerInstanceType) DeleteLayer() {
-	validateLayer(shared.layerAlias)
-	layer.Delete(shared.layerAlias)
-	if commonResource.layerInstance.layerAlias == shared.layerAlias {
-		nextLayerAlias := layer.GetNextLayerAlias()
-		var nextLayerInstance *types.LayerEntryType
-		if nextLayerAlias != "" {
-			nextLayerInstance = Layers.Get(nextLayerAlias)
-			commonResource.layerInstance = &LayerInstanceType{layerAlias: nextLayerAlias, parentAlias: nextLayerInstance.ParentAlias, LayerWidth: nextLayerInstance.Width, LayerHeight: nextLayerInstance.Height}
-		}
-	}
+	deleteLayer(shared.layerAlias)
 	shared.layerAlias = ""
 }
 
@@ -967,6 +960,27 @@ func (shared *LayerInstanceType) GetLayerSize() (int, int) {
 	validateLayer(shared.layerAlias)
 	layerEntry := Layers.Get(shared.layerAlias)
 	return layerEntry.Width, layerEntry.Height
+}
+
+/*
+SetZOrder allows you to set the z-order of the current layer. The z-order
+determines the rendering priority of layers, with higher values being
+rendered on top of lower values.
+*/
+func (shared *LayerInstanceType) SetZOrder(zOrder int) {
+	validateLayer(shared.layerAlias)
+	layerEntry := Layers.Get(shared.layerAlias)
+	layerEntry.ZOrder = zOrder
+}
+
+/*
+GetZOrder returns the current z-order of the layer. The z-order determines
+the rendering priority of layers.
+*/
+func (shared *LayerInstanceType) GetZOrder() int {
+	validateLayer(shared.layerAlias)
+	layerEntry := Layers.Get(shared.layerAlias)
+	return layerEntry.ZOrder
 }
 
 /*
@@ -1117,6 +1131,8 @@ func (shared *LayerInstanceType) Resize(width int, height int) {
 		for j := range newCharacterMemory[i] {
 			newCharacterMemory[i][j] = types.NewCharacterEntry()
 			newCharacterMemory[i][j].AttributeEntry = layerEntry.DefaultAttribute
+			newCharacterMemory[i][j].LayerAlias = layerEntry.LayerAlias
+			newCharacterMemory[i][j].ParentAlias = layerEntry.ParentAlias
 		}
 	}
 
@@ -1414,17 +1430,14 @@ as your default, use 'Layer' to explicitly set it.
 func AddLayer(xLocation int, yLocation int, width int, height int, zOrderPriority int, parentLayerInstance *LayerInstanceType) *LayerInstanceType {
 	layerAlias := getUUID()
 	validateTerminalWidthAndHeight(width, height)
-	if parentLayerInstance == nil {
-		layer.Add(layerAlias, xLocation, yLocation, width, height, zOrderPriority, "")
-		layerInstance := LayerInstanceType{layerAlias: layerAlias, parentAlias: "", LayerWidth: width, LayerHeight: height}
-		commonResource.layerInstance = &layerInstance
-		return &layerInstance
-	} else {
-		layer.Add(layerAlias, xLocation, yLocation, width, height, zOrderPriority, parentLayerInstance.layerAlias)
-		layerInstance := LayerInstanceType{layerAlias: layerAlias, parentAlias: "", LayerWidth: width, LayerHeight: height}
-		commonResource.layerInstance = &layerInstance
-		return &layerInstance
+	var parentAlias string
+	if parentLayerInstance != nil {
+		parentAlias = parentLayerInstance.layerAlias
 	}
+	layer.Add(layerAlias, xLocation, yLocation, width, height, zOrderPriority, parentAlias)
+	layerInstance := LayerInstanceType{layerAlias: layerAlias, parentAlias: parentAlias}
+	commonResource.layerInstance = &layerInstance
+	return &layerInstance
 }
 
 /*
@@ -1496,21 +1509,16 @@ func deleteLayer(layerAlias string) {
 		nextLayerAlias := layer.GetNextLayerAlias()
 		// If last entry and no more layers, just return. Do not set anything.
 		if nextLayerAlias == "" {
-			commonResource.layerInstance = &LayerInstanceType{layerAlias: "", parentAlias: "", LayerWidth: 0, LayerHeight: 0}
+			commonResource.layerInstance = &LayerInstanceType{layerAlias: "", parentAlias: ""}
 			return
 		}
 		nextLayerInstance := Layers.Get(nextLayerAlias)
-		commonResource.layerInstance = &LayerInstanceType{layerAlias: nextLayerAlias, parentAlias: nextLayerInstance.ParentAlias, LayerWidth: nextLayerInstance.Width, LayerHeight: nextLayerInstance.Height}
+		commonResource.layerInstance = &LayerInstanceType{layerAlias: nextLayerAlias, parentAlias: nextLayerInstance.ParentAlias}
 	}
 }
 
 func DeleteLayer(layerInstance *LayerInstanceType) *LayerInstanceType {
 	deleteLayer(layerInstance.layerAlias)
-	if commonResource.layerInstance.layerAlias == layerInstance.layerAlias {
-		nextLayerAlias := layer.GetNextLayerAlias()
-		nextLayerInstance := Layers.Get(nextLayerAlias)
-		commonResource.layerInstance = &LayerInstanceType{layerAlias: nextLayerAlias, parentAlias: nextLayerInstance.ParentAlias, LayerWidth: nextLayerInstance.Width, LayerHeight: nextLayerInstance.Height}
-	}
 	return nil
 }
 

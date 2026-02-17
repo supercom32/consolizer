@@ -121,10 +121,10 @@ func WaitForClickRelease() {
 IsMouseInBoundingBox allows you to check if the current mouse position is within a
 specified rectangular area. In addition, the following information should be noted:
 
-- Returns true if the mouse is within the bounding box, false otherwise.
-- The bounding box is defined by its top-left corner (xLocation, yLocation) and its
-  dimensions (width, height).
-- This is useful for detecting mouse hover or click events on UI elements.
+  - Returns true if the mouse is within the bounding box, false otherwise.
+  - The bounding box is defined by its top-left corner (xLocation, yLocation) and its
+    dimensions (width, height).
+  - This is useful for detecting mouse hover or click events on UI elements.
 */
 func IsMouseInBoundingBox(xLocation int, yLocation int, width int, height int) bool {
 	mouseXLocation, mouseYLocation, _, _ := GetMouseStatus()
@@ -134,4 +134,33 @@ func IsMouseInBoundingBox(xLocation int, yLocation int, width int, height int) b
 		}
 	}
 	return false
+}
+
+/*
+GetLayerUnderMouseCursor returns an instance of the layer under the
+current mouse cursor position. If no layer is found at the cursor's
+position, nil is returned.
+*/
+func GetLayerUnderMouseCursor() *LayerInstanceType {
+	mouseX, mouseY, _, _ := GetMouseStatus()
+	if mouseX < 0 || mouseX >= commonResource.terminalWidth || mouseY < 0 || mouseY >= commonResource.terminalHeight {
+		return nil
+	}
+	layerAlias := commonResource.screenLayer.CharacterMemory[mouseY][mouseX].LayerAlias
+	if layerAlias == "" {
+		return nil
+	}
+	layerEntry := Layers.Get(layerAlias)
+	if layerEntry == nil {
+		return nil
+	}
+	// We create a new instance of the layer so the user can interact with it.
+	// Note that this is a new instance, so any changes to the instance itself
+	// will not be reflected in the original layer system. However, methods
+	// called on this instance will affect the original layer.
+	layerInstance := &LayerInstanceType{
+		layerAlias:  layerEntry.LayerAlias,
+		parentAlias: layerEntry.ParentAlias,
+	}
+	return layerInstance
 }

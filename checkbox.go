@@ -7,7 +7,7 @@ import (
 	"github.com/supercom32/consolizer/types"
 )
 
-type checkboxInstanceType struct {
+type CheckboxInstanceType struct {
 	BaseControlInstanceType
 }
 
@@ -36,12 +36,12 @@ func DeleteAllCheckboxesFromLayer(layerAlias string) {
 	}
 }
 
-func (shared *checkboxInstanceType) Delete() *checkboxInstanceType {
+func (shared *CheckboxInstanceType) Delete() *CheckboxInstanceType {
 	shared.BaseControlInstanceType.Delete()
 	return nil
 }
 
-func (shared *checkboxInstanceType) AddToTabIndex() {
+func (shared *CheckboxInstanceType) AddToTabIndex() {
 	addTabIndex(shared.layerAlias, shared.controlAlias, constants.CellTypeCheckbox)
 }
 
@@ -49,7 +49,7 @@ func (shared *checkboxInstanceType) AddToTabIndex() {
 IsCheckboxSelected allows you to detect if the given Checkbox is selected or not. If the Checkbox instance
 no longer exists, then a result of false is always returned.
 */
-func (shared *checkboxInstanceType) IsCheckboxSelected() bool {
+func (shared *CheckboxInstanceType) IsCheckboxSelected() bool {
 	if Checkboxes.IsExists(shared.layerAlias, shared.controlAlias) {
 		checkboxEntry := Checkboxes.Get(shared.layerAlias, shared.controlAlias)
 		if checkboxEntry.IsSelected == true {
@@ -59,7 +59,7 @@ func (shared *checkboxInstanceType) IsCheckboxSelected() bool {
 	return false
 }
 
-func (shared *checkboxInstanceType) SetCheckboxState(isChecked bool) {
+func (shared *CheckboxInstanceType) SetCheckboxState(isChecked bool) {
 	if Checkboxes.IsExists(shared.layerAlias, shared.controlAlias) {
 		checkboxEntry := Checkboxes.Get(shared.layerAlias, shared.controlAlias)
 		checkboxEntry.IsSelected = isChecked
@@ -81,7 +81,7 @@ the text layer data under it.
 - If the Checkbox to be drawn falls outside the range of the provided layer,
 then only the visible portion of the Checkbox will be drawn.
 */
-func (shared *checkboxType) Add(layerAlias string, checkboxAlias string, checkboxLabel string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, isSelected bool, isEnabled bool) checkboxInstanceType {
+func (shared *checkboxType) Add(layerAlias string, checkboxAlias string, checkboxLabel string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, isSelected bool, isEnabled bool) CheckboxInstanceType {
 	checkboxEntry := types.NewCheckboxEntry()
 	checkboxEntry.Alias = checkboxAlias
 	checkboxEntry.StyleEntry = styleEntry
@@ -103,7 +103,7 @@ func (shared *checkboxType) Add(layerAlias string, checkboxAlias string, checkbo
 	tooltipInstance.setParentControlAlias(checkboxAlias)
 	// Use the ControlMemoryManager to add the checkbox entry
 	Checkboxes.Add(layerAlias, checkboxAlias, &checkboxEntry)
-	var checkboxInstance checkboxInstanceType
+	var checkboxInstance CheckboxInstanceType
 	checkboxInstance.layerAlias = layerAlias
 	checkboxInstance.controlAlias = checkboxAlias
 	checkboxInstance.controlType = constants.TYPE_CHECKBOX

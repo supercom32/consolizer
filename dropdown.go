@@ -64,7 +64,7 @@ func (shared *dropdownType) updateKeyboardEvent(keystroke []rune) (bool, bool) {
 			eventStateMemory.stateId = constants.EventStateNone
 		} else {
 			// Open dropdown
-			shared.closeAllOpenDropdowns(focusedLayerAlias) // Close any other open dropdowns first
+			shared.closeAllOpenDropdowns() // Close any other open dropdowns first
 			dropdownEntry.IsTrayOpen = true
 
 			// Show dropdown components
@@ -179,6 +179,8 @@ func (shared *DropdownInstanceType) SetSelectedItemIndex(itemIndex int) {
 	dropdownEntry := Dropdowns.Get(shared.layerAlias, shared.controlAlias)
 	if itemIndex < len(dropdownEntry.SelectionEntry.SelectionValue) {
 		dropdownEntry.ItemSelected = itemIndex
+		selectorEntry := Selectors.Get(shared.layerAlias, dropdownEntry.SelectorAlias)
+		selectorEntry.ItemSelected = itemIndex
 	}
 }
 
@@ -379,7 +381,7 @@ func (shared *dropdownType) updateDropdownStateMouse() bool {
 	// If our Dropdown alias is not empty, then open our Dropdown.
 	if buttonPressed != 0 && cellControlAlias != "" && characterEntry.AttributeEntry.CellType == constants.CellTypeDropdown &&
 		Dropdowns.IsExists(layerAlias, cellControlAlias) {
-		shared.closeAllOpenDropdowns(layerAlias)
+		shared.closeAllOpenDropdowns()
 		dropdownEntry := Dropdowns.Get(layerAlias, cellControlAlias)
 		dropdownEntry.IsTrayOpen = true
 		selectorEntry := Selectors.Get(layerAlias, dropdownEntry.SelectorAlias)
@@ -410,21 +412,22 @@ func (shared *dropdownType) updateDropdownStateMouse() bool {
 
 		// Only close if not clicking on a dropdown or its scrollbar
 		if characterEntry.AttributeEntry.CellType != constants.CellTypeDropdown && !isScrollbarOfOpenDropdown {
-			shared.closeAllOpenDropdowns(layerAlias)
+			isUpdateRequired = shared.closeAllOpenDropdowns()
 		}
 	}
 	return isUpdateRequired
 }
 
 /*
-closeAllOpenDropdowns allows you to close all dropdowns for a given layer alias. In addition,
+closeAllOpenDropdownsOnLayer allows you to close all dropdowns for a given layer alias. In addition,
 the following information should be noted:
 
 - This method is called when clicking outside of any dropdown.
 - All open dropdown trays are closed and their scrollbars are hidden.
 - The selected item is updated if it was changed while the dropdown was open.
 */
-func (shared *dropdownType) closeAllOpenDropdowns(layerAlias string) {
+func (shared *dropdownType) closeAllOpenDropdownsOnLayer(layerAlias string) bool {
+	isAnyDropdownClosed := false
 	for _, currentDropdownEntry := range Dropdowns.GetAllEntries(layerAlias) {
 		dropdownEntry := currentDropdownEntry
 		if dropdownEntry.IsTrayOpen == true {
@@ -439,8 +442,31 @@ func (shared *dropdownType) closeAllOpenDropdowns(layerAlias string) {
 			setFocusedControl("", "", constants.NullCellType)
 			// Reset the event state only if a tray is closed.
 			eventStateMemory.stateId = constants.EventStateNone
+			isAnyDropdownClosed = true
 		}
 	}
+	return isAnyDropdownClosed
+}
+
+/*
+closeAllOpenDropdowns allows you to close all dropdowns on all layers. In addition,
+the following information should be noted:
+
+- This method is useful for ensuring no dropdowns remain open when changing application state.
+- All open dropdown trays are closed and their scrollbars are hidden.
+- The selected item is updated if it was changed while the dropdown was open.
+*/
+func (shared *dropdownType) closeAllOpenDropdowns() bool {
+	var wasAnyDropdownClosed bool
+	Dropdowns.MemoryManager.Range(func(key, value interface{}) bool {
+		layerAlias := key.(string)
+		isDropdownClosed := shared.closeAllOpenDropdownsOnLayer(layerAlias)
+		if isDropdownClosed == true {
+			wasAnyDropdownClosed = true
+		}
+		return true
+	})
+	return wasAnyDropdownClosed
 }
 
 /*

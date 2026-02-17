@@ -10,7 +10,7 @@ import (
 	"github.com/supercom32/consolizer/types"
 )
 
-type textFieldInstanceType struct {
+type TextFieldInstanceType struct {
 	BaseControlInstanceType
 }
 
@@ -31,12 +31,15 @@ information should be noted:
 - The returned value will be trimmed of any leading or trailing whitespace.
 - If the text field does not exist, an empty string will be returned.
 */
-func (shared *textFieldInstanceType) GetValue() string {
+func (shared *TextFieldInstanceType) GetValue() string {
 	if TextFields.IsExists(shared.layerAlias, shared.controlAlias) {
 		validatorTextField(shared.layerAlias, shared.controlAlias)
 		textFieldEntry := TextFields.Get(shared.layerAlias, shared.controlAlias)
 		value := textFieldEntry.CurrentValue
-		return strings.TrimSpace(string(value))
+		if len(value) > 0 {
+			value = value[:len(value)-1] // remove one character from the right
+		}
+		return string(value)
 	}
 	return ""
 }
@@ -44,7 +47,7 @@ func (shared *textFieldInstanceType) GetValue() string {
 /*
 SetLocation allows you to set the current location of your text field.
 */
-func (shared *textFieldInstanceType) SetLocation(xLocation int, yLocation int) {
+func (shared *TextFieldInstanceType) SetLocation(xLocation int, yLocation int) {
 	if TextFields.IsExists(shared.layerAlias, shared.controlAlias) {
 		validatorTextField(shared.layerAlias, shared.controlAlias)
 		validateLayerLocationByLayerAlias(shared.layerAlias, xLocation, yLocation)
@@ -77,7 +80,7 @@ the value specified.
 field, then the entire text field will shift to ensure the cursor is always
 visible.
 */
-func (shared *textFieldType) Add(layerAlias string, textFieldAlias string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, maxLengthAllowed int, IsPasswordProtected bool, defaultValue string, isEnabled bool) textFieldInstanceType {
+func (shared *textFieldType) Add(layerAlias string, textFieldAlias string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, maxLengthAllowed int, IsPasswordProtected bool, defaultValue string, isEnabled bool) TextFieldInstanceType {
 	validateLayerLocationByLayerAlias(layerAlias, xLocation, yLocation)
 	validateTextFieldWidth(width)
 	// This is required so that the cursor appears at the end of your text field.
@@ -107,7 +110,7 @@ func (shared *textFieldType) Add(layerAlias string, textFieldAlias string, style
 	// Use the generic memory manager to add the text field entry
 	TextFields.Add(layerAlias, textFieldAlias, &textFieldEntry)
 
-	var textFieldInstance textFieldInstanceType
+	var textFieldInstance TextFieldInstanceType
 	textFieldInstance.layerAlias = layerAlias
 	textFieldInstance.controlAlias = textFieldAlias
 	textFieldInstance.controlType = constants.TYPE_TEXTFIELD
@@ -770,11 +773,13 @@ information should be noted:
 - The value will be trimmed of any leading or trailing whitespace before being set.
 - If the text field does not exist, the request will be ignored.
 */
-func (shared *textFieldInstanceType) SetValue(value string) *textFieldInstanceType {
+func (shared *TextFieldInstanceType) SetValue(value string) *TextFieldInstanceType {
 	if TextFields.IsExists(shared.layerAlias, shared.controlAlias) {
 		validatorTextField(shared.layerAlias, shared.controlAlias)
 		textFieldEntry := TextFields.Get(shared.layerAlias, shared.controlAlias)
-		textFieldEntry.CurrentValue = []rune(value)
+		textFieldEntry.CurrentValue = []rune(value + " ")
+		textFieldEntry.CursorPosition = len(value)
+		TextField.updateTextFieldViewport(textFieldEntry)
 	}
 	return shared
 }
@@ -787,7 +792,7 @@ information should be noted:
 - If the text field is password protected, the default value will be stored but displayed as masked characters.
 - The default value will be trimmed of any leading or trailing whitespace before being set.
 */
-func (shared *textFieldInstanceType) SetDefaultValue(value string) *textFieldInstanceType {
+func (shared *TextFieldInstanceType) SetDefaultValue(value string) *TextFieldInstanceType {
 	if TextFields.IsExists(shared.layerAlias, shared.controlAlias) {
 		validatorTextField(shared.layerAlias, shared.controlAlias)
 		textFieldEntry := TextFields.Get(shared.layerAlias, shared.controlAlias)
@@ -804,7 +809,7 @@ the following information should be noted:
 - Setting the maximum length to 0 or a negative number will remove the length restriction.
 - The maximum length applies to the actual text, not including any masked characters for password fields.
 */
-func (shared *textFieldInstanceType) SetMaxLength(length int) *textFieldInstanceType {
+func (shared *TextFieldInstanceType) SetMaxLength(length int) *TextFieldInstanceType {
 	if TextFields.IsExists(shared.layerAlias, shared.controlAlias) {
 		validatorTextField(shared.layerAlias, shared.controlAlias)
 		textFieldEntry := TextFields.Get(shared.layerAlias, shared.controlAlias)
@@ -821,7 +826,7 @@ the following information should be noted:
 - The actual value is still stored and can be retrieved using GetValue.
 - This setting can be changed at any time, and the display will update accordingly.
 */
-func (shared *textFieldInstanceType) SetPasswordProtected(isProtected bool) *textFieldInstanceType {
+func (shared *TextFieldInstanceType) SetPasswordProtected(isProtected bool) *TextFieldInstanceType {
 	if TextFields.IsExists(shared.layerAlias, shared.controlAlias) {
 		validatorTextField(shared.layerAlias, shared.controlAlias)
 		textFieldEntry := TextFields.Get(shared.layerAlias, shared.controlAlias)
@@ -838,7 +843,7 @@ the following information should be noted:
 - If the specified position is beyond the length of the text, the cursor will be placed at the end.
 - The viewport will automatically adjust to keep the cursor visible.
 */
-func (shared *textFieldInstanceType) SetCursorPosition(position int) *textFieldInstanceType {
+func (shared *TextFieldInstanceType) SetCursorPosition(position int) *TextFieldInstanceType {
 	if TextFields.IsExists(shared.layerAlias, shared.controlAlias) {
 		validatorTextField(shared.layerAlias, shared.controlAlias)
 		textFieldEntry := TextFields.Get(shared.layerAlias, shared.controlAlias)
@@ -855,7 +860,7 @@ In addition, the following information should be noted:
 - If the specified position is beyond the length of the text, the viewport will be set to the end.
 - The cursor will remain visible within the viewport.
 */
-func (shared *textFieldInstanceType) SetViewportPosition(position int) *textFieldInstanceType {
+func (shared *TextFieldInstanceType) SetViewportPosition(position int) *TextFieldInstanceType {
 	if TextFields.IsExists(shared.layerAlias, shared.controlAlias) {
 		validatorTextField(shared.layerAlias, shared.controlAlias)
 		textFieldEntry := TextFields.Get(shared.layerAlias, shared.controlAlias)
@@ -872,13 +877,13 @@ for method chaining. In addition, the following information should be noted:
 - Use the returned instance to continue chaining method calls.
 - Follow the same pattern as other controls for consistency.
 */
-func (shared *textFieldInstanceType) GetTooltip() *textFieldInstanceType {
+func (shared *TextFieldInstanceType) GetTooltip() *TextFieldInstanceType {
 	// No need to retrieve the tooltip, just return self for chaining
 	return shared
 }
 
 // Add a helper method to set tooltip text
-func (shared *textFieldInstanceType) SetTooltipText(text string) *textFieldInstanceType {
+func (shared *TextFieldInstanceType) SetTooltipText(text string) *TextFieldInstanceType {
 	if TextFields.IsExists(shared.layerAlias, shared.controlAlias) {
 		textFieldEntry := TextFields.Get(shared.layerAlias, shared.controlAlias)
 		var tooltipInstance TooltipInstanceType
@@ -890,7 +895,7 @@ func (shared *textFieldInstanceType) SetTooltipText(text string) *textFieldInsta
 }
 
 // Add a helper method to enable/disable the tooltip
-func (shared *textFieldInstanceType) EnableTooltip(enabled bool) *textFieldInstanceType {
+func (shared *TextFieldInstanceType) EnableTooltip(enabled bool) *TextFieldInstanceType {
 	if TextFields.IsExists(shared.layerAlias, shared.controlAlias) {
 		textFieldEntry := TextFields.Get(shared.layerAlias, shared.controlAlias)
 		var tooltipInstance TooltipInstanceType

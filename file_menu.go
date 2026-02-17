@@ -195,10 +195,10 @@ func (shared *fileMenuType) drawFileMenu(layerEntry *types.LayerEntryType, fileM
 			attributeEntry.BackgroundColor = fileMenuEntry.StyleEntry.FileMenu.HighlightBackgroundColor
 		}
 
- 	// Set cell type for mouse interaction
- 	attributeEntry.CellType = constants.CellTypeFileMenuHeading
- 	attributeEntry.CellControlAlias = fileMenuEntry.Alias
- 	attributeEntry.CellControlId = index
+		// Set cell type for mouse interaction
+		attributeEntry.CellType = constants.CellTypeFileMenuHeading
+		attributeEntry.CellControlAlias = fileMenuEntry.Alias
+		attributeEntry.CellControlId = index
 
 		// Draw the heading with padding
 		paddedHeading := " " + heading + " "
@@ -341,20 +341,41 @@ func (shared *fileMenuType) closeAllOpenMenus() bool {
 	return menuClosed
 }
 
-func (shared *FileMenuInstanceType) GetSelectedItem() (int, int, string) {
+func (shared *FileMenuInstanceType) GetSelectedItem() (int, int, string, string) {
 	if !FileMenus.IsExists(shared.layerAlias, shared.controlAlias) {
-		return -1, -1, ""
+		return -1, -1, "", ""
 	}
 	fileMenuEntry := FileMenus.Get(shared.layerAlias, shared.controlAlias)
 	// Iterate through selectors (one per heading)
 	for headingIndex, selectorAlias := range fileMenuEntry.SelectorAliases {
 		selectorEntry := Selectors.Get(shared.layerAlias, selectorAlias)
 		if selectorEntry.ItemSelected >= 0 {
-			return headingIndex, selectorEntry.ItemSelected, selectorEntry.SelectionEntry.SelectionValue[selectorEntry.ItemSelected]
+			// Store the values to be returned
+			itemIndex := selectorEntry.ItemSelected
+			itemAlias := selectorEntry.SelectionEntry.SelectionAlias[itemIndex]
+			itemValue := selectorEntry.SelectionEntry.SelectionValue[itemIndex]
+			shared.Unselect()
+			return headingIndex, itemIndex, itemAlias, itemValue
 		}
 	}
 	// Nothing selected
-	return -1, -1, ""
+	return -1, -1, "", ""
+}
+
+/*
+IsFileMenuOpen allows you to check if a file menu is currently open.
+In addition, the following information should be noted:
+
+- This method returns true if the file menu's dropdown is visible,
+  and false otherwise.
+- If the file menu instance does not exist, it will return false.
+*/
+func (shared *FileMenuInstanceType) IsFileMenuOpen() bool {
+	if !FileMenus.IsExists(shared.layerAlias, shared.controlAlias) {
+		return false
+	}
+	fileMenuEntry := FileMenus.Get(shared.layerAlias, shared.controlAlias)
+	return fileMenuEntry.IsSubmenuOpen
 }
 
 /*
