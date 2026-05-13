@@ -142,6 +142,28 @@ func (shared *TextboxInstanceType) SetText(text string) *TextboxInstanceType {
 }
 
 /*
+GetText allows you to retrieve the text from a textbox. If the textbox instance
+no longer exists, then an empty string is returned. In addition, the following
+information should be noted:
+
+- The text is returned as a single string, with lines separated by newline characters.
+*/
+func (shared *TextboxInstanceType) GetText() string {
+	if Textboxes.IsExists(shared.layerAlias, shared.controlAlias) {
+		textboxEntry := Textboxes.Get(shared.layerAlias, shared.controlAlias)
+		var text strings.Builder
+		for i, line := range textboxEntry.TextData {
+			text.WriteString(string(line))
+			if i < len(textboxEntry.TextData)-1 {
+				text.WriteString("\n")
+			}
+		}
+		return text.String()
+	}
+	return ""
+}
+
+/*
 SetViewport allows you to set the current viewport for a textbox. If the textbox instance
 no longer exists, then no operation takes place.
 */

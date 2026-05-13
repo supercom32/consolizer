@@ -14,7 +14,7 @@ type buttonHistoryType struct {
 
 var buttonHistory buttonHistoryType
 
-type buttonInstanceType struct {
+type ButtonInstanceType struct {
 	BaseControlInstanceType
 }
 
@@ -27,12 +27,12 @@ var Buttons = memory.NewControlMemoryManager[types.ButtonEntryType]()
 // REGULAR ENTRY
 // ============================================================================
 
-func (shared *buttonInstanceType) Delete() *buttonInstanceType {
+func (shared *ButtonInstanceType) Delete() *ButtonInstanceType {
 	shared.BaseControlInstanceType.Delete()
 	return nil
 }
 
-func (shared *buttonInstanceType) AddToTabIndex() {
+func (shared *ButtonInstanceType) AddToTabIndex() {
 	addTabIndex(shared.layerAlias, shared.controlAlias, constants.CellTypeButton)
 }
 
@@ -41,7 +41,7 @@ IsButtonPressed allows you to detect if any text button was pressed or not. In
 order to obtain the button pressed and to clear this state, you must call the
 GetButtonPressed method.
 */
-func (shared *buttonInstanceType) IsButtonPressed() bool {
+func (shared *ButtonInstanceType) IsButtonPressed() bool {
 	if buttonHistory.layerAlias != "" && buttonHistory.buttonAlias != "" {
 		if buttonHistory.layerAlias == shared.layerAlias && buttonHistory.buttonAlias == shared.controlAlias {
 			for shared.IsButtonStatePressed() {
@@ -64,7 +64,7 @@ noted:
 - If any button is successfully returned, the pressed state is automatically
 cleared.
 */
-func (shared *buttonInstanceType) GetButtonPressed() (string, string) {
+func (shared *ButtonInstanceType) GetButtonPressed() (string, string) {
 	if buttonHistory.layerAlias != "" && buttonHistory.buttonAlias != "" {
 		layerAlias := buttonHistory.layerAlias
 		buttonAlias := buttonHistory.buttonAlias
@@ -75,7 +75,7 @@ func (shared *buttonInstanceType) GetButtonPressed() (string, string) {
 	return "", ""
 }
 
-func (shared *buttonInstanceType) IsButtonStatePressed() bool {
+func (shared *ButtonInstanceType) IsButtonStatePressed() bool {
 	buttonEntry := Buttons.Get(shared.layerAlias, shared.controlAlias)
 	if buttonEntry.IsPressed == true {
 		return true
@@ -103,7 +103,7 @@ then the width will automatically default to the width of your button label.
 - If the height of your button is less than 3 characters high, then the height
 will automatically default to the minimum of 3 characters.
 */
-func (shared *buttonType) Add(layerAlias string, buttonAlias string, buttonLabel string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, height int, isEnabled bool) buttonInstanceType {
+func (shared *buttonType) Add(layerAlias string, buttonAlias string, buttonLabel string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, height int, isEnabled bool) ButtonInstanceType {
 	buttonEntry := types.NewButtonEntry()
 	buttonEntry.StyleEntry = styleEntry
 	buttonEntry.Alias = buttonAlias
@@ -126,7 +126,7 @@ func (shared *buttonType) Add(layerAlias string, buttonAlias string, buttonLabel
 		false, true, constants.DefaultTooltipHoverTime)
 	tooltipInstance.SetEnabled(false)
 	tooltipInstance.setParentControlAlias(buttonAlias)
-	var buttonInstance buttonInstanceType
+	var buttonInstance ButtonInstanceType
 	buttonInstance.layerAlias = layerAlias
 	buttonInstance.controlAlias = buttonAlias
 	buttonInstance.controlType = constants.TYPE_BUTTON

@@ -135,6 +135,17 @@ func (shared *SelectorInstanceType) Delete() *SelectorInstanceType {
 }
 
 /*
+IsNewItemSelected allows you to check if a new item has been selected.
+*/
+func (shared *SelectorInstanceType) IsNewItemSelected() bool {
+	if Selectors.IsExists(shared.layerAlias, shared.controlAlias) {
+		selectorEntry := Selectors.Get(shared.layerAlias, shared.controlAlias)
+		return selectorEntry.IsNewItemSelected
+	}
+	return false
+}
+
+/*
 GetSelected allows you to retrieve the currently selected item from a selector. In addition,
 the following information should be noted:
 
@@ -147,6 +158,7 @@ func (shared *SelectorInstanceType) GetSelected() (string, int) {
 	if Selectors.IsExists(shared.layerAlias, shared.controlAlias) {
 		validatorMenu(shared.layerAlias, shared.controlAlias)
 		menuEntry := Selectors.Get(shared.layerAlias, shared.controlAlias)
+		menuEntry.IsNewItemSelected = false
 		value := menuEntry.ItemSelected
 		if value == constants.SELECTED_NONE {
 			return "", constants.SELECTED_NONE
@@ -215,6 +227,7 @@ func (shared *SelectorInstanceType) Select(selectionAlias string) {
 		if itemIndex != -1 {
 			selectorEntry.ItemSelected = itemIndex
 			selectorEntry.ItemHighlighted = itemIndex
+			selectorEntry.IsNewItemSelected = true
 		}
 	}
 }
@@ -813,6 +826,7 @@ func (shared *selectorType) updateKeyboardEventForSelector(layerAlias string, se
 	}
 	if keystrokeAsString == "enter" {
 		selectorEntry.ItemSelected = selectorEntry.ItemHighlighted
+		selectorEntry.IsNewItemSelected = true
 		isScreenUpdateRequired = true
 		isKeystrokeConsumed = true
 	}
@@ -855,6 +869,7 @@ func (shared *selectorType) updateMouseEvent() bool {
 		if buttonPressed != 0 {
 			selectorEntry.ItemHighlighted = characterEntry.AttributeEntry.CellControlId
 			selectorEntry.ItemSelected = characterEntry.AttributeEntry.CellControlId
+			selectorEntry.IsNewItemSelected = true
 		} else if !selectorEntry.HighlightOnClickOnly {
 			selectorEntry.ItemHighlighted = characterEntry.AttributeEntry.CellControlId
 		}

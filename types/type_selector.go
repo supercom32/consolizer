@@ -7,17 +7,18 @@ import (
 
 type SelectorEntryType struct {
 	BaseControlType
-	ScrollbarAlias   string
-	SelectionEntry   SelectionEntryType
-	ItemWidth        int
-	ColumnCount      int
-	NumberOfColumns  int
-	ViewportX        int
-	ViewportY        int
-	ViewportPosition int
-	ItemHighlighted  int
-	ItemSelected     int
+	ScrollbarAlias       string
+	SelectionEntry       SelectionEntryType
+	ItemWidth            int
+	ColumnCount          int
+	NumberOfColumns      int
+	ViewportX            int
+	ViewportY            int
+	ViewportPosition     int
+	ItemHighlighted      int
+	ItemSelected         int
 	HighlightOnClickOnly bool
+	IsNewItemSelected    bool
 }
 
 /*
@@ -54,6 +55,7 @@ func (shared SelectorEntryType) MarshalJSON() ([]byte, error) {
 		ItemHighlighted      int
 		ItemSelected         int
 		HighlightOnClickOnly bool
+		IsNewItemSelected    bool
 	}{
 		BaseControlType:      shared.BaseControlType,
 		ScrollbarAlias:       shared.ScrollbarAlias,
@@ -67,6 +69,7 @@ func (shared SelectorEntryType) MarshalJSON() ([]byte, error) {
 		ItemHighlighted:      shared.ItemHighlighted,
 		ItemSelected:         shared.ItemSelected,
 		HighlightOnClickOnly: shared.HighlightOnClickOnly,
+		IsNewItemSelected:    shared.IsNewItemSelected,
 	})
 	if err != nil {
 		return nil, err
@@ -101,6 +104,7 @@ information should be noted:
 func NewSelectorEntry(existingSelectorEntry ...*SelectorEntryType) SelectorEntryType {
 	var selectorEntry SelectorEntryType
 	selectorEntry.BaseControlType = NewBaseControl()
+	selectorEntry.IsNewItemSelected = false
 
 	if existingSelectorEntry != nil {
 		selectorEntry.BaseControlType = existingSelectorEntry[0].BaseControlType
@@ -115,6 +119,7 @@ func NewSelectorEntry(existingSelectorEntry ...*SelectorEntryType) SelectorEntry
 		selectorEntry.ItemHighlighted = existingSelectorEntry[0].ItemHighlighted
 		selectorEntry.HighlightOnClickOnly = existingSelectorEntry[0].HighlightOnClickOnly
 		selectorEntry.ItemSelected = existingSelectorEntry[0].ItemSelected
+		selectorEntry.IsNewItemSelected = existingSelectorEntry[0].IsNewItemSelected
 	}
 	return selectorEntry
 }
@@ -131,7 +136,8 @@ func IsSelectorEntryEqual(sourceSelectorEntry *SelectorEntryType, targetSelector
 		sourceSelectorEntry.ViewportPosition == targetSelectorEntry.ViewportPosition &&
 		sourceSelectorEntry.ItemHighlighted == targetSelectorEntry.ItemHighlighted &&
 		sourceSelectorEntry.HighlightOnClickOnly == targetSelectorEntry.HighlightOnClickOnly &&
-		sourceSelectorEntry.ItemSelected == targetSelectorEntry.ItemSelected {
+		sourceSelectorEntry.ItemSelected == targetSelectorEntry.ItemSelected &&
+		sourceSelectorEntry.IsNewItemSelected == targetSelectorEntry.IsNewItemSelected {
 		return true
 	}
 	return false

@@ -594,7 +594,7 @@ func (shared *LayerInstanceType) DrawComposedImage(imageComposeEntry ImageCompos
 	return err
 }
 
-func (shared *LayerInstanceType) AddButton(buttonLabel string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, height int, isEnabled bool) buttonInstanceType {
+func (shared *LayerInstanceType) AddButton(buttonLabel string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, height int, isEnabled bool) ButtonInstanceType {
 	buttonAlias := getUUID()
 	buttonInstance := Button.Add(shared.layerAlias, buttonAlias, buttonLabel, styleEntry, xLocation, yLocation, width, height, isEnabled)
 	return buttonInstance
