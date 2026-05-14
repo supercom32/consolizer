@@ -13,7 +13,14 @@ const (
 	IMAGE_TRANSPARENCY = "./test_data/image/transparency_circle2.png"
 )
 
-// setupTest is a helper function to clean up the image entries before each test.
+/*
+setupTest is a test which allows you to initialize the testing environment by clearing image entries and setting up
+standard styles and layers.
+
+Example:
+
+	layer1, layer2, layer3, tuiStyle, imageStyle := setupTest()
+*/
 func setupTest() (*LayerInstanceType, *LayerInstanceType, *LayerInstanceType, types.TuiStyleEntryType, types.ImageStyleEntryType) {
 	ClearAllImages()
 	imageStyle := NewImageStyle()
@@ -31,6 +38,10 @@ func setupTest() (*LayerInstanceType, *LayerInstanceType, *LayerInstanceType, ty
 	return layer1, layer2, layer3, tuiStyleEntry, imageStyle
 }
 
+/*
+TestAddAndIsImageExists is a test which allows you to verify that an image can be successfully loaded and its existence
+confirmed using the IMAGE_COMPLEX asset.
+*/
 func TestAddAndIsImageExists(test *testing.T) {
 	setupTest()
 	// We can't directly add an image anymore, so we need to load it.
@@ -41,6 +52,10 @@ func TestAddAndIsImageExists(test *testing.T) {
 	assert.True(test, IsImageExists(IMAGE_COMPLEX), "Image should exist after being loaded")
 }
 
+/*
+TestDeleteImage is a test which allows you to verify that a loaded image can be successfully unloaded and is
+subsequently reported as non-existent.
+*/
 func TestDeleteImage(t *testing.T) {
 	setupTest()
 	err := LoadImage(IMAGE_COMPLEX)
@@ -49,6 +64,10 @@ func TestDeleteImage(t *testing.T) {
 	assert.False(t, IsImageExists(IMAGE_COMPLEX), "Image should no longer exist after being deleted")
 }
 
+/*
+TestIsImageExists is a test which allows you to verify the IsImageExists function correctly reports both existent and
+non-existent images.
+*/
 func TestIsImageExists(test *testing.T) {
 	setupTest()
 	err := LoadImage(IMAGE_COMPLEX)
@@ -57,6 +76,10 @@ func TestIsImageExists(test *testing.T) {
 	assert.False(test, IsImageExists("nonExistentImage"), "Non-existent image should return false")
 }
 
+/*
+TestUnloadImage is a test which allows you to verify that unloading an image correctly removes it from memory and
+existence checks.
+*/
 func TestUnloadImage(test *testing.T) {
 	setupTest()
 	err := LoadImage(IMAGE_COMPLEX)
@@ -65,6 +88,10 @@ func TestUnloadImage(test *testing.T) {
 	assert.False(test, IsImageExists(IMAGE_COMPLEX), "Image should no longer exist after being unloaded")
 }
 
+/*
+TestUnloadNonExistentImage is a test which allows you to verify that attempting to unload a non-existent image does not
+cause errors and correctly reports non-existence.
+*/
 func TestUnloadNonExistentImage(test *testing.T) {
 	setupTest()
 	nonExistentImageAlias := "nonExistentImage"
@@ -72,6 +99,11 @@ func TestUnloadNonExistentImage(test *testing.T) {
 	assert.False(test, IsImageExists(nonExistentImageAlias))
 }
 
+/*
+TestTransparentImageBlockStyleBackgroundTransparency is a test which allows you to verify that drawing a transparent
+image using block style correctly handles background transparency by comparing against a known base64 encoded ANSI
+string.
+*/
 func TestTransparentImageBlockStyleBackgroundTransparency(test *testing.T) {
 	layer1, _, _, _, imageStyle := setupTest()
 	layer1.DrawImage(IMAGE_TRANSPARENCY, imageStyle, 1, 0, 40, 20, 0)
@@ -87,6 +119,11 @@ func TestTransparentImageBlockStyleBackgroundTransparency(test *testing.T) {
 	}
 }
 
+/*
+TestTransparentImageBlockStyleForegroundTransparency is a test which allows you to verify that drawing a transparent
+image using block style correctly handles foreground transparency by comparing against a known base64 encoded ANSI
+string.
+*/
 func TestTransparentImageBlockStyleForegroundTransparency(test *testing.T) {
 	_, layer2, _, _, imageStyle := setupTest()
 	layer2.DrawImage(IMAGE_TRANSPARENCY, imageStyle, 1, 0, 40, 20, 0)
@@ -102,6 +139,10 @@ func TestTransparentImageBlockStyleForegroundTransparency(test *testing.T) {
 	}
 }
 
+/*
+TestTransparentImageBlockStyleBlendedTransparency is a test which allows you to verify that drawing a transparent image
+using block style correctly handles blended transparency by comparing against a known base64 encoded ANSI string.
+*/
 func TestTransparentImageBlockStyleBlendedTransparency(test *testing.T) {
 	_, layer2, _, _, imageStyle := setupTest()
 	layer2.DrawImage(IMAGE_TRANSPARENCY, imageStyle, 1, 0, 40, 20, 0)
@@ -117,6 +158,11 @@ func TestTransparentImageBlockStyleBlendedTransparency(test *testing.T) {
 	}
 }
 
+/*
+TestTransparentImageMediumResolutionStyleBackgroundTransparency is a test which allows you to verify that drawing a
+transparent image using medium resolution style correctly handles background transparency by comparing against a known
+base64 encoded ANSI string.
+*/
 func TestTransparentImageMediumResolutionStyleBackgroundTransparency(test *testing.T) {
 	layer1, _, _, _, imageStyle := setupTest()
 	imageStyle.DrawingStyle = constants.ImageStyleHalfBlock
@@ -133,6 +179,11 @@ func TestTransparentImageMediumResolutionStyleBackgroundTransparency(test *testi
 	}
 }
 
+/*
+TestTransparentImageMediumResolutionStyleForegroundTransparency is a test which allows you to verify that drawing a
+transparent image using medium resolution style correctly handles foreground transparency by comparing against a known
+base64 encoded ANSI string.
+*/
 func TestTransparentImageMediumResolutionStyleForegroundTransparency(test *testing.T) {
 	layer1, _, _, _, imageStyle := setupTest()
 	imageStyle.DrawingStyle = constants.ImageStyleHalfBlock
@@ -149,6 +200,11 @@ func TestTransparentImageMediumResolutionStyleForegroundTransparency(test *testi
 	}
 }
 
+/*
+TestTransparentImageMediumResolutionStyleBlendedTransparency is a test which allows you to verify that drawing a
+transparent image using medium resolution style correctly handles blended transparency by comparing against a known
+base64 encoded ANSI string.
+*/
 func TestTransparentImageMediumResolutionStyleBlendedTransparency(test *testing.T) {
 	layer1, _, _, _, imageStyle := setupTest()
 	imageStyle.DrawingStyle = constants.ImageStyleHalfBlock
@@ -165,6 +221,11 @@ func TestTransparentImageMediumResolutionStyleBlendedTransparency(test *testing.
 	}
 }
 
+/*
+TestTransparentImageBrailleStyleBackgroundTransparency is a test which allows you to verify that drawing a transparent
+image using Braille style correctly handles background transparency by comparing against a known base64 encoded ANSI
+string.
+*/
 func TestTransparentImageBrailleStyleBackgroundTransparency(test *testing.T) {
 	layer1, _, _, _, imageStyle := setupTest()
 	imageStyle.DrawingStyle = constants.ImageStyleBraille
@@ -181,6 +242,11 @@ func TestTransparentImageBrailleStyleBackgroundTransparency(test *testing.T) {
 	}
 }
 
+/*
+TestTransparentImageBrailleStyleForegroundTransparency is a test which allows you to verify that drawing a transparent
+image using Braille style correctly handles foreground transparency by comparing against a known base64 encoded ANSI
+string.
+*/
 func TestTransparentImageBrailleStyleForegroundTransparency(test *testing.T) {
 	layer1, _, _, _, imageStyle := setupTest()
 	imageStyle.DrawingStyle = constants.ImageStyleBraille
@@ -197,6 +263,11 @@ func TestTransparentImageBrailleStyleForegroundTransparency(test *testing.T) {
 	}
 }
 
+/*
+TestTransparentImageBrailleStyleBlendedTransparency is a test which allows you to verify that drawing a transparent
+image using Braille style correctly handles blended transparency by comparing against a known base64 encoded ANSI
+string.
+*/
 func TestTransparentImageBrailleStyleBlendedTransparency(test *testing.T) {
 	layer1, _, _, _, imageStyle := setupTest()
 	imageStyle.DrawingStyle = constants.ImageStyleBraille
@@ -213,6 +284,11 @@ func TestTransparentImageBrailleStyleBlendedTransparency(test *testing.T) {
 	}
 }
 
+/*
+TestTransparentImageAsciiStyleBackgroundTransparency is a test which allows you to verify that drawing a transparent
+image using ASCII style correctly handles background transparency by comparing against a known base64 encoded ANSI
+string.
+*/
 func TestTransparentImageAsciiStyleBackgroundTransparency(test *testing.T) {
 	_, layer2, _, _, imageStyle := setupTest()
 	imageStyle.DrawingStyle = constants.ImageStyleCharacters
@@ -230,6 +306,11 @@ func TestTransparentImageAsciiStyleBackgroundTransparency(test *testing.T) {
 	}
 }
 
+/*
+TestTransparentImageAsciiStyleForegroundTransparency is a test which allows you to verify that drawing a transparent
+image using ASCII style correctly handles foreground transparency by comparing against a known base64 encoded ANSI
+string.
+*/
 func TestTransparentImageAsciiStyleForegroundTransparency(test *testing.T) {
 	_, layer2, _, _, imageStyle := setupTest()
 	imageStyle.DrawingStyle = constants.ImageStyleCharacters
@@ -247,6 +328,10 @@ func TestTransparentImageAsciiStyleForegroundTransparency(test *testing.T) {
 	}
 }
 
+/*
+TestTransparentImageAsciiStyleBlendedTransparency is a test which allows you to verify that drawing a transparent image
+using ASCII style correctly handles blended transparency by comparing against a known base64 encoded ANSI string.
+*/
 func TestTransparentImageAsciiStyleBlendedTransparency(test *testing.T) {
 	_, layer2, _, _, imageStyle := setupTest()
 	imageStyle.DrawingStyle = constants.ImageStyleCharacters

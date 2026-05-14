@@ -6,6 +6,15 @@ import (
 	"testing"
 )
 
+/*
+TestPrintDialogWithTextStyles is a test which allows you to verify that the printDialog function correctly applies text
+styles from markup tags and handles word wrapping.
+
+Example:
+
+	Input: "This is a {{redColor}}sample{{/}} line of text. This line will {{redColor}}automatically{{/}} wrap without cutting words."
+	Output: Screen content matches expected ANSI string (Base64 encoded).
+*/
 func TestPrintDialogWithTextStyles(test *testing.T) {
 	commonResource.isDebugEnabled = true
 	layerWidth := 40

@@ -27,12 +27,18 @@ type AttributeEntryType struct {
 }
 
 /*
-MarshalJSON allows you to serialize an attribute entry to JSON. In addition, the following
-information should be noted:
+MarshalJSON is a method which allows you to serialize an attribute entry to JSON. In addition, the following information
+should be noted:
 
 - Converts the attribute entry's state to a JSON representation.
+
 - Includes all visual and control-specific attributes.
+
 - Used for saving and loading attribute configurations.
+
+Example:
+
+	instance.MarshalJSON()
 */
 func (shared AttributeEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
@@ -81,12 +87,20 @@ func (shared AttributeEntryType) MarshalJSON() ([]byte, error) {
 }
 
 /*
-GetEntryAsJsonDump allows you to get a JSON string representation of an attribute entry. In addition,
+GetEntryAsJsonDump is a method which allows you to get a JSON string representation of an attribute entry. In addition,
 the following information should be noted:
 
 - Returns a formatted JSON string of the attribute entry's state.
+
 - Useful for debugging and logging purposes.
+
 - Panics if JSON marshaling fails.
+
+:return: string
+
+Example:
+
+	instance.GetEntryAsJsonDump()
 */
 func (shared AttributeEntryType) GetEntryAsJsonDump() string {
 	j, err := json.Marshal(shared)
@@ -97,12 +111,22 @@ func (shared AttributeEntryType) GetEntryAsJsonDump() string {
 }
 
 /*
-NewAttributeEntry allows you to create a new attribute entry. In addition, the following
+NewAttributeEntry is a constructor which allows you to create a new attribute entry. In addition, the following
 information should be noted:
 
 - Initializes an attribute entry with default values.
+
 - Can optionally copy properties from an existing attribute entry.
+
 - Sets up all visual and control-specific attributes.
+
+:param existingAttributeEntry: The existingAttributeEntry parameter.
+
+:return: AttributeEntryType
+
+Example:
+
+	NewAttributeEntry(existingAttributeEntry)
 */
 func NewAttributeEntry(existingAttributeEntry ...*AttributeEntryType) AttributeEntryType {
 	var attributeEntry AttributeEntryType

@@ -172,7 +172,7 @@ func TestScrollbarDeleteAll(test *testing.T) {
 	UpdateDisplay(false)
 
 	// Delete all scrollbars
-	scrollbar.DeleteAllScrollbars(layer1.layerAlias)
+	scrollbar.DeleteAll(layer1.layerAlias)
 
 	UpdateDisplay(false)
 	layerEntry := commonResource.screenLayer

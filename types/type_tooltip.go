@@ -27,24 +27,38 @@ type TooltipEntryType struct {
 }
 
 /*
-GetAlias allows you to retrieve the alias of a tooltip control. In addition, the following
-information should be noted:
+GetAlias is a method which allows you to retrieve the alias of a tooltip control. In addition, the following information
+should be noted:
 
 - Returns the unique identifier for the tooltip.
+
 - This alias is used to reference the tooltip in other operations.
+
 - The alias is set when the tooltip is created.
+
+:return: string
+
+Example:
+
+	instance.GetAlias()
 */
 func (shared TooltipEntryType) GetAlias() string {
 	return shared.Alias
 }
 
 /*
-MarshalJSON allows you to serialize a tooltip control to JSON. In addition, the following
-information should be noted:
+MarshalJSON is a method which allows you to serialize a tooltip control to JSON. In addition, the following information
+should be noted:
 
 - Converts the tooltip's state to a JSON representation.
+
 - Includes the base control properties and tooltip-specific fields.
+
 - Used for saving and loading tooltip configurations.
+
+Example:
+
+	instance.MarshalJSON()
 */
 func (shared TooltipEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
@@ -91,12 +105,20 @@ func (shared TooltipEntryType) MarshalJSON() ([]byte, error) {
 }
 
 /*
-GetEntryAsJsonDump allows you to get a JSON string representation of a tooltip control. In addition,
+GetEntryAsJsonDump is a method which allows you to get a JSON string representation of a tooltip control. In addition,
 the following information should be noted:
 
 - Returns a formatted JSON string of the tooltip's state.
+
 - Useful for debugging and logging purposes.
+
 - Panics if JSON marshaling fails.
+
+:return: string
+
+Example:
+
+	instance.GetEntryAsJsonDump()
 */
 func (shared TooltipEntryType) GetEntryAsJsonDump() string {
 	j, err := json.Marshal(shared)
@@ -107,24 +129,44 @@ func (shared TooltipEntryType) GetEntryAsJsonDump() string {
 }
 
 /*
-GetTooltipAlias allows you to retrieve the alias of a tooltip control. In addition, the following
+GetTooltipAlias is a method which allows you to retrieve the alias of a tooltip control. In addition, the following
 information should be noted:
 
 - Returns the unique identifier for the tooltip.
+
 - This is a convenience method that delegates to GetAlias.
+
 - The alias is used to reference the tooltip in other operations.
+
+:param entry: The entry parameter.
+
+:return: string
+
+Example:
+
+	GetTooltipAlias(entry)
 */
 func GetTooltipAlias(entry *TooltipEntryType) string {
 	return entry.Alias
 }
 
 /*
-NewTooltipEntry allows you to create a new tooltip control. In addition, the following
+NewTooltipEntry is a constructor which allows you to create a new tooltip control. In addition, the following
 information should be noted:
 
 - Initializes a tooltip with default values.
+
 - Can optionally copy properties from an existing tooltip.
+
 - Sets up the base control properties and tooltip-specific fields.
+
+:param existingButtonEntry: The existingButtonEntry parameter.
+
+:return: TooltipEntryType
+
+Example:
+
+	NewTooltipEntry(existingButtonEntry)
 */
 func NewTooltipEntry(existingButtonEntry ...*TooltipEntryType) TooltipEntryType {
 	var tooltipEntry TooltipEntryType
@@ -149,12 +191,23 @@ func NewTooltipEntry(existingButtonEntry ...*TooltipEntryType) TooltipEntryType 
 }
 
 /*
-IsTooltipEntryEqual allows you to compare two tooltip controls for equality. In addition, the following
-information should be noted:
+IsTooltipEntryEqual is a method which allows you to compare two tooltip controls for equality. In addition, the
+following information should be noted:
 
 - Compares all properties of both tooltips.
+
 - Returns true if all properties match, false otherwise.
+
 - Used for change detection and state synchronization.
+
+:param sourceTooltipEntry: The sourceTooltipEntry parameter.
+:param targetTooltipEntry: The targetTooltipEntry parameter.
+
+:return: bool
+
+Example:
+
+	IsTooltipEntryEqual(sourceTooltipEntry, targetTooltipEntry)
 */
 func IsTooltipEntryEqual(sourceTooltipEntry *TooltipEntryType, targetTooltipEntry *TooltipEntryType) bool {
 	return sourceTooltipEntry.BaseControlType.IsEqual(&targetTooltipEntry.BaseControlType) &&

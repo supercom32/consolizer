@@ -12,12 +12,18 @@ type ButtonEntryType struct {
 }
 
 /*
-MarshalJSON allows you to serialize a button control to JSON. In addition, the following
-information should be noted:
+MarshalJSON is a method which allows you to serialize a button control to JSON. In addition, the following information
+should be noted:
 
 - Converts the button's state to a JSON representation.
+
 - Includes the base control properties and button-specific fields.
+
 - Used for saving and loading button configurations.
+
+Example:
+
+	instance.MarshalJSON()
 */
 func (shared ButtonEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
@@ -36,12 +42,22 @@ func (shared ButtonEntryType) MarshalJSON() ([]byte, error) {
 }
 
 /*
-NewButtonEntry allows you to create a new button control. In addition, the following
-information should be noted:
+NewButtonEntry is a constructor which allows you to create a new button control. In addition, the following information
+should be noted:
 
 - Initializes a button with default values.
+
 - Can optionally copy properties from an existing button.
+
 - Sets up the base control properties and button-specific fields.
+
+:param existingButtonEntry: The existingButtonEntry parameter.
+
+:return: ButtonEntryType
+
+Example:
+
+	NewButtonEntry(existingButtonEntry)
 */
 func NewButtonEntry(existingButtonEntry ...*ButtonEntryType) ButtonEntryType {
 	var buttonEntry ButtonEntryType
@@ -56,12 +72,23 @@ func NewButtonEntry(existingButtonEntry ...*ButtonEntryType) ButtonEntryType {
 }
 
 /*
-IsButtonEntryEqual allows you to compare two button controls for equality. In addition, the following
+IsButtonEntryEqual is a method which allows you to compare two button controls for equality. In addition, the following
 information should be noted:
 
 - Compares all properties of both buttons.
+
 - Returns true if all properties match, false otherwise.
+
 - Used for change detection and state synchronization.
+
+:param sourceButtonEntry: The sourceButtonEntry parameter.
+:param targetButtonEntry: The targetButtonEntry parameter.
+
+:return: bool
+
+Example:
+
+	IsButtonEntryEqual(sourceButtonEntry, targetButtonEntry)
 */
 func IsButtonEntryEqual(sourceButtonEntry *ButtonEntryType, targetButtonEntry *ButtonEntryType) bool {
 	return sourceButtonEntry.BaseControlType.IsEqual(&targetButtonEntry.BaseControlType) &&

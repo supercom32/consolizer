@@ -19,35 +19,72 @@ var ScrollBars = memory.NewControlMemoryManager[types.ScrollbarEntryType]()
 // REGULAR ENTRY
 // ============================================================================
 
+/*
+AddToTabIndex is a method which allows you to add the scroll bar to the tab index. In addition, the following should be
+noted:
+
+- This enables the scroll bar to be selected and interacted with when the user cycles through controls using the tab.
+
+Example:
+
+	scrollbar.AddToTabIndex()
+*/
 func (shared *ScrollbarInstanceType) AddToTabIndex() {
 	addTabIndex(shared.layerAlias, shared.controlAlias, constants.CellTypeScrollbar)
 }
 
+/*
+Delete is a method which allows you to delete the scroll bar instance. In addition, the following should be noted:
+
+- All memory associated with the scroll bar will be freed and it will no longer be rendered.
+
+:return: A nil value of type ScrollbarInstanceType.
+
+Example:
+
+	scrollbar = scrollbar.Delete()
+*/
 func (shared *ScrollbarInstanceType) Delete() *ScrollbarInstanceType {
 	shared.BaseControlInstanceType.Delete()
 	return nil
 }
 
 /*
-setScrollValue allows you set the current scroll value of a scroll bar.  In addition, the following
-information should be noted:
+setScrollValue is a method which allows you to set the current scroll value of a scroll bar. In addition, the following
+should be noted:
 
 - The scroll bar handle position will automatically be updated to reflect your new scroll bar value.
-- If the scroll bar value specified is out of range, then the closes minimum/maximum value will be selected instead.
+
+- If the scroll bar value specified is out of range, then the closest minimum or maximum value will be selected.
+
 - If the scroll bar instance does not exist, then the request is ignored.
+
+:param value: The scroll value to set.
+
+Example:
+
+	scrollbar.setScrollValue(10)
 */
 func (shared *ScrollbarInstanceType) setScrollValue(value int) {
 	// TODO: AddLayer scroll value validation.
 	if ScrollBars.IsExists(shared.layerAlias, shared.controlAlias) {
 		scrollbarEntry := ScrollBars.Get(shared.layerAlias, shared.controlAlias)
 		scrollbarEntry.ScrollValue = value
-		scrollbar.computeScrollbarHandlePositionByScrollValue(shared.layerAlias, shared.controlAlias)
+		scrollbar.computeHandlePositionByScrollValue(shared.layerAlias, shared.controlAlias)
 	}
 }
 
 /*
-getScrollValue allows you to obtain the scroll bar value for a given scrollbar. If the scroll bar instance
-no longer exists, then a result of 0 is always returned.
+getScrollValue is a method which allows you to obtain the scroll bar value for a given scroll bar. In addition, the
+following should be noted:
+
+- If the scroll bar instance no longer exists, then a result of 0 is always returned.
+
+:return: The current scroll value.
+
+Example:
+
+	value := scrollbar.getScrollValue()
 */
 func (shared *ScrollbarInstanceType) getScrollValue() int {
 	if ScrollBars.IsExists(shared.layerAlias, shared.controlAlias) {
@@ -58,30 +95,51 @@ func (shared *ScrollbarInstanceType) getScrollValue() int {
 }
 
 /*
-setHandlePosition allows you to specify the location of where the scrollbar handle should be.
-The scrollbar value is automatically updated to match the location of the scrollbar handle position.
+setHandlePosition is a method which allows you to specify the location of where the scroll bar handle should be. In
+addition, the following should be noted:
+
+- The scroll bar value is automatically updated to match the location of the scroll bar handle position.
+
+:param positionIndex: The index position to set the handle to.
+
+Example:
+
+	scrollbar.setHandlePosition(5)
 */
 func (shared *ScrollbarInstanceType) setHandlePosition(positionIndex int) {
 	if ScrollBars.IsExists(shared.layerAlias, shared.controlAlias) {
 		scrollbarEntry := ScrollBars.Get(shared.layerAlias, shared.controlAlias)
 		scrollbarEntry.HandlePosition = positionIndex
-		scrollbar.computeScrollbarValueByHandlePosition(shared.layerAlias, shared.controlAlias)
+		scrollbar.computeValueByHandlePosition(shared.layerAlias, shared.controlAlias)
 	}
 }
 
 /*
-Add allows you to add a scrollbar to a given text layer. Once called, an instance of your
-control is returned which will allow you to read or manipulate the properties for it. The Style
-of the scrollbar will be determined by the style entry passed in. If you wish to remove a scrollbar
-from a text layer, simply call 'DeleteScrollbar'. In addition, the following information should be noted:
+Add is a method which allows you to add a scroll bar to a given text layer. Once called, an instance of your control is
+returned which will allow you to read or manipulate the properties for it. The style of the scroll bar will be
+determined by the style entry passed in. If you wish to remove a scroll bar from a text layer, simply call
+DeleteScrollbar. In addition, the following should be noted:
 
-- Scrollbars are not drawn physically to the text layer provided. Instead,
-they are rendered to the terminal at the same time when the text layer is
-rendered. This allows you to create scrollbars without actually overwriting
-the text layer data under it.
+- Scroll bars are not drawn physically to the text layer provided. Instead, they are rendered to the terminal at the.
 
-- If the scrollbar to be drawn falls outside the range of the provided layer,
-then only the visible portion of the scrollbar will be drawn.
+- If the scroll bar to be drawn falls outside the range of the provided layer, then only the visible portion of the.
+
+:param layerAlias: The alias of the layer to add the scroll bar to.
+:param scrollbarAlias: The alias to assign to the new scroll bar.
+:param styleEntry: The style entry to use for the scroll bar.
+:param xLocation: The x-axis location to place the scroll bar.
+:param yLocation: The y-axis location to place the scroll bar.
+:param length: The length of the scroll bar.
+:param maxScrollValue: The maximum scroll value for the scroll bar.
+:param scrollValue: The initial scroll value.
+:param scrollIncrement: The amount to increment the scroll value by.
+:param isHorizontal: Whether the scroll bar should be horizontal or vertical.
+
+:return: An instance of the created scroll bar.
+
+Example:
+
+	scrollbarInstance := scrollbar.Add("Layer1", "Scroll1", style, 0, 0, 10, 100, 0, 1, false)
 */
 func (shared *scrollbarType) Add(layerAlias string, scrollbarAlias string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, length int, maxScrollValue int, scrollValue int, scrollIncrement int, isHorizontal bool) ScrollbarInstanceType {
 	scrollbarEntry := types.NewScrollbarEntry()
@@ -110,28 +168,51 @@ func (shared *scrollbarType) Add(layerAlias string, scrollbarAlias string, style
 }
 
 /*
-DeleteScrollbar allows you to remove a scrollbar from a text layer. In addition,
-the following information should be noted:
+Delete is a method which allows you to remove a scroll bar from a text layer. In addition, the following should
+be noted:
 
-- If you attempt to delete a scrollbar which does not exist, then the request
-will simply be ignored.
+- If you attempt to delete a scroll bar which does not exist, then the request will simply be ignored.
+
+:param layerAlias: The alias of the layer the scroll bar is on.
+:param scrollbarAlias: The alias of the scroll bar to delete.
+
+Example:
+
+	scrollbar.Delete("Layer1", "Scroll1")
 */
-func (shared *scrollbarType) DeleteScrollbar(layerAlias string, scrollbarAlias string) {
+func (shared *scrollbarType) Delete(layerAlias string, scrollbarAlias string) {
 	ScrollBars.Remove(layerAlias, scrollbarAlias)
 }
 
-func (shared *scrollbarType) DeleteAllScrollbars(layerAlias string) {
+/*
+DeleteAll is a method which allows you to delete all scroll bars on a specified layer. In addition, the
+following should be noted:
+
+- All memory associated with the scroll bars on the layer will be freed.
+
+:param layerAlias: The alias of the layer to clear all scroll bars from.
+
+Example:
+
+	scrollbar.DeleteAll("Layer1")
+*/
+func (shared *scrollbarType) DeleteAll(layerAlias string) {
 	ScrollBars.RemoveAll(layerAlias)
 }
 
 /*
-drawScrollbarsOnLayer allows you to draw all scrollbars on a given text layer.
-In addition, the following information should be noted:
+drawOnLayer is a method which allows you to draw all scroll bars on a given text layer. In addition, the
+following should be noted:
 
-- We sort the scroll bars since internally generated scrollbars will have the prefix "zzz" so that
-it appears last on the rendering order.
+- We sort the scroll bars since internally generated scroll bars will have the prefix "zzz" so that it appears last on.
+
+:param layerEntry: The layer entry to draw the scroll bars on.
+
+Example:
+
+	scrollbar.drawOnLayer(layerEntry)
 */
-func (shared *scrollbarType) drawScrollbarsOnLayer(layerEntry types.LayerEntryType) {
+func (shared *scrollbarType) drawOnLayer(layerEntry types.LayerEntryType) {
 	layerAlias := layerEntry.LayerAlias
 	compareByAlias := func(a, b *types.ScrollbarEntryType) bool {
 		return a.Alias < b.Alias
@@ -140,36 +221,57 @@ func (shared *scrollbarType) drawScrollbarsOnLayer(layerEntry types.LayerEntryTy
 		scrollbarEntry := currentKey
 		if scrollbarEntry.IsVisible {
 			if scrollbarEntry.ParentControlAlias == "" {
-				shared.drawScrollbar(&layerEntry, scrollbarEntry.Alias, scrollbarEntry.StyleEntry, scrollbarEntry.XLocation, scrollbarEntry.YLocation, scrollbarEntry.Length, scrollbarEntry.HandlePosition, scrollbarEntry.IsHorizontal)
+				shared.draw(&layerEntry, scrollbarEntry.Alias, scrollbarEntry.StyleEntry, scrollbarEntry.XLocation, scrollbarEntry.YLocation, scrollbarEntry.Length, scrollbarEntry.HandlePosition, scrollbarEntry.IsHorizontal)
 			}
 		}
 	}
 }
 
-func (shared *scrollbarType) drawScrollbarOnLayerByAlias(layerEntry *types.LayerEntryType, scrollbarAlias string) {
+/*
+drawOnLayerByAlias is a method which allows you to draw a specific scroll bar on a given text layer by its
+alias. In addition, the following should be noted:
+
+- If the scroll bar does not exist or is not visible, it will not be drawn.
+
+:param layerEntry: The layer entry to draw on.
+:param scrollbarAlias: The alias of the scroll bar to draw.
+
+Example:
+
+	scrollbar.drawOnLayerByAlias(&layerEntry, "Scroll1")
+*/
+func (shared *scrollbarType) drawOnLayerByAlias(layerEntry *types.LayerEntryType, scrollbarAlias string) {
 	layerAlias := layerEntry.LayerAlias
 	if ScrollBars.IsExists(layerAlias, scrollbarAlias) {
 		scrollbarEntry := ScrollBars.Get(layerAlias, scrollbarAlias)
 		if scrollbarEntry.IsVisible {
-			shared.drawScrollbar(layerEntry, scrollbarEntry.Alias, scrollbarEntry.StyleEntry, scrollbarEntry.XLocation, scrollbarEntry.YLocation, scrollbarEntry.Length, scrollbarEntry.HandlePosition, scrollbarEntry.IsHorizontal)
+			shared.draw(layerEntry, scrollbarEntry.Alias, scrollbarEntry.StyleEntry, scrollbarEntry.XLocation, scrollbarEntry.YLocation, scrollbarEntry.Length, scrollbarEntry.HandlePosition, scrollbarEntry.IsHorizontal)
 		}
 	}
 }
 
 /*
-drawScrollbar allows you to draw A scrollbar on a given text layer. The
-Style of the scrollbar will be determined by the style entry passed in. In
-addition, the following information should be noted:
+draw is a method which allows you to draw a scroll bar on a given text layer. The style of the scroll bar will
+be determined by the style entry passed in. In addition, the following should be noted:
 
-- Scrollbars are not drawn physically to the text layer provided. Instead,
-they are rendered to the terminal at the same time when the text layer is
-rendered. This allows you to create scrollbars without actually overwriting
-the text layer data under it.
+- Scroll bars are not drawn physically to the text layer provided. Instead, they are rendered to the terminal at the.
 
-- If the scrollbar to be drawn falls outside the range of the provided layer,
-then only the visible portion of the scrollbar will be drawn.
+- If the scroll bar to be drawn falls outside the range of the provided layer, then only the visible portion of the.
+
+:param layerEntry: The layer entry to draw on.
+:param scrollbarAlias: The alias of the scroll bar being drawn.
+:param styleEntry: The style entry to use for drawing.
+:param xLocation: The x-axis location for the scroll bar.
+:param yLocation: The y-axis location for the scroll bar.
+:param length: The length of the scroll bar.
+:param handlePosition: The position of the scroll bar handle.
+:param isHorizontal: Whether the scroll bar is horizontal.
+
+Example:
+
+	scrollbar.draw(&layerEntry, "Scroll1", style, 0, 0, 10, 5, false)
 */
-func (shared *scrollbarType) drawScrollbar(layerEntry *types.LayerEntryType, scrollbarAlias string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, length int, handlePosition int, isHorizontal bool) {
+func (shared *scrollbarType) draw(layerEntry *types.LayerEntryType, scrollbarAlias string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, length int, handlePosition int, isHorizontal bool) {
 	attributeEntry := types.NewAttributeEntry()
 	attributeEntry.CellType = constants.CellTypeScrollbar
 	attributeEntry.CellControlAlias = scrollbarAlias
@@ -211,10 +313,19 @@ func (shared *scrollbarType) drawScrollbar(layerEntry *types.LayerEntryType, scr
 }
 
 /*
-computeScrollbarValueByHandlePosition allows you to compute the scrollbar value based on the position of the
-scrollbar handle.
+computeValueByHandlePosition is a method which allows you to compute the scroll bar value based on the position
+of the scroll bar handle. In addition, the following should be noted:
+
+- If the scroll bar is disabled, no computation occurs.
+
+:param layerAlias: The alias of the layer the scroll bar is on.
+:param scrollbarAlias: The alias of the scroll bar to compute for.
+
+Example:
+
+	scrollbar.computeValueByHandlePosition("Layer1", "Scroll1")
 */
-func (shared *scrollbarType) computeScrollbarValueByHandlePosition(layerAlias string, scrollbarAlias string) {
+func (shared *scrollbarType) computeValueByHandlePosition(layerAlias string, scrollbarAlias string) {
 	scrollbarEntry := ScrollBars.Get(layerAlias, scrollbarAlias)
 	// If instructed not to draw scroll bars, do not compute values.
 	if scrollbarEntry.IsEnabled == false {
@@ -239,10 +350,19 @@ func (shared *scrollbarType) computeScrollbarValueByHandlePosition(layerAlias st
 }
 
 /*
-computeScrollbarHandlePositionByScrollValue allows you to calculate the position of the scrollbar handle
-based on the current scrollbar value.
+computeHandlePositionByScrollValue is a method which allows you to calculate the position of the scroll bar
+handle based on the current scroll bar value. In addition, the following should be noted:
+
+- If the scroll bar is disabled, no computation occurs.
+
+:param layerAlias: The alias of the layer the scroll bar is on.
+:param scrollbarAlias: The alias of the scroll bar to compute for.
+
+Example:
+
+	scrollbar.computeHandlePositionByScrollValue("Layer1", "Scroll1")
 */
-func (shared *scrollbarType) computeScrollbarHandlePositionByScrollValue(layerAlias string, scrollbarAlias string) {
+func (shared *scrollbarType) computeHandlePositionByScrollValue(layerAlias string, scrollbarAlias string) {
 	scrollbarEntry := ScrollBars.Get(layerAlias, scrollbarAlias)
 	// If instructed not to draw scroll bars, do not compute values.
 	if scrollbarEntry.IsEnabled == false {
@@ -267,6 +387,22 @@ func (shared *scrollbarType) computeScrollbarHandlePositionByScrollValue(layerAl
 	}
 }
 
+/*
+updateKeyboardEventManually is a method which allows you to manually update the state of a scroll bar according to a
+keystroke event. In addition, the following should be noted:
+
+- This is used when the scroll bar is not the primary focused control but still needs to react to input.
+
+:param layerAlias: The alias of the layer the scroll bar is on.
+:param scrollbarAlias: The alias of the scroll bar to update.
+:param keystroke: The keystroke to process.
+
+:return: Returns true if a screen update is required and true if the keystroke was consumed.
+
+Example:
+
+	updateRequired, consumed := scrollbar.updateKeyboardEventManually("Layer1", "Scroll1", rune("up"))
+*/
 func (shared *scrollbarType) updateKeyboardEventManually(layerAlias string, scrollbarAlias string, keystroke []rune) (bool, bool) {
 	keystrokeAsString := string(keystroke)
 	isScreenUpdateRequired := false
@@ -276,7 +412,7 @@ func (shared *scrollbarType) updateKeyboardEventManually(layerAlias string, scro
 	if scrollbarEntry.IsEnabled {
 		if keystrokeAsString == "up" || keystrokeAsString == "left" {
 			scrollbarEntry.ScrollValue = scrollbarEntry.ScrollValue - scrollbarEntry.ScrollIncrement
-			shared.computeScrollbarHandlePositionByScrollValue(layerAlias, scrollbarAlias)
+			shared.computeHandlePositionByScrollValue(layerAlias, scrollbarAlias)
 			// Update selector viewport position
 			for _, currentSelectorEntry := range Selectors.GetAllEntries(layerAlias) {
 				selectorEntry := currentSelectorEntry
@@ -290,7 +426,7 @@ func (shared *scrollbarType) updateKeyboardEventManually(layerAlias string, scro
 		}
 		if keystrokeAsString == "down" || keystrokeAsString == "right" {
 			scrollbarEntry.ScrollValue = scrollbarEntry.ScrollValue + scrollbarEntry.ScrollIncrement
-			shared.computeScrollbarHandlePositionByScrollValue(layerAlias, scrollbarAlias)
+			shared.computeHandlePositionByScrollValue(layerAlias, scrollbarAlias)
 			// Update selector viewport position
 			for _, currentSelectorEntry := range Selectors.GetAllEntries(layerAlias) {
 				selectorEntry := currentSelectorEntry
@@ -304,7 +440,7 @@ func (shared *scrollbarType) updateKeyboardEventManually(layerAlias string, scro
 		}
 		if keystrokeAsString == "pgup" {
 			scrollbarEntry.ScrollValue = scrollbarEntry.ScrollValue - (scrollbarEntry.ScrollIncrement * 3)
-			shared.computeScrollbarHandlePositionByScrollValue(layerAlias, scrollbarAlias)
+			shared.computeHandlePositionByScrollValue(layerAlias, scrollbarAlias)
 			// Update selector viewport position
 			for _, currentSelectorEntry := range Selectors.GetAllEntries(layerAlias) {
 				selectorEntry := currentSelectorEntry
@@ -318,7 +454,7 @@ func (shared *scrollbarType) updateKeyboardEventManually(layerAlias string, scro
 		}
 		if keystrokeAsString == "pgdn" {
 			scrollbarEntry.ScrollValue = scrollbarEntry.ScrollValue + (scrollbarEntry.ScrollIncrement * 3)
-			shared.computeScrollbarHandlePositionByScrollValue(layerAlias, scrollbarAlias)
+			shared.computeHandlePositionByScrollValue(layerAlias, scrollbarAlias)
 			// Update selector viewport position
 			for _, currentSelectorEntry := range Selectors.GetAllEntries(layerAlias) {
 				selectorEntry := currentSelectorEntry
@@ -335,8 +471,18 @@ func (shared *scrollbarType) updateKeyboardEventManually(layerAlias string, scro
 }
 
 /*
-updateKeyboardEvent allows you to update the state of all scrollbars according to the current keystroke event.
-In the event that a screen update is required this method returns true.
+updateKeyboardEvent is a method which allows you to update the state of all scroll bars according to the current
+keystroke event. In addition, the following should be noted:
+
+- Only the currently focused scroll bar will process the event.
+
+:param keystroke: The keystroke to process.
+
+:return: Returns true if a screen update is required and true if the keystroke was consumed.
+
+Example:
+
+	updateRequired, consumed := scrollbar.updateKeyboardEvent(rune("down"))
 */
 func (shared *scrollbarType) updateKeyboardEvent(keystroke []rune) (bool, bool) {
 	focusedLayerAlias := eventStateMemory.currentlyFocusedControl.layerAlias
@@ -349,8 +495,16 @@ func (shared *scrollbarType) updateKeyboardEvent(keystroke []rune) (bool, bool) 
 }
 
 /*
-updateMouseEvent allows you to update the state of all scrollbars according to the current mouse event state.
-In the event that a screen update is required this method returns true.
+updateMouseEvent is a method which allows you to update the state of all scroll bars according to the current mouse
+event state. In addition, the following should be noted:
+
+- Handles clicking and dragging of the scroll bar handle and arrows.
+
+:return: Returns true if a screen update is required.
+
+Example:
+
+	updateRequired := scrollbar.updateMouseEvent()
 */
 func (shared *scrollbarType) updateMouseEvent() bool {
 	isScreenUpdateRequired := false
@@ -371,15 +525,15 @@ func (shared *scrollbarType) updateMouseEvent() bool {
 				} else if characterEntry.AttributeEntry.CellControlId == constants.CellControlIdUpScrollArrow {
 					// If you click on the up scroll bar buttonType.
 					scrollbarEntry.ScrollValue = scrollbarEntry.ScrollValue - scrollbarEntry.ScrollIncrement
-					shared.computeScrollbarHandlePositionByScrollValue(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias)
+					shared.computeHandlePositionByScrollValue(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias)
 				} else if characterEntry.AttributeEntry.CellControlId == constants.CellControlIdDownScrollArrow {
 					// If you click on the down scroll bar buttonType.
 					scrollbarEntry.ScrollValue = scrollbarEntry.ScrollValue + scrollbarEntry.ScrollIncrement
-					shared.computeScrollbarHandlePositionByScrollValue(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias)
+					shared.computeHandlePositionByScrollValue(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias)
 				} else {
 					// If you click on the scroll bar area itself,  jump the scroll bar to it.
 					scrollbarEntry.HandlePosition = characterEntry.AttributeEntry.CellControlId
-					shared.computeScrollbarValueByHandlePosition(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias)
+					shared.computeValueByHandlePosition(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias)
 				}
 			}
 			setFocusedControl(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias, constants.CellTypeScrollbar)
@@ -394,7 +548,7 @@ func (shared *scrollbarType) updateMouseEvent() bool {
 				} else {
 					scrollbarEntry.HandlePosition = scrollbarEntry.HandlePosition + yMove
 				}
-				shared.computeScrollbarValueByHandlePosition(focusedLayerAlias, focusedControlAlias)
+				shared.computeValueByHandlePosition(focusedLayerAlias, focusedControlAlias)
 				isScreenUpdateRequired = true
 			}
 		}

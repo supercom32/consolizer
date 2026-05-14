@@ -23,13 +23,43 @@ type ImageComposerEntryType struct {
 
 var ImageComposer ImageComposerEntryType
 
+/*
+New is a constructor which allows you to create a new instance of an image composer. It initializes the internal image
+map for tracking multiple image layers.
+
+:return: A new ImageComposerEntryType instance.
+
+Example:
+
+	composer := consolizer.ImageComposer.New()
+*/
 func (shared *ImageComposerEntryType) New() ImageComposerEntryType {
 	var newImageComposer ImageComposerEntryType
 	newImageComposer.images = make(map[string]*types.ImageComposerImageEntryType)
 	return newImageComposer
 }
 
-// Specifying 0 width and height means use native image size
+/*
+Add is a method which allows you to add a new image to the composer with specific dimensions and styles. If width or
+height are set to 0, the native image size will be used.
+
+:param fileName: The path to the image file to be loaded.
+:param xLocation: The X coordinate for placing the image.
+:param yLocation: The Y coordinate for placing the image.
+:param width: The width to scale the image to (0 for native).
+:param height: The height to scale the image to (0 for native).
+:param imageStyle: The styling configuration for the image.
+:param effectStyle: The visual effect to apply to the image.
+:param effectStep: The intensity or step value for the chosen effect.
+:param zOrder: The stacking order of the image.
+:param alphaValue: The transparency level of the image (0.0 to 1.0).
+
+:return: A pointer to the newly created ImageComposerImageEntryType.
+
+Example:
+
+	composer.Add("test.png", 0, 0, 100, 100, style, constants.EffectNone, 0, 1, 1.0)
+*/
 func (shared *ImageComposerEntryType) Add(fileName string, xLocation int, yLocation int, width int, height int, imageStyle types.ImageStyleEntryType, effectStyle constants.EffectStyle, effectStep float64, zOrder int, alphaValue float32) *types.ImageComposerImageEntryType {
 	imageComposerImage := types.NewImageComposerImageEntry()
 	imageComposerImage.ZOrder = zOrder
@@ -51,14 +81,40 @@ func (shared *ImageComposerEntryType) Add(fileName string, xLocation int, yLocat
 	return &imageComposerImage
 }
 
+/*
+Delete is a method which allows you to remove an image from the composer using its alias.
+
+:param imageAlias: The alias or filename of the image to remove.
+
+Example:
+
+	composer.Delete("test.png")
+*/
 func (shared *ImageComposerEntryType) Delete(imageAlias string) {
 	delete(shared.images, imageAlias)
 }
 
+/*
+Clear is a method which allows you to remove all images currently managed by the composer.
+
+Example:
+
+	composer.Clear()
+*/
 func (shared *ImageComposerEntryType) Clear() {
 	shared.images = make(map[string]*types.ImageComposerImageEntryType)
 }
 
+/*
+RenderImage is a method which allows you to composite all visible images in the composer into a single image object. The
+images are processed according to their Z-order, effects, and alpha values.
+
+:return: The resulting composited image.
+
+Example:
+
+	finalImage := composer.RenderImage()
+*/
 func (shared *ImageComposerEntryType) RenderImage() image.Image {
 	sortedImageList := sortImagesByZOrder(shared.images)
 	var baseImage image.Image
@@ -81,6 +137,19 @@ func (shared *ImageComposerEntryType) RenderImage() image.Image {
 	return baseImage
 }
 
+/*
+getTransformedImage is a method which allows you to apply visual effects to a source image based on the provided
+composer entry settings.
+
+:param sourceImageData: The original image to be transformed.
+:param imageComposerImageEntry: The entry containing effect settings.
+
+:return: The transformed image.
+
+Example:
+
+	transformed := getTransformedImage(img, entry)
+*/
 func getTransformedImage(sourceImageData image.Image, imageComposerImageEntry types.ImageComposerImageEntryType) image.Image {
 	transformedImage := sourceImageData
 	if imageComposerImageEntry.EffectStyle == constants.EffectSinWave {
@@ -115,6 +184,17 @@ func getTransformedImage(sourceImageData image.Image, imageComposerImageEntry ty
 	return transformedImage
 }
 
+/*
+sortImagesByZOrder is a method which allows you to sort a map of image entries into a slice ordered by their Z-order.
+
+:param imageList: A map of image aliases to their composer entries.
+
+:return: A sorted slice of image composer entries.
+
+Example:
+
+	sorted := sortImagesByZOrder(composer.images)
+*/
 func sortImagesByZOrder(imageList map[string]*types.ImageComposerImageEntryType) []*types.ImageComposerImageEntryType {
 	// Create a slice to store the image entries
 	var imageSlice []*types.ImageComposerImageEntryType
@@ -132,6 +212,24 @@ func sortImagesByZOrder(imageList map[string]*types.ImageComposerImageEntryType)
 	return imageSlice
 }
 
+/*
+BrailleFromDots is a method which allows you to convert a set of eight dots into a corresponding Braille rune.
+
+:param dot0: The state of the first dot.
+:param dot1: The state of the second dot.
+:param dot2: The state of the third dot.
+:param dot3: The state of the fourth dot.
+:param dot4: The state of the fifth dot.
+:param dot5: The state of the sixth dot.
+:param dot6: The state of the seventh dot.
+:param dot7: The state of the eighth dot.
+
+:return: The Braille rune representing the dots.
+
+Example:
+
+	r := BrailleFromDots(true, false, true, false, true, false, true, false)
+*/
 func BrailleFromDots(dot0, dot1, dot2, dot3, dot4, dot5, dot6, dot7 bool) rune {
 	blocks := 0
 	if dot0 {
@@ -162,6 +260,22 @@ func BrailleFromDots(dot0, dot1, dot2, dot3, dot4, dot5, dot6, dot7 bool) rune {
 	return brailleChar
 }
 
+/*
+getImageLayerAsBraille is a method which allows you to convert an image into a layer of Braille characters based on the
+specified dimensions and style.
+
+:param sourceImageData: The image to convert.
+:param imageStyle: The styling configuration for conversion.
+:param widthInCharacters: The target width in character columns.
+:param heightInCharacters: The target height in character rows.
+:param blurSigma: The intensity of blur to apply before conversion.
+
+:return: A LayerEntryType containing the Braille representation.
+
+Example:
+
+	layer := getImageLayerAsBraille(img, style, 80, 24, 0.5)
+*/
 func getImageLayerAsBraille(sourceImageData image.Image, imageStyle types.ImageStyleEntryType, widthInCharacters int, heightInCharacters int, blurSigma float64) types.LayerEntryType {
 	if widthInCharacters <= 0 && heightInCharacters <= 0 {
 		safeSttyPanic(fmt.Sprintf("The specified width and height of %dx%d for your image is not valid.", widthInCharacters, heightInCharacters))
@@ -195,6 +309,18 @@ func getImageLayerAsBraille(sourceImageData image.Image, imageStyle types.ImageS
 	return layerEntry
 }
 
+/*
+ConvertImageToGrayscale is a method which allows you to convert a color image into a grayscale image while preserving
+transparency.
+
+:param inputImage: The color image to convert.
+
+:return: The resulting grayscale image.
+
+Example:
+
+	gray := ConvertImageToGrayscale(img)
+*/
 func ConvertImageToGrayscale(inputImage image.Image) image.Image {
 	bounds := inputImage.Bounds()
 	// Create a new RGBA image to support alpha channel.
@@ -216,6 +342,19 @@ func ConvertImageToGrayscale(inputImage image.Image) image.Image {
 	return grayImage
 }
 
+/*
+getBrailleImageData is a method which allows you to convert an image into a 2D grid of character entries representing
+Braille dots.
+
+:param inputImage: The image to convert.
+:param imageStyle: The styling configuration for the conversion.
+
+:return: A 2D slice of CharacterEntryType.
+
+Example:
+
+	data := getBrailleImageData(img, style)
+*/
 func getBrailleImageData(inputImage image.Image, imageStyle types.ImageStyleEntryType) [][]types.CharacterEntryType {
 	var monochromeImage image.Image
 	var grayscaleImage *image.Gray
@@ -244,10 +383,9 @@ func getBrailleImageData(inputImage image.Image, imageStyle types.ImageStyleEntr
 	} else {
 		monochromeImage = FloydSteinbergDithering4x4(contrastAdjustedImage)
 	}
-	/*contextForImage := gg.NewContextForImage(monochromeImage)
-	if err := contextForImage.SavePNG("dithered_output.png"); err != nil {
-		safeSttyPanic(err)
-	}*/
+	/*
+	contextForImage := gg.NewContextForImage(monochromeImage) if err := contextForImage.SavePNG("dithered_output.png"); err != nil { safeSttyPanic(err) }
+	*/
 	bounds = inputImage.Bounds()
 	width, height := bounds.Dx(), bounds.Dy()
 	brailleWidth := width / 2
@@ -313,6 +451,18 @@ func getBrailleImageData(inputImage image.Image, imageStyle types.ImageStyleEntr
 	return result
 }
 
+/*
+adjustContrast is a method which allows you to modify the contrast of an image by a specified factor.
+
+:param inputImage: The image to adjust.
+:param contrastFactor: The factor by which to adjust the contrast.
+
+:return: The contrast-adjusted image.
+
+Example:
+
+	brighter := adjustContrast(img, 1.2)
+*/
 func adjustContrast(inputImage image.Image, contrastFactor float64) image.Image {
 	bounds := inputImage.Bounds()
 	width, height := bounds.Max.X, bounds.Max.Y
@@ -339,6 +489,17 @@ func adjustContrast(inputImage image.Image, contrastFactor float64) image.Image 
 	return outputImage
 }
 
+/*
+clampColorValue is a method which allows you to ensure a color intensity value remains within the valid 0-255 range.
+
+:param value: The value to clamp.
+
+:return: The clamped value as a float64.
+
+Example:
+
+	v := clampColorValue(260.0)
+*/
 func clampColorValue(value float64) float64 {
 	if value < 0 {
 		return 0
@@ -353,6 +514,17 @@ func clampColorValue(value float64) float64 {
 // ==========================================================================================================
 // ==========================================================================================================
 
+/*
+ReadImage is a method which allows you to load an image from a file path.
+
+:param filePath: The path to the image file.
+
+:return: An error if the file cannot be read or decoded.
+
+Example:
+
+	img, err := ReadImage("path/to/image.png")
+*/
 func ReadImage(filePath string) (image.Image, error) {
 	// Open the image file
 	file, err := os.Open(filePath)
@@ -370,6 +542,18 @@ func ReadImage(filePath string) (image.Image, error) {
 	return img, nil
 }
 
+/*
+SaveImageToFile is a method which allows you to save an image object to a file as a JPEG.
+
+:param filePath: The path where the image should be saved.
+:param img: The image object to save.
+
+:return: An error if the file cannot be created or the image cannot be encoded.
+
+Example:
+
+	err := SaveImageToFile("output.jpg", img)
+*/
 func SaveImageToFile(filePath string, img image.Image) error {
 	// Create a new file for writing
 	file, err := os.Create(filePath)
@@ -385,6 +569,21 @@ func SaveImageToFile(filePath string, img image.Image) error {
 	return nil
 }
 
+/*
+getSubImageFromImage is a method which allows you to extract a rectangular sub-region from a source image.
+
+:param sourceImage: The image to extract from.
+:param xLocation: The X coordinate of the sub-region.
+:param yLocation: The Y coordinate of the sub-region.
+:param width: The width of the sub-region.
+:param height: The height of the sub-region.
+
+:return: The extracted sub-image.
+
+Example:
+
+	sub := getSubImageFromImage(img, 10, 10, 50, 50)
+*/
 func getSubImageFromImage(sourceImage image.Image, xLocation, yLocation, width, height int) image.Image {
 	sourceBounds := sourceImage.Bounds()
 	widthToCut := width
@@ -412,6 +611,26 @@ func getSubImageFromImage(sourceImage image.Image, xLocation, yLocation, width, 
 	return resultImage
 }
 
+/*
+OverlayImageWithAlpha is a method which allows you to overlay one image onto another with a specified alpha transparency
+level.
+
+:param sourceImage: The image to overlay.
+:param sourceXLocation: The X coordinate in the source image to start from.
+:param sourceYLocation: The Y coordinate in the source image to start from.
+:param sourceWidth: The width of the source region to overlay.
+:param sourceHeight: The height of the source region to overlay.
+:param targetImage: The base image to overlay onto.
+:param targetXLocation: The X coordinate on the target image.
+:param targetYLocation: The Y coordinate on the target image.
+:param alphaValue: The transparency level (0.0 to 1.0).
+
+:return: The resulting composited image.
+
+Example:
+
+	result := OverlayImageWithAlpha(fg, 0, 0, 10, 10, bg, 5, 5, 0.5)
+*/
 func OverlayImageWithAlpha(sourceImage image.Image, sourceXLocation int, sourceYLocation int, sourceWidth int, sourceHeight int, targetImage image.Image, targetXLocation, targetYLocation int, alphaValue float32) image.Image {
 	sourceImage = getSubImageFromImage(sourceImage, sourceXLocation, sourceYLocation, sourceWidth, sourceHeight)
 	if sourceImage == nil {
@@ -457,6 +676,18 @@ func OverlayImageWithAlpha(sourceImage image.Image, sourceXLocation int, sourceY
 	return resultImage
 }
 
+/*
+max is a method which allows you to determine the maximum of two float64 values.
+
+:param a: The first value.
+:param b: The second value.
+
+:return: The larger of the two values.
+
+Example:
+
+	m := max(10.5, 20.1)
+*/
 func max(a, b float64) float64 {
 	if a > b {
 		return a
@@ -464,6 +695,18 @@ func max(a, b float64) float64 {
 	return b
 }
 
+/*
+min is a method which allows you to determine the minimum of two float64 values.
+
+:param a: The first value.
+:param b: The second value.
+
+:return: The smaller of the two values.
+
+Example:
+
+	m := min(10.5, 20.1)
+*/
 func min(a, b float64) float64 {
 	if a < b {
 		return a
@@ -471,6 +714,19 @@ func min(a, b float64) float64 {
 	return b
 }
 
+/*
+blendColors is a method which allows you to blend two colors based on an alpha value.
+
+:param bg: The background color.
+:param fg: The foreground color.
+:param alpha: The alpha value (0-255).
+
+:return: The blended color.
+
+Example:
+
+	c := blendColors(color.Black, color.White, 128)
+*/
 func blendColors(bg color.Color, fg color.Color, alpha uint8) color.Color {
 	bgR, bgG, bgB, bgA := bg.RGBA()
 	fgR, fgG, fgB, fgA := fg.RGBA()
@@ -483,6 +739,19 @@ func blendColors(bg color.Color, fg color.Color, alpha uint8) color.Color {
 	return color.RGBA{uint8(blendR >> 8), uint8(blendG >> 8), uint8(blendB >> 8), uint8(blendA >> 8)}
 }
 
+/*
+applyWaveEffect is a method which allows you to apply a sine wave distortion effect to an image.
+
+:param inputImage: The image to transform.
+:param amplitude: The height of the wave.
+:param isHorizontal: Whether the wave should be applied horizontally.
+
+:return: The transformed image.
+
+Example:
+
+	wavy := applyWaveEffect(img, 5.0, true)
+*/
 func applyWaveEffect(inputImage image.Image, amplitude float64, isHorizontal bool) image.Image {
 	bounds := inputImage.Bounds()
 	width, height := bounds.Max.X, bounds.Max.Y
@@ -524,6 +793,18 @@ func applyWaveEffect(inputImage image.Image, amplitude float64, isHorizontal boo
 	return resultImage
 }
 
+/*
+applyRippleEffect is a method which allows you to apply a concentric ripple effect to an image.
+
+:param inputImage: The image to transform.
+:param amplitude: The intensity of the ripple.
+
+:return: The transformed image.
+
+Example:
+
+	rippled := applyRippleEffect(img, 10.0)
+*/
 func applyRippleEffect(inputImage image.Image, amplitude float64) image.Image {
 	bounds := inputImage.Bounds()
 	width, height := bounds.Max.X, bounds.Max.Y
@@ -560,6 +841,19 @@ func applyRippleEffect(inputImage image.Image, amplitude float64) image.Image {
 	return resultImage
 }
 
+/*
+applyFlagWavingEffect is a method which allows you to apply a flag waving effect to an image.
+
+:param inputImage: The image to transform.
+:param amplitude: The height of the wave.
+:param frequency: The frequency of the wave oscillation.
+
+:return: The transformed image.
+
+Example:
+
+	flag := applyFlagWavingEffect(img, 5.0, 100.0)
+*/
 func applyFlagWavingEffect(inputImage image.Image, amplitude float64, frequency float64) image.Image {
 	bounds := inputImage.Bounds()
 	width, height := bounds.Max.X, bounds.Max.Y
@@ -601,6 +895,18 @@ func applyFlagWavingEffect(inputImage image.Image, amplitude float64, frequency 
 	return resultImage
 }
 
+/*
+applyBlindsEffect is a method which allows you to apply a vertical blinds transition effect to an image.
+
+:param inputImage: The image to transform.
+:param step: The current step of the blinds effect.
+
+:return: The transformed image.
+
+Example:
+
+	blinds := applyBlindsEffect(img, 10)
+*/
 func applyBlindsEffect(inputImage image.Image, step int) image.Image {
 	bounds := inputImage.Bounds()
 	width, height := bounds.Max.X, bounds.Max.Y
@@ -647,6 +953,18 @@ func applyBlindsEffect(inputImage image.Image, step int) image.Image {
 	return resultImage
 }
 
+/*
+applyHorizontalWeavingEffect is a method which allows you to apply a horizontal weaving transition effect to an image.
+
+:param inputImage: The image to transform.
+:param step: The current step of the weaving effect.
+
+:return: The transformed image.
+
+Example:
+
+	weaved := applyHorizontalWeavingEffect(img, 5)
+*/
 func applyHorizontalWeavingEffect(inputImage image.Image, step int) image.Image {
 	bounds := inputImage.Bounds()
 	width, height := bounds.Max.X, bounds.Max.Y
@@ -681,6 +999,18 @@ func applyHorizontalWeavingEffect(inputImage image.Image, step int) image.Image 
 	return resultImage
 }
 
+/*
+applyVerticalWeavingEffect is a method which allows you to apply a vertical weaving transition effect to an image.
+
+:param inputImage: The image to transform.
+:param step: The current step of the weaving effect.
+
+:return: The transformed image.
+
+Example:
+
+	weaved := applyVerticalWeavingEffect(img, 5)
+*/
 func applyVerticalWeavingEffect(inputImage image.Image, step int) image.Image {
 	bounds := inputImage.Bounds()
 	width, height := bounds.Max.X, bounds.Max.Y
@@ -715,6 +1045,19 @@ func applyVerticalWeavingEffect(inputImage image.Image, step int) image.Image {
 	return resultImage
 }
 
+/*
+applyForwardDiagonalWeavingEffect is a method which allows you to apply a forward diagonal weaving transition effect to
+an image.
+
+:param inputImage: The image to transform.
+:param step: The current step of the weaving effect.
+
+:return: The transformed image.
+
+Example:
+
+	weaved := applyForwardDiagonalWeavingEffect(img, 5)
+*/
 func applyForwardDiagonalWeavingEffect(inputImage image.Image, step int) image.Image {
 	bounds := inputImage.Bounds()
 	width, height := bounds.Max.X, bounds.Max.Y
@@ -751,6 +1094,19 @@ func applyForwardDiagonalWeavingEffect(inputImage image.Image, step int) image.I
 	return resultImage
 }
 
+/*
+applyBackwardDiagonalWeavingEffect is a method which allows you to apply a backward diagonal weaving transition effect
+to an image.
+
+:param inputImage: The image to transform.
+:param step: The current step of the weaving effect.
+
+:return: The transformed image.
+
+Example:
+
+	weaved := applyBackwardDiagonalWeavingEffect(img, 5)
+*/
 func applyBackwardDiagonalWeavingEffect(inputImage image.Image, step int) image.Image {
 	bounds := inputImage.Bounds()
 	width, height := bounds.Max.X, bounds.Max.Y
@@ -787,6 +1143,18 @@ func applyBackwardDiagonalWeavingEffect(inputImage image.Image, step int) image.
 	return resultImage
 }
 
+/*
+applyCounterClockwiseSwirlEffect is a method which allows you to apply a counter-clockwise swirl effect to an image.
+
+:param inputImage: The image to transform.
+:param step: The intensity of the swirl.
+
+:return: The transformed image.
+
+Example:
+
+	swirled := applyCounterClockwiseSwirlEffect(img, 5)
+*/
 func applyCounterClockwiseSwirlEffect(inputImage image.Image, step int) image.Image {
 	bounds := inputImage.Bounds()
 	width, height := bounds.Max.X, bounds.Max.Y
@@ -822,6 +1190,18 @@ func applyCounterClockwiseSwirlEffect(inputImage image.Image, step int) image.Im
 	return resultImage
 }
 
+/*
+applyClockwiseSwirlEffect is a method which allows you to apply a clockwise swirl effect to an image.
+
+:param inputImage: The image to transform.
+:param step: The intensity of the swirl.
+
+:return: The transformed image.
+
+Example:
+
+	swirled := applyClockwiseSwirlEffect(img, 5)
+*/
 func applyClockwiseSwirlEffect(inputImage image.Image, step int) image.Image {
 	bounds := inputImage.Bounds()
 	width, height := bounds.Max.X, bounds.Max.Y
@@ -857,6 +1237,18 @@ func applyClockwiseSwirlEffect(inputImage image.Image, step int) image.Image {
 	return resultImage
 }
 
+/*
+applyGrowingCircleEffect is a method which allows you to apply a growing circle transition effect to an image.
+
+:param inputImage: The image to transform.
+:param step: The current radius of the circle.
+
+:return: The transformed image.
+
+Example:
+
+	circle := applyGrowingCircleEffect(img, 20)
+*/
 func applyGrowingCircleEffect(inputImage image.Image, step int) image.Image {
 	bounds := inputImage.Bounds()
 	width, height := bounds.Max.X, bounds.Max.Y
@@ -887,6 +1279,18 @@ func applyGrowingCircleEffect(inputImage image.Image, step int) image.Image {
 	return resultImage
 }
 
+/*
+applyVerticalCurtainEffect is a method which allows you to apply a vertical curtain transition effect to an image.
+
+:param inputImage: The image to transform.
+:param step: The current width of the curtain opening.
+
+:return: The transformed image.
+
+Example:
+
+	curtain := applyVerticalCurtainEffect(img, 30)
+*/
 func applyVerticalCurtainEffect(inputImage image.Image, step int) image.Image {
 	bounds := inputImage.Bounds()
 	width, height := bounds.Max.X, bounds.Max.Y
@@ -916,6 +1320,18 @@ func applyVerticalCurtainEffect(inputImage image.Image, step int) image.Image {
 	return resultImage
 }
 
+/*
+applyHorizontalCurtainEffect is a method which allows you to apply a horizontal curtain transition effect to an image.
+
+:param inputImage: The image to transform.
+:param step: The current height of the curtain opening.
+
+:return: The transformed image.
+
+Example:
+
+	curtain := applyHorizontalCurtainEffect(img, 30)
+*/
 func applyHorizontalCurtainEffect(inputImage image.Image, step int) image.Image {
 	bounds := inputImage.Bounds()
 	width, height := bounds.Max.X, bounds.Max.Y

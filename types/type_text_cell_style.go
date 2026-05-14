@@ -17,6 +17,13 @@ type TextCellStyleEntryType struct {
 	BackgroundTransformValue float32
 }
 
+/*
+MarshalJSON is a method which allows you to marshaljson.
+
+Example:
+
+	instance.MarshalJSON()
+*/
 func (shared TextCellStyleEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
 		ForegroundColor          constants.ColorType
@@ -45,6 +52,15 @@ func (shared TextCellStyleEntryType) MarshalJSON() ([]byte, error) {
 	return j, nil
 }
 
+/*
+GetEntryAsJsonDump is a method which allows you to getentryasjsondump.
+
+:return: string
+
+Example:
+
+	instance.GetEntryAsJsonDump()
+*/
 func (shared TextCellStyleEntryType) GetEntryAsJsonDump() string {
 	j, err := json.Marshal(shared)
 	if err != nil {
@@ -53,6 +69,17 @@ func (shared TextCellStyleEntryType) GetEntryAsJsonDump() string {
 	return string(j)
 }
 
+/*
+NewTextCellStyleEntry is a constructor which allows you to newtextcellstyleentry.
+
+:param existingAttributeEntry: The existingAttributeEntry parameter.
+
+:return: TextCellStyleEntryType
+
+Example:
+
+	NewTextCellStyleEntry(existingAttributeEntry)
+*/
 func NewTextCellStyleEntry(existingAttributeEntry ...*TextCellStyleEntryType) TextCellStyleEntryType {
 	var attributeEntry TextCellStyleEntryType
 	if existingAttributeEntry != nil {

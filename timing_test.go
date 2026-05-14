@@ -17,7 +17,7 @@ func TestTimerFunctionality(test *testing.T) {
 func TestSetTimerFunctionality(test *testing.T) {
 	InitializeTimerMemory()
 	timerEntry := AddTimer(9000, false)
-	timerEntry.SetTimer(3000, true)
+	timerEntry.Set(3000, true)
 	SleepInSeconds(1)
 	assert.Equalf(test, timerEntry.IsExpired(), false, "The timer was flagged as expired when not enough time has elapsed.")
 

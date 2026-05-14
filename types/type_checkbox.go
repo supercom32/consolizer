@@ -9,6 +9,13 @@ type CheckboxEntryType struct {
 	IsSelected bool
 }
 
+/*
+MarshalJSON is a method which allows you to marshaljson.
+
+Example:
+
+	instance.MarshalJSON()
+*/
 func (shared CheckboxEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
 		BaseControlType
@@ -23,6 +30,15 @@ func (shared CheckboxEntryType) MarshalJSON() ([]byte, error) {
 	return j, nil
 }
 
+/*
+GetEntryAsJsonDump is a method which allows you to getentryasjsondump.
+
+:return: string
+
+Example:
+
+	instance.GetEntryAsJsonDump()
+*/
 func (shared CheckboxEntryType) GetEntryAsJsonDump() string {
 	j, err := json.Marshal(shared)
 	if err != nil {
@@ -31,7 +47,17 @@ func (shared CheckboxEntryType) GetEntryAsJsonDump() string {
 	return string(j)
 }
 
-// ☐ ☑ U+2610, U+2611
+/*
+NewCheckboxEntry is a constructor which allows you to ☐ ☑ U+2610, U+2611.
+
+:param existingCheckboxEntry: The existingCheckboxEntry parameter.
+
+:return: CheckboxEntryType
+
+Example:
+
+	NewCheckboxEntry(existingCheckboxEntry)
+*/
 func NewCheckboxEntry(existingCheckboxEntry ...*CheckboxEntryType) CheckboxEntryType {
 	var checkboxEntry CheckboxEntryType
 	checkboxEntry.BaseControlType = NewBaseControl()
@@ -44,6 +70,18 @@ func NewCheckboxEntry(existingCheckboxEntry ...*CheckboxEntryType) CheckboxEntry
 	return checkboxEntry
 }
 
+/*
+IsCheckboxEqual is a method which allows you to ischeckboxequal.
+
+:param sourceCheckboxEntry: The sourceCheckboxEntry parameter.
+:param targetCheckboxEntry: The targetCheckboxEntry parameter.
+
+:return: bool
+
+Example:
+
+	IsCheckboxEqual(sourceCheckboxEntry, targetCheckboxEntry)
+*/
 func IsCheckboxEqual(sourceCheckboxEntry *CheckboxEntryType, targetCheckboxEntry *CheckboxEntryType) bool {
 	return sourceCheckboxEntry.BaseControlType.IsEqual(&targetCheckboxEntry.BaseControlType) &&
 		sourceCheckboxEntry.IsSelected == targetCheckboxEntry.IsSelected

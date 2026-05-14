@@ -10,6 +10,13 @@ import (
 	"github.com/supercom32/consolizer/types"
 )
 
+/*
+TestMainStub is a test which allows you to run manual tests for various TUI elements.
+
+Example:
+
+	TestMainStub(t)
+*/
 func TestMainStub(test *testing.T) {
 	// testRadioButtons()
 	// testTextboxes()
@@ -23,6 +30,10 @@ func TestMainStub(test *testing.T) {
 	// testButtonPressAction()
 	//RestoreTerminalSettings()
 }
+
+/*
+testProgressBar is a method which allows you to manually test the progress bar control.
+*/
 func testProgressBar() {
 	commonResource.isDebugEnabled = false
 	InitializeTerminal(80, 40)
@@ -83,6 +94,9 @@ func testProgressBar() {
 	RestoreTerminalSettings()
 }
 
+/*
+testRadioButtons is a method which allows you to manually test the radio button control.
+*/
 func testRadioButtons() {
 	commonResource.isDebugEnabled = false
 	InitializeTerminal(80, 40)
@@ -106,7 +120,7 @@ func testRadioButtons() {
 
 	for {
 		UpdateDisplay(false)
-		selectedButton := radioButton.GetSelectedRadioButton()
+		selectedButton := radioButton.GetSelected()
 		layer1.Locate(0, 0)
 		layer1.Print("                                ")
 		layer1.Locate(0, 0)
@@ -122,6 +136,10 @@ func testRadioButtons() {
 	DeleteAllLayers()
 	RestoreTerminalSettings()
 }
+
+/*
+testTextboxes is a method which allows you to manually test the textbox control.
+*/
 func testTextboxes() {
 	commonResource.isDebugEnabled = false
 	InitializeTerminal(80, 40)
@@ -167,6 +185,9 @@ func testTextboxes() {
 	RestoreTerminalSettings()
 }
 
+/*
+testCheckboxes is a method which allows you to manually test the checkbox control.
+*/
 func testCheckboxes() {
 	commonResource.isDebugEnabled = false
 	InitializeTerminal(80, 40)
@@ -194,6 +215,10 @@ func testCheckboxes() {
 	DeleteAllLayers()
 	RestoreTerminalSettings()
 }
+
+/*
+testDropdown is a method which allows you to manually test the dropdown and selector controls.
+*/
 func testDropdown() {
 	commonResource.isDebugEnabled = false
 	InitializeTerminal(80, 40)
@@ -247,6 +272,10 @@ func testDropdown() {
 	DeleteAllLayers()
 	RestoreTerminalSettings()
 }
+
+/*
+testScrollBars is a method which allows you to manually test the scroll bar control.
+*/
 func testScrollBars() {
 	commonResource.isDebugEnabled = false
 	InitializeTerminal(80, 40)
@@ -291,6 +320,9 @@ func testScrollBars() {
 	RestoreTerminalSettings()
 }
 
+/*
+testSelector is a method which allows you to manually test the selector control.
+*/
 func testSelector() {
 	commonResource.isDebugEnabled = false
 	InitializeTerminal(80, 40)
@@ -331,6 +363,9 @@ func testSelector() {
 	RestoreTerminalSettings()
 }
 
+/*
+testTextField is a method which allows you to manually test the text field control.
+*/
 func testTextField() {
 	commonResource.isDebugEnabled = false
 	InitializeTerminal(80, 40)
@@ -364,6 +399,9 @@ func testTextField() {
 	RestoreTerminalSettings()
 }
 
+/*
+testWindowMovement is a method which allows you to manually test window movement and Z-order.
+*/
 func testWindowMovement() {
 	commonResource.isDebugEnabled = false
 	xLocation := 1
@@ -390,6 +428,9 @@ func testWindowMovement() {
 	RestoreTerminalSettings()
 }
 
+/*
+testButtonPressAction is a method which allows you to manually test button press actions and mouse status.
+*/
 func testButtonPressAction() {
 	commonResource.isDebugEnabled = false
 	xLocation := 0
@@ -402,7 +443,7 @@ func testButtonPressAction() {
 	layer1.AddButton("CANCEL", styleEntry, 2, 2, 10, 10, true)
 	layer1.AddButton("OK", styleEntry, 15, 2, 10, 10, true)
 	layerInformation := Layers.Get(layer1.layerAlias)
-	Button.drawButtonsOnLayer(*layerInformation)
+	Button.drawOnLayer(*layerInformation)
 	for {
 		mouseXLocation, mouseYLocation, _, _ := GetMouseStatus()
 		characterEntry := getCellInformationUnderMouseCursor(mouseXLocation, mouseYLocation)

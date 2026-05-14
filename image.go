@@ -60,7 +60,13 @@ func deleteImage(imageAlias string) {
 	delete(Image.Entries, imageAlias)
 }
 
-// IsImageExists allows you to check if an image with the given alias exists in memory.
+/*
+IsImageExists is a method which allows you to check if an image with the given alias exists in memory.
+
+:param imageAlias: The alias of the image to check.
+
+:return: Whether the image exists.
+*/
 func IsImageExists(imageAlias string) bool {
 	Image.Lock()
 	defer func() {
@@ -72,7 +78,9 @@ func IsImageExists(imageAlias string) bool {
 	return true
 }
 
-// ClearAllImages removes all loaded images from memory.
+/*
+ClearAllImages is a method which allows you to remove all loaded images from memory.
+*/
 func ClearAllImages() {
 	Image.Lock()
 	defer func() {
@@ -82,26 +90,33 @@ func ClearAllImages() {
 }
 
 /*
-UnloadImage allows you to remove an image from memory. Since images can
-take up a large amount of space, it is recommended to unload images
-any time you are done working with them. However, you may consider
-retaining images if they are frequently used and repeatedly loading
-them would be less effective. In addition, the following information should
-be noted:
+UnloadImage is a method which allows you to remove an image from memory. In addition, the following should be noted:
 
-- If you pass in an image alias that does not exist, then the delete
-operation will be ignored.
+  - Since images can take up a large amount of space, it is recommended to unload images any time you are done working
+    with.
+
+- However, you may consider retaining images if they are frequently used and repeatedly loading them would be less.
+
+- If you pass in an image alias that does not exist, then the delete operation will be ignored.
+
+:param imageAlias: The alias of the image to unload.
 */
 func UnloadImage(imageAlias string) {
 	deleteImage(imageAlias)
 }
 
 /*
-LoadImage allows you to load an image into memory without performing
-any ansi conversions ahead of time. This takes up more memory for larger images
-but allows you to render those images at arbitrary resolutions. For example,
-loading a large image to retain detail and dynamically rendering that
-image later depending on the available terminal resolution detected.
+LoadImage is a method which allows you to load an image into memory without performing any ansi conversions ahead of
+time. In addition, the following should be noted:
+
+- This takes up more memory for larger images but allows you to render those images at arbitrary resolutions.
+
+  - For example, loading a large image to retain detail and dynamically rendering that image later depending on the
+    available terminal resolution detected.
+
+:param imageFile: The path to the image file to load.
+
+:return: An error if the image could not be loaded.
 */
 func LoadImage(imageFile string) error {
 	imageEntry, err := getImageEntryFromFileSystem(imageFile)
@@ -113,14 +128,18 @@ func LoadImage(imageFile string) error {
 }
 
 /*
-getImageEntryFromFileSystem allows you to obtain an image entry from the
-default file system. If you have a virtual file system mounted, then the
-image file will be retrieved from it instead of your local.com file system.
-In addition, the following information should be noted:
+getImageEntryFromFileSystem is a method which allows you to obtain an image entry from the default file system. In
+addition, the following should be noted:
 
-- If for some reason the requested image could not be obtained, an
-error will be returned so that your application can handle this case
-appropriately.
+  - If you have a virtual file system mounted, then the image file will be retrieved from it instead of your local.com
+    file system.
+
+  - If for some reason the requested image could not be obtained, an error will be returned so that your application can
+    handle this case appropriately.
+
+:param imageFile: The path to the image file to retrieve.
+
+:return: An error if the image entry could not be retrieved.
 */
 func getImageEntryFromFileSystem(imageFile string) (types.ImageEntryType, error) {
 	imageEntry := types.NewImageEntry()
@@ -144,9 +163,20 @@ func getImageEntryFromFileSystem(imageFile string) (types.ImageEntryType, error)
 }
 
 /*
-LoadImagesInBulk allows you to load multiple images into memory at once.
-This is useful since it eliminates the need for error checking over each
-image as they are loaded. An example use of this method is as follows:
+LoadImagesInBulk is a method which allows you to load multiple images into memory at once. In addition, the following
+should be noted:
+
+- This is useful since it eliminates the need for error checking over each image as they are loaded.
+
+- This method works by reading in the provided asset list and then calling 'LoadImage' accordingly each time. For more.
+
+- In the event an error occurs, it will be returned to the user immediately and further loading will stop.
+
+:param assetList: The asset list containing the images to load.
+
+:return: An error if any image in the list could not be loaded.
+
+Example:
 
 	// Create a new asset list.
 	assetList := dosktop.NewAssetList()
@@ -155,15 +185,6 @@ image as they are loaded. An example use of this method is as follows:
 	assetList.AddImage("MyImageFile", "MyImageAlias")
 	// Load the list of images into memory.
 	err := dosktop.LoadImagesInBulk(assetList)
-
-In addition, the following information should be noted:
-
-- This method works by reading in the provided asset list and then calling
-'LoadImage' accordingly each time. For more information about the loading
-of images, please see 'LoadImage' for more details.
-
-- In the event an error occurs, it will be returned to the user immediately
-and further loading will stop.
 */
 func LoadImagesInBulk(assetList types.AssetListType) error {
 	var err error
@@ -183,35 +204,44 @@ func LoadImagesInBulk(assetList types.AssetListType) error {
 }
 
 /*
-LoadPreRenderedImage allows you to pre-render an image before loading it into
-memory. This enables you to save memory by rendering larger images ahead of
-time instead of storing the image data for later use. For example, you can
-take a large image and pre-render it at a much lower resolution suitable for
-the terminal. In addition, the following information should be noted:
+LoadPreRenderedImage is a method which allows you to pre-render an image before loading it into memory. In addition, the
+following should be noted:
 
-- If you load a pre-rendered image, you are not able to draw them dynamically
-at various resolutions. The image can only be drawn with the settings specified
-at load time.
+  - This enables you to save memory by rendering larger images ahead of time instead of storing the image data for later
+    use.
 
-- If you specify a value of 0 for ether the width or height, then that
-dimension will be automatically calculated to a value that best maintain
-the images aspect ratio.
+- For example, you can take a large image and pre-render it at a much lower resolution suitable for the terminal.
 
-- If you specify a value less than or equal to 0 for both the width and
-height, a panic will be generated to fail as fast as possible.
+  - If you load a pre-rendered image, you are not able to draw them dynamically at various resolutions. The image can only
+    be drawn with the settings specified at load time.
 
-- When pre-rendering an image, it should be noted that each text cell assigned
-contains a top and bottom pixel. This is done to provide as much resolution as
-possible for your image. That means for a pre-rendered image with a size of
-10x10 characters, the actual image being rendered would be 10x20 pixels tall.
-If the user wishes to maintain proper aspect ratios, they must manually select
-a height that appropriately compensates for this effect, or leave the height
-value as 0 to have it done automatically.
+  - If you specify a value of 0 for ether the width or height, then that dimension will be automatically calculated to a
+    value that best maintain the images aspect ratio.
 
-- The blur sigma controls how much blurring occurs after your image has been
-resized. This allows you to soften your image before it is rendered in ansi
-so that hard edges are removed. A value of 0.0 means no blurring will occur,
-with higher values increasing the blur factor.
+  - If you specify a value less than or equal to 0 for both the width and height, a panic will be generated to fail as
+    fast as possible.
+
+  - When pre-rendering an image, it should be noted that each text cell assigned contains a top and bottom pixel. This is
+    done to provide as much resolution as possible for your image.
+
+  - That means for a pre-rendered image with a size of 10x10 characters, the actual image being rendered would be 10x20
+    pixels tall.
+
+  - If the user wishes to maintain proper aspect ratios, they must manually select a height that appropriately compensates
+    for this effect, or leave the height value as 0 to have it done automatically.
+
+  - The blur sigma controls how much blurring occurs after your image has been resized. This allows you to soften your
+    image before it is rendered in ansi so that hard edges are removed. A value of 0.0 means no blurring will occur, with
+    higher values increasing the blur factor.
+
+:param imageFile: The path to the image file to load.
+:param imageAlias: The alias to assign to the loaded image.
+:param imageStyle: The style to use for pre-rendering the image.
+:param widthInCharacters: The width in characters for the pre-rendered image.
+:param heightInCharacters: The height in characters for the pre-rendered image.
+:param blurSigma: The blur factor to apply to the pre-rendered image.
+
+:return: An error if the image could not be loaded or pre-rendered.
 */
 func LoadPreRenderedImage(imageFile string, imageAlias string, imageStyle types.ImageStyleEntryType, widthInCharacters int, heightInCharacters int, blurSigma float64) error {
 	imageEntry, err := getImageEntryFromFileSystem(imageFile)
@@ -225,13 +255,19 @@ func LoadPreRenderedImage(imageFile string, imageAlias string, imageStyle types.
 }
 
 /*
-LoadBase64Image allows you to load a base64 encoded image into memory without
-performing any ansi conversions ahead of time. This takes up more memory for
-larger images but allows you to render those images at arbitrary resolutions.
-For example, loading a large image to retain detail and dynamically rendering
-that image later depending on the available terminal resolution detected.
-Since base64 encoded images can be stored in strings, they are ideal for
-directly embedding them into applications.
+LoadBase64Image is a method which allows you to load a base64 encoded image into memory without performing any ansi
+conversions ahead of time. In addition, the following should be noted:
+
+- This takes up more memory for larger images but allows you to render those images at arbitrary resolutions.
+
+- For example, loading a large image to retain detail and dynamically rendering that image later depending on the.
+
+- Since base64 encoded images can be stored in strings, they are ideal for directly embedding them into applications.
+
+:param imageDataAsBase64: The base64 encoded image data.
+:param imageAlias: The alias to assign to the loaded image.
+
+:return: An error if the image could not be loaded.
 */
 func LoadBase64Image(imageDataAsBase64 string, imageAlias string) error {
 	imageEntry := types.NewImageEntry()
@@ -245,38 +281,46 @@ func LoadBase64Image(imageDataAsBase64 string, imageAlias string) error {
 }
 
 /*
-LoadPreRenderedBase64Image allows you to pre-render an image before loading it
-into memory. This enables you to save memory by rendering larger images ahead of
-time instead of storing the image data for later use. For example, you can
-take a large image and pre-render it at a much lower resolution suitable for
-the terminal. Since base64 encoded images can be stored in strings, they are
-ideal for directly embedding them into applications. In addition, the following
-information should be noted:
+LoadPreRenderedBase64Image is a method which allows you to pre-render an image before loading it into memory. In
+addition, the following should be noted:
 
-- If you load a pre-rendered image, you are not able to draw them dynamically
-at various resolutions. The image can only be drawn with the settings specified
-at load time.
+  - This enables you to save memory by rendering larger images ahead of time instead of storing the image data for later
+    use.
 
-- If you specify a value of 0 for ether the width or height, then that
-dimension will be automatically calculated to a value that best maintain
-the images aspect ratio. This is useful since it removes the need to
-calculate this manually.
+- For example, you can take a large image and pre-render it at a much lower resolution suitable for the terminal.
 
-- If you specify a value less than or equal to 0 for both the width and
-height, a panic will be generated to fail as fast as possible.
+- Since base64 encoded images can be stored in strings, they are ideal for directly embedding them into applications.
 
-- When pre-rendering an image, it should be noted that each text cell assigned
-contains a top and bottom pixel. This is done to provide as much resolution as
-possible for your image. That means for a pre-rendered image with a size of
-10x10 characters, the actual image being rendered would be 10x20 pixels tall.
-If the user wishes to maintain proper aspect ratios, they must manually select
-a height that appropriately compensates for this effect, or leave the height
-value as 0 to have it done automatically.
+  - If you load a pre-rendered image, you are not able to draw them dynamically at various resolutions. The image can only
+    be drawn with the settings specified at load time.
 
-- The blur sigma controls how much blurring occurs after your image has been
-resized. This allows you to soften your image before it is rendered in ansi
-so that hard edges are removed. A value of 0.0 means no blurring will occur,
-with higher values increasing the blur factor.
+  - If you specify a value of 0 for ether the width or height, then that dimension will be automatically calculated to a
+    value that best maintain the images aspect ratio. This is useful since it removes the need to calculate this manually.
+
+  - If you specify a value less than or equal to 0 for both the width and height, a panic will be generated to fail as
+    fast as possible.
+
+  - When pre-rendering an image, it should be noted that each text cell assigned contains a top and bottom pixel. This is
+    done to provide as much resolution as possible for your image.
+
+  - That means for a pre-rendered image with a size of 10x10 characters, the actual image being rendered would be 10x20
+    pixels tall.
+
+  - If the user wishes to maintain proper aspect ratios, they must manually select a height that appropriately compensates
+    for this effect, or leave the height value as 0 to have it done automatically.
+
+  - The blur sigma controls how much blurring occurs after your image has been resized. This allows you to soften your
+    image before it is rendered in ansi so that hard edges are removed. A value of 0.0 means no blurring will occur, with
+    higher values increasing the blur factor.
+
+:param imageDataAsBase64: The base64 encoded image data.
+:param imageAlias: The alias to assign to the loaded image.
+:param imageStyle: The style to use for pre-rendering the image.
+:param widthInCharacters: The width in characters for the pre-rendered image.
+:param heightInCharacters: The height in characters for the pre-rendered image.
+:param blurSigma: The blur factor to apply to the pre-rendered image.
+
+:return: An error if the image could not be loaded or pre-rendered.
 */
 func LoadPreRenderedBase64Image(imageDataAsBase64 string, imageAlias string, imageStyle types.ImageStyleEntryType, widthInCharacters int, heightInCharacters int, blurSigma float64) error {
 	imageEntry := types.NewImageEntry()
@@ -290,8 +334,14 @@ func LoadPreRenderedBase64Image(imageDataAsBase64 string, imageAlias string, ima
 }
 
 /*
-getBase64PngFromImage allows you to covert raw image data into a base64 encoded
-string. This is useful for embedding images directly in applications.
+getBase64PngFromImage is a method which allows you to covert raw image data into a base64 encoded string. In addition,
+the following should be noted:
+
+- This is useful for embedding images directly in applications.
+
+:param imageToConvert: The raw image data to convert.
+
+:return: An error if the conversion fails.
 */
 func getBase64PngFromImage(imageToConvert image.Image) (string, error) {
 	var imageAsBase64 string
@@ -305,9 +355,14 @@ func getBase64PngFromImage(imageToConvert image.Image) (string, error) {
 }
 
 /*
-getImageFromBase64String allows you to obtain raw image data from a base64
-encoded string. This is useful for when images are embedded  directly into
-applications.
+getImageFromBase64String is a method which allows you to obtain raw image data from a base64 encoded string. In
+addition, the following should be noted:
+
+- This is useful for when images are embedded directly into applications.
+
+:param imageAsBase64: The base64 encoded image data string.
+
+:return: An error if the decoding fails.
 */
 func getImageFromBase64String(imageAsBase64 string) (image.Image, error) {
 	fileReader := base64.NewDecoder(base64.StdEncoding, strings.NewReader(imageAsBase64))
@@ -316,7 +371,15 @@ func getImageFromBase64String(imageAsBase64 string) (image.Image, error) {
 }
 
 /*
-resizeImage allows you to resize an image.
+resizeImage is a method which allows you to resize an image.
+
+:param imageData: The raw image data to resize.
+:param targetWidth: The target width in pixels.
+:param targetHeight: The target height in pixels.
+:param isWidthAspectRatioPreserved: Whether to preserve the width aspect ratio.
+:param isHeightAspectRatioPreserved: Whether to preserve the height aspect ratio.
+
+:return: The resized image.
 */
 func resizeImage(imageData image.Image, targetWidth, targetHeight uint, isWidthAspectRatioPreserved bool, isHeightAspectRatioPreserved bool) image.Image {
 	if !isWidthAspectRatioPreserved && !isHeightAspectRatioPreserved {
@@ -347,6 +410,20 @@ func resizeImage(imageData image.Image, targetWidth, targetHeight uint, isWidthA
 	return outputImage
 }
 
+/*
+getImageLayerAsFullBlock is a method which allows you to convert an image into a text layer using full block characters.
+In addition, the following should be noted:
+
+- This method is used when you want to represent each pixel of the image as a single character cell in the terminal.
+
+:param sourceImageData: The raw image data to convert.
+:param imageStyle: The style to use for conversion.
+:param widthInCharacters: The target width in characters.
+:param heightInCharacters: The target height in characters.
+:param blurSigma: The blur factor to apply.
+
+:return: The converted text layer.
+*/
 func getImageLayerAsFullBlock(
 	sourceImageData image.Image,
 	imageStyle types.ImageStyleEntryType,
@@ -411,30 +488,35 @@ func getImageLayerAsFullBlock(
 }
 
 /*
-getImageLayerAsHalfBlock allows you to specify an image and convert it into a text layer
-suitable for drawing with. In addition, the following information should be
-noted:
+getImageLayerAsHalfBlock is a method which allows you to specify an image and convert it into a text layer suitable for
+drawing with. In addition, the following should be noted:
 
-- If you specify a value of 0 for ether the width or height, then that
-dimension will be automatically calculated to a value that best maintain
-the images aspect ratio. This is useful since it removes the need to
-calculate this manually.
+  - If you specify a value of 0 for ether the width or height, then that dimension will be automatically calculated to a
+    value that best maintain the images aspect ratio. This is useful since it removes the need to calculate this manually.
 
-- If you specify a value less than or equal to 0 for both the width and
-height, a panic will be generated to fail as fast as possible.
+  - If you specify a value less than or equal to 0 for both the width and height, a panic will be generated to fail as
+    fast as possible.
 
-- When pre-rendering an image, it should be noted that each text cell assigned
-contains a top and bottom pixel. This is done to provide as much resolution as
-possible for your image. That means for a pre-rendered image with a size of
-10x10 characters, the actual image being rendered would be 10x20 pixels tall.
-If the user wishes to maintain proper aspect ratios, they must manually select
-a height that appropriately compensates for this effect, or leave the height
-value as 0 to have it done automatically.
+  - When pre-rendering an image, it should be noted that each text cell assigned contains a top and bottom pixel. This is
+    done to provide as much resolution as possible for your image.
 
-- The blur sigma controls how much blurring occurs after your image has been
-resized. This allows you to soften your image before it is rendered in ansi
-so that hard edges are removed. A value of 0.0 means no blurring will occur,
-with higher values increasing the blur factor.
+  - That means for a pre-rendered image with a size of 10x10 characters, the actual image being rendered would be 10x20
+    pixels tall.
+
+  - If the user wishes to maintain proper aspect ratios, they must manually select a height that appropriately compensates
+    for this effect, or leave the height value as 0 to have it done automatically.
+
+  - The blur sigma controls how much blurring occurs after your image has been resized. This allows you to soften your
+    image before it is rendered in ansi so that hard edges are removed. A value of 0.0 means no blurring will occur, with
+    higher values increasing the blur factor.
+
+:param sourceImageData: The raw image data to convert.
+:param imageStyle: The style to use for conversion.
+:param widthInCharacters: The target width in characters.
+:param heightInCharacters: The target height in characters.
+:param blurSigma: The blur factor to apply.
+
+:return: The converted text layer.
 */
 func getImageLayerAsHalfBlock(
 	sourceImageData image.Image,
@@ -540,21 +622,41 @@ func isTransparentPixel(processedImageData image.Image, x, y int) bool {
 	return rgba.A < 128
 }
 
-// GetRGBComponents is a wrapper for GetRGBColorComponents
+/*
+GetRGBComponents is a method which allows you to get the RGB components of a color. In addition, the following should be
+noted:
+
+- This is a wrapper for GetRGBColorComponents.
+
+:param color: The color to get components from.
+
+:return: The blue component.
+*/
 func GetRGBComponents(color constants.ColorType) (int32, int32, int32) {
 	return GetRGBColorComponents(color)
 }
 
 /*
-get8BitColorComponents allows you to get red, green, and blue color components
-from a specific color.
+get8BitColorComponents is a method which allows you to get red, green, and blue color components from a specific color.
+
+:param colorEntry: The color to get components from.
+
+:return: The alpha component (0-255).
 */
 func get8BitColorComponents(colorEntry color.Color) (int32, int32, int32, uint32) {
 	redIndex, greenIndex, blueIndex, alphaIndex := colorEntry.RGBA()
 	return int32(redIndex) / 257, int32(greenIndex) / 257, int32(blueIndex) / 257, alphaIndex / 257
 }
 
-// Function to calculate the brightness of a pixel
+/*
+calculateBrightness is a method which allows you to calculate the brightness of a pixel based on its RGB components.
+
+:param r: The red component of the pixel.
+:param g: The green component of the pixel.
+:param b: The blue component of the pixel.
+
+:return: The calculated brightness as a value between 0.0 and 1.0.
+*/
 func calculateBrightness(r, g, b uint8) float64 {
 	// Using a common formula to calculate brightness (perceived luminance)
 	// Scale result to be between 0 and 1
@@ -600,7 +702,15 @@ var bToC_full_sorted = []brightnessMapping{
 	{1.0, []rune{'0', 'M', 'N'}},
 }
 
-// Function to map brightness to an ASCII character from the bToC_full mapping
+/*
+mapBrightnessToCharacter is a method which allows you to map a brightness value to an ASCII character from the bToC_full
+mapping.
+
+:param brightness: The brightness value to map.
+:param random: A random number generator for random character selection.
+
+:return: The mapped ASCII character.
+*/
 func mapBrightnessToCharacter(brightness float64, random *rand.Rand) rune {
 	// Find the appropriate character for the brightness level
 	for _, mapping := range bToC_full_sorted {
@@ -613,7 +723,18 @@ func mapBrightnessToCharacter(brightness float64, random *rand.Rand) rune {
 	return ' ' // Default to space if no match
 }
 
-// Function to process the image and convert it to ASCII art
+/*
+GetImageLayerAsAsciiColorArt is a method which allows you to convert an image into a text layer using ASCII characters
+to represent brightness levels.
+
+:param sourceImageData: The raw image data to convert.
+:param imageStyle: The style to use for conversion.
+:param widthInCharacters: The target width in characters.
+:param heightInCharacters: The target height in characters.
+:param blurSigma: The blur factor to apply.
+
+:return: The converted text layer.
+*/
 func GetImageLayerAsAsciiColorArt(sourceImageData image.Image, imageStyle types.ImageStyleEntryType, widthInCharacters int, heightInCharacters int, blurSigma float64) types.LayerEntryType {
 	if widthInCharacters <= 0 && heightInCharacters <= 0 {
 		safeSttyPanic(fmt.Sprintf("The specified width and height of %dx%d for your image is not valid.", widthInCharacters, heightInCharacters))
@@ -705,9 +826,18 @@ func GetImageLayerAsAsciiColorArt(sourceImageData image.Image, imageStyle types.
 	return layerEntry
 }
 
-// resizeImageForBlockElements resizes the source image using an area-averaging
-// method to prepare it for block element rendering. It returns the raw pixel
-// color data and the weight of each pixel's contribution.
+/*
+resizeImageForBlockElements is a method which allows you to resize the source image using an area-averaging method to
+prepare it for block element rendering. In addition, the following should be noted:
+
+- It returns the raw pixel color data and the weight of each pixel's contribution.
+
+:param sourceImageData: The raw image data to resize.
+:param targetWidth: The target width in pixels.
+:param targetHeight: The target height in pixels.
+
+:return: The weight information for each pixel.
+*/
 func resizeImageForBlockElements(sourceImageData image.Image, targetWidth, targetHeight int) ([][][4]float64, [][]float64) {
 	sourceBounds := sourceImageData.Bounds()
 	sourceImageWidth, sourceImageHeight := sourceBounds.Dx(), sourceBounds.Dy()
@@ -800,7 +930,16 @@ func resizeImageForBlockElements(sourceImageData image.Image, targetWidth, targe
 	return partialPixelColorInformation, partialPixelWeightInformation
 }
 
-// mergeAndNormalizeInParallel merges and normalizes pixel data in parallel.
+/*
+mergeAndNormalizeInParallel is a method which allows you to merge and normalize pixel data in parallel.
+
+:param partialPixelColorInformation: The partial pixel color data from workers.
+:param partialPixelWeightInformation: The weight information for each pixel.
+:param targetWidth: The target width of the image.
+:param targetHeight: The target height of the image.
+
+:return: The normalized final pixel color data.
+*/
 func mergeAndNormalizeInParallel(partialPixelColorInformation [][][4]float64, partialPixelWeightInformation [][]float64, targetWidth, targetHeight int) [][4]float64 {
 	numberOfWorkers := runtime.NumCPU()
 	var waitGroup sync.WaitGroup
@@ -843,44 +982,47 @@ func mergeAndNormalizeInParallel(partialPixelColorInformation [][][4]float64, pa
 }
 
 /*
-findBestBlockElementForCell analyzes an 8x8 grid of pixels to find the optimal
-block element character and corresponding foreground/background colors to
-represent that portion of the image.
+findBestBlockElementForCell is a method which allows you to analyze an 8x8 grid of pixels to find the optimal block
+element character and corresponding foreground/background colors to represent that portion of the image. In addition,
+the following should be noted:
 
-This function is at the core of the block element rendering style. It takes a
-small section of the source image (corresponding to a single character cell)
-and determines the best Unicode block element character (like '▀', '▐', '░', etc.)
-to approximate it. It does this by trying every available block element and
-calculating which one, along with its optimal foreground and background colors,
-minimizes the visual error (Sum of Absolute Differences) compared to the
-original pixels.
+  - This function is at the core of the block element rendering style. It takes a small section of the source image
+    (corresponding to a single character cell) and determines the best Unicode block element character (like '▀', '▐',
+    '░', etc.) to approximate it.
 
-The function also includes logic to handle transparency and to discard cells
-that have very little content or are poorly represented, preventing visual noise
-in the final output. In addition, the following information should be noted:
+  - It does this by trying every available block element and calculating which one, along with its optimal foreground and
+    background colors, minimizes the visual error (Sum of Absolute Differences) compared to the original pixels.
 
-- `transparentForegroundPenalty`: This parameter controls how strongly the
-algorithm avoids placing foreground parts of a block element over transparent
-areas of the original image. A higher value results in a larger penalty,
-making the algorithm more aggressively select block elements that do not
-have "spikes" or "stray pixels" protruding into transparent regions. This is
-useful for cleaning up the edges of sprites against a transparent background.
-A typical range is 10.0 to 100.0. A value of 0 disables this feature.
+  - The function also includes logic to handle transparency and to discard cells that have very little content or are
+    poorly represented, preventing visual noise in the final output.
 
-- `aggressiveCoverageThreshold`: This is the minimum percentage of opaque
-pixels required within an 8x8 cell to consider it for rendering. If the
-coverage is below this threshold (e.g., less than 35% of the 64 pixels are
-opaque), the cell may be culled. This helps remove isolated, noisy pixels
-or very thin, faint parts of an image that don't render well as block
-elements. The value should be between 0.0 (nothing is culled) and 1.0 (everything
-is culled). A typical value is around 0.35.
+  - `transparentForegroundPenalty`: This parameter controls how strongly the algorithm avoids placing foreground parts of
+    a block element over transparent areas of the original image. A higher value results in a larger penalty, making the
+    algorithm more aggressively select block elements that do not have "spikes" or "stray pixels" protruding into
+    transparent regions. This is useful for cleaning up the edges of sprites against a transparent background. A typical
+    range is 10.0 to 100.0. A value of 0 disables this feature.
 
-- `aggressiveErrorThreshold`: This sets the maximum allowed error (Sum of
-Absolute Differences) for a low-coverage cell to survive culling. Even if a
-cell is below `aggressiveCoverageThreshold`, it can be kept if it's still a
-very good fit for a block element (i.e., its error is below this threshold).
-Lowering this value makes the culling more aggressive, as it requires even
-low-coverage cells to be a near-perfect match. A typical range is 1.0 to 5.0.
+  - `aggressiveCoverageThreshold`: This is the minimum percentage of opaque pixels required within an 8x8 cell to consider
+    it for rendering. If the coverage is below this threshold (e.g., less than 35% of the 64 pixels are opaque), the cell
+    may be culled. This helps remove isolated, noisy pixels or very thin, faint parts of an image that don't render well
+    as block elements. The value should be between 0.0 (nothing is culled) and 1.0 (everything is culled). A typical value
+    is around 0.35.
+
+  - `aggressiveErrorThreshold`: This sets the maximum allowed error (Sum of Absolute Differences) for a low-coverage cell
+    to survive culling. Even if a cell is below `aggressiveCoverageThreshold`, it can be kept if it's still a very good
+    fit for a block element (i.e., its error is below this threshold). Lowering this value makes the culling more
+    aggressive, as it requires even low-coverage cells to be a near-perfect match. A typical range is 1.0 to 5.0.
+
+:param pixelColorData: The raw pixel color data for the entire image.
+:param cellRowLocation: The row location of the character cell.
+:param cellColumnLocation: The column location of the character cell.
+:param characterGridWidth: The width of the character grid.
+:param characterGridHeight: The height of the character grid.
+:param transparentForegroundPenalty: The penalty for placing foreground over transparent areas.
+:param aggressiveCoverageThreshold: The threshold for culling low-coverage cells.
+:param aggressiveErrorThreshold: The threshold for culling cells based on fitting error.
+
+:return: Whether the background color is transparent.
 */
 func findBestBlockElementForCell(
 	pixelColorData [][4]float64,
@@ -1012,7 +1154,15 @@ type cellJob struct {
 	columnLocation int
 }
 
-// processCellsInParallel processes all character cells in parallel using a worker pool.
+/*
+processCellsInParallel is a method which allows you to process all character cells in parallel using a worker pool.
+
+:param pixelColorData: The raw pixel color data for the image.
+:param characterWidth: The width of the character grid.
+:param characterHeight: The height of the character grid.
+:param targetLayerEntry: The target layer entry to store the results.
+:param imageStyle: The style to use for processing.
+*/
 func processCellsInParallel(pixelColorData [][4]float64, characterWidth, characterHeight int, targetLayerEntry *types.LayerEntryType, imageStyle types.ImageStyleEntryType) {
 	numberOfWorkers := runtime.NumCPU()
 	jobs := make(chan cellJob, characterWidth*characterHeight)
@@ -1091,22 +1241,53 @@ func processCellsInParallel(pixelColorData [][4]float64, characterWidth, charact
 // blockElementResizerType defines a function type for resizing an image for block element rendering.
 type blockElementResizerType func(sourceImageData image.Image, targetPixelWidth, targetPixelHeight int) [][4]float64
 
-// resizeAccurate performs high-precision resizing using an area-averaging method.
+/*
+resizeAccurate is a method which allows you to perform high-precision resizing using an area-averaging method.
+
+:param processedImageData: The image data to resize.
+:param targetPixelWidth: The target width in pixels.
+:param targetPixelHeight: The target height in pixels.
+
+:return: The resized pixel color data.
+*/
 func resizeAccurate(processedImageData image.Image, targetPixelWidth, targetPixelHeight int) [][4]float64 {
 	partialPixelColorInformation, partialPixelWeightInformation := resizeImageForBlockElements(processedImageData, targetPixelWidth, targetPixelHeight)
 	finalPixelColorInformation := mergeAndNormalizeInParallel(partialPixelColorInformation, partialPixelWeightInformation, targetPixelWidth, targetPixelHeight)
 	return finalPixelColorInformation
 }
 
-// resizeFast performs faster resizing using a standard library function.
+/*
+resizeFast is a method which allows you to perform faster resizing using a standard library function.
+
+:param processedImageData: The image data to resize.
+:param targetPixelWidth: The target width in pixels.
+:param targetPixelHeight: The target height in pixels.
+
+:return: The resized pixel color data.
+*/
 func resizeFast(processedImageData image.Image, targetPixelWidth, targetPixelHeight int) [][4]float64 {
 	resizedImage := imaging.Resize(processedImageData, targetPixelWidth, targetPixelHeight, imaging.Lanczos)
 	pixelData := convertImageToPixelData(resizedImage)
 	return pixelData
 }
 
-// getImageLayerAsBlockElements is the shared core logic for rendering an image using block elements.
-// It accepts a resizer function to handle the specific image scaling method.
+/*
+getImageLayerAsBlockElements is a method which allows you to render an image using block elements. In addition, the
+following should be noted:
+
+- This is the shared core logic for rendering an image using block elements.
+
+- It accepts a resizer function to handle the specific image scaling method.
+
+:param sourceImageData: The raw image data to convert.
+:param imageStyle: The style to use for conversion.
+:param widthInCharacters: The target width in characters.
+:param heightInCharacters: The target height in characters.
+:param blurSigma: The blur factor to apply.
+:param resizer: The resizer function to use.
+
+:return: The converted text layer.
+*/
 func getImageLayerAsBlockElements(sourceImageData image.Image, imageStyle types.ImageStyleEntryType, widthInCharacters int, heightInCharacters int, blurSigma float64, resizer blockElementResizerType) types.LayerEntryType {
 	if !imageStyle.IsWidthAspectRatioPreserved && !imageStyle.IsHeightAspectRatioPreserved {
 		if widthInCharacters <= 0 || heightInCharacters <= 0 {
@@ -1164,19 +1345,47 @@ func getImageLayerAsBlockElements(sourceImageData image.Image, imageStyle types.
 	return layerEntry
 }
 
-// getImageLayerAsBlockElementsAccurate renders an image using block elements with high precision.
-// It divides each character cell into an 8x8 grid and finds the best block element
-// to represent the image in that cell.
+/*
+getImageLayerAsBlockElementsAccurate is a method which allows you to render an image using block elements with high
+precision. In addition, the following should be noted:
+
+- It divides each character cell into an 8x8 grid and finds the best block element to represent the image in that cell.
+
+:param sourceImageData: The raw image data to convert.
+:param imageStyle: The style to use for conversion.
+:param widthInCharacters: The target width in characters.
+:param heightInCharacters: The target height in characters.
+:param blurSigma: The blur factor to apply.
+
+:return: The converted text layer.
+*/
 func getImageLayerAsBlockElementsAccurate(sourceImageData image.Image, imageStyle types.ImageStyleEntryType, widthInCharacters int, heightInCharacters int, blurSigma float64) types.LayerEntryType {
 	return getImageLayerAsBlockElements(sourceImageData, imageStyle, widthInCharacters, heightInCharacters, blurSigma, resizeAccurate)
 }
 
-// getImageLayerAsBlockElementsFast renders an image using block elements with a faster algorithm.
+/*
+getImageLayerAsBlockElementsFast is a method which allows you to render an image using block elements with a faster
+algorithm.
+
+:param sourceImageData: The raw image data to convert.
+:param imageStyle: The style to use for conversion.
+:param widthInCharacters: The target width in characters.
+:param heightInCharacters: The target height in characters.
+:param blurSigma: The blur factor to apply.
+
+:return: The converted text layer.
+*/
 func getImageLayerAsBlockElementsFast(sourceImageData image.Image, imageStyle types.ImageStyleEntryType, widthInCharacters int, heightInCharacters int, blurSigma float64) types.LayerEntryType {
 	return getImageLayerAsBlockElements(sourceImageData, imageStyle, widthInCharacters, heightInCharacters, blurSigma, resizeFast)
 }
 
-// convertImageToPixelData converts an image.Image to the [][4]float64 format.
+/*
+convertImageToPixelData is a method which allows you to convert an image.Image to the 4float64 format.
+
+:param img: The image to convert.
+
+:return: The pixel data in 4float64 format.
+*/
 func convertImageToPixelData(img image.Image) [][4]float64 {
 	bounds := img.Bounds()
 	width, height := bounds.Dx(), bounds.Dy()
@@ -1194,6 +1403,17 @@ func convertImageToPixelData(img image.Image) [][4]float64 {
 	return pixelData
 }
 
+/*
+getImageLayer is a method which allows you to retrieve a text layer for an image based on the specified style.
+
+:param sourceImageData: The raw image data to convert.
+:param imageStyle: The style to use for conversion.
+:param widthInCharacters: The target width in characters.
+:param heightInCharacters: The target height in characters.
+:param blurSigma: The blur factor to apply.
+
+:return: The converted text layer.
+*/
 func getImageLayer(sourceImageData image.Image, imageStyle types.ImageStyleEntryType, widthInCharacters int, heightInCharacters int, blurSigma float64) types.LayerEntryType {
 	var imageLayer types.LayerEntryType
 
@@ -1214,7 +1434,12 @@ func getImageLayer(sourceImageData image.Image, imageStyle types.ImageStyleEntry
 }
 
 /*
-drawImageToLayer allows you to draw a loaded image to the specified layer.
+drawImageToLayer is a method which allows you to draw a loaded image to the specified layer.
+
+:param layerEntry: The layer to draw the image onto.
+:param imageLayer: The text layer containing the rendered image.
+:param xLocation: The x location to draw the image at.
+:param yLocation: The y location to draw the image at.
 */
 func drawImageToLayer(layerEntry *types.LayerEntryType, imageLayer types.LayerEntryType, xLocation int, yLocation int) {
 	imageLayer.ScreenXLocation = xLocation
@@ -1222,6 +1447,13 @@ func drawImageToLayer(layerEntry *types.LayerEntryType, imageLayer types.LayerEn
 	overlayLayers(&imageLayer, layerEntry, false)
 }
 
+/*
+loadImageAndGetEntry is a method which allows you to load an image and retrieve its entry from memory.
+
+:param fileName: The path to the image file to load.
+
+:return: An error if the image could not be loaded.
+*/
 func loadImageAndGetEntry(fileName string) (*types.ImageEntryType, error) {
 	var err error
 	if !IsImageExists(fileName) {
@@ -1237,6 +1469,13 @@ func loadImageAndGetEntry(fileName string) (*types.ImageEntryType, error) {
 	return imageEntry, err
 }
 
+/*
+FloydSteinbergDithering2x2 is a method which allows you to apply 2x2 Bayer dithering to an image.
+
+:param inputImage: The raw image data to dither.
+
+:return: The dithered grayscale image.
+*/
 func FloydSteinbergDithering2x2(inputImage image.Image) image.Image {
 	bounds := inputImage.Bounds()
 	width, height := bounds.Max.X, bounds.Max.Y
@@ -1263,6 +1502,13 @@ func FloydSteinbergDithering2x2(inputImage image.Image) image.Image {
 	return newImage
 }
 
+/*
+FloydSteinbergDithering4x4 is a method which allows you to apply 4x4 Bayer dithering to an image.
+
+:param inputImage: The raw image data to dither.
+
+:return: The dithered grayscale image.
+*/
 func FloydSteinbergDithering4x4(inputImage image.Image) image.Image {
 	bounds := inputImage.Bounds()
 	width, height := bounds.Max.X, bounds.Max.Y
@@ -1291,6 +1537,13 @@ func FloydSteinbergDithering4x4(inputImage image.Image) image.Image {
 	return newImage
 }
 
+/*
+FloydSteinbergDithering8x8 is a method which allows you to apply 8x8 Bayer dithering to an image.
+
+:param inputImage: The raw image data to dither.
+
+:return: The dithered grayscale image.
+*/
 func FloydSteinbergDithering8x8(inputImage image.Image) image.Image {
 	bounds := inputImage.Bounds()
 	width, height := bounds.Max.X, bounds.Max.Y
@@ -1323,6 +1576,14 @@ func FloydSteinbergDithering8x8(inputImage image.Image) image.Image {
 	return newImage
 }
 
+/*
+FloydSteinbergDitheringBasic is a method which allows you to apply basic Floyd-Steinberg error diffusion dithering to an
+image.
+
+:param inputImage: The grayscale image to dither.
+
+:return: The dithered image.
+*/
 func FloydSteinbergDitheringBasic(inputImage *image.Gray) image.Image {
 	for yLocation := inputImage.Bounds().Min.Y; yLocation < inputImage.Bounds().Max.Y; yLocation++ {
 		for xLocation := inputImage.Bounds().Min.X; xLocation < inputImage.Bounds().Max.X; xLocation++ {
@@ -1350,6 +1611,14 @@ func FloydSteinbergDitheringBasic(inputImage *image.Gray) image.Image {
 	return inputImage
 }
 
+/*
+FloydSteinbergDitheringErrorDiffusion is a method which allows you to apply Floyd-Steinberg error diffusion dithering to
+an image with a higher quality error matrix.
+
+:param inputImage: The grayscale image to dither.
+
+:return: The dithered image.
+*/
 func FloydSteinbergDitheringErrorDiffusion(inputImage *image.Gray) image.Image {
 	imageBounds := inputImage.Bounds()
 	imageWidth, imageHeight := imageBounds.Max.X, imageBounds.Max.Y
@@ -1389,18 +1658,19 @@ func FloydSteinbergDitheringErrorDiffusion(inputImage *image.Gray) image.Image {
 }
 
 /*
-HistogramEqualization performs histogram equalization on a grayscale image to enhance
-its contrast and improve the overall image quality. This technique redistributes the
-intensity values of the image, resulting in a more balanced and visually appealing
-representation. In addition, the following information should be noted:
+HistogramEqualization is a method which allows you to perform histogram equalization on a grayscale image to enhance its
+contrast and improve the overall image quality. In addition, the following should be noted:
 
-- An alpha value of 1.0 is equal to 100% visible, while an alpha value of
-0.0 is 0% visible. Specifying a value outside this range indicates that
-you want to over amplify or under amplify the color transparency effect.
+- This technique redistributes the intensity values of the image, resulting in a more balanced and visually appealing.
 
-- If the percent change specified is outside the RGB color range (for
-example, if you specified 200%), then the color will simply bottom or max
-out at RGB(0, 0, 0) or RGB(255, 255, 255) respectively.
+- An alpha value of 1.0 is equal to 100% visible, while an alpha value of 0.0 is 0% visible. Specifying a value outside.
+
+  - If the percent change specified is outside the RGB color range (for example, if you specified 200%), then the color
+    will.
+
+:param inputImage: The grayscale image to process.
+
+:return: The contrast-enhanced grayscale image.
 */
 func HistogramEqualization(inputImage *image.Gray) *image.Gray {
 	pixelCount := 256
@@ -1436,15 +1706,24 @@ func HistogramEqualization(inputImage *image.Gray) *image.Gray {
 }
 
 /*
-LoadPreRenderedLayerImage allows you to load a pre-rendered layer image directly into image memory.
-This is different from loading an image and pre-rendering it afterwards, as it directly loads
-a layer that has already been rendered. This is useful for quickly loading complex images
-that have been pre-processed and saved as layers. In addition, the following information
-should be noted:
+LoadPreRenderedLayerImage is a method which allows you to load a pre-rendered layer image directly into image memory. In
+addition, the following should be noted:
+
+  - This is different from loading an image and pre-rendering it afterwards, as it directly loads a layer that has already
+    been rendered.
+
+- This is useful for quickly loading complex images that have been pre-processed and saved as layers.
 
 - The file extension ".clayer" is automatically appended to the filename if not provided.
+
 - If the file cannot be read or is not a valid layer file, an error is returned.
+
 - The loaded layer is added to the image system with the specified alias.
+
+:param filePath: The path to the pre-rendered layer file.
+:param imageAlias: The alias to assign to the loaded layer image.
+
+:return: An error if the layer image could not be loaded.
 */
 func LoadPreRenderedLayerImage(filePath string, imageAlias string) error {
 	// Load the layer from file
@@ -1467,6 +1746,13 @@ func LoadPreRenderedLayerImage(filePath string, imageAlias string) error {
 	return nil
 }
 
+/*
+loadPrerenderedLayerImage is a method which allows you to load a pre-rendered layer from a file.
+
+:param filePath: The path to the layer file.
+
+:return: An error if the layer could not be loaded.
+*/
 func loadPrerenderedLayerImage(filePath string) (types.LayerEntryType, error) {
 	// Create a new layer entry
 	layerEntry := types.NewLayerEntry("", "", 0, 0)
@@ -1484,8 +1770,14 @@ func loadPrerenderedLayerImage(filePath string) (types.LayerEntryType, error) {
 	return layerEntry, err
 }
 
-// isValidPrerenderedLayerImage checks if a file is a valid prerendered layer image
-// by reading only its header using the virtual file system if mounted.
+/*
+isValidPrerenderedLayerImage is a method which allows you to check if a file is a valid prerendered layer image by
+reading only its header using the virtual file system if mounted.
+
+:param filePath: The path to the file to check.
+
+:return: Whether the file is a valid prerendered layer image.
+*/
 func isValidPrerenderedLayerImage(filePath string) bool {
 	headerLength := len(types.LayerMagicHeader)
 

@@ -7,6 +7,14 @@ import (
 	"testing"
 )
 
+/*
+TestButtonDefaultState is a test which allows you to verify that a button is rendered correctly in its default state.
+
+Example:
+
+	TestButtonDefaultState(t)
+	// Expects button to be rendered at (2,2) with label "Test" and width 10.
+*/
 func TestButtonDefaultState(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	layer1.AddButton("Test", styleEntry, 2, 2, 10, 3, true)
@@ -22,6 +30,15 @@ func TestButtonDefaultState(test *testing.T) {
 	}
 }
 
+/*
+TestButtonDisabledState is a test which allows you to verify that a button is rendered correctly when it is in a
+disabled state.
+
+Example:
+
+	TestButtonDisabledState(t)
+	// Expects button to be rendered with a disabled label color.
+*/
 func TestButtonDisabledState(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	layer1.AddButton("Test", styleEntry, 2, 2, 10, 3, false)
@@ -37,6 +54,15 @@ func TestButtonDisabledState(test *testing.T) {
 	}
 }
 
+/*
+TestButtonPressedState is a test which allows you to verify that a button is rendered correctly when it is in a pressed
+state.
+
+Example:
+
+	TestButtonPressedState(t)
+	// Expects button to be rendered with a sunken frame style.
+*/
 func TestButtonPressedState(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	buttonObject := layer1.AddButton("Test", styleEntry, 2, 2, 10, 3, true)
@@ -57,6 +83,15 @@ func TestButtonPressedState(test *testing.T) {
 	}
 }
 
+/*
+TestButtonSelectedState is a test which allows you to verify that a button is rendered correctly when it is in a
+selected state.
+
+Example:
+
+	TestButtonSelectedState(t)
+	// Expects button label to be underlined.
+*/
 func TestButtonSelectedState(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	buttonObject := layer1.AddButton("Test", styleEntry, 2, 2, 10, 3, true)
@@ -77,6 +112,15 @@ func TestButtonSelectedState(test *testing.T) {
 	}
 }
 
+/*
+TestButtonCustomDimensions is a test which allows you to verify that a button is rendered correctly with custom width
+and height.
+
+Example:
+
+	TestButtonCustomDimensions(t)
+	// Expects button to be rendered with width 15 and height 5.
+*/
 func TestButtonCustomDimensions(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	layer1.AddButton("Test", styleEntry, 2, 2, 15, 5, true)
@@ -92,6 +136,15 @@ func TestButtonCustomDimensions(test *testing.T) {
 	}
 }
 
+/*
+TestButtonLongLabel is a test which allows you to verify that a button is rendered correctly when it has a label longer
+than its width.
+
+Example:
+
+	TestButtonLongLabel(t)
+	// Expects button width to expand to fit the long label.
+*/
 func TestButtonLongLabel(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	layer1.AddButton("This is a long button label", styleEntry, 2, 2, 10, 3, true)
@@ -107,6 +160,15 @@ func TestButtonLongLabel(test *testing.T) {
 	}
 }
 
+/*
+TestButtonDelete is a test which allows you to verify that a button is successfully removed when its Delete method is
+called.
+
+Example:
+
+	TestButtonDelete(t)
+	// Expects button to be absent from the rendered output after deletion.
+*/
 func TestButtonDelete(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	buttonInstance := layer1.AddButton("Test", styleEntry, 2, 2, 10, 3, true)
@@ -127,6 +189,14 @@ func TestButtonDelete(test *testing.T) {
 	}
 }
 
+/*
+TestButtonDeleteAll is a test which allows you to verify that all buttons are successfully removed from a layer.
+
+Example:
+
+	TestButtonDeleteAll(t)
+	// Expects all buttons to be absent from the rendered output after calling DeleteAllButtons.
+*/
 func TestButtonDeleteAll(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	layer1.AddButton("Test 1", styleEntry, 2, 2, 10, 3, true)
@@ -134,7 +204,7 @@ func TestButtonDeleteAll(test *testing.T) {
 	UpdateDisplay(false)
 
 	// Delete all buttons
-	Button.DeleteAllButtons(layer1.layerAlias)
+	Button.DeleteAll(layer1.layerAlias)
 
 	UpdateDisplay(false)
 	layerEntry := commonResource.screenLayer
@@ -148,6 +218,14 @@ func TestButtonDeleteAll(test *testing.T) {
 	}
 }
 
+/*
+TestButtonFocus is a test which allows you to verify that a button correctly handles focus state.
+
+Example:
+
+	TestButtonFocus(t)
+	// Expects button focus state to be reflected in the system.
+*/
 func TestButtonFocus(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	layer1.AddButton("Test", styleEntry, 2, 2, 10, 3, true)

@@ -22,11 +22,14 @@ var FileMenu fileMenuType
 var FileMenus = memory.NewControlMemoryManager[types.FileMenuEntryType]()
 
 /*
-Delete allows you to remove a file menu instance from memory. In addition, the following
-information should be noted:
+Delete is a method which allows you to remove a file menu instance from memory. In addition, the following should be
+noted:
 
 - This method is used to clean up resources when a file menu is no longer needed.
+
 - After deletion, the file menu instance should not be used anymore.
+
+:return: A pointer to the deleted file menu instance.
 */
 func (shared *FileMenuInstanceType) Delete() *FileMenuInstanceType {
 	shared.BaseControlInstanceType.Delete()
@@ -34,8 +37,8 @@ func (shared *FileMenuInstanceType) Delete() *FileMenuInstanceType {
 }
 
 /*
-AddToTabIndex allows you to add a file menu to the tab index. In addition, the following
-information should be noted:
+AddToTabIndex is a method which allows you to add a file menu to the tab index. In addition, the following should be
+noted:
 
 - This method is used to make the file menu focusable via tab navigation.
 */
@@ -44,16 +47,32 @@ func (shared *FileMenuInstanceType) AddToTabIndex() {
 }
 
 /*
-Add allows you to add a new file menu to a layer. In addition, the following
-information should be noted:
+Add is a method which allows you to add a new file menu to a layer. In addition, the following should be noted:
 
 - The file menu will be drawn at the specified location with the given style.
+
 - Each heading in the menu can have its own dropdown with selectable items.
+
 - The top level headings widths are always dynamic based on how large the heading is.
+
 - When clicking on a heading, the selection includes borders and is as large as the number of items in the menu.
+
 - The dropdown menu appears directly beneath the corresponding header item.
+
 - The dropdown's border aligns neatly under the header and adjusts in width to fit the longest item label.
+
 - The file menu reuses existing selectors for dropdown functionality.
+
+:param layerAlias: The alias of the layer to add the file menu to.
+:param menuAlias: The alias of the file menu.
+:param styleEntry: The style to use for the file menu.
+:param menuHeadings: The headings for the file menu.
+:param menuSelections: The selections for each heading in the file menu.
+:param xLocation: The x location to draw the file menu at.
+:param yLocation: The y location to draw the file menu at.
+:param isEnabled: Whether the file menu is enabled.
+
+:return: An instance of the added file menu.
 */
 func (shared *fileMenuType) Add(layerAlias string, menuAlias string, styleEntry types.TuiStyleEntryType,
 	menuHeadings []string, menuSelections []types.SelectionEntryType, xLocation int, yLocation int,
@@ -114,23 +133,27 @@ func (shared *fileMenuType) Add(layerAlias string, menuAlias string, styleEntry 
 }
 
 /*
-DeleteFileMenu allows you to delete a file menu from memory. In addition, the following
-information should be noted:
+Delete is a method which allows you to delete a file menu from memory. In addition, the following should be
+noted:
 
 - This method is used to clean up resources when a file menu is no longer needed.
+
 - After deletion, the file menu should not be used anymore.
+
+:param layerAlias: The alias of the layer the file menu belongs to.
+:param menuAlias: The alias of the file menu to delete.
 */
-func (shared *fileMenuType) DeleteFileMenu(layerAlias string, menuAlias string) {
+func (shared *fileMenuType) Delete(layerAlias string, menuAlias string) {
 	if FileMenus.IsExists(layerAlias, menuAlias) {
 		fileMenuEntry := FileMenus.Get(layerAlias, menuAlias)
 
 		// Delete all associated selectors
 		for _, selectorAlias := range fileMenuEntry.SelectorAliases {
-			Selector.DeleteSelector(layerAlias, selectorAlias)
+			Selector.Delete(layerAlias, selectorAlias)
 		}
 
 		// Delete the tooltip
-		Tooltip.DeleteTooltip(layerAlias, fileMenuEntry.TooltipAlias)
+		Tooltip.Delete(layerAlias, fileMenuEntry.TooltipAlias)
 
 		// Delete the file menu entry
 		FileMenus.Remove(layerAlias, menuAlias)
@@ -138,42 +161,51 @@ func (shared *fileMenuType) DeleteFileMenu(layerAlias string, menuAlias string) 
 }
 
 /*
-DeleteAllFileMenus allows you to delete all file menus from a layer. In addition, the following
-information should be noted:
+DeleteAll is a method which allows you to delete all file menus from a layer. In addition, the following should
+be noted:
 
 - This method is used to clean up resources when a layer is no longer needed.
+
 - After deletion, the file menus should not be used anymore.
+
+:param layerAlias: The alias of the layer to delete all file menus from.
 */
-func (shared *fileMenuType) DeleteAllFileMenus(layerAlias string) {
+func (shared *fileMenuType) DeleteAll(layerAlias string) {
 	fileMenuEntries := FileMenus.GetAllEntries(layerAlias)
 	for _, fileMenuEntry := range fileMenuEntries {
-		shared.DeleteFileMenu(layerAlias, fileMenuEntry.Alias)
+		shared.Delete(layerAlias, fileMenuEntry.Alias)
 	}
 }
 
 /*
-drawFileMenusOnLayer allows you to draw all file menus on a layer. In addition, the following
-information should be noted:
+drawOnLayer is a method which allows you to draw all file menus on a layer. In addition, the following should
+be noted:
 
 - This method is called internally by the rendering system.
+
 - It iterates through all file menus and draws them on the specified layer.
+
+:param layerEntry: The layer entry to draw the file menus on.
 */
-func (shared *fileMenuType) drawFileMenusOnLayer(layerEntry types.LayerEntryType) {
+func (shared *fileMenuType) drawOnLayer(layerEntry types.LayerEntryType) {
 	layerAlias := layerEntry.LayerAlias
 	fileMenuEntries := FileMenus.GetAllEntries(layerAlias)
 	for _, fileMenuEntry := range fileMenuEntries {
-		shared.drawFileMenu(&layerEntry, fileMenuEntry)
+		shared.draw(&layerEntry, fileMenuEntry)
 	}
 }
 
 /*
-drawFileMenu allows you to draw a file menu on a layer. In addition, the following
-information should be noted:
+draw is a method which allows you to draw a file menu on a layer. In addition, the following should be noted:
 
 - This method is called internally by drawFileMenusOnLayer.
+
 - It draws the menu bar and manages the visibility of associated selectors.
+
+:param layerEntry: The layer entry to draw the file menu on.
+:param fileMenuEntry: The file menu entry to draw.
 */
-func (shared *fileMenuType) drawFileMenu(layerEntry *types.LayerEntryType, fileMenuEntry *types.FileMenuEntryType) {
+func (shared *fileMenuType) draw(layerEntry *types.LayerEntryType, fileMenuEntry *types.FileMenuEntryType) {
 	if !fileMenuEntry.IsEnabled {
 		return
 	}
@@ -227,11 +259,16 @@ func (shared *fileMenuType) drawFileMenu(layerEntry *types.LayerEntryType, fileM
 }
 
 /*
-updateKeyboardEvent allows you to update the state of file menus based on keyboard events.
-In addition, the following information should be noted:
+updateKeyboardEvent is a method which allows you to update the state of file menus based on keyboard events. In
+addition, the following should be noted:
 
 - This method is called internally by the input handling system.
+
 - It handles keyboard navigation for file menus.
+
+:param keystroke: The keyboard event to process.
+
+:return: Whether the keyboard event was consumed.
 */
 func (shared *fileMenuType) updateKeyboardEvent(keystroke []rune) (bool, bool) {
 	keystrokeAsString := string(keystroke)
@@ -259,13 +296,16 @@ func (shared *fileMenuType) updateKeyboardEvent(keystroke []rune) (bool, bool) {
 }
 
 /*
-updateFileMenuStateMouse allows you to update the state of file menus based on mouse events.
-In addition, the following information should be noted:
+updateStateMouse is a method which allows you to update the state of file menus based on mouse events. In
+addition, the following should be noted:
 
 - This method is called internally by the input handling system.
+
 - It handles mouse clicks on menu headings and delegates to selectors for menu items.
+
+:return: Whether a screen update is required.
 */
-func (shared *fileMenuType) updateFileMenuStateMouse() bool {
+func (shared *fileMenuType) updateStateMouse() bool {
 	isUpdateRequired := false
 	mouseXLocation, mouseYLocation, buttonPressed, _ := GetMouseStatus()
 	characterEntry := getCellInformationUnderMouseCursor(mouseXLocation, mouseYLocation)
@@ -318,11 +358,14 @@ func (shared *fileMenuType) updateFileMenuStateMouse() bool {
 }
 
 /*
-closeAllOpenMenus allows you to close all open file menu submenus. In addition, the following
-information should be noted:
+closeAllOpenMenus is a method which allows you to close all open file menu submenus. In addition, the following should
+be noted:
 
 - This method is called when clicking outside any menu or when selecting a menu item.
+
 - Returns true if any menu was closed, false otherwise.
+
+:return: Whether any menu was closed.
 */
 func (shared *fileMenuType) closeAllOpenMenus() bool {
 	menuClosed := false
@@ -341,6 +384,11 @@ func (shared *fileMenuType) closeAllOpenMenus() bool {
 	return menuClosed
 }
 
+/*
+GetSelectedItem is a method which allows you to retrieve the currently selected item from the file menu.
+
+:return: The value of the selected item.
+*/
 func (shared *FileMenuInstanceType) GetSelectedItem() (int, int, string, string) {
 	if !FileMenus.IsExists(shared.layerAlias, shared.controlAlias) {
 		return -1, -1, "", ""
@@ -363,14 +411,16 @@ func (shared *FileMenuInstanceType) GetSelectedItem() (int, int, string, string)
 }
 
 /*
-IsFileMenuOpen allows you to check if a file menu is currently open.
-In addition, the following information should be noted:
+IsOpen is a method which allows you to check if a file menu is currently open. In addition, the following should
+be noted:
 
-- This method returns true if the file menu's dropdown is visible,
-  and false otherwise.
+- This method returns true if the file menu's dropdown is visible, and false otherwise.
+
 - If the file menu instance does not exist, it will return false.
+
+:return: Whether the file menu is open.
 */
-func (shared *FileMenuInstanceType) IsFileMenuOpen() bool {
+func (shared *FileMenuInstanceType) IsOpen() bool {
 	if !FileMenus.IsExists(shared.layerAlias, shared.controlAlias) {
 		return false
 	}
@@ -379,12 +429,12 @@ func (shared *FileMenuInstanceType) IsFileMenuOpen() bool {
 }
 
 /*
-Unselect allows you to clear the current selection for a file menu. In addition,
-the following information should be noted:
+Unselect is a method which allows you to clear the current selection for a file menu. In addition, the following should
+be noted:
 
-  - This method iterates through all submenus (selectors) of the file menu and
-    unselects any selected item.
-  - If the file menu does not exist, no operation occurs.
+- This method iterates through all submenus (selectors) of the file menu and unselects any selected item.
+
+- If the file menu does not exist, no operation occurs.
 */
 func (shared *FileMenuInstanceType) Unselect() {
 	if !FileMenus.IsExists(shared.layerAlias, shared.controlAlias) {

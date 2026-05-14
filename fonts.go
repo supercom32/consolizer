@@ -35,7 +35,13 @@ type fontInstanceType struct {
 	fontIndex int
 }
 
-// Unload removes a font from memory.
+/*
+Unload is a method which allows you to remove a font from memory. In addition, the following should be noted:
+
+- This method is used to free up memory when a font is no longer needed.
+
+- If the font alias does not exist, the application will panic.
+*/
 func (instance *fontInstanceType) Unload() {
 	if !fonts.IsExists(instance.fontAlias) {
 		safeSttyPanic(fmt.Sprintf("Could not unload font with alias '%s' because it was not loaded.", instance.fontAlias))
@@ -43,12 +49,20 @@ func (instance *fontInstanceType) Unload() {
 	fonts.Remove(instance.fontAlias)
 }
 
-// SwitchFont switches to a different font in the same file.
+/*
+SwitchFont is a method which allows you to switch to a different font in the same file.
+
+:param fontIndex: The index of the font to switch to.
+*/
 func (instance *fontInstanceType) SwitchFont(fontIndex int) {
 	instance.fontIndex = fontIndex
 }
 
-// SetCharacterSpacing sets the character spacing for the font instance.
+/*
+SetCharacterSpacing is a method which allows you to set the character spacing for the font instance.
+
+:param characterSpacing: The character spacing in cells.
+*/
 func (instance *fontInstanceType) SetCharacterSpacing(characterSpacing int) {
 	fontFamily := getFontFamilyFromMemory(instance.fontAlias)
 	if instance.fontIndex >= len(fontFamily.Fonts) {
@@ -57,7 +71,11 @@ func (instance *fontInstanceType) SetCharacterSpacing(characterSpacing int) {
 	fontFamily.Fonts[instance.fontIndex].CharacterSpacing = characterSpacing
 }
 
-// SetBlankSizeInCharacters sets the blank size for the font instance.
+/*
+SetBlankSizeInCharacters is a method which allows you to set the blank size for the font instance.
+
+:param blankSize: The size of a blank space in characters.
+*/
 func (instance *fontInstanceType) SetBlankSizeInCharacters(blankSize int) {
 	fontFamily := getFontFamilyFromMemory(instance.fontAlias)
 	if instance.fontIndex >= len(fontFamily.Fonts) {
@@ -69,10 +87,18 @@ func (instance *fontInstanceType) SetBlankSizeInCharacters(blankSize int) {
 // fontType struct acts as a manager/factory for fonts
 type fontType struct{}
 
-// Load loads a TDF font from the given file path.
-// All fonts in the file are loaded and cached in memory.
-// Returns a fontInstanceType with fontIndex set to 0 (the first font).
-// Use SwitchFont to select a different font from the same file.
+/*
+Load is a method which allows you to load a TDF font from the given file path. In addition, the following should be
+noted:
+
+- All fonts in the file are loaded and cached in memory.
+
+- Use SwitchFont to select a different font from the same file.
+
+:param fontFile: The path to the TDF font file.
+
+:return: A font instance for the first font in the file.
+*/
 func (manager *fontType) Load(fontFile string) fontInstanceType {
 	// If the font family is already loaded, just return a new instance.
 	if !fonts.IsExists(fontFile) {
@@ -112,8 +138,14 @@ func (manager *fontType) Load(fontFile string) fontInstanceType {
 	return fontInstance
 }
 
-// findFontOffsets finds all font offsets in the file by reading each font's
-// block size to determine the start of the next font.
+/*
+findFontOffsets is a method which allows you to find all font offsets in the file by reading each font's block size to
+determine the start of the next font.
+
+:param fileData: The raw byte data of the font file.
+
+:return: A slice of integers representing the byte offsets for each font.
+*/
 func (manager *fontType) findFontOffsets(fileData []byte) []int {
 	var fontOffsets []int
 	currentOffset := 20 // First font always starts at offset 20
@@ -141,7 +173,14 @@ func (manager *fontType) findFontOffsets(fileData []byte) []int {
 	return fontOffsets
 }
 
-// loadFontAtOffset loads a font from the given offset
+/*
+loadFontAtOffset is a method which allows you to load a font from the given offset.
+
+:param fileData: The raw byte data of the font file.
+:param fontOffset: The byte offset where the font data begins.
+
+:return: A pointer to the loaded font entry.
+*/
 func (manager *fontType) loadFontAtOffset(fileData []byte, fontOffset int) *types.FontEntryType {
 	fontEntry := &types.FontEntryType{}
 	fontEntry.CharacterSpacing = -1 // Default character spacing
@@ -207,7 +246,13 @@ func (manager *fontType) loadFontAtOffset(fileData []byte, fontOffset int) *type
 	return fontEntry
 }
 
-// GetAvailableFonts returns a list of all fonts in the specified file
+/*
+GetAvailableFonts is a method which allows you to retrieve a list of all font names in the specified file.
+
+:param fontFile: The path to the TDF font file.
+
+:return: A slice of strings containing the names of all fonts in the file.
+*/
 func (manager *fontType) GetAvailableFonts(fontFile string) []string {
 	fileData, err := getFileDataFromFileSystem(fontFile)
 	if err != nil {
@@ -231,7 +276,14 @@ func (manager *fontType) GetAvailableFonts(fontFile string) []string {
 	return fontNames
 }
 
-// readGlyph reads a single glyph from the font data.
+/*
+readGlyph is a method which allows you to read a single glyph from the font data.
+
+:param fontEntry: The font entry containing the raw font data.
+:param glyphIndex: The index of the glyph to read.
+
+:return: An error if the glyph could not be read.
+*/
 func (manager *fontType) readGlyph(fontEntry *types.FontEntryType, glyphIndex int) (*types.Glyph, error) {
 	if fontEntry.CharList[glyphIndex] == 0xffff {
 		return nil, nil
@@ -295,7 +347,13 @@ func (manager *fontType) readGlyph(fontEntry *types.FontEntryType, glyphIndex in
 	return glyph, nil
 }
 
-// lookupChar finds the index of a character in the characterList.
+/*
+lookupChar is a method which allows you to find the index of a character in the character list.
+
+:param characterToFind: The character to look up.
+
+:return: The index of the character, or -1 if not found.
+*/
 func (manager *fontType) lookupChar(characterToFind rune) int {
 	for index, character := range characterList {
 		if character == characterToFind {
@@ -305,7 +363,17 @@ func (manager *fontType) lookupChar(characterToFind rune) int {
 	return -1
 }
 
-// renderGlyph draws a single character and returns the width it occupied.
+/*
+renderGlyph is a method which allows you to draw a single character and returns the width it occupied.
+
+:param layerEntry: The layer to draw the character on.
+:param font: The font entry to use for rendering.
+:param character: The character to render.
+:param xLocation: The x location to draw the character at.
+:param yLocation: The y location to draw the character at.
+
+:return: The width occupied by the rendered character.
+*/
 func (manager *fontType) renderGlyph(layerEntry *types.LayerEntryType, font *types.FontEntryType, character rune, xLocation, yLocation int) int {
 	if character == ' ' {
 		characterAIndex := manager.lookupChar('a')
@@ -345,7 +413,15 @@ func (manager *fontType) renderGlyph(layerEntry *types.LayerEntryType, font *typ
 	return glyph.Width + spacing
 }
 
-// PrintText renders a string onto a layer using the specified font.
+/*
+PrintText is a method which allows you to render a string onto a layer using the specified font.
+
+:param layerEntry: The layer to draw the text on.
+:param fontInstance: The font instance to use for rendering.
+:param xLocation: The x location to start drawing at.
+:param yLocation: The y location to start drawing at.
+:param textToPrint: The string to be rendered.
+*/
 func (manager *fontType) PrintText(layerEntry *types.LayerEntryType, fontInstance fontInstanceType, xLocation, yLocation int, textToPrint string) {
 	fontFamily := getFontFamilyFromMemory(fontInstance.fontAlias)
 	if fontInstance.fontIndex >= len(fontFamily.Fonts) {
@@ -359,8 +435,21 @@ func (manager *fontType) PrintText(layerEntry *types.LayerEntryType, fontInstanc
 	}
 }
 
-// PrintTextDialog renders a string onto a layer with a typewriter effect using the specified font.
-// If widthOfLineInCharacters is greater than 0, text will wrap after that many characters.
+/*
+PrintTextDialog is a method which allows you to render a string onto a layer with a typewriter effect using the
+specified font. In addition, the following should be noted:
+
+- If widthOfLineInCharacters is greater than 0, text will wrap after that many characters.
+
+:param layerEntry: The layer to draw the text on.
+:param fontInstance: The font instance to use for rendering.
+:param xLocation: The x location to start drawing at.
+:param yLocation: The y location to start drawing at.
+:param widthOfLineInCharacters: The width at which to wrap text.
+:param printDelayInMilliseconds: The delay between characters in milliseconds.
+:param isSkipable: Whether the typewriter effect can be skipped.
+:param textToPrint: The string to be rendered.
+*/
 func (manager *fontType) PrintTextDialog(layerEntry *types.LayerEntryType, fontInstance fontInstanceType, xLocation, yLocation, widthOfLineInCharacters, printDelayInMilliseconds int, isSkipable bool, textToPrint string) {
 	fontFamily := getFontFamilyFromMemory(fontInstance.fontAlias)
 	if fontInstance.fontIndex >= len(fontFamily.Fonts) {
@@ -433,7 +522,13 @@ func (manager *fontType) PrintTextDialog(layerEntry *types.LayerEntryType, fontI
 	UpdateDisplay(false)
 }
 
-// convertTdfColorToRgb converts a TDF color byte to RGBA ColorType values.
+/*
+convertTdfColorToRgb is a method which allows you to convert a TDF color byte to RGBA ColorType values.
+
+:param tdfColor: The TDF color byte to convert.
+
+:return: The background color.
+*/
 func (manager *fontType) convertTdfColorToRgb(tdfColor byte) (constants.ColorType, constants.ColorType) {
 	foregroundIndex := int(tdfColor & 0x0F)
 	backgroundIndex := int((tdfColor & 0xF0) >> 4)
@@ -448,12 +543,27 @@ func (manager *fontType) convertTdfColorToRgb(tdfColor byte) (constants.ColorTyp
 	return constants.TdfToRgbMap[foregroundIndex], constants.TdfToRgbMap[backgroundIndex]
 }
 
-// LoadFont loads a TDF font from the given file path (kept for backward compatibility).
-// If fontIndex is provided, it selects that specific font from the file.
+/*
+LoadFont is a method which allows you to load a TDF font from the given file path. In addition, the following should be
+noted:
+
+- This is kept for backward compatibility.
+
+:param fontFile: The path to the TDF font file.
+
+:return: A font instance for the first font in the file.
+*/
 func LoadFont(fontFile string) fontInstanceType {
 	return Font.Load(fontFile)
 }
 
+/*
+getFontFamilyFromMemory is a method which allows you to retrieve a font family from memory by its alias.
+
+:param fontAlias: The alias of the font family to retrieve.
+
+:return: A pointer to the font family.
+*/
 func getFontFamilyFromMemory(fontAlias string) *types.FontFamilyType {
 	fontFamily := fonts.Get(fontAlias)
 	if fontFamily == nil {
@@ -461,3 +571,4 @@ func getFontFamilyFromMemory(fontAlias string) *types.FontFamilyType {
 	}
 	return fontFamily
 }
+

@@ -6,6 +6,14 @@ import (
 	"testing"
 )
 
+/*
+TestLayerInitialization is a test which allows you to verify that the layer memory is correctly reinitialized and that
+the Layers manager is not nil after initialization.
+
+Example:
+
+	TestLayerInitialization(t)
+*/
 func TestLayerInitialization(t *testing.T) {
 	commonResource.isDebugEnabled = true
 	InitializeTerminal(80, 25)
@@ -17,6 +25,14 @@ func TestLayerInitialization(t *testing.T) {
 	DeleteAllLayers()
 }
 
+/*
+TestLayerAdd is a test which allows you to verify that layers can be correctly added to the system and that invalid
+dimensions correctly trigger a panic.
+
+Example:
+
+	TestLayerAdd(t)
+*/
 func TestLayerAdd(t *testing.T) {
 	commonResource.isDebugEnabled = true
 	InitializeTerminal(80, 25)
@@ -38,6 +54,14 @@ func TestLayerAdd(t *testing.T) {
 	DeleteAllLayers()
 }
 
+/*
+TestLayerDelete is a test which allows you to verify that layers can be correctly deleted and that deleting a child does
+not affect the parent.
+
+Example:
+
+	TestLayerDelete(t)
+*/
 func TestLayerDelete(t *testing.T) {
 	commonResource.isDebugEnabled = true
 	InitializeTerminal(80, 25)
@@ -68,6 +92,13 @@ func TestLayerDelete(t *testing.T) {
 	DeleteAllLayers()
 }
 
+/*
+TestLayerParentChild is a test which allows you to verify the hierarchical relationship between parent and child layers.
+
+Example:
+
+	TestLayerParentChild(t)
+*/
 func TestLayerParentChild(t *testing.T) {
 	commonResource.isDebugEnabled = true
 	InitializeTerminal(80, 25)
@@ -83,7 +114,7 @@ func TestLayerParentChild(t *testing.T) {
 	}
 
 	// Test GetRootParentLayerAlias
-	rootParent, child := layer.GetRootParentLayerAlias("child", "")
+	rootParent, child := layer.GetRootParentAlias("child", "")
 	if rootParent != "parent" {
 		t.Error("Root parent should be 'parent'")
 	}
@@ -93,6 +124,14 @@ func TestLayerParentChild(t *testing.T) {
 	DeleteAllLayers()
 }
 
+/*
+TestLayerZOrder is a test which allows you to verify that layers are correctly sorted by their z-order rendering
+priority.
+
+Example:
+
+	TestLayerZOrder(t)
+*/
 func TestLayerZOrder(t *testing.T) {
 	commonResource.isDebugEnabled = true
 	InitializeTerminal(80, 25)
@@ -125,6 +164,14 @@ func TestLayerZOrder(t *testing.T) {
 	DeleteAllLayers()
 }
 
+/*
+TestLayerInstanceMethods is a test which allows you to verify the behavior of various methods on a layer instance, such
+as visibility, movement, and deletion.
+
+Example:
+
+	TestLayerInstanceMethods(t)
+*/
 func TestLayerInstanceMethods(t *testing.T) {
 	commonResource.isDebugEnabled = true
 	InitializeTerminal(80, 25)
@@ -157,13 +204,21 @@ func TestLayerInstanceMethods(t *testing.T) {
 	}
 
 	// Test deletion
-	layerInstance.DeleteLayer()
-	if layerInstance.IsLayerExists() {
+	layerInstance.Delete()
+	if layerInstance.IsExists() {
 		t.Error("Layer should not exist after deletion")
 	}
 	DeleteAllLayers()
 }
 
+/*
+TestLayerDrawingMethods is a test which allows you to verify that various drawing methods (borders, lines, frames,
+windows, etc.) on a layer instance can be called without errors.
+
+Example:
+
+	TestLayerDrawingMethods(t)
+*/
 func TestLayerDrawingMethods(t *testing.T) {
 	commonResource.isDebugEnabled = true
 	InitializeTerminal(80, 25)
@@ -196,6 +251,14 @@ func TestLayerDrawingMethods(t *testing.T) {
 	DeleteAllLayers()
 }
 
+/*
+TestPrintMethod is a test which allows you to verify that text printing, space preservation, markup handling, and word
+wrapping are all functioning correctly.
+
+Example:
+
+	TestPrintMethod(t)
+*/
 func TestPrintMethod(t *testing.T) {
 	commonResource.isDebugEnabled = true
 	InitializeTerminal(80, 25)
@@ -295,6 +358,14 @@ func TestPrintMethod(t *testing.T) {
 	DeleteAllLayers()
 }
 
+/*
+TestLayerControlMethods is a test which allows you to verify that various controls (buttons, checkboxes, labels, etc.)
+can be correctly added to a layer and assigned the correct layer alias.
+
+Example:
+
+	TestLayerControlMethods(t)
+*/
 func TestLayerControlMethods(t *testing.T) {
 	commonResource.isDebugEnabled = true
 	InitializeTerminal(80, 25)
@@ -342,6 +413,14 @@ func TestLayerControlMethods(t *testing.T) {
 	DeleteAllLayers()
 }
 
+/*
+TestLayerGlobalMethods is a test which allows you to verify the behavior of global layer management functions like
+AddLayer, MoveLayerByAbsoluteValue, MoveLayerByRelativeValue, and DeleteAllLayers.
+
+Example:
+
+	TestLayerGlobalMethods(t)
+*/
 func TestLayerGlobalMethods(t *testing.T) {
 	commonResource.isDebugEnabled = true
 	InitializeTerminal(80, 25)
@@ -390,6 +469,14 @@ func TestLayerGlobalMethods(t *testing.T) {
 	DeleteAllLayers()
 }
 
+/*
+TestComplexLayerHierarchy is a test which allows you to verify that complex parent-child relationships between layers
+are correctly managed, especially during deletion of intermediate layers.
+
+Example:
+
+	TestComplexLayerHierarchy(t)
+*/
 func TestComplexLayerHierarchy(t *testing.T) {
 	commonResource.isDebugEnabled = true
 	InitializeTerminal(80, 25)
@@ -439,7 +526,7 @@ func TestComplexLayerHierarchy(t *testing.T) {
 	}
 
 	// Verify root parent relationships
-	rootParent, child := layer.GetRootParentLayerAlias("grandchild1", "")
+	rootParent, child := layer.GetRootParentAlias("grandchild1", "")
 	if rootParent != "root1" {
 		t.Error("grandchild1 should have root1 as root parent")
 	}
@@ -447,7 +534,7 @@ func TestComplexLayerHierarchy(t *testing.T) {
 		t.Error("child should be grandchild1")
 	}
 
-	rootParent, child = layer.GetRootParentLayerAlias("grandchild4", "")
+	rootParent, child = layer.GetRootParentAlias("grandchild4", "")
 	if rootParent != "root2" {
 		t.Error("grandchild4 should have root2 as root parent")
 	}
@@ -492,6 +579,14 @@ func TestComplexLayerHierarchy(t *testing.T) {
 	DeleteAllLayers()
 }
 
+/*
+TestComplexControlManagement is a test which allows you to verify that controls on different layers are correctly
+isolated and that deleting a layer correctly removes only its associated controls.
+
+Example:
+
+	TestComplexControlManagement(t)
+*/
 func TestComplexControlManagement(t *testing.T) {
 	commonResource.isDebugEnabled = true
 	InitializeTerminal(80, 25)
@@ -537,7 +632,7 @@ func TestComplexControlManagement(t *testing.T) {
 	}
 
 	// Delete child1 layer and verify its controls are deleted
-	child1Layer.DeleteLayer()
+	child1Layer.Delete()
 	if Buttons.IsExists(child1Layer.layerAlias, child1Button.controlAlias) {
 		t.Error("Child1 button should be deleted when child1 layer is deleted")
 	}
@@ -569,7 +664,7 @@ func TestComplexControlManagement(t *testing.T) {
 	}
 
 	// Delete root layer and verify all controls are deleted
-	rootLayer.DeleteLayer()
+	rootLayer.Delete()
 	if Buttons.IsExists(rootLayer.layerAlias, rootButton.controlAlias) {
 		t.Error("Root button should be deleted when root layer is deleted")
 	}
@@ -591,6 +686,14 @@ func TestComplexControlManagement(t *testing.T) {
 	DeleteAllLayers()
 }
 
+/*
+TestLayerAndControlPropertyStability is a test which allows you to verify that layer and control properties (enabled
+status, position, z-order) remain stable across various operations.
+
+Example:
+
+	TestLayerAndControlPropertyStability(t)
+*/
 func TestLayerAndControlPropertyStability(t *testing.T) {
 	commonResource.isDebugEnabled = true
 	InitializeTerminal(80, 25)
@@ -645,7 +748,7 @@ func TestLayerAndControlPropertyStability(t *testing.T) {
 	}
 
 	// Delete and recreate layers with same aliases
-	rootLayer.DeleteLayer()
+	rootLayer.Delete()
 
 	newRootLayer := AddLayer(0, 0, 20, 20, 1, nil)
 	newChildLayer := AddLayer(0, 0, 15, 15, 1, newRootLayer)
@@ -663,6 +766,14 @@ func TestLayerAndControlPropertyStability(t *testing.T) {
 	DeleteAllLayers()
 }
 
+/*
+TestLayerAndControlMemoryLeaks is a test which allows you to verify that layers and controls are properly cleaned up
+from memory after deletion, preventing memory leaks.
+
+Example:
+
+	TestLayerAndControlMemoryLeaks(t)
+*/
 func TestLayerAndControlMemoryLeaks(t *testing.T) {
 	commonResource.isDebugEnabled = true
 	InitializeTerminal(80, 25)
@@ -688,7 +799,7 @@ func TestLayerAndControlMemoryLeaks(t *testing.T) {
 		childLayer.AddProgressBar("Progress", styleEntry, 0, 2, 10, 1, false, 50, 100, false)
 
 		// Delete layers and verify all controls are deleted
-		rootLayer.DeleteLayer()
+		rootLayer.Delete()
 
 		// Verify layers are deleted
 		if isLayerExists(rootLayer.layerAlias) {
@@ -732,6 +843,14 @@ func TestLayerAndControlMemoryLeaks(t *testing.T) {
 	DeleteAllLayers()
 }
 
+/*
+TestComplexInterleavedOperations is a test which allows you to verify that multiple layers with unique styles and
+controls can be interleaved, moved, and deleted without affecting each other's state.
+
+Example:
+
+	TestComplexInterleavedOperations(t)
+*/
 func TestComplexInterleavedOperations(t *testing.T) {
 	commonResource.isDebugEnabled = true
 	InitializeTerminal(80, 25)
@@ -777,7 +896,7 @@ func TestComplexInterleavedOperations(t *testing.T) {
 	root1Layer.AddTooltip("Root1 Tooltip", styleEntry1, 0, 0, 10, 1, 0, 0, 10, 1, true, true, 2000)
 
 	// Phase 2: Delete child1 layer and verify
-	child1Layer.DeleteLayer()
+	child1Layer.Delete()
 	if isLayerExists(child1Layer.layerAlias) {
 		t.Error("Child1 layer should be deleted")
 	}
@@ -825,7 +944,7 @@ func TestComplexInterleavedOperations(t *testing.T) {
 	newChildLayer.AddTooltip("New Child Tooltip", styleEntry1, 0, 0, 10, 1, 0, 0, 10, 1, true, true, 3000)
 
 	// Phase 5: Delete root2 and verify
-	root2Layer.DeleteLayer()
+	root2Layer.Delete()
 	if isLayerExists(root2Layer.layerAlias) {
 		t.Error("Root2 layer should be deleted")
 	}
@@ -882,7 +1001,7 @@ func TestComplexInterleavedOperations(t *testing.T) {
 	}
 
 	// Phase 8: Delete root1 and verify
-	root1Layer.DeleteLayer()
+	root1Layer.Delete()
 	if isLayerExists(root1Layer.layerAlias) {
 		t.Error("Root1 layer should be deleted")
 	}
@@ -950,7 +1069,7 @@ func TestComplexInterleavedOperations(t *testing.T) {
 	}
 
 	// Phase 11: Delete root3's first child and verify remaining controls
-	root3Child1.DeleteLayer()
+	root3Child1.Delete()
 	if isLayerExists(root3Child1.layerAlias) {
 		t.Error("Root3 child1 layer should be deleted")
 	}

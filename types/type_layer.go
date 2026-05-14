@@ -43,6 +43,13 @@ type LayerEntryType struct {
 	CharacterMemory  [][]CharacterEntryType
 }
 
+/*
+MarshalJSON is a method which allows you to marshaljson.
+
+Example:
+
+	instance.MarshalJSON()
+*/
 func (shared LayerEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
 		Width            int
@@ -83,6 +90,15 @@ func (shared LayerEntryType) MarshalJSON() ([]byte, error) {
 	return j, nil
 }
 
+/*
+GetBasicAnsiString is a method which allows you to getbasicansistring.
+
+:return: string
+
+Example:
+
+	instance.GetBasicAnsiString()
+*/
 func (shared LayerEntryType) GetBasicAnsiString() string {
 	var ansiString string
 	var currentForegroundColor constants.ColorType
@@ -112,6 +128,15 @@ func (shared LayerEntryType) GetBasicAnsiString() string {
 	return ansiString
 }
 
+/*
+GetBasicAnsiStringAsBase64 is a method which allows you to getbasicansistringasbase64.
+
+:return: string
+
+Example:
+
+	instance.GetBasicAnsiStringAsBase64()
+*/
 func (shared LayerEntryType) GetBasicAnsiStringAsBase64() string {
 	ansiString := shared.GetBasicAnsiString()
 	err := filesystem.WriteBytesToFile("/tmp/test_output/output.ans", []byte(ansiString), 0)
@@ -121,6 +146,15 @@ func (shared LayerEntryType) GetBasicAnsiStringAsBase64() string {
 	return stringformat.GetStringAsBase64(ansiString)
 }
 
+/*
+GetBasicAnsiStringAsBase642 is a method which allows you to getbasicansistringasbase642.
+
+:return: string
+
+Example:
+
+	instance.GetBasicAnsiStringAsBase642()
+*/
 func (shared LayerEntryType) GetBasicAnsiStringAsBase642() string {
 	ansiString := shared.GetBasicAnsiString()
 	err := filesystem.WriteBytesToFile("/tmp/output.ans", []byte(ansiString), 0)
@@ -130,17 +164,51 @@ func (shared LayerEntryType) GetBasicAnsiStringAsBase642() string {
 	return stringformat.GetStringAsBase64(ansiString)
 }
 
+/*
+GetAnsiStringFromBase64 is a method which allows you to getansistringfrombase64.
+
+:param base64String: The base64String parameter.
+
+:return: string
+
+Example:
+
+	instance.GetAnsiStringFromBase64(base64String)
+*/
 func (shared LayerEntryType) GetAnsiStringFromBase64(base64String string) string {
 	return stringformat.GetStringFromBase64(base64String)
 }
 
-// WriteAnsiStringFromBase64 decodes a base64 string to ANSI and writes it to the specified file.
-// This is useful for comparing expected and actual values when tests fail.
+/*
+WriteAnsiStringFromBase64 is a method which allows you to decodes a base64 string to ANSI and writes it to the specified
+file. In addition, the following information should be noted:
+
+- This is useful for comparing expected and actual values when tests fail.
+
+:param base64String: The base64String parameter.
+
+:return: error
+
+Example:
+
+	WriteAnsiStringFromBase64(base64String)
+*/
 func WriteAnsiStringFromBase64(base64String string) error {
 	ansiString := stringformat.GetStringFromBase64(base64String)
 	return filesystem.WriteBytesToFile("/tmp/test_output/expected.ans", []byte(ansiString), 0)
 }
 
+/*
+GetAnsiForegroundColorString is a method which allows you to getansiforegroundcolorstring.
+
+:param color: The color parameter.
+
+:return: string
+
+Example:
+
+	instance.GetAnsiForegroundColorString(color)
+*/
 func (shared LayerEntryType) GetAnsiForegroundColorString(color constants.ColorType) string {
 	var ansiString string
 	redIndex, greenIndex, blueIndex := shared.GetRGBColorComponents(color)
@@ -148,6 +216,17 @@ func (shared LayerEntryType) GetAnsiForegroundColorString(color constants.ColorT
 	return ansiString
 }
 
+/*
+GetAnsiBackgroundColorString is a method which allows you to getansibackgroundcolorstring.
+
+:param color: The color parameter.
+
+:return: string
+
+Example:
+
+	instance.GetAnsiBackgroundColorString(color)
+*/
 func (shared LayerEntryType) GetAnsiBackgroundColorString(color constants.ColorType) string {
 	var ansiString string
 	redIndex, greenIndex, blueIndex := shared.GetRGBColorComponents(color)
@@ -155,6 +234,18 @@ func (shared LayerEntryType) GetAnsiBackgroundColorString(color constants.ColorT
 	return ansiString
 }
 
+/*
+GetAnsiLocateString is a method which allows you to getansilocatestring.
+
+:param xLocation: The xLocation parameter.
+:param yLocation: The yLocation parameter.
+
+:return: string
+
+Example:
+
+	instance.GetAnsiLocateString(xLocation, yLocation)
+*/
 func (shared LayerEntryType) GetAnsiLocateString(xLocation int, yLocation int) string {
 	var ansiString string
 	ansiString += "\033[99999A"
@@ -168,6 +259,15 @@ func (shared LayerEntryType) GetAnsiLocateString(xLocation int, yLocation int) s
 	return ansiString
 }
 
+/*
+GetEntryAsJsonDump is a method which allows you to getentryasjsondump.
+
+:return: string
+
+Example:
+
+	instance.GetEntryAsJsonDump()
+*/
 func (shared LayerEntryType) GetEntryAsJsonDump() string {
 	j, err := json.Marshal(shared)
 	if err != nil {
@@ -176,6 +276,15 @@ func (shared LayerEntryType) GetEntryAsJsonDump() string {
 	return string(j)
 }
 
+/*
+GetRGBColorComponents is a method which allows you to getrgbcolorcomponents.
+
+:param color: The color parameter.
+
+Example:
+
+	instance.GetRGBColorComponents(color)
+*/
 func (shared LayerEntryType) GetRGBColorComponents(color constants.ColorType) (int32, int32, int32) {
 	var redColorIndex int32
 	var greenColorIndex int32
@@ -184,6 +293,21 @@ func (shared LayerEntryType) GetRGBColorComponents(color constants.ColorType) (i
 	return redColorIndex, greenColorIndex, blueColorIndex
 }
 
+/*
+NewLayerEntry is a constructor which allows you to newlayerentry.
+
+:param layerAlias: The layerAlias parameter.
+:param parentAlias: The parentAlias parameter.
+:param width: The width parameter.
+:param height: The height parameter.
+:param existingLayerEntry: The existingLayerEntry parameter.
+
+:return: LayerEntryType
+
+Example:
+
+	NewLayerEntry(layerAlias, parentAlias, width, height, existingLayerEntry)
+*/
 func NewLayerEntry(layerAlias string, parentAlias string, width int, height int, existingLayerEntry ...*LayerEntryType) LayerEntryType {
 	var layerEntry LayerEntryType
 	if existingLayerEntry != nil {
@@ -230,6 +354,15 @@ func NewLayerEntry(layerAlias string, parentAlias string, width int, height int,
 	return layerEntry
 }
 
+/*
+InitializeCharacterMemory is a method which allows you to initializecharactermemory.
+
+:param layerEntry: The layerEntry parameter.
+
+Example:
+
+	InitializeCharacterMemory(layerEntry)
+*/
 func InitializeCharacterMemory(layerEntry *LayerEntryType) {
 	// This is used exclusively for clearing layer data.
 	layerEntry.CharacterMemory = [][]CharacterEntryType{}
@@ -244,7 +377,17 @@ func InitializeCharacterMemory(layerEntry *LayerEntryType) {
 	}
 }
 
-// SaveLayer writes the layer to a file with zstd compression
+/*
+SaveLayer is a method which allows you to writes the layer to a file with zstd compression.
+
+:param path: The path parameter.
+
+:return: error
+
+Example:
+
+	instance.SaveLayer(path)
+*/
 func (shared *LayerEntryType) SaveLayer(path string) error {
 	// Open file
 	file, err := os.Create(path)
@@ -323,7 +466,17 @@ func (shared *LayerEntryType) SaveLayer(path string) error {
 	return nil
 }
 
-// LoadLayer reads a layer from a file
+/*
+LoadLayer is a method which allows you to reads a layer from a file.
+
+:param path: The path parameter.
+
+:return: error
+
+Example:
+
+	instance.LoadLayer(path)
+*/
 func (shared *LayerEntryType) LoadLayer(path string) error {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -332,7 +485,17 @@ func (shared *LayerEntryType) LoadLayer(path string) error {
 	return shared.LoadLayerFromBytes(data)
 }
 
-// LoadLayerFromBytes reads a layer from a byte slice
+/*
+LoadLayerFromBytes is a method which allows you to reads a layer from a byte slice.
+
+:param data: The data parameter.
+
+:return: error
+
+Example:
+
+	instance.LoadLayerFromBytes(data)
+*/
 func (shared *LayerEntryType) LoadLayerFromBytes(data []byte) error {
 	reader := bytes.NewReader(data)
 

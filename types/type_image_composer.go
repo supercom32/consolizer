@@ -23,12 +23,30 @@ type ImageComposerImageEntryType struct {
 	AlphaValue  float32
 }
 
+/*
+NewImageComposerEntry is a constructor which allows you to newimagecomposerentry.
+
+:return: ImageComposerEntryType
+
+Example:
+
+	NewImageComposerEntry()
+*/
 func NewImageComposerEntry() ImageComposerEntryType {
 	var imageComposerEntry ImageComposerEntryType
 	imageComposerEntry.images = make(map[string]*ImageComposerImageEntryType)
 	return imageComposerEntry
 }
 
+/*
+NewImageComposerImageEntry is a constructor which allows you to newimagecomposerimageentry.
+
+:return: ImageComposerImageEntryType
+
+Example:
+
+	NewImageComposerImageEntry()
+*/
 func NewImageComposerImageEntry() ImageComposerImageEntryType {
 	var imageComposerImageEntry ImageComposerImageEntryType
 	return imageComposerImageEntry

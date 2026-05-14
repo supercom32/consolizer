@@ -11,12 +11,18 @@ type TimerEntryType struct {
 }
 
 /*
-MarshalJSON allows you to convert a timer entry to JSON format. In addition, the following
-information should be noted:
+MarshalJSON is a method which allows you to convert a timer entry to JSON format. In addition, the following information
+should be noted:
 
 - Implements the json.Marshaler interface for TimerEntryType.
+
 - Converts the timer entry to a JSON string representation.
+
 - Used for serializing timer entries when saving state or transmitting data.
+
+Example:
+
+	instance.MarshalJSON()
 */
 func (shared TimerEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
@@ -35,12 +41,20 @@ func (shared TimerEntryType) MarshalJSON() ([]byte, error) {
 }
 
 /*
-GetEntryAsJsonDump allows you to get a JSON string representation of the timer entry. In addition, the following
-information should be noted:
+GetEntryAsJsonDump is a method which allows you to get a JSON string representation of the timer entry. In addition, the
+following information should be noted:
 
 - Returns a formatted JSON string of the timer entry.
+
 - Used for debugging and logging purposes.
+
 - The output is human-readable and includes all timer properties.
+
+:return: string
+
+Example:
+
+	instance.GetEntryAsJsonDump()
 */
 func (shared TimerEntryType) GetEntryAsJsonDump() string {
 	j, err := json.Marshal(shared)
@@ -51,12 +65,22 @@ func (shared TimerEntryType) GetEntryAsJsonDump() string {
 }
 
 /*
-NewTimerEntry allows you to create a new timer entry. In addition, the following
-information should be noted:
+NewTimerEntry is a constructor which allows you to create a new timer entry. In addition, the following information
+should be noted:
 
 - Initializes a timer entry with default values.
+
 - Sets up a timer with a specified duration and callback function.
+
 - The timer can be started, stopped, and reset using the appropriate methods.
+
+:param existingTimerEntry: The existingTimerEntry parameter.
+
+:return: TimerEntryType
+
+Example:
+
+	NewTimerEntry(existingTimerEntry)
 */
 func NewTimerEntry(existingTimerEntry ...*TimerEntryType) TimerEntryType {
 	var timerEntry TimerEntryType

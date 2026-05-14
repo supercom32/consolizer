@@ -7,25 +7,25 @@ import (
 )
 
 /*
-GetTransitionedColor allows you to obtain a color that has been transitioned
-to another color by a specific percent. For example, if your source color is
-red (255, 0, 0) and your target color is green (0, 255, 0), transitioning
-by 0.5 (fifty percent) will yield the color (128, 128, 0). In addition, the
-following information should be noted:
+GetTransitionedColor is a method which allows you to obtain a color that has been transitioned to another color by a
+specific percent. For example, if your source color is red (255, 0, 0) and your target color is green (0, 255, 0),
+transitioning by 0.5 (fifty percent) will yield the color (128, 128, 0). In addition, the following should be noted:
 
-- If your percent change yields color indexes which are not evenly divisible,
-then the color index will be rounded up or down to the nearest whole number.
-For example: 50% of color index 255 would yield the color index 128.
+- If your percent change yields color indexes which are not evenly divisible, then the color index will be rounded up.
 
-- If you pass in a percent change of less than 0.0 or greater
-than 1.0, you are simply specifying that you want to transition the color
-greater than 100%. For example, a value of 1.2 would mean you want to
-transition to 120% of the target color, and a value of -0.2 would mean you
-want to transition to -20% of the target color.
+- If you pass in a percent change of less than 0.0 or greater than 1.0, you are simply specifying that you want to.
 
-- If the resultant transitioned color falls outside of the RGB range of
-Black (0, 0, 0) or White (255, 255, 255), it will be defaulted to closest
-valid color.
+- If the resultant transitioned color falls outside of the RGB range of Black (0, 0, 0) or White (255, 255, 255), it.
+
+:param sourceColor: The color you wish to transition from.
+:param targetColor: The color you wish to transition to.
+:param percentChange: The percentage of the transition to apply (0.0 to 1.0).
+
+:return: The transitioned color as a ColorType.
+
+Example:
+
+	transitionedColor := GetTransitionedColor(GetRGBColor(255, 0, 0), GetRGBColor(0, 255, 0), 0.5)
 */
 func GetTransitionedColor(sourceColor constants.ColorType, targetColor constants.ColorType, percentChange float32) constants.ColorType {
 	var sourceColorIndex [3]int32
@@ -53,8 +53,16 @@ func GetTransitionedColor(sourceColor constants.ColorType, targetColor constants
 }
 
 /*
-GetRGBColorComponents allows you to obtain RGB color component indexes for
-red, green, an blue color channels.
+GetRGBColorComponents is a method which allows you to obtain RGB color component indexes for red, green, an blue color
+channels.
+
+:param color: The color for which you want to retrieve the RGB components.
+
+:return: The red, green, and blue color component indexes (0-255).
+
+Example:
+
+	red, green, blue := GetRGBColorComponents(constants.ColorRed)
 */
 func GetRGBColorComponents(color constants.ColorType) (int32, int32, int32) {
 	var redColorIndex int32

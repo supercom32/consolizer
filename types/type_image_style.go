@@ -20,6 +20,17 @@ type ImageStyleEntryType struct {
 	RandomSeed                   int64
 }
 
+/*
+NewImageStyleEntry is a constructor which allows you to newimagestyleentry.
+
+:param existingImageStyleEntry: The existingImageStyleEntry parameter.
+
+:return: ImageStyleEntryType
+
+Example:
+
+	NewImageStyleEntry(existingImageStyleEntry)
+*/
 func NewImageStyleEntry(existingImageStyleEntry ...*ImageStyleEntryType) ImageStyleEntryType {
 	var imageStyleEntry ImageStyleEntryType
 	if existingImageStyleEntry != nil {

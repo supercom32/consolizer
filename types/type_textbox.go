@@ -28,24 +28,38 @@ type TextboxEntryType struct {
 }
 
 /*
-GetAlias allows you to retrieve the alias of a textbox control. In addition, the following
-information should be noted:
+GetAlias is a method which allows you to retrieve the alias of a textbox control. In addition, the following information
+should be noted:
 
 - Returns the unique identifier for the textbox.
+
 - This alias is used to reference the textbox in other operations.
+
 - The alias is set when the textbox is created.
+
+:return: string
+
+Example:
+
+	instance.GetAlias()
 */
 func (shared TextboxEntryType) GetAlias() string {
 	return shared.Alias
 }
 
 /*
-MarshalJSON allows you to serialize a textbox control to JSON. In addition, the following
-information should be noted:
+MarshalJSON is a method which allows you to serialize a textbox control to JSON. In addition, the following information
+should be noted:
 
 - Converts the textbox's state to a JSON representation.
+
 - Includes the base control properties and textbox-specific fields.
+
 - Used for saving and loading textbox configurations.
+
+Example:
+
+	instance.MarshalJSON()
 */
 func (shared TextboxEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
@@ -90,12 +104,20 @@ func (shared TextboxEntryType) MarshalJSON() ([]byte, error) {
 }
 
 /*
-GetEntryAsJsonDump allows you to get a JSON string representation of a textbox control. In addition,
+GetEntryAsJsonDump is a method which allows you to get a JSON string representation of a textbox control. In addition,
 the following information should be noted:
 
 - Returns a formatted JSON string of the textbox's state.
+
 - Useful for debugging and logging purposes.
+
 - Panics if JSON marshaling fails.
+
+:return: string
+
+Example:
+
+	instance.GetEntryAsJsonDump()
 */
 func (shared TextboxEntryType) GetEntryAsJsonDump() string {
 	j, err := json.Marshal(shared)
@@ -106,12 +128,22 @@ func (shared TextboxEntryType) GetEntryAsJsonDump() string {
 }
 
 /*
-NewTexboxEntry allows you to create a new textbox control. In addition, the following
-information should be noted:
+NewTexboxEntry is a constructor which allows you to create a new textbox control. In addition, the following information
+should be noted:
 
 - Initializes a textbox with default values.
+
 - Can optionally copy properties from an existing textbox.
+
 - Sets up the base control properties and textbox-specific fields.
+
+:param existingTextboxEntry: The existingTextboxEntry parameter.
+
+:return: TextboxEntryType
+
+Example:
+
+	NewTexboxEntry(existingTextboxEntry)
 */
 func NewTexboxEntry(existingTextboxEntry ...*TextboxEntryType) TextboxEntryType {
 	var textboxEntry TextboxEntryType
@@ -144,12 +176,23 @@ func NewTexboxEntry(existingTextboxEntry ...*TextboxEntryType) TextboxEntryType 
 }
 
 /*
-IsTextboxEntryEqual allows you to compare two textbox controls for equality. In addition, the following
-information should be noted:
+IsTextboxEntryEqual is a method which allows you to compare two textbox controls for equality. In addition, the
+following information should be noted:
 
 - Compares all properties of both textboxes.
+
 - Returns true if all properties match, false otherwise.
+
 - Used for change detection and state synchronization.
+
+:param sourceTextboxEntry: The sourceTextboxEntry parameter.
+:param targetTextboxEntry: The targetTextboxEntry parameter.
+
+:return: bool
+
+Example:
+
+	IsTextboxEntryEqual(sourceTextboxEntry, targetTextboxEntry)
 */
 func IsTextboxEntryEqual(sourceTextboxEntry *TextboxEntryType, targetTextboxEntry *TextboxEntryType) bool {
 	return sourceTextboxEntry.BaseControlType.IsEqual(&targetTextboxEntry.BaseControlType) &&
@@ -171,12 +214,22 @@ func IsTextboxEntryEqual(sourceTextboxEntry *TextboxEntryType, targetTextboxEntr
 }
 
 /*
-GetTextboxAlias allows you to retrieve the alias of a textbox control. In addition, the following
+GetTextboxAlias is a method which allows you to retrieve the alias of a textbox control. In addition, the following
 information should be noted:
 
 - Returns the unique identifier for the textbox.
+
 - This is a convenience method that delegates to GetAlias.
+
 - The alias is used to reference the textbox in other operations.
+
+:param entry: The entry parameter.
+
+:return: string
+
+Example:
+
+	GetTextboxAlias(entry)
 */
 func GetTextboxAlias(entry *TextboxEntryType) string {
 	return entry.Alias

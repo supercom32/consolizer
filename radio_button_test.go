@@ -54,16 +54,16 @@ func TestRadioButtonGroup(test *testing.T) {
 	}
 
 	// Verify the first radio button is selected
-	if !assert.True(test, radioButtonInstance1.IsRadioButtonSelected(), "Radio Button 1 should be selected") {
+	if !assert.True(test, radioButtonInstance1.IsSelected(), "Radio Button 1 should be selected") {
 		fmt.Println("Radio Button 1 selection state is incorrect")
 	}
 
 	// Verify the other radio buttons are not selected
-	if !assert.False(test, radioButtonInstance2.IsRadioButtonSelected(), "Radio Button 2 should not be selected") {
+	if !assert.False(test, radioButtonInstance2.IsSelected(), "Radio Button 2 should not be selected") {
 		fmt.Println("Radio Button 2 selection state is incorrect")
 	}
 
-	if !assert.False(test, radioButtonInstance3.IsRadioButtonSelected(), "Radio Button 3 should not be selected") {
+	if !assert.False(test, radioButtonInstance3.IsSelected(), "Radio Button 3 should not be selected") {
 		fmt.Println("Radio Button 3 selection state is incorrect")
 	}
 }
@@ -86,20 +86,20 @@ func TestRadioButtonMultipleGroups(test *testing.T) {
 	}
 
 	// Verify the first radio button in each group is selected
-	if !assert.True(test, radioButtonInstance1.IsRadioButtonSelected(), "Group 1 - Button 1 should be selected") {
+	if !assert.True(test, radioButtonInstance1.IsSelected(), "Group 1 - Button 1 should be selected") {
 		fmt.Println("Group 1 - Button 1 selection state is incorrect")
 	}
 
-	if !assert.True(test, radioButtonInstance3.IsRadioButtonSelected(), "Group 2 - Button 1 should be selected") {
+	if !assert.True(test, radioButtonInstance3.IsSelected(), "Group 2 - Button 1 should be selected") {
 		fmt.Println("Group 2 - Button 1 selection state is incorrect")
 	}
 
 	// Verify the second radio button in each group is not selected
-	if !assert.False(test, radioButtonInstance2.IsRadioButtonSelected(), "Group 1 - Button 2 should not be selected") {
+	if !assert.False(test, radioButtonInstance2.IsSelected(), "Group 1 - Button 2 should not be selected") {
 		fmt.Println("Group 1 - Button 2 selection state is incorrect")
 	}
 
-	if !assert.False(test, radioButtonInstance4.IsRadioButtonSelected(), "Group 2 - Button 2 should not be selected") {
+	if !assert.False(test, radioButtonInstance4.IsSelected(), "Group 2 - Button 2 should not be selected") {
 		fmt.Println("Group 2 - Button 2 selection state is incorrect")
 	}
 }
@@ -110,11 +110,11 @@ func TestRadioButtonChangeSelection(test *testing.T) {
 	radioButtonInstance2 := radioButton.Add(layer1.layerAlias, "testRadioButton2", "Radio Button 2", styleEntry, 2, 4, 1, false)
 
 	// Verify initial state
-	if !assert.True(test, radioButtonInstance1.IsRadioButtonSelected(), "Radio Button 1 should initially be selected") {
+	if !assert.True(test, radioButtonInstance1.IsSelected(), "Radio Button 1 should initially be selected") {
 		fmt.Println("Radio Button 1 initial selection state is incorrect")
 	}
 
-	if !assert.False(test, radioButtonInstance2.IsRadioButtonSelected(), "Radio Button 2 should initially not be selected") {
+	if !assert.False(test, radioButtonInstance2.IsSelected(), "Radio Button 2 should initially not be selected") {
 		fmt.Println("Radio Button 2 initial selection state is incorrect")
 	}
 
@@ -133,11 +133,11 @@ func TestRadioButtonChangeSelection(test *testing.T) {
 	}
 
 	// Verify the selection changed
-	if !assert.False(test, radioButtonInstance1.IsRadioButtonSelected(), "Radio Button 1 should now be unselected") {
+	if !assert.False(test, radioButtonInstance1.IsSelected(), "Radio Button 1 should now be unselected") {
 		fmt.Println("Radio Button 1 updated selection state is incorrect")
 	}
 
-	if !assert.True(test, radioButtonInstance2.IsRadioButtonSelected(), "Radio Button 2 should now be selected") {
+	if !assert.True(test, radioButtonInstance2.IsSelected(), "Radio Button 2 should now be selected") {
 		fmt.Println("Radio Button 2 updated selection state is incorrect")
 	}
 }
@@ -148,7 +148,7 @@ func TestRadioButtonGetSelected(test *testing.T) {
 	radioButton.Add(layer1.layerAlias, "testRadioButton2", "Radio Button 2", styleEntry, 2, 4, 1, false)
 
 	// Get the selected radio button
-	selectedRadioButton := radioButtonInstance1.GetSelectedRadioButton()
+	selectedRadioButton := radioButtonInstance1.GetSelected()
 
 	UpdateDisplay(false)
 	layerEntry := commonResource.screenLayer
@@ -195,7 +195,7 @@ func TestRadioButtonDeleteAll(test *testing.T) {
 	UpdateDisplay(false)
 
 	// Delete all radio buttons
-	radioButton.DeleteAllRadioButtons(layer1.layerAlias)
+	radioButton.DeleteAll(layer1.layerAlias)
 
 	UpdateDisplay(false)
 	layerEntry := commonResource.screenLayer

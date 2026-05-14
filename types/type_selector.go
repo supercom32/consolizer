@@ -22,24 +22,38 @@ type SelectorEntryType struct {
 }
 
 /*
-GetAlias allows you to retrieve the alias of a selector control. In addition, the following
+GetAlias is a method which allows you to retrieve the alias of a selector control. In addition, the following
 information should be noted:
 
 - Returns the unique identifier for the selector.
+
 - This alias is used to reference the selector in other operations.
+
 - The alias is set when the selector is created.
+
+:return: string
+
+Example:
+
+	instance.GetAlias()
 */
 func (shared SelectorEntryType) GetAlias() string {
 	return shared.Alias
 }
 
 /*
-MarshalJSON allows you to serialize a selector control to JSON. In addition, the following
-information should be noted:
+MarshalJSON is a method which allows you to serialize a selector control to JSON. In addition, the following information
+should be noted:
 
 - Converts the selector's state to a JSON representation.
+
 - Includes the base control properties and selector-specific fields.
+
 - Used for saving and loading selector configurations.
+
+Example:
+
+	instance.MarshalJSON()
 */
 func (shared SelectorEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
@@ -78,12 +92,20 @@ func (shared SelectorEntryType) MarshalJSON() ([]byte, error) {
 }
 
 /*
-GetEntryAsJsonDump allows you to get a JSON string representation of a selector control. In addition,
+GetEntryAsJsonDump is a method which allows you to get a JSON string representation of a selector control. In addition,
 the following information should be noted:
 
 - Returns a formatted JSON string of the selector's state.
+
 - Useful for debugging and logging purposes.
+
 - Panics if JSON marshaling fails.
+
+:return: string
+
+Example:
+
+	instance.GetEntryAsJsonDump()
 */
 func (shared SelectorEntryType) GetEntryAsJsonDump() string {
 	j, err := json.Marshal(shared)
@@ -94,12 +116,22 @@ func (shared SelectorEntryType) GetEntryAsJsonDump() string {
 }
 
 /*
-NewSelectorEntry allows you to create a new selector control. In addition, the following
+NewSelectorEntry is a constructor which allows you to create a new selector control. In addition, the following
 information should be noted:
 
 - Initializes a selector with default values.
+
 - Can optionally copy properties from an existing selector.
+
 - Sets up the base control properties and selector-specific fields.
+
+:param existingSelectorEntry: The existingSelectorEntry parameter.
+
+:return: SelectorEntryType
+
+Example:
+
+	NewSelectorEntry(existingSelectorEntry)
 */
 func NewSelectorEntry(existingSelectorEntry ...*SelectorEntryType) SelectorEntryType {
 	var selectorEntry SelectorEntryType
@@ -124,6 +156,18 @@ func NewSelectorEntry(existingSelectorEntry ...*SelectorEntryType) SelectorEntry
 	return selectorEntry
 }
 
+/*
+IsSelectorEntryEqual is a method which allows you to isselectorentryequal.
+
+:param sourceSelectorEntry: The sourceSelectorEntry parameter.
+:param targetSelectorEntry: The targetSelectorEntry parameter.
+
+:return: bool
+
+Example:
+
+	IsSelectorEntryEqual(sourceSelectorEntry, targetSelectorEntry)
+*/
 func IsSelectorEntryEqual(sourceSelectorEntry *SelectorEntryType, targetSelectorEntry *SelectorEntryType) bool {
 	if sourceSelectorEntry.BaseControlType == targetSelectorEntry.BaseControlType &&
 		sourceSelectorEntry.ScrollbarAlias == targetSelectorEntry.ScrollbarAlias &&
@@ -143,6 +187,17 @@ func IsSelectorEntryEqual(sourceSelectorEntry *SelectorEntryType, targetSelector
 	return false
 }
 
+/*
+GetSelectorAlias is a method which allows you to getselectoralias.
+
+:param entry: The entry parameter.
+
+:return: string
+
+Example:
+
+	GetSelectorAlias(entry)
+*/
 func GetSelectorAlias(entry *SelectorEntryType) string {
 	return entry.Alias
 }

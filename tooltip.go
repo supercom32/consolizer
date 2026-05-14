@@ -22,6 +22,17 @@ var Tooltips = memory.NewControlMemoryManager[types.TooltipEntryType]()
 // REGULAR ENTRY
 // ============================================================================
 
+/*
+SetEnabled is a method which allows you to enable or disable a tooltip.
+
+:param enabled: Whether the tooltip should be enabled.
+
+:return: The tooltip instance for method chaining.
+
+Example:
+
+	tooltip.SetEnabled(true)
+*/
 func (shared *TooltipInstanceType) SetEnabled(enabled bool) *TooltipInstanceType {
 	tooltipEntry := Tooltips.Get(shared.layerAlias, shared.controlAlias)
 	if tooltipEntry != nil {
@@ -30,6 +41,31 @@ func (shared *TooltipInstanceType) SetEnabled(enabled bool) *TooltipInstanceType
 	return shared
 }
 
+/*
+Add is a method which allows you to create and add a new tooltip to a layer.
+
+:param layerAlias: The alias of the layer to add the tooltip to.
+:param tooltipAlias: The alias of the tooltip to create.
+:param tooltipText: The text to display in the tooltip.
+:param styleEntry: The TUI style entry to use for the tooltip.
+:param hotspotXLocation: The X coordinate of the hotspot area.
+:param hotspotYLocation: The Y coordinate of the hotspot area.
+:param hotspotWidth: The width of the hotspot area.
+:param hotspotHeight: The height of the hotspot area.
+:param tooltipXLocation: The X coordinate of the tooltip (absolute or relative).
+:param tooltipYLocation: The Y coordinate of the tooltip (absolute or relative).
+:param tooltipWidth: The width of the tooltip.
+:param tooltipHeight: The height of the tooltip.
+:param isLocationAbsolute: Whether the tooltip coordinates are absolute.
+:param isBorderDrawn: Whether to draw a border around the tooltip.
+:param hoverTime: The delay in milliseconds before the tooltip appears.
+
+:return: An instance of the created tooltip.
+
+Example:
+
+	tooltip.Add("layer1", "tooltip1", "Info", style, 10, 10, 5, 1, 10, 12, 10, 3, true, true, 500)
+*/
 func (shared *tooltipType) Add(layerAlias string, tooltipAlias string, tooltipText string, styleEntry types.TuiStyleEntryType, hotspotXLocation int, hotspotYLocation int, hotspotWidth int, hotspotHeight int, tooltipXLocation int, tooltipYLocation int, tooltipWidth int, tooltipHeight int, isLocationAbsolute bool, isBorderDrawn bool, hoverTime int) TooltipInstanceType {
 	tooltipEntry := types.NewTooltipEntry()
 	tooltipEntry.StyleEntry = styleEntry
@@ -55,33 +91,66 @@ func (shared *tooltipType) Add(layerAlias string, tooltipAlias string, tooltipTe
 }
 
 /*
-DeleteButton allows you to remove a button from a text layer. In addition,
-the following information should be noted:
+Delete is a method which allows you to remove a tooltip from a text layer. In addition, the following should be
+noted:
 
-- If you attempt to delete a button which does not exist, then the request
-will simply be ignored.
+- If you attempt to delete a tooltip which does not exist, then the request will simply be ignored.
+
+:param layerAlias: The alias of the layer containing the tooltip.
+:param labelAlias: The alias of the tooltip to delete.
+
+Example:
+
+	tooltip.Delete("layer1", "tooltip1")
 */
-func (shared *tooltipType) DeleteTooltip(layerAlias string, labelAlias string) {
+func (shared *tooltipType) Delete(layerAlias string, labelAlias string) {
 	Tooltips.Remove(layerAlias, labelAlias)
 }
 
-func (shared *tooltipType) DeleteAllTooltips(layerAlias string) {
+/*
+DeleteAll is a method which allows you to remove all tooltips from a layer.
+
+:param layerAlias: The alias of the layer to remove all tooltips from.
+
+Example:
+
+	tooltip.DeleteAll("layer1")
+*/
+func (shared *tooltipType) DeleteAll(layerAlias string) {
 	Tooltips.RemoveAll(layerAlias)
 }
 
 /*
-drawButtonsOnLayer allows you to draw all buttons on a given text layer.
+drawHotspotZonesOnLayer is a method which allows you to draw all tooltip hotspot zones on a given text layer.
+
+:param layerEntry: The entry for the layer to draw hotspots on.
+
+Example:
+
+	tooltip.drawHotspotZonesOnLayer(layerEntry)
 */
-func (shared *tooltipType) drawTooltipHotspotZonesOnLayer(layerEntry types.LayerEntryType) {
+func (shared *tooltipType) drawHotspotZonesOnLayer(layerEntry types.LayerEntryType) {
 	layerAlias := layerEntry.LayerAlias
 	for _, currentTooltipEntry := range Tooltips.GetAllEntries(layerAlias) {
 		tooltipEntry := currentTooltipEntry
-		shared.drawTooltipHotspot(&layerEntry, tooltipEntry)
+		shared.drawHotspot(&layerEntry, tooltipEntry)
 	}
 }
 
-// TOOD: This method should really just take in a tooltip entry instead?
-func (shared *tooltipType) drawTooltipHotspot(layerEntry *types.LayerEntryType, tooltipEntry *types.TooltipEntryType) {
+/*
+drawHotspot is a method which allows you to draw a single tooltip hotspot zone. In addition, the following should
+be noted:
+
+- If a parent exists, do not overwrite the parent's attributes.
+
+:param layerEntry: The entry for the layer to draw the hotspot on.
+:param tooltipEntry: The entry for the tooltip whose hotspot is being drawn.
+
+Example:
+
+	tooltip.drawHotspot(layerEntry, entry)
+*/
+func (shared *tooltipType) drawHotspot(layerEntry *types.LayerEntryType, tooltipEntry *types.TooltipEntryType) {
 	if !tooltipEntry.IsEnabled {
 		return
 	}
@@ -95,32 +164,45 @@ func (shared *tooltipType) drawTooltipHotspot(layerEntry *types.LayerEntryType, 
 	}
 }
 
-func (shared *tooltipType) renderAllTooltips(layerEntry types.LayerEntryType) {
+/*
+renderAll is a method which allows you to render all tooltips on a given text layer.
+
+:param layerEntry: The entry for the layer to render tooltips on.
+
+Example:
+
+	tooltip.renderAll(layerEntry)
+*/
+func (shared *tooltipType) renderAll(layerEntry types.LayerEntryType) {
 	for _, currentTooltipEntry := range Tooltips.GetAllEntriesOverall() {
 		tooltipEntry := currentTooltipEntry
-		shared.renderTooltip(&layerEntry, tooltipEntry)
+		shared.render(&layerEntry, tooltipEntry)
 	}
 }
 
 /*
-renderTooltip allows you to render a tooltip on a given text layer. This method
-handles both absolute and relative positioning based on the tooltip configuration.
-In addition, the following information should be noted:
+render is a method which allows you to render a tooltip on a given text layer. In addition, the following should
+be noted:
 
-- Rendering always starts at the coordinates specified by the user. However, the
-dimensions are always for the text area and borders are drawn around it, not
-inside it.
+- This method handles both absolute and relative positioning based on the tooltip configuration.
 
-- If the tooltip is not enabled or not marked as drawn, then no rendering will
-occur.
+  - Rendering always starts at the coordinates specified by the user. However, the dimensions are always for the text
+    area.
 
-- When absolute positioning is not used, the tooltip will be positioned relative
-to the current mouse cursor location.
+- If the tooltip is not enabled or not marked as drawn, then no rendering will occur.
 
-- If borders are enabled, they will be drawn around the text area, expanding
-the total rendered size by 2 characters in both width and height.
+- When absolute positioning is not used, the tooltip will be positioned relative to the current mouse cursor location.
+
+- If borders are enabled, they will be drawn around the text area, expanding the total rendered size by 2 characters in.
+
+:param layerEntry: The entry for the layer to render the tooltip on.
+:param tooltipEntry: The entry for the tooltip to render.
+
+Example:
+
+	tooltip.render(layerEntry, entry)
 */
-func (shared *tooltipType) renderTooltip(layerEntry *types.LayerEntryType, tooltipEntry *types.TooltipEntryType) {
+func (shared *tooltipType) render(layerEntry *types.LayerEntryType, tooltipEntry *types.TooltipEntryType) {
 	if !tooltipEntry.IsEnabled || !tooltipEntry.IsDrawn {
 		return
 	}
@@ -166,10 +248,24 @@ func (shared *tooltipType) renderTooltip(layerEntry *types.LayerEntryType, toolt
 	}
 	formattedLabel := " " + tooltipEntry.Text + " "
 	arrayOfRunes := stringformat.GetRunesFromString(formattedLabel)
-	layer.printLayerWithWordWrap(layerEntry, attributeEntry, fillStartX+xOffset, fillStartY+yOffset, fillWidth-1, arrayOfRunes)
+	layer.printWithWordWrap(layerEntry, attributeEntry, fillStartX+xOffset, fillStartY+yOffset, fillWidth-1, arrayOfRunes)
 }
 
-func (shared *tooltipType) getTooltipFromCharacterEntry(entry types.CharacterEntryType) *types.TooltipEntryType {
+/*
+getFromCharacterEntry is a method which allows you to retrieve a tooltip entry associated with a given character
+entry. In addition, the following should be noted:
+
+- It checks various control types (buttons, labels, checkboxes, etc.) for associated tooltips.
+
+:param entry: The character entry to check for an associated tooltip.
+
+:return: The associated tooltip entry, or nil if none found.
+
+Example:
+
+	entry := tooltip.getFromCharacterEntry(charEntry)
+*/
+func (shared *tooltipType) getFromCharacterEntry(entry types.CharacterEntryType) *types.TooltipEntryType {
 	layer := entry.LayerAlias
 	alias := entry.AttributeEntry.CellControlAlias
 
@@ -238,6 +334,20 @@ func (shared *tooltipType) getTooltipFromCharacterEntry(entry types.CharacterEnt
 	return nil
 }
 
+/*
+updateMouseEvent is a method which allows you to process mouse events for tooltips. In addition, the following should be
+noted:
+
+- Handles hover detection and timing.
+
+- Manages showing and hiding of tooltips.
+
+:return: True if a screen update is required.
+
+Example:
+
+	update := tooltip.updateMouseEvent()
+*/
 func (shared *tooltipType) updateMouseEvent() bool {
 	isScreenUpdateRequired := false
 	mouseXLocation, mouseYLocation, _, _ := GetMouseStatus()
@@ -247,7 +357,7 @@ func (shared *tooltipType) updateMouseEvent() bool {
 		return false
 	}
 
-	tooltipEntry := shared.getTooltipFromCharacterEntry(characterEntry)
+	tooltipEntry := shared.getFromCharacterEntry(characterEntry)
 
 	if tooltipEntry != nil {
 		mouseXLocation, mouseYLocation, _, _ = GetMouseStatus()
@@ -283,6 +393,17 @@ func (shared *tooltipType) updateMouseEvent() bool {
 	return isScreenUpdateRequired
 }
 
+/*
+setParentControlAlias is a method which allows you to associate a tooltip with a parent control.
+
+:param parentControlAlias: The alias of the parent control.
+
+:return: The tooltip instance for method chaining.
+
+Example:
+
+	tooltip.setParentControlAlias("parent1")
+*/
 func (shared *TooltipInstanceType) setParentControlAlias(parentControlAlias string) *TooltipInstanceType {
 	tooltipEntry := Tooltips.Get(shared.layerAlias, shared.controlAlias)
 	if tooltipEntry != nil {
@@ -292,19 +413,38 @@ func (shared *TooltipInstanceType) setParentControlAlias(parentControlAlias stri
 }
 
 /*
-SetTooltipValue allows you to set the value of the tooltip associated with the TooltipInstanceType.
-This function updates the value of the tooltip label identified by the layerAlias and tooltipAlias fields.
+SetValue is a method which allows you to set the value of the tooltip associated with the TooltipInstanceType. In
+addition, the following should be noted:
+
+- This function updates the value of the tooltip label identified by the layerAlias and tooltipAlias fields.
+
+:param text: The text to set for the tooltip.
+
+:return: The tooltip instance for method chaining.
+
+Example:
+
+	tooltip.SetValue("New value")
 */
-func (shared *TooltipInstanceType) SetTooltipValue(text string) *TooltipInstanceType {
+func (shared *TooltipInstanceType) SetValue(text string) *TooltipInstanceType {
 	labelEntry := Labels.Get(shared.layerAlias, shared.controlAlias)
 	labelEntry.Label = text
 	return shared
 }
 
 /*
-SetText allows you to set the text of the tooltip. This is an alias for SetTooltipValue
-for consistency with other controls.
+SetText is a method which allows you to set the text of the tooltip. In addition, the following should be noted:
+
+- This is an alias for SetTooltipValue for consistency with other controls.
+
+:param text: The text to set for the tooltip.
+
+:return: The tooltip instance for method chaining.
+
+Example:
+
+	tooltip.SetText("New text")
 */
 func (shared *TooltipInstanceType) SetText(text string) *TooltipInstanceType {
-	return shared.SetTooltipValue(text)
+	return shared.SetValue(text)
 }

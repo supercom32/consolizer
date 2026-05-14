@@ -7,6 +7,15 @@ import (
 	"testing"
 )
 
+/*
+TestCheckboxDefaultState is a test which allows you to verify that a checkbox is rendered correctly in its default
+state.
+
+Example:
+
+	TestCheckboxDefaultState(t)
+	// Expects checkbox to be rendered at (2,2) with label "Test Checkbox" and unselected.
+*/
 func TestCheckboxDefaultState(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	Checkbox.Add(layer1.layerAlias, "testCheckbox", "Test Checkbox", styleEntry, 2, 2, false, true)
@@ -22,6 +31,15 @@ func TestCheckboxDefaultState(test *testing.T) {
 	}
 }
 
+/*
+TestCheckboxSelectedState is a test which allows you to verify that a checkbox is rendered correctly when it is in a
+selected state.
+
+Example:
+
+	TestCheckboxSelectedState(t)
+	// Expects checkbox to be rendered with its selected character.
+*/
 func TestCheckboxSelectedState(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	Checkbox.Add(layer1.layerAlias, "testCheckbox", "Test Checkbox", styleEntry, 2, 2, true, true)
@@ -37,6 +55,15 @@ func TestCheckboxSelectedState(test *testing.T) {
 	}
 }
 
+/*
+TestCheckboxDisabledState is a test which allows you to verify that a checkbox is rendered correctly when it is in a
+disabled state.
+
+Example:
+
+	TestCheckboxDisabledState(t)
+	// Expects checkbox to be rendered with its disabled state appearance.
+*/
 func TestCheckboxDisabledState(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	Checkbox.Add(layer1.layerAlias, "testCheckbox", "Test Checkbox", styleEntry, 2, 2, false, false)
@@ -52,6 +79,14 @@ func TestCheckboxDisabledState(test *testing.T) {
 	}
 }
 
+/*
+TestCheckboxToggleState is a test which allows you to verify that a checkbox correctly toggles its selection state.
+
+Example:
+
+	TestCheckboxToggleState(t)
+	// Expects checkbox selection state to change after a simulated interaction.
+*/
 func TestCheckboxToggleState(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	checkboxInstance := Checkbox.Add(layer1.layerAlias, "testCheckbox", "Test Checkbox", styleEntry, 2, 2, false, true)
@@ -72,11 +107,20 @@ func TestCheckboxToggleState(test *testing.T) {
 	}
 
 	// Verify the checkbox is selected
-	if !assert.True(test, checkboxInstance.IsCheckboxSelected(), "Checkbox should be selected") {
+	if !assert.True(test, checkboxInstance.IsSelected(), "Checkbox should be selected") {
 		fmt.Println("Checkbox selection state is incorrect")
 	}
 }
 
+/*
+TestCheckboxMultiple is a test which allows you to verify that multiple checkboxes are rendered correctly on the same
+layer.
+
+Example:
+
+	TestCheckboxMultiple(t)
+	// Expects multiple checkboxes with different states to be rendered correctly.
+*/
 func TestCheckboxMultiple(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	Checkbox.Add(layer1.layerAlias, "testCheckbox1", "Checkbox 1", styleEntry, 2, 2, false, true)
@@ -93,6 +137,15 @@ func TestCheckboxMultiple(test *testing.T) {
 	}
 }
 
+/*
+TestCheckboxDelete is a test which allows you to verify that a checkbox is successfully removed when its Delete method
+is called.
+
+Example:
+
+	TestCheckboxDelete(t)
+	// Expects checkbox to be absent from the rendered output after deletion.
+*/
 func TestCheckboxDelete(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	checkboxInstance := Checkbox.Add(layer1.layerAlias, "testCheckbox", "Test Checkbox", styleEntry, 2, 2, false, true)
@@ -113,6 +166,14 @@ func TestCheckboxDelete(test *testing.T) {
 	}
 }
 
+/*
+TestCheckboxDeleteAll is a test which allows you to verify that all checkboxes are successfully removed from a layer.
+
+Example:
+
+	TestCheckboxDeleteAll(t)
+	// Expects all checkboxes to be absent from the rendered output after calling DeleteAllCheckboxes.
+*/
 func TestCheckboxDeleteAll(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	Checkbox.Add(layer1.layerAlias, "testCheckbox1", "Checkbox 1", styleEntry, 2, 2, false, true)
@@ -120,7 +181,7 @@ func TestCheckboxDeleteAll(test *testing.T) {
 	UpdateDisplay(false)
 
 	// Delete all checkboxes
-	Checkbox.DeleteAllCheckboxes(layer1.layerAlias)
+	Checkbox.DeleteAll(layer1.layerAlias)
 
 	UpdateDisplay(false)
 	layerEntry := commonResource.screenLayer
@@ -134,6 +195,14 @@ func TestCheckboxDeleteAll(test *testing.T) {
 	}
 }
 
+/*
+TestCheckboxFocus is a test which allows you to verify that a checkbox correctly handles focus state.
+
+Example:
+
+	TestCheckboxFocus(t)
+	// Expects checkbox focus state to be reflected in the system.
+*/
 func TestCheckboxFocus(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	Checkbox.Add(layer1.layerAlias, "testCheckbox", "Test Checkbox", styleEntry, 2, 2, false, true)
@@ -153,6 +222,15 @@ func TestCheckboxFocus(test *testing.T) {
 	}
 }
 
+/*
+TestCheckboxLongLabel is a test which allows you to verify that a checkbox is rendered correctly when it has a very long
+label.
+
+Example:
+
+	TestCheckboxLongLabel(t)
+	// Expects checkbox label to be rendered without breaking the layout.
+*/
 func TestCheckboxLongLabel(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	Checkbox.Add(layer1.layerAlias, "testCheckbox", "This is a very long checkbox label to test text wrapping", styleEntry, 2, 2, false, true)

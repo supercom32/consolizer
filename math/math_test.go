@@ -7,6 +7,14 @@ import (
 	"testing"
 )
 
+/*
+TestGetAbsoluteValue is a test which allows you to test that the absolute value of various number types is correctly
+calculated.
+
+Example:
+
+	TestGetAbsoluteValue(t)
+*/
 func TestGetAbsoluteValue(test *testing.T) {
 	var intValues = recast.GetArrayOfInterfaces(int(-3), int8(-3), int16(-3), int32(-3), int64(-3))
 	var uIntValues = recast.GetArrayOfInterfaces(uint(3), uint8(3), uint16(3), uint32(3), uint64(3))
@@ -31,6 +39,14 @@ func TestGetAbsoluteValue(test *testing.T) {
 	}
 }
 
+/*
+TestIsNumberEven is a test which allows you to test that the IsNumberEven method correctly identifies even and odd
+numbers.
+
+Example:
+
+	TestIsNumberEven(t)
+*/
 func TestIsNumberEven(test *testing.T) {
 	var intValues = recast.GetArrayOfInterfaces(int(12), int8(12), int16(12), int32(12), int64(12))
 	var uIntValues = recast.GetArrayOfInterfaces(uint(13), uint8(13), uint16(13), uint32(13), uint64(13))
@@ -55,6 +71,14 @@ func TestIsNumberEven(test *testing.T) {
 	}
 }
 
+/*
+TestRoundToWholeNumber is a test which allows you to test that various number types are correctly rounded to the nearest
+whole number.
+
+Example:
+
+	TestRoundToWholeNumber(t)
+*/
 func TestRoundToWholeNumber(test *testing.T) {
 	var intValues = recast.GetArrayOfInterfaces(int(5), int8(5), int16(5), int32(5), int64(5))
 	var uIntValues = recast.GetArrayOfInterfaces(uint(5), uint8(5), uint16(5), uint32(5), uint64(5))
@@ -79,6 +103,14 @@ func TestRoundToWholeNumber(test *testing.T) {
 	}
 }
 
+/*
+TestRoundToDecimal is a test which allows you to test that various number types are correctly rounded to a specific
+number of decimal places.
+
+Example:
+
+	TestRoundToDecimal(t)
+*/
 func TestRoundToDecimal(test *testing.T) {
 	var intValues = recast.GetArrayOfInterfaces(int(3), int8(3), int16(3), int32(3), int64(3))
 	var uIntValues = recast.GetArrayOfInterfaces(uint(3), uint8(3), uint16(3), uint32(3), uint64(3))

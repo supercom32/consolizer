@@ -369,19 +369,19 @@ func TestDeleteLayer(test *testing.T) {
 	expectedValue := 12
 	assert.Equalf(test, expectedValue, obtainedValue, "The number of layers created does not match!")
 
-	p3.DeleteLayer()
+	p3.Delete()
 	sortedLayerAliasSlice = layer.GetSortedLayerMemoryAliasSlice()
 	obtainedValue = len(sortedLayerAliasSlice)
 	expectedValue = 7
 	assert.Equalf(test, expectedValue, obtainedValue, "The number of layers created does not match!")
 
-	p4.DeleteLayer()
+	p4.Delete()
 	sortedLayerAliasSlice = layer.GetSortedLayerMemoryAliasSlice()
 	obtainedValue = len(sortedLayerAliasSlice)
 	expectedValue = 6
 	assert.Equalf(test, expectedValue, obtainedValue, "The number of layers created does not match!")
 
-	p1.DeleteLayer()
+	p1.Delete()
 	sortedLayerAliasSlice = layer.GetSortedLayerMemoryAliasSlice()
 	obtainedValue = len(sortedLayerAliasSlice)
 	expectedValue = 1

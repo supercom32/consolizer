@@ -17,6 +17,14 @@ const maxLen = 4096
 const nullRune = '\x00'
 const leftAligned = 0
 
+/*
+InitializeUnicodeWidthMemory is a method which allows you to initialize the unicode width memory table with default
+values and overrides.
+
+Example:
+
+	InitializeUnicodeWidthMemory()
+*/
 func InitializeUnicodeWidthMemory() {
 	isUnicodeWide = make(map[int]bool)
 	setUnicodeRangeWidth('\u2500', '\u257F', false) // Box Drawing
@@ -25,6 +33,17 @@ func InitializeUnicodeWidthMemory() {
 	setUnicodeGeometricShapeWidth()
 }
 
+/*
+setUnicodeRangeWidth is a method which allows you to set the width property for a range of unicode characters.
+
+:param startingIndex: The starting unicode index.
+:param endingIndex: The ending unicode index.
+:param isWide: Whether the characters in the range are wide.
+
+Example:
+
+	setUnicodeRangeWidth(0x2500, 0x257F, false)
+*/
 func setUnicodeRangeWidth(startingIndex int, endingIndex int, isWide bool) {
 	offset := startingIndex
 	for currentIndex := 0; currentIndex <= endingIndex-startingIndex; currentIndex++ {
@@ -32,6 +51,14 @@ func setUnicodeRangeWidth(startingIndex int, endingIndex int, isWide bool) {
 	}
 }
 
+/*
+setUnicodeGeometricShapeWidth is a method which allows you to set the width property for specific unicode geometric
+shapes.
+
+Example:
+
+	setUnicodeGeometricShapeWidth()
+*/
 func setUnicodeGeometricShapeWidth() {
 	setUnicodeRangeWidth(9632, 9727, true) // Symbols
 
@@ -84,6 +111,17 @@ func setUnicodeGeometricShapeWidth() {
 	isUnicodeWide['\u26AB'] = false // MEDIUM BLACK CIRCLE
 }
 
+/*
+IsRuneCharacterWide is a method which allows you to determine if a rune character is wide.
+
+:param character: The rune character to check.
+
+:return: True if the character is wide, false otherwise.
+
+Example:
+
+	isWide := IsRuneCharacterWide('读')
+*/
 func IsRuneCharacterWide(character rune) bool {
 	if isUnicodeWide == nil {
 		InitializeUnicodeWidthMemory()
@@ -107,6 +145,17 @@ func IsRuneCharacterWide(character rune) bool {
 	return true
 }
 
+/*
+GetWidthOfRunesWhenPrinted is a method which allows you to calculate the total width of an array of runes when printed.
+
+:param arrayOfRunes: The array of runes to calculate the width for.
+
+:return: The total width of the runes.
+
+Example:
+
+	width := GetWidthOfRunesWhenPrinted(rune("test"))
+*/
 func GetWidthOfRunesWhenPrinted(arrayOfRunes []rune) int {
 	widthOfString := 0
 	for _, currentCharacter := range arrayOfRunes {
@@ -119,8 +168,18 @@ func GetWidthOfRunesWhenPrinted(arrayOfRunes []rune) int {
 	return widthOfString
 }
 
-// GetWidthOfRunesWhenPrintedWithoutMarkup calculates the width of runes when printed,
-// excluding any markup characters (enclosed in {{ and }}).
+/*
+GetWidthOfRunesWhenPrintedWithoutMarkup is a method which allows you to calculate the width of runes when printed,
+excluding any markup characters.
+
+:param arrayOfRunes: The array of runes to calculate the width for.
+
+:return: The width of the runes excluding markup.
+
+Example:
+
+	width := GetWidthOfRunesWhenPrintedWithoutMarkup(rune("{{red}}test{{/}}"))
+*/
 func GetWidthOfRunesWhenPrintedWithoutMarkup(arrayOfRunes []rune) int {
 	// Convert runes to string for easier markup detection
 	textString := string(arrayOfRunes)
@@ -132,7 +191,17 @@ func GetWidthOfRunesWhenPrintedWithoutMarkup(arrayOfRunes []rune) int {
 	return GetWidthOfRunesWhenPrinted([]rune(textWithoutMarkup))
 }
 
-// GetTextWithoutMarkup removes markup tags (enclosed in {{ and }}) from the given text.
+/*
+GetTextWithoutMarkup is a method which allows you to remove markup tags (enclosed in {{ and }}) from a given string.
+
+:param textString: The string containing markup tags.
+
+:return: The string with markup tags removed.
+
+Example:
+
+	plainText := GetTextWithoutMarkup("{{red}}test{{/}}")
+*/
 func GetTextWithoutMarkup(textString string) string {
 	var result []rune
 	runes := []rune(textString) // convert string to runes
@@ -158,21 +227,68 @@ func GetTextWithoutMarkup(textString string) string {
 	return string(result)
 }
 
+/*
+GetRunesFromString is a method which allows you to convert a string into an array of runes.
+
+:param stringToConvert: The string to convert.
+
+:return: An array of runes.
+
+Example:
+
+	runes := GetRunesFromString("test")
+*/
 func GetRunesFromString(stringToConvert string) []rune {
 	var runes []rune
 	runes = []rune(stringToConvert)
 	return runes
 }
 
+/*
+GetIntAsString is a method which allows you to convert a numeric variable to its string representation as an integer.
+
+:param number: The number to convert.
+
+:return: The string representation of the number as an integer.
+
+Example:
+
+	strValue := GetIntAsString(123.45)
+*/
 func GetIntAsString(number interface{}) string {
 	numberAsFloatint64 := recast.GetNumberAsInt64(number)
 	return fmt.Sprintf("%d", numberAsFloatint64)
 }
+
+/*
+GetFloatAsString is a method which allows you to convert a numeric variable to its string representation as a float.
+
+:param number: The number to convert.
+
+:return: The string representation of the number as a float.
+
+Example:
+
+	strValue := GetFloatAsString(123.45)
+*/
 func GetFloatAsString(number interface{}) string {
 	numberAsFloat64 := recast.GetNumberAsFloat64(number)
 	return fmt.Sprintf("%g", numberAsFloat64)
 }
 
+/*
+GetSubString is a method which allows you to get a substring from a given string.
+
+:param input: The input string.
+:param start: The starting index.
+:param length: The length of the substring.
+
+:return: The substring.
+
+Example:
+
+	sub := GetSubString("hello world", 0, 5)
+*/
 func GetSubString(input string, start int, length int) string {
 	asRunes := []rune(input)
 	if start >= len(asRunes) {
@@ -184,11 +300,33 @@ func GetSubString(input string, start int, length int) string {
 	return string(asRunes[start : start+length])
 }
 
+/*
+GetStringAsBase64 is a method which allows you to encode a string to base64.
+
+:param inputString: The string to encode.
+
+:return: The base64 encoded string.
+
+Example:
+
+	b64 := GetStringAsBase64("test")
+*/
 func GetStringAsBase64(inputString string) string {
 	base64String := base64.StdEncoding.EncodeToString([]byte(inputString))
 	return base64String
 }
 
+/*
+GetStringFromBase64 is a method which allows you to decode a base64 encoded string.
+
+:param inputString: The base64 encoded string to decode.
+
+:return: The decoded string.
+
+Example:
+
+	str := GetStringFromBase64("dGVzdA==")
+*/
 func GetStringFromBase64(inputString string) string {
 	decodedString, err := base64.StdEncoding.DecodeString(inputString)
 	if err != nil {
@@ -197,6 +335,17 @@ func GetStringFromBase64(inputString string) string {
 	return string(decodedString)
 }
 
+/*
+GetNumberOfWideCharacters is a method which allows you to get the number of wide characters in an array of runes.
+
+:param arrayOfRunes: The array of runes to check.
+
+:return: The number of wide characters.
+
+Example:
+
+	count := GetNumberOfWideCharacters(rune("读test"))
+*/
 func GetNumberOfWideCharacters(arrayOfRunes []rune) int {
 	numberOfWideCharacters := 0
 	for _, currentRune := range arrayOfRunes {
@@ -207,8 +356,19 @@ func GetNumberOfWideCharacters(arrayOfRunes []rune) int {
 	return numberOfWideCharacters
 }
 
-// This returns an array of all the characters that will fit inside the length specified.
-// It accounts for markup characters by not counting them towards the length.
+/*
+GetMaxCharactersThatFitInStringSize is a method which allows you to get an array of runes that will fit inside a
+specified string size, accounting for markup.
+
+:param arrayOfRunes: The array of runes to process.
+:param maxLengthOfString: The maximum length of the resulting string.
+
+:return: An array of runes that fits the specified size.
+
+Example:
+
+	runes := GetMaxCharactersThatFitInStringSize(rune("{{red}}test{{/}}"), 2)
+*/
 func GetMaxCharactersThatFitInStringSize(arrayOfRunes []rune, maxLengthOfString int) []rune {
 	numberOfCharactersUsed := 0
 	formattedArray := []rune{}
@@ -265,8 +425,19 @@ func GetMaxCharactersThatFitInStringSize(arrayOfRunes []rune, maxLengthOfString 
 	return formattedArray
 }
 
-// GetMaxCharactersThatFitInStringSizeReverse returns the number of characters from the end of the array
-// that will fit within the specified length, accounting for markup characters.
+/*
+GetMaxCharactersThatFitInStringSizeReverse is a method which allows you to calculate the number of characters from the
+end of an array that fit within a specified length.
+
+:param arrayOfRunes: The array of runes to process.
+:param maxLengthOfString: The maximum length.
+
+:return: The number of characters that fit from the end.
+
+Example:
+
+	count := GetMaxCharactersThatFitInStringSizeReverse(rune("test"), 2)
+*/
 func GetMaxCharactersThatFitInStringSizeReverse(arrayOfRunes []rune, maxLengthOfString int) int {
 	// Convert to string for easier markup handling
 	textString := string(arrayOfRunes)
@@ -301,20 +472,67 @@ func GetMaxCharactersThatFitInStringSizeReverse(arrayOfRunes []rune, maxLengthOf
 	return charactersToInclude
 }
 
+/*
+GetRuneArrayCopy is a method which allows you to create a copy of a rune array.
+
+:param sourceRuneArray: The source rune array.
+
+:return: A copy of the rune array.
+
+Example:
+
+	copy := GetRuneArrayCopy(original)
+*/
 func GetRuneArrayCopy(sourceRuneArray []rune) []rune {
 	copyOfRuneArray := make([]rune, len(sourceRuneArray))
 	copy(copyOfRuneArray, sourceRuneArray)
 	return copyOfRuneArray
 }
 
+/*
+logInfo is a method which allows you to log information to a debug file.
+
+:param info: The information string to log.
+
+Example:
+
+	logInfo("debug message")
+*/
 func logInfo(info string) {
 	filesystem.AppendLineToFile("/tmp/debug.log", info+"\n", 0)
 }
 
+/*
+GetFormattedString is a method which allows you to get a formatted string based on specified length and alignment.
+
+:param stringToFormat: The string to format.
+:param lengthOfString: The desired length of the resulting string.
+:param position: The alignment (e.g., left, center, right).
+
+:return: The formatted string.
+
+Example:
+
+	fmtStr := GetFormattedString("test", 10, constants.AlignmentCenter)
+*/
 func GetFormattedString(stringToFormat string, lengthOfString int, position int) string {
 	arrayOfRunes := GetRunesFromString(stringToFormat)
 	return string(GetFormattedRuneArray(arrayOfRunes, lengthOfString, position))
 }
+
+/*
+GetFormattedRuneArray is a method which allows you to get a formatted rune array based on desired length and alignment.
+
+:param arrayOfRunes: The array of runes to format.
+:param desiredLengthOfArray: The desired length of the resulting array.
+:param textAlignment: The alignment (e.g., left, center, right).
+
+:return: The formatted array of runes.
+
+Example:
+
+	fmtRunes := GetFormattedRuneArray(rune("test"), 10, constants.AlignmentLeft)
+*/
 func GetFormattedRuneArray(arrayOfRunes []rune, desiredLengthOfArray int, textAlignment int) []rune {
 	if len(arrayOfRunes) == 0 {
 		return GetRunesFromString(GetFilledString(desiredLengthOfArray, " "))
@@ -355,11 +573,37 @@ func GetFormattedRuneArray(arrayOfRunes []rune, desiredLengthOfArray int, textAl
 	}
 	return formattedArrayOfRunes
 }
+
+/*
+GetFilledRuneArray is a method which allows you to create a rune array of a specified length filled with a given
+character.
+
+:param lengthOfString: The length of the array.
+:param character: The character to fill the array with.
+
+:return: The filled array of runes.
+
+Example:
+
+	runes := GetFilledRuneArray(5, ' ')
+*/
 func GetFilledRuneArray(lengthOfString int, character rune) []rune {
 	result := GetFilledString(lengthOfString, string(character))
 	return GetRunesFromString((result))
 }
 
+/*
+GetFilledString is a method which allows you to create a string of a specified length filled with a given character.
+
+:param lengthOfString: The length of the string.
+:param character: The character string to fill with.
+
+:return: The filled string.
+
+Example:
+
+	str := GetFilledString(5, " ")
+*/
 func GetFilledString(lengthOfString int, character string) string {
 	newString := ""
 	for currentIndex := 0; currentIndex < lengthOfString; currentIndex++ {
@@ -368,6 +612,16 @@ func GetFilledString(lengthOfString int, character string) string {
 	return newString
 }
 
+/*
+GetLastSortedUUID is a method which allows you to generate a UUID that is prefixed to ensure it sorts correctly based on
+time.
+
+:return: A time-sorted UUID string.
+
+Example:
+
+	uuid := GetLastSortedUUID()
+*/
 func GetLastSortedUUID() string {
 	id := uuid.New()
 	time := fmt.Sprint(time.Now().Unix())

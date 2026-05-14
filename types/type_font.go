@@ -30,6 +30,13 @@ type Glyph struct {
 	Cells         []Cell
 }
 
+/*
+MarshalJSON is a method which allows you to marshaljson.
+
+Example:
+
+	instance.MarshalJSON()
+*/
 func (shared FontEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
 		Name                   string
@@ -58,6 +65,15 @@ func (shared FontEntryType) MarshalJSON() ([]byte, error) {
 	return j, nil
 }
 
+/*
+GetEntryAsJsonDump is a method which allows you to getentryasjsondump.
+
+:return: string
+
+Example:
+
+	instance.GetEntryAsJsonDump()
+*/
 func (shared FontEntryType) GetEntryAsJsonDump() string {
 	j, err := json.Marshal(shared)
 	if err != nil {

@@ -6,12 +6,20 @@ type SelectionEntryType struct {
 }
 
 /*
-NewSelectionEntry allows you to create a new selection entry. In addition, the following
+NewSelectionEntry is a constructor which allows you to create a new selection entry. In addition, the following
 information should be noted:
 
 - Initializes a selection entry with empty arrays for aliases and values.
+
 - Used for managing lists of selectable items in controls like dropdowns and selectors.
+
 - The entry can be populated using the Add method.
+
+:return: SelectionEntryType
+
+Example:
+
+	NewSelectionEntry()
 */
 func NewSelectionEntry() SelectionEntryType {
 	var selectionEntry SelectionEntryType
@@ -19,12 +27,21 @@ func NewSelectionEntry() SelectionEntryType {
 }
 
 /*
-Add allows you to add a new selection item to the entry. In addition, the following
-information should be noted:
+Add is a method which allows you to add a new selection item to the entry. In addition, the following information should
+be noted:
 
 - Appends a new alias and value pair to the selection entry.
+
 - The alias is used to identify the item, while the value is what's displayed.
+
 - Both arrays (SelectionAlias and SelectionValue) are kept in sync.
+
+:param selectionAlias: The selectionAlias parameter.
+:param selectionValue: The selectionValue parameter.
+
+Example:
+
+	instance.Add(selectionAlias, selectionValue)
 */
 func (shared *SelectionEntryType) Add(selectionAlias string, selectionValue string) {
 	shared.SelectionAlias = append(shared.SelectionAlias, selectionAlias)
@@ -32,12 +49,18 @@ func (shared *SelectionEntryType) Add(selectionAlias string, selectionValue stri
 }
 
 /*
-Clear allows you to remove all items from the selection entry. In addition, the following
-information should be noted:
+Clear is a method which allows you to remove all items from the selection entry. In addition, the following information
+should be noted:
 
 - Sets both SelectionAlias and SelectionValue arrays to nil.
+
 - Effectively removes all items from the selection.
+
 - The entry can be repopulated using the Add method.
+
+Example:
+
+	instance.Clear()
 */
 func (shared *SelectionEntryType) Clear() {
 	shared.SelectionAlias = nil
@@ -45,7 +68,13 @@ func (shared *SelectionEntryType) Clear() {
 }
 
 /*
-GetSelectionCount allows you to get the number of selections currently added.
+GetSelectionCount is a method which allows you to get the number of selections currently added.
+
+:return: int
+
+Example:
+
+	instance.GetSelectionCount()
 */
 func (shared *SelectionEntryType) GetSelectionCount() int {
 	return len(shared.SelectionAlias)

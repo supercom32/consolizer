@@ -22,6 +22,22 @@ type textboxType struct{}
 var textbox textboxType
 var Textboxes = memory.NewControlMemoryManager[types.TextboxEntryType]()
 
+/*
+Add is a method which allows you to add a new textbox entry to a layer.
+
+:param layerAlias: The alias of the layer to add the textbox to.
+:param textboxAlias: The alias of the textbox to create.
+:param styleEntry: The TUI style entry to use for the textbox.
+:param xLocation: The X coordinate of the textbox.
+:param yLocation: The Y coordinate of the textbox.
+:param width: The width of the textbox.
+:param height: The height of the textbox.
+:param isBorderDrawn: Whether to draw a border around the textbox.
+
+Example:
+
+	AddTextbox("layer1", "textbox1", style, 10, 10, 20, 5, true)
+*/
 func AddTextbox(layerAlias string, textboxAlias string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, height int, isBorderDrawn bool) {
 	textboxEntry := types.NewTexboxEntry()
 	textboxEntry.Alias = textboxAlias
@@ -48,6 +64,18 @@ func AddTextbox(layerAlias string, textboxAlias string, styleEntry types.TuiStyl
 	Textboxes.Add(layerAlias, textboxAlias, &textboxEntry)
 }
 
+/*
+GetTextbox is a method which allows you to retrieve a textbox entry by its layer and alias.
+
+:param layerAlias: The alias of the layer containing the textbox.
+:param textboxAlias: The alias of the textbox to retrieve.
+
+:return: A pointer to the textbox entry.
+
+Example:
+
+	textbox := GetTextbox("layer1", "textbox1")
+*/
 func GetTextbox(layerAlias string, textboxAlias string) *types.TextboxEntryType {
 	// Use the generic memory manager to retrieve the textbox entry
 	textboxEntry := Textboxes.Get(layerAlias, textboxAlias)
@@ -57,23 +85,53 @@ func GetTextbox(layerAlias string, textboxAlias string) *types.TextboxEntryType 
 	return textboxEntry
 }
 
+/*
+IsTextboxExists is a method which allows you to check if a textbox exists on a layer.
+
+:param layerAlias: The alias of the layer to check.
+:param textboxAlias: The alias of the textbox to check.
+
+:return: True if the textbox exists, false otherwise.
+
+Example:
+
+	exists := IsTextboxExists("layer1", "textbox1")
+*/
 func IsTextboxExists(layerAlias string, textboxAlias string) bool {
 	// Use the generic memory manager to check existence
 	return Textboxes.Get(layerAlias, textboxAlias) != nil
 }
 
+/*
+Delete is a method which allows you to delete a textbox from a layer.
+
+:param layerAlias: The alias of the layer containing the textbox.
+:param textboxAlias: The alias of the textbox to delete.
+
+Example:
+
+	DeleteTextbox("layer1", "textbox1")
+*/
 func DeleteTextbox(layerAlias string, textboxAlias string) {
 	// Use the generic memory manager to remove the textbox entry
 	Textboxes.Remove(layerAlias, textboxAlias)
 }
 
 /*
-DeleteAllTextboxes allows you to delete all textboxes from a given layer. In addition, the following
+DeleteAll is a method which allows you to delete all textboxes from a given layer. In addition, the following
 information should be noted:
 
 - All textboxes on the specified layer will be removed.
+
 - All memory associated with the textboxes will be freed.
+
 - The textboxes will be removed from the tab index if they were added.
+
+:param layerAlias: The alias of the layer to delete all textboxes from.
+
+Example:
+
+	DeleteAllTextboxes("layer1")
 */
 func DeleteAllTextboxes(layerAlias string) {
 	// Retrieve all textboxes in the specified layer
@@ -86,31 +144,59 @@ func DeleteAllTextboxes(layerAlias string) {
 }
 
 /*
-GetTooltip retrieves the tooltip associated with this textbox and returns the textbox instance
-for method chaining. In addition, the following information should be noted:
+GetTooltip is a method which allows you to retrieve the tooltip associated with this textbox. In addition, the following
+should be noted:
 
 - The tooltip is automatically created when the textbox is added.
+
 - Use the returned instance to continue chaining method calls.
+
 - Follow the same pattern as other controls for consistency.
+
+:return: The textbox instance for method chaining.
+
+Example:
+
+	textbox.GetTooltip().SetText("This is a tooltip")
 */
 func (shared *TextboxInstanceType) GetTooltip() *TextboxInstanceType {
 	// No need to retrieve the tooltip, just return self for chaining
 	return shared
 }
 
-// Add a helper method to set tooltip text
+/*
+SetTooltipText is a method which allows you to set the text for the tooltip associated with this textbox.
+
+:param text: The text to set for the tooltip.
+
+:return: The textbox instance for method chaining.
+
+Example:
+
+	textbox.SetTooltipText("This is a tooltip")
+*/
 func (shared *TextboxInstanceType) SetTooltipText(text string) *TextboxInstanceType {
 	if Textboxes.IsExists(shared.layerAlias, shared.controlAlias) {
 		textboxEntry := Textboxes.Get(shared.layerAlias, shared.controlAlias)
 		var tooltipInstance TooltipInstanceType
 		tooltipInstance.layerAlias = shared.layerAlias
 		tooltipInstance.controlAlias = textboxEntry.TooltipAlias
-		tooltipInstance.SetTooltipValue(text)
+		tooltipInstance.SetValue(text)
 	}
 	return shared
 }
 
-// Add a helper method to enable/disable the tooltip
+/*
+EnableTooltip is a method which allows you to enable or disable the tooltip associated with this textbox.
+
+:param enabled: Whether to enable the tooltip.
+
+:return: The textbox instance for method chaining.
+
+Example:
+
+	textbox.EnableTooltip(true)
+*/
 func (shared *TextboxInstanceType) EnableTooltip(enabled bool) *TextboxInstanceType {
 	if Textboxes.IsExists(shared.layerAlias, shared.controlAlias) {
 		textboxEntry := Textboxes.Get(shared.layerAlias, shared.controlAlias)
@@ -123,11 +209,18 @@ func (shared *TextboxInstanceType) EnableTooltip(enabled bool) *TextboxInstanceT
 }
 
 /*
-SetText allows you to set the text for a textbox. If the textbox instance
-no longer exists, then no operation takes place. In addition, the following
-information should be noted:
+SetText is a method which allows you to set the text for a textbox. If the textbox instance no longer exists, then no
+operation takes place. In addition, the following should be noted:
 
-- Text can be broke up into multiple lines by using the '\n' escape sequence.
+- Text can be broken up into multiple lines by using the '\n' escape sequence.
+
+:param text: The text to set for the textbox.
+
+:return: The textbox instance for method chaining.
+
+Example:
+
+	textbox.SetText("Hello\nWorld")
 */
 func (shared *TextboxInstanceType) SetText(text string) *TextboxInstanceType {
 	if Textboxes.IsExists(shared.layerAlias, shared.controlAlias) {
@@ -142,11 +235,16 @@ func (shared *TextboxInstanceType) SetText(text string) *TextboxInstanceType {
 }
 
 /*
-GetText allows you to retrieve the text from a textbox. If the textbox instance
-no longer exists, then an empty string is returned. In addition, the following
-information should be noted:
+GetText is a method which allows you to retrieve the text from a textbox. If the textbox instance no longer exists, then
+an empty string is returned. In addition, the following should be noted:
 
 - The text is returned as a single string, with lines separated by newline characters.
+
+:return: The text contained within the textbox.
+
+Example:
+
+	text := textbox.GetText()
 */
 func (shared *TextboxInstanceType) GetText() string {
 	if Textboxes.IsExists(shared.layerAlias, shared.controlAlias) {
@@ -164,8 +262,17 @@ func (shared *TextboxInstanceType) GetText() string {
 }
 
 /*
-SetViewport allows you to set the current viewport for a textbox. If the textbox instance
-no longer exists, then no operation takes place.
+SetViewport is a method which allows you to set the current viewport for a textbox. If the textbox instance no longer
+exists, then no operation takes place.
+
+:param xLocation: The X coordinate of the viewport.
+:param yLocation: The Y coordinate of the viewport.
+
+:return: The textbox instance for method chaining.
+
+Example:
+
+	textbox.SetViewport(0, 0)
 */
 func (shared *TextboxInstanceType) SetViewport(xLocation int, yLocation int) *TextboxInstanceType {
 	if Textboxes.IsExists(shared.layerAlias, shared.controlAlias) {
@@ -177,12 +284,22 @@ func (shared *TextboxInstanceType) SetViewport(xLocation int, yLocation int) *Te
 }
 
 /*
-SetWordWrap allows you to enable or disable word wrapping for a textbox. If the textbox instance
-no longer exists, then no operation takes place. In addition, the following information should be noted:
+SetWordWrap is a method which allows you to enable or disable word wrapping for a textbox. If the textbox instance no
+longer exists, then no operation takes place. In addition, the following should be noted:
 
 - When word wrapping is enabled, text will automatically wrap at word boundaries.
+
 - The horizontal scrollbar will be hidden when word wrapping is enabled.
+
 - Returns the textbox instance for method chaining.
+
+:param enabled: Whether to enable word wrapping.
+
+:return: The textbox instance for method chaining.
+
+Example:
+
+	textbox.SetWordWrap(true)
 */
 func (shared *TextboxInstanceType) SetWordWrap(enabled bool) *TextboxInstanceType {
 	if Textboxes.IsExists(shared.layerAlias, shared.controlAlias) {
@@ -206,11 +323,20 @@ func (shared *TextboxInstanceType) SetWordWrap(enabled bool) *TextboxInstanceTyp
 }
 
 /*
-SetAutoIndent allows you to enable or disable auto-indentation for a textbox. If the textbox instance
-no longer exists, then no operation takes place. In addition, the following information should be noted:
+SetAutoIndent is a method which allows you to enable or disable auto-indentation for a textbox. If the textbox instance
+no longer exists, then no operation takes place. In addition, the following should be noted:
 
 - When auto-indent is enabled, new lines will inherit the indentation of the previous line.
+
 - Returns the textbox instance for method chaining.
+
+:param enabled: Whether to enable auto-indentation.
+
+:return: The textbox instance for method chaining.
+
+Example:
+
+	textbox.SetAutoIndent(true)
 */
 func (shared *TextboxInstanceType) SetAutoIndent(enabled bool) *TextboxInstanceType {
 	if Textboxes.IsExists(shared.layerAlias, shared.controlAlias) {
@@ -221,20 +347,22 @@ func (shared *TextboxInstanceType) SetAutoIndent(enabled bool) *TextboxInstanceT
 }
 
 /*
-getTextboxClickCoordinates converts a cell ID to x and y coordinates within a textbox.
-The conversion is based on the table width, where:
-- x coordinate is calculated as cellId modulo tableWidth
-- y coordinate is calculated as cellId divided by tableWidth (rounded down)
+getTextboxClickCoordinates is a method which allows you to convert a cell ID to x and y coordinates within a textbox. In
+addition, the following should be noted:
 
-Parameters:
-  - cellId: The ID of the cell to convert to coordinates
-  - tableWidth: The width of the textbox table in cells
+- x coordinate is calculated as cellId modulo tableWidth.
 
-Returns:
-  - xLocation: The x coordinate of the cell
-  - yLocation: The y coordinate of the cell
+- y coordinate is calculated as cellId divided by tableWidth (rounded down).
 
-This function is primarily used to determine cursor position from mouse clicks within a textbox.
+- This function is primarily used to determine cursor position from mouse clicks within a textbox.
+
+:param cellId: The ID of the cell to convert to coordinates.
+:param tableWidth: The width of the textbox table in cells. :return xLocation: The x coordinate of the cell. :return
+yLocation: The y coordinate of the cell.
+
+Example:
+
+	x, y := textbox.getTextboxClickCoordinates(10, 5)
 */
 func (shared *textboxType) getTextboxClickCoordinates(cellId int, tableWidth int) (int, int) {
 	xLocation := cellId % tableWidth
@@ -243,14 +371,24 @@ func (shared *textboxType) getTextboxClickCoordinates(cellId int, tableWidth int
 }
 
 /*
-insertCharacterUsingAbsoluteCoordinates allows you to insert a character at a specific position in a textbox. In addition,
-the following information should be noted:
+insertCharacterUsingAbsoluteCoordinates is a method which allows you to insert a character at a specific position in a
+textbox. In addition, the following should be noted:
 
 - The character is inserted at the specified x and y coordinates.
-- The text after the insertion point is shifted right.
-- The cursor position is updated to after the inserted character.
-*/
 
+- The text after the insertion point is shifted right.
+
+- The cursor position is updated to after the inserted character.
+
+:param textboxEntry: The textbox entry to modify.
+:param xLocation: The X coordinate to insert the character at.
+:param yLocation: The Y coordinate to insert the character at.
+:param characterToInsert: The character to insert.
+
+Example:
+
+	textbox.insertCharacterUsingAbsoluteCoordinates(entry, 5, 0, 'A')
+*/
 func (shared *textboxType) insertCharacterUsingAbsoluteCoordinates(textboxEntry *types.TextboxEntryType, xLocation int, yLocation int, characterToInsert rune) {
 	stringDataSuffixAfterInsert := textboxEntry.TextData[yLocation][xLocation:len(textboxEntry.TextData[yLocation])]
 	textboxEntry.TextData[yLocation] = append([]rune{}, textboxEntry.TextData[yLocation][:xLocation]...)
@@ -260,12 +398,20 @@ func (shared *textboxType) insertCharacterUsingAbsoluteCoordinates(textboxEntry 
 }
 
 /*
-backspaceCharacterUsingRelativeCoordinates allows you to delete the character before the cursor. In addition,
-the following information should be noted:
+backspaceCharacterUsingRelativeCoordinates is a method which allows you to delete the character before the cursor. In
+addition, the following should be noted:
 
 - If at the beginning of a line, moves the cursor to the end of the previous line.
+
 - If at the beginning of the first line, no action is taken.
+
 - The cursor position is updated after the deletion.
+
+:param textboxEntry: The textbox entry to modify.
+
+Example:
+
+	textbox.backspaceCharacterUsingRelativeCoordinates(entry)
 */
 func (shared *textboxType) backspaceCharacterUsingRelativeCoordinates(textboxEntry *types.TextboxEntryType) {
 	// If nothing left to backspace, do nothing.
@@ -287,12 +433,22 @@ func (shared *textboxType) backspaceCharacterUsingRelativeCoordinates(textboxEnt
 }
 
 /*
-deleteCharacterUsingAbsoluteCoordinates allows you to delete a character at a specific position. In addition,
-the following information should be noted:
+deleteCharacterUsingAbsoluteCoordinates is a method which allows you to delete a character at a specific position. In
+addition, the following should be noted:
 
 - The character at the specified x and y coordinates is deleted.
+
 - If at the end of a line, moves the next line up if possible.
+
 - The cursor position is updated after the deletion.
+
+:param textboxEntry: The textbox entry to modify.
+:param xLocation: The X coordinate of the character to delete.
+:param yLocation: The Y coordinate of the character to delete.
+
+Example:
+
+	textbox.deleteCharacterUsingAbsoluteCoordinates(entry, 5, 0)
 */
 func (shared *textboxType) deleteCharacterUsingAbsoluteCoordinates(textboxEntry *types.TextboxEntryType, xLocation int, yLocation int) {
 	// If cursor yLocation is out of bounds, do nothing.
@@ -324,12 +480,21 @@ func (shared *textboxType) deleteCharacterUsingAbsoluteCoordinates(textboxEntry 
 }
 
 /*
-moveRemainingTextToPreviousLine allows you to move text from the current line to the previous line. In addition,
-the following information should be noted:
+moveRemainingTextToPreviousLine is a method which allows you to move text from the current line to the previous line. In
+addition, the following should be noted:
 
 - If the cursor is at the beginning of a line, the text after the cursor is moved to the previous line.
+
 - The cursor position is updated to the end of the previous line.
+
 - The current line is removed if it becomes empty after the move.
+
+:param textboxEntry: The textbox entry to modify.
+:param yLocation: The Y coordinate of the line to move text from.
+
+Example:
+
+	textbox.moveRemainingTextToPreviousLine(entry, 1)
 */
 func (shared *textboxType) moveRemainingTextToPreviousLine(textboxEntry *types.TextboxEntryType, yLocation int) {
 	// If the only row of text or the cursor yLocation is out of bounds, then exit.
@@ -342,24 +507,41 @@ func (shared *textboxType) moveRemainingTextToPreviousLine(textboxEntry *types.T
 }
 
 /*
-removeLine allows you to remove a line from a textbox. In addition, the following
-information should be noted:
+removeLine is a method which allows you to remove a line from a textbox. In addition, the following should be noted:
 
 - The line at the specified index is removed.
+
 - The remaining lines are shifted up to fill the gap.
-- Returns the modified text data array.
+
+:param textData: The array of runes representing the textbox content.
+:param index: The index of the line to remove.
+
+:return: The modified text data array.
+
+Example:
+
+	textData = textbox.removeLine(textData, 1)
 */
 func (shared *textboxType) removeLine(textData [][]rune, index int) [][]rune {
 	return append(textData[:index], textData[index+1:]...)
 }
 
 /*
-insertLine allows you to insert a new line into a textbox. In addition, the following
-information should be noted:
+insertLine is a method which allows you to insert a new line into a textbox. In addition, the following should be noted:
 
 - A new line is inserted at the specified index.
+
 - If the index is out of bounds, the line is appended to the end.
-- Returns the modified text data array.
+
+:param textData: The array of runes representing the textbox content.
+:param lineData: The data to insert into the new line.
+:param index: The index to insert the line at.
+
+:return: The modified text data array.
+
+Example:
+
+	textData = textbox.insertLine(textData, rune{' '}, 1)
 */
 func (shared *textboxType) insertLine(textData [][]rune, lineData []rune, index int) [][]rune {
 	// If the index provided is inbounds, insert the line data accordingly.
@@ -374,14 +556,25 @@ func (shared *textboxType) insertLine(textData [][]rune, lineData []rune, index 
 }
 
 /*
-moveTextAfterCursorToNextLine allows you to move text after your cursor to a new line underneath it. In addition,
-the following information should be noted:
+moveTextAfterCursorToNextLine is a method which allows you to move text after your cursor to a new line underneath it.
+In addition, the following should be noted:
 
 - Creates a new line with a default space character.
+
 - Copies all text after the cursor position to the new line.
+
 - Truncates the current line at the cursor position.
+
 - Updates the cursor position to the start of the new line.
+
 - Maintains proper text formatting and cursor visibility.
+
+:param textboxEntry: The textbox entry to modify.
+:param yLocation: The Y coordinate of the line to split.
+
+Example:
+
+	textbox.moveTextAfterCursorToNextLine(entry, 0)
 */
 func (shared *textboxType) moveTextAfterCursorToNextLine(textboxEntry *types.TextboxEntryType, yLocation int) {
 	// Record operation for undo - this is a complex operation that splits a line
@@ -436,12 +629,21 @@ func (shared *textboxType) moveTextAfterCursorToNextLine(textboxEntry *types.Tex
 }
 
 /*
-updateScrollbarBasedOnTextboxViewport allows you to update the scrollbar positions based on the current
-viewport position of a textbox. In addition, the following information should be noted:
+updateScrollbarBasedOnTextboxViewport is a method which allows you to update the scrollbar positions based on the
+current viewport position of a textbox. In addition, the following should be noted:
 
 - Updates both horizontal and vertical scrollbars if they exist.
+
 - Adjusts the scrollbar handle positions to match the viewport position.
+
 - Ensures the scrollbars accurately reflect the current view of the textbox.
+
+:param layerAlias: The alias of the layer containing the textbox.
+:param textboxAlias: The alias of the textbox to update.
+
+Example:
+
+	textbox.updateScrollbarBasedOnTextboxViewport("layer1", "textbox1")
 */
 func (shared *textboxType) updateScrollbarBasedOnTextboxViewport(layerAlias string, textboxAlias string) {
 	textboxEntry := Textboxes.Get(layerAlias, textboxAlias)
@@ -453,24 +655,35 @@ func (shared *textboxType) updateScrollbarBasedOnTextboxViewport(layerAlias stri
 	if ScrollBars.IsExists(layerAlias, textboxEntry.HorizontalScrollbarAlias) {
 		horizontalScrollbarEntry := ScrollBars.Get(layerAlias, textboxEntry.HorizontalScrollbarAlias)
 		horizontalScrollbarEntry.ScrollValue = textboxEntry.ViewportXLocation
-		scrollbar.computeScrollbarHandlePositionByScrollValue(layerAlias, textboxEntry.HorizontalScrollbarAlias)
+		scrollbar.computeHandlePositionByScrollValue(layerAlias, textboxEntry.HorizontalScrollbarAlias)
 	}
 
 	// Update vertical scrollbar if it exists
 	if ScrollBars.IsExists(layerAlias, textboxEntry.VerticalScrollbarAlias) {
 		verticalScrollbarEntry := ScrollBars.Get(layerAlias, textboxEntry.VerticalScrollbarAlias)
 		verticalScrollbarEntry.ScrollValue = textboxEntry.ViewportYLocation
-		scrollbar.computeScrollbarHandlePositionByScrollValue(layerAlias, textboxEntry.VerticalScrollbarAlias)
+		scrollbar.computeHandlePositionByScrollValue(layerAlias, textboxEntry.VerticalScrollbarAlias)
 	}
 }
 
 /*
-getMaxHorizontalTextValue returns the maximum line length in a textbox. In addition,
-the following information should be noted:
+getMaxHorizontalTextValue is a method which allows you to retrieve the maximum line length in a textbox. In addition,
+the following should be noted:
 
 - Calculates the maximum width of any line in the textbox.
+
 - Takes into account wide characters that take up multiple spaces.
+
 - Used to determine horizontal scrollbar limits.
+
+:param layerAlias: The alias of the layer containing the textbox.
+:param textboxAlias: The alias of the textbox to check.
+
+:return: The maximum horizontal width of any line in the textbox.
+
+Example:
+
+	maxWidth := textbox.getMaxHorizontalTextValue("layer1", "textbox1")
 */
 func (shared *textboxType) getMaxHorizontalTextValue(layerAlias string, textboxAlias string) int {
 	textboxEntry := Textboxes.Get(layerAlias, textboxAlias)
@@ -495,12 +708,21 @@ func (shared *textboxType) getMaxHorizontalTextValue(layerAlias string, textboxA
 }
 
 /*
-setTextboxMaxScrollBarValues allows you to update the scrollbar limits based on text content. In addition,
-the following information should be noted:
+setTextboxMaxScrollBarValues is a method which allows you to update the scrollbar limits based on text content. In
+addition, the following should be noted:
 
 - Updates both horizontal and vertical scrollbar maximum values.
+
 - Disables scrollbars if the content fits within the viewport.
+
 - Ensures scrollbars accurately reflect the text dimensions.
+
+:param layerAlias: The alias of the layer containing the textbox.
+:param textboxAlias: The alias of the textbox to update.
+
+Example:
+
+	textbox.setTextboxMaxScrollBarValues("layer1", "textbox1")
 */
 func (shared *textboxType) setTextboxMaxScrollBarValues(layerAlias string, textboxAlias string) {
 	textboxEntry := Textboxes.Get(layerAlias, textboxAlias)
@@ -556,20 +778,34 @@ func (shared *textboxType) setTextboxMaxScrollBarValues(layerAlias string, textb
 }
 
 /*
-AddTextbox allows you to add a text box to a text layer. Once called, an instance of your control is
-returned which will allow you to read or manipulate the properties for it. The Style of the text box
-will be determined by the style entry passed in. If you wish to remove a text box from a text
-layer, simply call 'DeleteTextBox'. In addition, the following information should be noted:
+Add is a method which allows you to add a text box to a text layer. Once called, an instance of your control is
+returned which will allow you to read or manipulate the properties for it. The Style of the text box will be determined
+by the style entry passed in. If you wish to remove a text box from a text layer, simply call 'DeleteTextBox'. In
+addition, the following should be noted:
 
-- Text boxes are not drawn physically to the text layer provided. Instead
-they are rendered to the terminal at the same time when the text layer is
-rendered. This allows you to create text boxes without actually overwriting
-the text layer data under it.
+  - Text boxes are not drawn physically to the text layer provided. Instead they are rendered to the terminal at the same
+    time when the text layer is rendered. This allows you to create text boxes without actually overwriting the text layer
+    data under it.
 
-- If the text box to be drawn falls outside the range of the provided layer,
-then only the visible portion of the text box will be drawn.
+  - If the text box to be drawn falls outside the range of the provided layer, then only the visible portion of the text
+    box will be drawn.
+
+:param layerAlias: The alias of the layer to add the textbox to.
+:param textboxAlias: The alias of the textbox to create.
+:param styleEntry: The TUI style entry to use for the textbox.
+:param xLocation: The X coordinate of the textbox.
+:param yLocation: The Y coordinate of the textbox.
+:param width: The width of the textbox.
+:param height: The height of the textbox.
+:param isBorderDrawn: Whether to draw a border around the textbox.
+
+:return: An instance of the created textbox.
+
+Example:
+
+	instance := textbox.AddTextbox("layer1", "textbox1", style, 10, 10, 20, 5, true)
 */
-func (shared *textboxType) AddTextbox(layerAlias string, textboxAlias string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, height int, isBorderDrawn bool) TextboxInstanceType {
+func (shared *textboxType) Add(layerAlias string, textboxAlias string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, height int, isBorderDrawn bool) TextboxInstanceType {
 	newTextboxEntry := types.NewTexboxEntry()
 	newTextboxEntry.Alias = textboxAlias
 	newTextboxEntry.StyleEntry = styleEntry
@@ -633,55 +869,79 @@ func (shared *textboxType) AddTextbox(layerAlias string, textboxAlias string, st
 }
 
 /*
-DeleteTextbox allows you to remove a text box from a text layer. In addition,
-the following information should be noted:
+Delete is a method which allows you to remove a text box from a text layer. In addition, the following should be
+noted:
 
-- If you attempt to delete a text box which does not exist, then the request
-will simply be ignored.
+- If you attempt to delete a text box which does not exist, then the request will simply be ignored.
+
+:param layerAlias: The alias of the layer containing the textbox.
+:param textboxAlias: The alias of the textbox to delete.
+
+Example:
+
+	textbox.Delete("layer1", "textbox1")
 */
-func (shared *textboxType) DeleteTextbox(layerAlias string, textboxAlias string) {
+func (shared *textboxType) Delete(layerAlias string, textboxAlias string) {
 	Textboxes.Remove(layerAlias, textboxAlias)
 }
 
 /*
-DeleteAllTextboxes allows you to delete all textboxes on a given layer. In addition, the following
-information should be noted:
+DeleteAll is a method which allows you to delete all textboxes on a given layer. In addition, the following
+should be noted:
 
 - All textboxes on the specified layer will be removed.
+
 - All memory associated with the textboxes will be freed.
+
 - The textboxes will be removed from the tab index if they were added.
+
+:param layerAlias: The alias of the layer to delete all textboxes from.
+
+Example:
+
+	textbox.DeleteAll("layer1")
 */
-func (shared *textboxType) DeleteAllTextboxes(layerAlias string) {
+func (shared *textboxType) DeleteAll(layerAlias string) {
 	Textboxes.RemoveAll(layerAlias)
 }
 
 /*
-drawTextboxesOnLayer allows you to draw all textboxes on a layer. In addition, the following
-information should be noted:
+drawOnLayer is a method which allows you to draw all textboxes on a layer. In addition, the following should be
+noted:
 
 - Iterates through all textboxes on the specified layer.
+
 - Draws each textbox with its current content and style.
+
 - Handles cursor and highlight rendering.
+
+:param layerEntry: The entry for the layer to draw textboxes on.
+
+Example:
+
+	textbox.drawOnLayer(layerEntry)
 */
-func (shared *textboxType) drawTextboxesOnLayer(layerEntry types.LayerEntryType) {
+func (shared *textboxType) drawOnLayer(layerEntry types.LayerEntryType) {
 	layerAlias := layerEntry.LayerAlias
 	for _, currentTextBoxEntry := range Textboxes.GetAllEntries(layerAlias) {
-		shared.drawTextbox(&layerEntry, currentTextBoxEntry.Alias)
+		shared.draw(&layerEntry, currentTextBoxEntry.Alias)
 	}
 }
 
 /*
-drawTextbox allows you to draw a textbox on a given text layer. In addition, the following
-information should be noted:
+wrapTextToWidth is a method which allows you to wrap text to fit within a specified width. In addition, the following
+should be noted:
 
-- Draws the textbox with its current content and style.
-- Handles border drawing if enabled.
-- Manages cursor and highlight rendering.
-- Adjusts the viewport to show the correct portion of text.
-*/
-/*
-wrapTextToWidth wraps text to fit within a specified width.
-It breaks lines at word boundaries when possible.
+- It breaks lines at word boundaries when possible.
+
+:param text: The text to wrap, as an array of rune arrays.
+:param width: The maximum width for each line.
+
+:return: The wrapped text as an array of rune arrays.
+
+Example:
+
+	wrappedText := textbox.wrapTextToWidth(text, 20)
 */
 func (shared *textboxType) wrapTextToWidth(text [][]rune, width int) [][]rune {
 	if width <= 0 {
@@ -745,7 +1005,26 @@ func (shared *textboxType) wrapTextToWidth(text [][]rune, width int) [][]rune {
 	return result
 }
 
-func (shared *textboxType) drawTextbox(layerEntry *types.LayerEntryType, textboxAlias string) {
+/*
+draw is a method which allows you to draw a textbox on a given text layer. In addition, the following should be
+noted:
+
+- Draws the textbox with its current content and style.
+
+- Handles border drawing if enabled.
+
+- Manages cursor and highlight rendering.
+
+- Adjusts the viewport to show the correct portion of text.
+
+:param layerEntry: The entry for the layer to draw the textbox on.
+:param textboxAlias: The alias of the textbox to draw.
+
+Example:
+
+	textbox.drawTextbox(layerEntry, "textbox1")
+*/
+func (shared *textboxType) draw(layerEntry *types.LayerEntryType, textboxAlias string) {
 	textboxEntry := Textboxes.Get(layerEntry.LayerAlias, textboxAlias)
 	attributeEntry := types.NewAttributeEntry()
 	attributeEntry.ForegroundColor = textboxEntry.StyleEntry.Textbox.ForegroundColor
@@ -793,125 +1072,275 @@ func (shared *textboxType) drawTextbox(layerEntry *types.LayerEntryType, textbox
 			shared.printControlText(layerEntry, textboxAlias, textboxEntry.StyleEntry, attributeEntry, textboxEntry.XLocation, textboxEntry.YLocation+currentLine, arrayOfRunes, textboxEntry.ViewportYLocation+currentLine, textboxEntry.ViewportXLocation, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
 		}
 	}
-	scrollbar.drawScrollbarOnLayerByAlias(layerEntry, textboxEntry.HorizontalScrollbarAlias)
-	scrollbar.drawScrollbarOnLayerByAlias(layerEntry, textboxEntry.VerticalScrollbarAlias)
+	scrollbar.drawOnLayerByAlias(layerEntry, textboxEntry.HorizontalScrollbarAlias)
+	scrollbar.drawOnLayerByAlias(layerEntry, textboxEntry.VerticalScrollbarAlias)
 }
 
 /*
-drawBorder allows you to draw a border around a textbox. In addition, the following
-information should be noted:
+drawBorder is a method which allows you to draw a border around a textbox. In addition, the following should be noted:
 
 - Draws a border using the specified style and attributes.
+
 - Handles both single and double line borders.
+
 - Adjusts the border position based on the textbox dimensions.
+
+:param layerEntry: The entry for the layer to draw the border on.
+:param styleEntry: The TUI style entry to use for the border.
+:param attributeEntry: The attribute entry containing color and other properties.
+:param xLocation: The X coordinate of the border.
+:param yLocation: The Y coordinate of the border.
+:param width: The width of the border.
+:param height: The height of the border.
+:param isDoubleLine: Whether to use double lines for the border.
+
+Example:
+
+	textbox.drawBorder(layerEntry, style, attribute, 10, 10, 20, 5, false)
 */
 func (shared *textboxType) drawBorder(layerEntry *types.LayerEntryType, styleEntry types.TuiStyleEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, width int, height int, isDoubleLine bool) {
 	// Implementation of drawBorder method
 }
 
 /*
-drawTextboxContent allows you to draw the content of a textbox. In addition, the following
-information should be noted:
+drawContent is a method which allows you to draw the content of a textbox. In addition, the following should be
+noted:
 
 - Draws the text content with proper formatting and alignment.
+
 - Handles wide characters and line wrapping.
+
 - Manages cursor and highlight rendering.
+
+:param layerEntry: The entry for the layer to draw the content on.
+:param textboxAlias: The alias of the textbox.
+:param styleEntry: The TUI style entry to use for the text.
+:param attributeEntry: The attribute entry containing color and other properties.
+:param xLocation: The X coordinate of the content.
+:param yLocation: The Y coordinate of the content.
+:param width: The width of the content area.
+:param height: The height of the content area.
+
+Example:
+
+	textbox.drawContent(layerEntry, "textbox1", style, attribute, 10, 10, 20, 5)
 */
-func (shared *textboxType) drawTextboxContent(layerEntry *types.LayerEntryType, textboxAlias string, styleEntry types.TuiStyleEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, width int, height int) {
+func (shared *textboxType) drawContent(layerEntry *types.LayerEntryType, textboxAlias string, styleEntry types.TuiStyleEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, width int, height int) {
 	// Implementation of drawTextboxContent method
 }
 
 /*
-drawTextboxCursor allows you to draw the cursor in a textbox. In addition, the following
-information should be noted:
+drawCursor is a method which allows you to draw the cursor in a textbox. In addition, the following should be
+noted:
 
 - Draws the cursor at the current position.
+
 - Uses the specified cursor style and attributes.
+
 - Handles cursor visibility and blinking.
+
+:param layerEntry: The entry for the layer to draw the cursor on.
+:param textboxAlias: The alias of the textbox.
+:param styleEntry: The TUI style entry to use for the cursor.
+:param attributeEntry: The attribute entry containing color and other properties.
+:param xLocation: The X coordinate of the cursor.
+:param yLocation: The Y coordinate of the cursor.
+
+Example:
+
+	textbox.drawCursor(layerEntry, "textbox1", style, attribute, 10, 10)
 */
-func (shared *textboxType) drawTextboxCursor(layerEntry *types.LayerEntryType, textboxAlias string, styleEntry types.TuiStyleEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int) {
+func (shared *textboxType) drawCursor(layerEntry *types.LayerEntryType, textboxAlias string, styleEntry types.TuiStyleEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int) {
 	// Implementation of drawTextboxCursor method
 }
 
 /*
-drawTextboxHighlight allows you to draw highlighted text in a textbox. In addition, the following
-information should be noted:
+drawHighlight is a method which allows you to draw highlighted text in a textbox. In addition, the following
+should be noted:
 
 - Draws the highlighted text with inverted colors.
+
 - Handles both single-line and multi-line highlights.
+
 - Manages highlight start and end positions.
+
+:param layerEntry: The entry for the layer to draw the highlight on.
+:param textboxAlias: The alias of the textbox.
+:param styleEntry: The TUI style entry to use for the highlight.
+:param attributeEntry: The attribute entry containing color and other properties.
+:param xLocation: The X coordinate of the highlight.
+:param yLocation: The Y coordinate of the highlight.
+:param width: The width of the highlighted area.
+:param height: The height of the highlighted area.
+
+Example:
+
+	textbox.drawHighlight(layerEntry, "textbox1", style, attribute, 10, 10, 5, 1)
 */
-func (shared *textboxType) drawTextboxHighlight(layerEntry *types.LayerEntryType, textboxAlias string, styleEntry types.TuiStyleEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, width int, height int) {
+func (shared *textboxType) drawHighlight(layerEntry *types.LayerEntryType, textboxAlias string, styleEntry types.TuiStyleEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, width int, height int) {
 	// Implementation of drawTextboxHighlight method
 }
 
 /*
-drawTextboxScrollbars allows you to draw the scrollbars for a textbox. In addition, the following
-information should be noted:
+drawScrollbars is a method which allows you to draw the scrollbars for a textbox. In addition, the following
+should be noted:
 
 - Draws both horizontal and vertical scrollbars if enabled.
+
 - Updates scrollbar positions based on viewport position.
+
 - Handles scrollbar visibility and interaction.
+
+:param layerEntry: The entry for the layer to draw the scrollbars on.
+:param textboxAlias: The alias of the textbox.
+:param styleEntry: The TUI style entry to use for the scrollbars.
+:param attributeEntry: The attribute entry containing color and other properties.
+:param xLocation: The X coordinate of the scrollbars.
+:param yLocation: The Y coordinate of the scrollbars.
+:param width: The width of the scrollbar area.
+:param height: The height of the scrollbar area.
+
+Example:
+
+	textbox.drawScrollbars(layerEntry, "textbox1", style, attribute, 10, 10, 20, 5)
 */
-func (shared *textboxType) drawTextboxScrollbars(layerEntry *types.LayerEntryType, textboxAlias string, styleEntry types.TuiStyleEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, width int, height int) {
+func (shared *textboxType) drawScrollbars(layerEntry *types.LayerEntryType, textboxAlias string, styleEntry types.TuiStyleEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, width int, height int) {
 	// Implementation of drawTextboxScrollbars method
 }
 
 /*
-drawTextboxScrollbar allows you to draw a single scrollbar for a textbox. In addition, the following
-information should be noted:
+drawScrollbar is a method which allows you to draw a single scrollbar for a textbox. In addition, the following
+should be noted:
 
 - Draws either a horizontal or vertical scrollbar.
+
 - Updates the scrollbar handle position based on the current scroll value.
+
 - Handles scrollbar interaction and updates.
+
+:param layerEntry: The entry for the layer to draw the scrollbar on.
+:param textboxAlias: The alias of the textbox.
+:param styleEntry: The TUI style entry to use for the scrollbar.
+:param attributeEntry: The attribute entry containing color and other properties.
+:param xLocation: The X coordinate of the scrollbar.
+:param yLocation: The Y coordinate of the scrollbar.
+:param length: The length of the scrollbar.
+:param isHorizontal: Whether the scrollbar is horizontal.
+
+Example:
+
+	textbox.drawScrollbar(layerEntry, "textbox1", style, attribute, 10, 10, 20, true)
 */
-func (shared *textboxType) drawTextboxScrollbar(layerEntry *types.LayerEntryType, textboxAlias string, styleEntry types.TuiStyleEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, length int, isHorizontal bool) {
+func (shared *textboxType) drawScrollbar(layerEntry *types.LayerEntryType, textboxAlias string, styleEntry types.TuiStyleEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, length int, isHorizontal bool) {
 	// Implementation of drawTextboxScrollbar method
 }
 
 /*
-drawTextboxScrollbarHandle allows you to draw the handle of a scrollbar. In addition, the following
-information should be noted:
+drawScrollbarHandle is a method which allows you to draw the handle of a scrollbar. In addition, the following
+should be noted:
 
 - Draws the scrollbar handle at the current position.
+
 - Updates the handle position based on the scroll value.
+
 - Handles handle interaction and updates.
+
+:param layerEntry: The entry for the layer to draw the handle on.
+:param textboxAlias: The alias of the textbox.
+:param styleEntry: The TUI style entry to use for the handle.
+:param attributeEntry: The attribute entry containing color and other properties.
+:param xLocation: The X coordinate of the handle.
+:param yLocation: The Y coordinate of the handle.
+:param length: The length of the scrollbar.
+:param isHorizontal: Whether the scrollbar is horizontal.
+
+Example:
+
+	textbox.drawScrollbarHandle(layerEntry, "textbox1", style, attribute, 10, 10, 20, true)
 */
-func (shared *textboxType) drawTextboxScrollbarHandle(layerEntry *types.LayerEntryType, textboxAlias string, styleEntry types.TuiStyleEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, length int, isHorizontal bool) {
+func (shared *textboxType) drawScrollbarHandle(layerEntry *types.LayerEntryType, textboxAlias string, styleEntry types.TuiStyleEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, length int, isHorizontal bool) {
 	// Implementation of drawTextboxScrollbarHandle method
 }
 
 /*
-drawTextboxScrollbarTrack allows you to draw the track of a scrollbar. In addition, the following
-information should be noted:
+drawScrollbarTrack is a method which allows you to draw the track of a scrollbar. In addition, the following
+should be noted:
 
 - Draws the scrollbar track with the specified style.
+
 - Handles both horizontal and vertical tracks.
+
 - Updates the track appearance based on scrollbar state.
+
+:param layerEntry: The entry for the layer to draw the track on.
+:param textboxAlias: The alias of the textbox.
+:param styleEntry: The TUI style entry to use for the track.
+:param attributeEntry: The attribute entry containing color and other properties.
+:param xLocation: The X coordinate of the track.
+:param yLocation: The Y coordinate of the track.
+:param length: The length of the scrollbar track.
+:param isHorizontal: Whether the track is horizontal.
+
+Example:
+
+	textbox.drawScrollbarTrack(layerEntry, "textbox1", style, attribute, 10, 10, 20, true)
 */
-func (shared *textboxType) drawTextboxScrollbarTrack(layerEntry *types.LayerEntryType, textboxAlias string, styleEntry types.TuiStyleEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, length int, isHorizontal bool) {
+func (shared *textboxType) drawScrollbarTrack(layerEntry *types.LayerEntryType, textboxAlias string, styleEntry types.TuiStyleEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, length int, isHorizontal bool) {
 	// Implementation of drawTextboxScrollbarTrack method
 }
 
 /*
-drawTextboxScrollbarArrows allows you to draw the arrows of a scrollbar. In addition, the following
-information should be noted:
+drawScrollbarArrows is a method which allows you to draw the arrows of a scrollbar. In addition, the following
+should be noted:
 
 - Draws both up/down or left/right arrows for the scrollbar.
+
 - Handles arrow interaction and updates.
+
 - Updates arrow appearance based on scrollbar state.
+
+:param layerEntry: The entry for the layer to draw the arrows on.
+:param textboxAlias: The alias of the textbox.
+:param styleEntry: The TUI style entry to use for the arrows.
+:param attributeEntry: The attribute entry containing color and other properties.
+:param xLocation: The X coordinate of the arrows.
+:param yLocation: The Y coordinate of the arrows.
+:param length: The length of the scrollbar.
+:param isHorizontal: Whether the scrollbar is horizontal.
+
+Example:
+
+	textbox.drawScrollbarArrows(layerEntry, "textbox1", style, attribute, 10, 10, 20, true)
 */
-func (shared *textboxType) drawTextboxScrollbarArrows(layerEntry *types.LayerEntryType, textboxAlias string, styleEntry types.TuiStyleEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, length int, isHorizontal bool) {
+func (shared *textboxType) drawScrollbarArrows(layerEntry *types.LayerEntryType, textboxAlias string, styleEntry types.TuiStyleEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, length int, isHorizontal bool) {
 	// Implementation of drawTextboxScrollbarArrows method
 }
 
 /*
-printControlText allows you to print text with control IDs. In addition, the following
-information should be noted:
+printControlText is a method which allows you to print text with control IDs. In addition, the following should be
+noted:
 
 - Prints each character with its associated control ID.
+
 - Handles wide characters that take up multiple spaces.
+
 - Manages cursor and highlight rendering.
+
+:param layerEntry: The entry for the layer to print the text on.
+:param textboxAlias: The alias of the textbox.
+:param styleEntry: The TUI style entry to use for the text.
+:param attributeEntry: The attribute entry containing color and other properties.
+:param xLocation: The X coordinate to start printing.
+:param yLocation: The Y coordinate to start printing.
+:param arrayOfRunes: The array of runes to print.
+:param controlYLocation: The logical Y location of the text within the control.
+:param startingControlId: The starting ID for the characters being printed.
+:param cursorXLocation: The X coordinate of the cursor.
+:param cursorYLocation: The Y coordinate of the cursor.
+
+Example:
+
+	textbox.printControlText(layerEntry, "textbox1", style, attribute, 10, 10, runes, 0, 0, 0, 0)
 */
 func (shared *textboxType) printControlText(layerEntry *types.LayerEntryType, textboxAlias string, styleEntry types.TuiStyleEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, arrayOfRunes []rune, controlYLocation int, startingControlId int, cursorXLocation int, cursorYLocation int) {
 	currentControlId := startingControlId
@@ -996,12 +1425,22 @@ func (shared *textboxType) printControlText(layerEntry *types.LayerEntryType, te
 }
 
 /*
-updateCursor allows you to update the cursor position in a textbox. In addition, the following
-information should be noted:
+updateCursor is a method which allows you to update the cursor position in a textbox. In addition, the following should
+be noted:
 
 - Ensures the cursor stays within valid bounds.
+
 - Handles cases where the cursor moves outside the text.
+
 - Updates the cursor position in the textbox entry.
+
+:param textboxEntry: The textbox entry to update.
+:param xLocation: The new X coordinate for the cursor.
+:param yLocation: The new Y coordinate for the cursor.
+
+Example:
+
+	textbox.updateCursor(entry, 0, 0)
 */
 func (shared *textboxType) updateCursor(textboxEntry *types.TextboxEntryType, xLocation int, yLocation int) {
 	// Ensure TextData is initialized
@@ -1036,12 +1475,20 @@ func (shared *textboxType) updateCursor(textboxEntry *types.TextboxEntryType, xL
 }
 
 /*
-updateViewport allows you to update the visible portion of a textbox. In addition, the following
-information should be noted:
+updateViewport is a method which allows you to update the visible portion of a textbox. In addition, the following
+should be noted:
 
 - Adjusts the viewport to keep the cursor visible.
+
 - Handles cases where the cursor moves outside the viewport.
+
 - Updates the viewport position in the textbox entry.
+
+:param textboxEntry: The textbox entry to update.
+
+Example:
+
+	textbox.updateViewport(entry)
 */
 func (shared *textboxType) updateViewport(textboxEntry *types.TextboxEntryType) {
 	// Ensure TextData is initialized
@@ -1141,12 +1588,18 @@ func (shared *textboxType) updateViewport(textboxEntry *types.TextboxEntryType) 
 }
 
 /*
-UpdateKeyboardEventTextboxWithString allows you to process a string of characters as keyboard input. In addition,
-the following information should be noted:
+UpdateKeyboardEventTextboxWithString is a method which allows you to process a string of characters as keyboard input.
+In addition, the following should be noted:
 
 - Processes each character in the string as a separate keystroke.
+
 - Maintains all textbox functionality like highlighting and cursor movement.
-- Returns true if a screen update is required.
+
+:param keystroke: The string of characters to process.
+
+Example:
+
+	textbox.UpdateKeyboardEventTextboxWithString("Hello World")
 */
 func (shared *textboxType) UpdateKeyboardEventTextboxWithString(keystroke string) {
 	for _, currentCharacter := range keystroke {
@@ -1155,12 +1608,18 @@ func (shared *textboxType) UpdateKeyboardEventTextboxWithString(keystroke string
 }
 
 /*
-UpdateKeyboardEventTextboxWithCommands allows you to process a list of command strings. In addition,
-the following information should be noted:
+UpdateKeyboardEventTextboxWithCommands is a method which allows you to process a list of command strings. In addition,
+the following should be noted:
 
 - Processes each command string as a separate keystroke.
+
 - Useful for programmatically inserting text or executing commands.
-- Returns true if a screen update is required.
+
+:param keystroke: A list of command strings to process.
+
+Example:
+
+	textbox.UpdateKeyboardEventTextboxWithCommands("ctrl+a", "backspace")
 */
 func (shared *textboxType) UpdateKeyboardEventTextboxWithCommands(keystroke ...string) {
 	for _, currentCommand := range keystroke {
@@ -1168,6 +1627,23 @@ func (shared *textboxType) UpdateKeyboardEventTextboxWithCommands(keystroke ...s
 	}
 }
 
+/*
+UpdateKeyboardEventManually is a method which allows you to process a keyboard event for a specific textbox. In
+addition, the following should be noted:
+
+- Handles cursor movement, text editing, and clipboard operations.
+
+- Manages text highlighting and selection.
+
+:param layerAlias: The alias of the layer containing the textbox.
+:param textboxAlias: The alias of the textbox to update.
+:param keystroke: The keyboard event to process. :return isScreenUpdateRequired: True if a screen update is required.
+:return isKeystrokeConsumed: True if the keystroke was consumed.
+
+Example:
+
+	update, consumed := textbox.UpdateKeyboardEventManually("layer1", "textbox1", rune("A"))
+*/
 func (shared *textboxType) UpdateKeyboardEventManually(layerAlias string, textboxAlias string, keystroke []rune) (bool, bool) {
 	isScreenUpdateRequired := false
 	isKeystrokeConsumed := false
@@ -1512,12 +1988,19 @@ func (shared *textboxType) UpdateKeyboardEventManually(layerAlias string, textbo
 }
 
 /*
-UpdateKeyboardEvent allows you to process keyboard input for a textbox. In addition,
-the following information should be noted:
+UpdateKeyboardEvent is a method which allows you to process keyboard input for the currently focused textbox. In
+addition, the following should be noted:
 
 - Handles all keyboard events including cursor movement and text editing.
+
 - Manages text highlighting and selection.
-- Returns true if a screen update is required.
+
+:param keystroke: The keyboard event to process. :return isScreenUpdateRequired: True if a screen update is required.
+:return isKeystrokeConsumed: True if the keystroke was consumed.
+
+Example:
+
+	update, consumed := textbox.UpdateKeyboardEvent(rune("A"))
 */
 func (shared *textboxType) UpdateKeyboardEvent(keystroke []rune) (bool, bool) {
 	focusedLayerAlias := eventStateMemory.currentlyFocusedControl.layerAlias
@@ -1530,16 +2013,18 @@ func (shared *textboxType) UpdateKeyboardEvent(keystroke []rune) (bool, bool) {
 }
 
 /*
-deleteHighlightedText allows you to delete the currently highlighted text. In addition,
-the following information should be noted:
+getHighlightedText is a method which allows you to retrieve the text that is currently highlighted in the textbox. In
+addition, the following should be noted:
 
-- Removes all text within the highlight range.
-- Handles both single-line and multi-line highlights.
-- Updates the cursor position to the start of the deleted text.
-*/
-/*
-getHighlightedText returns the text that is currently highlighted in the textbox.
-This is used for clipboard operations like copy and cut.
+- This is used for clipboard operations like copy and cut.
+
+:param textboxEntry: The textbox entry to get highlighted text from.
+
+:return: The highlighted text as a string.
+
+Example:
+
+	text := textbox.getHighlightedText(entry)
 */
 func (shared *textboxType) getHighlightedText(textboxEntry *types.TextboxEntryType) string {
 	if !textboxEntry.IsHighlightActive {
@@ -1620,6 +2105,22 @@ func (shared *textboxType) getHighlightedText(textboxEntry *types.TextboxEntryTy
 	return result.String()
 }
 
+/*
+deleteHighlightedText is a method which allows you to delete the currently highlighted text. In addition, the following
+should be noted:
+
+- Removes all text within the highlight range.
+
+- Handles both single-line and multi-line highlights.
+
+- Updates the cursor position to the start of the deleted text.
+
+:param textboxEntry: The textbox entry to modify.
+
+Example:
+
+	textbox.deleteHighlightedText(entry)
+*/
 func (shared *textboxType) deleteHighlightedText(textboxEntry *types.TextboxEntryType) {
 	// Determine the correct start and end positions for highlighting
 	var highlightStartX, highlightEndX, highlightStartY, highlightEndY int
@@ -1730,12 +2231,18 @@ func (shared *textboxType) deleteHighlightedText(textboxEntry *types.TextboxEntr
 }
 
 /*
-updateMouseEvent allows you to process mouse events for a textbox. In addition,
-the following information should be noted:
+updateMouseEvent is a method which allows you to process mouse events for a textbox. In addition, the following should
+be noted:
 
 - Handles mouse clicks for cursor positioning.
+
 - Manages text selection with mouse drag.
-- Returns true if a screen update is required.
+
+:return: True if a screen update is required.
+
+Example:
+
+	update := textbox.updateMouseEvent()
 */
 func (shared *textboxType) updateMouseEvent() bool {
 	isUpdateRequired := false

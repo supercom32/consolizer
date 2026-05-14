@@ -2,6 +2,16 @@ package consolizer
 
 import "github.com/supercom32/consolizer/types"
 
+/*
+CommonTestSetup is a method which allows you to initialize a standard testing environment with multiple layers and a
+default TUI style.
+
+:return: Three layer instances and a TUI style entry.
+
+Example:
+
+	layer1, layer2, layer3, styleEntry := CommonTestSetup()
+*/
 func CommonTestSetup() (*LayerInstanceType, *LayerInstanceType, *LayerInstanceType, types.TuiStyleEntryType) {
 	commonResource.isDebugEnabled = true
 	layerWidth := 40
@@ -20,6 +30,15 @@ func CommonTestSetup() (*LayerInstanceType, *LayerInstanceType, *LayerInstanceTy
 	return layer1, layer2, layer3, styleEntry
 }
 
+/*
+CommonTestSetupImages is a method which allows you to initialize a standard testing environment for image-related tests.
+
+:return: Three layer instances and a TUI style entry.
+
+Example:
+
+	layer1, layer2, layer3, styleEntry := CommonTestSetupImages()
+*/
 func CommonTestSetupImages() (*LayerInstanceType, *LayerInstanceType, *LayerInstanceType, types.TuiStyleEntryType) {
 	commonResource.isDebugEnabled = true
 	layerWidth := 50

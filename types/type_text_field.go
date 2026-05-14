@@ -21,24 +21,38 @@ type TextFieldEntryType struct {
 }
 
 /*
-GetAlias allows you to retrieve the alias of a text field control. In addition, the following
+GetAlias is a method which allows you to retrieve the alias of a text field control. In addition, the following
 information should be noted:
 
 - Returns the unique identifier for the text field.
+
 - This alias is used to reference the text field in other operations.
+
 - The alias is set when the text field is created.
+
+:return: string
+
+Example:
+
+	instance.GetAlias()
 */
 func (shared TextFieldEntryType) GetAlias() string {
 	return shared.Alias
 }
 
 /*
-MarshalJSON allows you to serialize a text field control to JSON. In addition, the following
+MarshalJSON is a method which allows you to serialize a text field control to JSON. In addition, the following
 information should be noted:
 
 - Converts the text field's state to a JSON representation.
+
 - Includes the base control properties and text field-specific fields.
+
 - Used for saving and loading text field configurations.
+
+Example:
+
+	instance.MarshalJSON()
 */
 func (shared TextFieldEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
@@ -73,12 +87,20 @@ func (shared TextFieldEntryType) MarshalJSON() ([]byte, error) {
 }
 
 /*
-GetEntryAsJsonDump allows you to get a JSON string representation of a text field control. In addition,
-the following information should be noted:
+GetEntryAsJsonDump is a method which allows you to get a JSON string representation of a text field control. In
+addition, the following information should be noted:
 
 - Returns a formatted JSON string of the text field's state.
+
 - Useful for debugging and logging purposes.
+
 - Panics if JSON marshaling fails.
+
+:return: string
+
+Example:
+
+	instance.GetEntryAsJsonDump()
 */
 func (shared TextFieldEntryType) GetEntryAsJsonDump() string {
 	j, err := json.Marshal(shared)
@@ -89,12 +111,22 @@ func (shared TextFieldEntryType) GetEntryAsJsonDump() string {
 }
 
 /*
-NewTextFieldEntry allows you to create a new text field control. In addition, the following
+NewTextFieldEntry is a constructor which allows you to create a new text field control. In addition, the following
 information should be noted:
 
 - Initializes a text field with default values.
+
 - Can optionally copy properties from an existing text field.
+
 - Sets up the base control properties and text field-specific fields.
+
+:param existingTextFieldEntry: The existingTextFieldEntry parameter.
+
+:return: TextFieldEntryType
+
+Example:
+
+	NewTextFieldEntry(existingTextFieldEntry)
 */
 func NewTextFieldEntry(existingTextFieldEntry ...*TextFieldEntryType) TextFieldEntryType {
 	var textFieldEntry TextFieldEntryType
@@ -114,12 +146,23 @@ func NewTextFieldEntry(existingTextFieldEntry ...*TextFieldEntryType) TextFieldE
 }
 
 /*
-IsTextFieldEntryEqual allows you to compare two text field controls for equality. In addition, the following
-information should be noted:
+IsTextFieldEntryEqual is a method which allows you to compare two text field controls for equality. In addition, the
+following information should be noted:
 
 - Compares all properties of both text fields.
+
 - Returns true if all properties match, false otherwise.
+
 - Used for change detection and state synchronization.
+
+:param sourceTextFieldEntry: The sourceTextFieldEntry parameter.
+:param targetTextFieldEntry: The targetTextFieldEntry parameter.
+
+:return: bool
+
+Example:
+
+	IsTextFieldEntryEqual(sourceTextFieldEntry, targetTextFieldEntry)
 */
 func IsTextFieldEntryEqual(sourceTextFieldEntry *TextFieldEntryType, targetTextFieldEntry *TextFieldEntryType) bool {
 	if sourceTextFieldEntry.BaseControlType == targetTextFieldEntry.BaseControlType &&
@@ -135,12 +178,22 @@ func IsTextFieldEntryEqual(sourceTextFieldEntry *TextFieldEntryType, targetTextF
 }
 
 /*
-GetTextFieldAlias allows you to retrieve the alias of a text field control. In addition, the following
+GetTextFieldAlias is a method which allows you to retrieve the alias of a text field control. In addition, the following
 information should be noted:
 
 - Returns the unique identifier for the text field.
+
 - This is a convenience method that delegates to GetAlias.
+
 - The alias is used to reference the text field in other operations.
+
+:param entry: The entry parameter.
+
+:return: string
+
+Example:
+
+	GetTextFieldAlias(entry)
 */
 func GetTextFieldAlias(entry *TextFieldEntryType) string {
 	return entry.Alias

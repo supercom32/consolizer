@@ -178,6 +178,15 @@ type TuiStyleEntryType struct {
 	Dropdown    DropdownStyle
 }
 
+/*
+GetEntryAsJsonDump is a method which allows you to getentryasjsondump.
+
+:return: string
+
+Example:
+
+	instance.GetEntryAsJsonDump()
+*/
 func (shared TuiStyleEntryType) GetEntryAsJsonDump() string {
 	j, err := json.Marshal(shared)
 	if err != nil {
@@ -186,7 +195,18 @@ func (shared TuiStyleEntryType) GetEntryAsJsonDump() string {
 	return string(j)
 }
 
-// NewTuiStyleEntry creates a new TuiStyleEntryType with default values or copies from an existing one
+/*
+NewTuiStyleEntry is a constructor which allows you to creates a new TuiStyleEntryType with default values or copies from
+an existing one.
+
+:param existingStyleEntry: The existingStyleEntry parameter.
+
+:return: TuiStyleEntryType
+
+Example:
+
+	NewTuiStyleEntry(existingStyleEntry)
+*/
 func NewTuiStyleEntry(existingStyleEntry ...*TuiStyleEntryType) TuiStyleEntryType {
 	var styleEntry TuiStyleEntryType
 	if existingStyleEntry != nil {

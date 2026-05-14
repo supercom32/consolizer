@@ -20,7 +20,17 @@ func init() {
 	KeyboardMemory.keyStates = make(map[string]bool)
 }
 
-func (shared *keyboardMemoryType) AddKeystrokeToKeyboardBuffer(keystroke ...[]rune) {
+/*
+AddToBuffer is a method which allows you to add one or more keystrokes to the keyboard buffer. Each
+keystroke is represented as a slice of runes.
+
+:param keystroke: One or more keystrokes to be added to the buffer.
+
+Example:
+
+	KeyboardMemory.AddToBuffer(rune{'a'}, rune{'b'})
+*/
+func (shared *keyboardMemoryType) AddToBuffer(keystroke ...[]rune) {
 	shared.Lock()
 	defer func() {
 		shared.Unlock()
@@ -37,7 +47,17 @@ func (shared *keyboardMemoryType) AddKeystrokeToKeyboardBuffer(keystroke ...[]ru
 	}
 }
 
-func (shared *keyboardMemoryType) GetKeystrokeFromKeyboardBuffer() []rune {
+/*
+GetFromBuffer is a method which allows you to retrieve the next available keystroke from the keyboard
+buffer. The keystroke is returned as a slice of runes.
+
+:return: The next keystroke in the buffer, or nil if the buffer is empty.
+
+Example:
+
+	keystroke := KeyboardMemory.GetFromBuffer()
+*/
+func (shared *keyboardMemoryType) GetFromBuffer() []rune {
 	if shared.entries == nil || len(shared.entries) == 0 {
 		return nil
 	}
@@ -51,7 +71,16 @@ func (shared *keyboardMemoryType) GetKeystrokeFromKeyboardBuffer() []rune {
 	return keystroke
 }
 
-// LiveInkey returns the key currently being pressed, or an empty string if no key is pressed
+/*
+LiveInkey is a method which allows you to retrieve the key currently being pressed. If no key is currently pressed, an
+empty string is returned.
+
+:return: The string representation of the key currently being pressed.
+
+Example:
+
+	key := KeyboardMemory.LiveInkey()
+*/
 func (shared *keyboardMemoryType) LiveInkey() string {
 	shared.Lock()
 	defer shared.Unlock()
@@ -66,7 +95,17 @@ func (shared *keyboardMemoryType) LiveInkey() string {
 	return ""
 }
 
-// IsKeyPressed checks if a specific key is currently pressed
+/*
+IsKeyPressed is a method which allows you to check if a specific key is currently being pressed.
+
+:param key: The string representation of the key to check.
+
+:return: A boolean indicating whether the specified key is currently pressed.
+
+Example:
+
+	isPressed := KeyboardMemory.IsKeyPressed("a")
+*/
 func (shared *keyboardMemoryType) IsKeyPressed(key string) bool {
 	shared.Lock()
 	defer shared.Unlock()
@@ -75,7 +114,15 @@ func (shared *keyboardMemoryType) IsKeyPressed(key string) bool {
 	return exists && pressed
 }
 
-// GetLastKeystroke returns the last keystroke that was processed
+/*
+GetLastKeystroke is a method which allows you to retrieve the last keystroke that was processed by the keyboard buffer.
+
+:return: The last keystroke as a slice of runes.
+
+Example:
+
+	lastKeystroke := KeyboardMemory.GetLastKeystroke()
+*/
 func (shared *keyboardMemoryType) GetLastKeystroke() []rune {
 	shared.Lock()
 	defer shared.Unlock()
@@ -83,7 +130,14 @@ func (shared *keyboardMemoryType) GetLastKeystroke() []rune {
 	return shared.lastKeystroke
 }
 
-// ClearKeyStates marks all keys as released
+/*
+ClearKeyStates is a method which allows you to mark all keys as released, effectively clearing the current state of all
+keys.
+
+Example:
+
+	KeyboardMemory.ClearKeyStates()
+*/
 func (shared *keyboardMemoryType) ClearKeyStates() {
 	shared.Lock()
 	defer shared.Unlock()

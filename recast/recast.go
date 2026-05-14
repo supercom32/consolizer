@@ -20,6 +20,17 @@ const (
 	Float64Type
 )
 
+/*
+GetDataType is a method which allows you to get the data type of a variable.
+
+:param variable: The variable to get the data type for.
+
+:return: The data type of the variable as an integer constant.
+
+Example:
+
+	dataType := GetDataType("test")
+*/
 func GetDataType(variable interface{}) int {
 	switch variable.(type) {
 	case string:
@@ -52,6 +63,17 @@ func GetDataType(variable interface{}) int {
 	return -1
 }
 
+/*
+GetNumberAsInt is a method which allows you to get a number as an integer.
+
+:param number: The number to convert to an integer.
+
+:return: The number converted to an integer.
+
+Example:
+
+	intValue := GetNumberAsInt(12.5)
+*/
 func GetNumberAsInt(number interface{}) int {
 	detectedType := GetDataType(number)
 	if detectedType == Float32Type {
@@ -93,6 +115,17 @@ func GetNumberAsInt(number interface{}) int {
 	return -1
 }
 
+/*
+GetNumberAsInt64 is a method which allows you to get a number as an int64.
+
+:param number: The number to convert to an int64.
+
+:return: The number converted to an int64.
+
+Example:
+
+	int64Value := GetNumberAsInt64(12.5)
+*/
 func GetNumberAsInt64(number interface{}) int64 {
 	detectedType := GetDataType(number)
 	if detectedType == Float32Type {
@@ -134,15 +167,48 @@ func GetNumberAsInt64(number interface{}) int64 {
 	return -1
 }
 
+/*
+GetStringAsInt is a method which allows you to get a string as an integer.
+
+:param stringToConvert: The string to convert to an integer.
+
+:return: The string converted to an integer.
+
+Example:
+
+	intValue := GetStringAsInt("123")
+*/
 func GetStringAsInt(stringToConvert string) int {
 	return int(GetStringAsInt64(stringToConvert))
 }
 
+/*
+GetStringAsInt64 is a method which allows you to get a string as an int64.
+
+:param stringToConvert: The string to convert to an int64.
+
+:return: The string converted to an int64.
+
+Example:
+
+	int64Value := GetStringAsInt64("123")
+*/
 func GetStringAsInt64(stringToConvert string) int64 {
 	number, _ := strconv.Atoi(stringToConvert)
 	return int64(number)
 }
 
+/*
+GetNumberAsFloat64 is a method which allows you to get a number as a float64.
+
+:param number: The number to convert to a float64.
+
+:return: The number converted to a float64.
+
+Example:
+
+	floatValue := GetNumberAsFloat64(12)
+*/
 func GetNumberAsFloat64(number interface{}) float64 {
 	detectedType := GetDataType(number)
 	if detectedType == Float32Type {
@@ -184,6 +250,17 @@ func GetNumberAsFloat64(number interface{}) float64 {
 	return -1
 }
 
+/*
+GetArrayOfInterfaces is a method which allows you to get an array of interfaces from a variadic list of interfaces.
+
+:param variables: The variadic list of interfaces.
+
+:return: An array of interfaces.
+
+Example:
+
+	interfaces := GetArrayOfInterfaces(1, "test", 3.14)
+*/
 func GetArrayOfInterfaces(variables ...interface{}) []interface{} {
 	var arrayOfVariables []interface{}
 	for _, currentVariable := range variables {

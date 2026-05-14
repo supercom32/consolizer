@@ -30,6 +30,14 @@ var eventStateMemory eventStateType
 var eventIntervalTime time.Time
 var lastMouseMoveTime time.Time
 
+/*
+UpdatePeriodicEvents is a method which allows you to trigger periodic events such as tooltip updates and keyboard state
+clearing.
+
+Example:
+
+	UpdatePeriodicEvents()
+*/
 func UpdatePeriodicEvents() {
 	elapsedTime := time.Since(eventIntervalTime)
 	if elapsedTime >= 500*time.Millisecond {
@@ -50,8 +58,12 @@ func UpdatePeriodicEvents() {
 }
 
 /*
-UpdateEventQueues allows you to update all event queues so that information
-such as mouse clicks, keystrokes, and other events are properly registered.
+UpdateEventQueues is a method which allows you to update all event queues so that information such as mouse clicks,
+keystrokes, and other events are properly registered.
+
+Example:
+
+	UpdateEventQueues()
 */
 func UpdateEventQueues() {
 	// Skip event processing if screen is not initialized (e.g., in debug mode or tests)
@@ -111,7 +123,7 @@ func UpdateEventQueues() {
 		}
 		// Only add keystroke to buffer if it wasn't consumed by a control
 		if !isKeystrokeConsumed && keystroke != nil {
-			KeyboardMemory.AddKeystrokeToKeyboardBuffer(keystroke)
+			KeyboardMemory.AddToBuffer(keystroke)
 		}
 
 	case *tcell.EventMouse:
@@ -164,7 +176,7 @@ func UpdateEventQueues() {
 		if TextField.updateMouseEvent() {
 			isScreenUpdateRequired = true
 		}
-		if FileMenu.updateFileMenuStateMouse() {
+		if FileMenu.updateStateMouse() {
 			isScreenUpdateRequired = true
 		}
 		if Selector.updateMouseEvent() {
@@ -177,13 +189,13 @@ func UpdateEventQueues() {
 			isScreenUpdateRequired = true
 		}
 		// This is done last so that it can update itself if a Selector or scroll bar change was detected.
-		if Dropdown.updateDropdownStateMouse() {
+		if Dropdown.updateStateMouse() {
 			isScreenUpdateRequired = true
 		}
 		if Checkbox.updateMouseEvent() {
 			isScreenUpdateRequired = true
 		}
-		if Button.updateButtonStates(true) {
+		if Button.updateStates(true) {
 			isScreenUpdateRequired = true
 		}
 		if scrollbar.updateMouseEvent() {
@@ -204,7 +216,7 @@ func UpdateEventQueues() {
 			isScreenUpdateRequired = true
 		}
 		// This is done last so that it can update itself if a Selector or scroll bar change was detected.
-		if Dropdown.updateDropdownStateMouse() {
+		if Dropdown.updateStateMouse() {
 			isScreenUpdateRequired = true
 		}
 		// LogInfo("mouse event dropdownb")
@@ -214,15 +226,40 @@ func UpdateEventQueues() {
 	}
 }
 
+/*
+ClearTabIndex is a method which allows you to clear all registered tab index entries from memory.
+
+Example:
+
+	ClearTabIndex()
+*/
 func ClearTabIndex() {
 	eventStateMemory.tabIndexMemory = nil
 }
 
+/*
+addTabIndex is a method which allows you to register a new control in the tab index memory for sequential navigation.
+
+:param layerAlias: the alias of the layer containing the control
+:param controlAlias: the unique alias of the control being registered
+:param controlType: the integer type representing the control
+
+Example:
+
+	addTabIndex("layer1", "button1", constants.CellTypeButton)
+*/
 func addTabIndex(layerAlias string, controlAlias string, controlType int) {
 	controlEntry := controlIdentifierType{layerAlias: layerAlias, controlAlias: controlAlias, controlType: controlType}
 	eventStateMemory.tabIndexMemory = append(eventStateMemory.tabIndexMemory, controlEntry)
 }
 
+/*
+nextTabIndex is a method which allows you to advance the focus to the next control in the registered tab index sequence.
+
+Example:
+
+	nextTabIndex()
+*/
 func nextTabIndex() {
 	eventStateMemory.currentTabIndex++
 	if eventStateMemory.currentTabIndex >= len(eventStateMemory.tabIndexMemory) {
@@ -233,12 +270,37 @@ func nextTabIndex() {
 	}
 }
 
+/*
+setFocusedControl is a method which allows you to explicitly set which control currently has focus.
+
+:param layerAlias: the alias of the layer containing the control
+:param controlAlias: the unique alias of the control to be focused
+:param controlType: the integer type representing the control
+
+Example:
+
+	setFocusedControl("layer1", "textfield1", constants.CellTypeTextField)
+*/
 func setFocusedControl(layerAlias string, controlAlias string, controlType int) {
 	eventStateMemory.currentlyFocusedControl.layerAlias = layerAlias
 	eventStateMemory.currentlyFocusedControl.controlAlias = controlAlias
 	eventStateMemory.currentlyFocusedControl.controlType = controlType
 }
 
+/*
+isControlCurrentlyFocused is a method which allows you to check if a specific control is currently the focused control
+in the application.
+
+:param layerAlias: the alias of the layer containing the control
+:param controlAlias: the unique alias of the control to check
+:param cellType: the integer type representing the control
+
+:return: true if the control is focused, false otherwise
+
+Example:
+
+	isControlCurrentlyFocused("layer1", "textfield1", constants.CellTypeTextField)
+*/
 func isControlCurrentlyFocused(layerAlias string, controlAlias string, cellType int) bool {
 	if eventStateMemory.currentlyFocusedControl.layerAlias == layerAlias &&
 		eventStateMemory.currentlyFocusedControl.controlAlias == controlAlias &&
@@ -248,6 +310,18 @@ func isControlCurrentlyFocused(layerAlias string, controlAlias string, cellType 
 	return false
 }
 
+/*
+setPreviouslyHighlightedControl is a method which allows you to record the control that was previously highlighted by
+the mouse.
+
+:param layerAlias: the alias of the layer containing the control
+:param controlAlias: the unique alias of the control that was highlighted
+:param controlType: the integer type representing the control
+
+Example:
+
+	setPreviouslyHighlightedControl("layer1", "item1", constants.CellTypeSelector)
+*/
 func setPreviouslyHighlightedControl(layerAlias string, controlAlias string, controlType int) {
 	eventStateMemory.previouslyHighlightedControl.layerAlias = layerAlias
 	eventStateMemory.previouslyHighlightedControl.controlAlias = controlAlias
@@ -255,16 +329,19 @@ func setPreviouslyHighlightedControl(layerAlias string, controlAlias string, con
 }
 
 /*
-moveLayerIfRequired allows you to move any interactive layer that has been
-captured in a drag and drop action. If the mouse buttonType is pressed over an
-interactive part of a layer and not released, this method will move the
-layer according to the mice's new position. In addition, the following
-information should be noted:
+moveLayerIfRequired is a method which allows you to move any interactive layer that has been captured in a drag and drop
+action. If the mouse button is pressed over an interactive part of a layer and not released, this method will move the
+layer according to the mouse's new position. In addition, the following should be noted:
 
-- If the layer being moved causes the top row of characters (the interactive
-title bar of a layer) to fall outside the parent layers visible area, then
-no movement is performed. This is done so that it is impossible to move
-a window off-screen where it can never be grabbed again.
+- If the layer being moved causes the top row of characters (the interactive title bar of a layer) to fall outside the.
+
+- This is done so that it is impossible to move a window off-screen where it can never be grabbed again.
+
+:return: true if the screen requires updating after a layer movement, false otherwise
+
+Example:
+
+	moveLayerIfRequired()
 */
 func moveLayerIfRequired() bool {
 	isScreenUpdateRequired := false
@@ -292,8 +369,12 @@ func moveLayerIfRequired() bool {
 }
 
 /*
-bringLayerToFrontIfRequired allows you to bring a layer to the front of the
-visible display area if the layer being clicked is focusable.
+bringLayerToFrontIfRequired is a method which allows you to bring a layer to the front of the visible display area if
+the layer being clicked is focusable.
+
+Example:
+
+	bringLayerToFrontIfRequired()
 */
 func bringLayerToFrontIfRequired() {
 	mouseXLocation, mouseYLocation, buttonPressed, _ := GetMouseStatus()
@@ -315,28 +396,31 @@ func bringLayerToFrontIfRequired() {
 		if layerEntry.IsFocusable == true {
 			return
 		}
-		layerAlias, previousLayerAlias := layer.GetRootParentLayerAlias(characterEntry.LayerAlias, "")
+		layerAlias, previousLayerAlias := layer.GetRootParentAlias(characterEntry.LayerAlias, "")
 		layer.SetHighestZOrderNumber(previousLayerAlias, layerAlias)
 	}
 }
 
 /*
-isInteractiveLayerOffscreen allows you to detect if a layer has been moved
-off-screen or not. This is useful for when you want to constrain a window
-from moving off-screen because it would be impossible for the user to drag
-it back to the visible viewing area. In addition, the following
-information should be noted:
+isInteractiveLayerOffscreen is a method which allows you to detect if a layer has been moved off-screen or not. This is
+useful for when you want to constrain a window from moving off-screen because it would be impossible for the user to
+drag it back to the visible viewing area. In addition, the following should be noted:
 
-- This method only considers a layer off-screen if the top row of characters
-are not visible (the interactive title bar of a layer).
+- This method only considers a layer off-screen if the top row of characters are not visible (the interactive title bar.
 
-- Layers that are moved to the far left are considered off-screen when only
-two character spaces remain. This constraint is triggered two spaces early
-to account for window drop shadows that are not part of the interactive
-area.
+- Layers that are moved to the far left are considered off-screen when only two character spaces remain.
 
-- If a layer has a parent alias, then the constraining area is set to the
-parent layer dimensions instead of the terminal window dimensions.
+- This constraint is triggered two spaces early to account for window drop shadows that are not part of the interactive.
+
+- If a layer has a parent alias, then the constraining area is set to the parent layer dimensions instead of the.
+
+:param layerAlias: the alias of the layer to check for off-screen status
+
+:return: true if the layer is considered off-screen, false otherwise
+
+Example:
+
+	isInteractiveLayerOffscreen("layer1")
 */
 func isInteractiveLayerOffscreen(layerAlias string) bool {
 	layerEntry := Layers.Get(layerAlias)
@@ -355,9 +439,18 @@ func isInteractiveLayerOffscreen(layerAlias string) bool {
 }
 
 /*
-getButtonClickIdentifier allows you to obtain the layer alias and the buttonType
-alias for the text cell currently under the mouse cursor. This is useful
-for determining which buttonType the user has clicked (if any).
+getCellInformationUnderMouseCursor is a method which allows you to obtain the layer alias and the buttonType alias for
+the text cell currently under the mouse cursor. This is useful for determining which buttonType the user has clicked (if
+any).
+
+:param mouseXLocation: the X coordinate of the mouse cursor
+:param mouseYLocation: the Y coordinate of the mouse cursor
+
+:return: the CharacterEntryType containing cell information
+
+Example:
+
+	getCellInformationUnderMouseCursor(10, 20)
 */
 func getCellInformationUnderMouseCursor(mouseXLocation int, mouseYLocation int) types.CharacterEntryType {
 	var characterEntry types.CharacterEntryType
@@ -371,22 +464,56 @@ func getCellInformationUnderMouseCursor(mouseXLocation int, mouseYLocation int) 
 	return characterEntry
 }
 
-// IsModifierKeyPressed checks if a specific modifier key is currently pressed
+/*
+IsModifierKeyPressed is a method which allows you to check if a specific modifier key is currently pressed.
+
+:param modifier: the modifier key mask to check (e.g., tcell.ModShift)
+
+:return: true if the modifier key is pressed, false otherwise
+
+Example:
+
+	IsModifierKeyPressed(tcell.ModShift)
+*/
 func IsModifierKeyPressed(modifier tcell.ModMask) bool {
 	return (eventStateMemory.modifierKeys & modifier) != 0
 }
 
-// IsShiftPressed checks if the shift key is currently pressed
+/*
+IsShiftPressed is a method which allows you to check if the shift key is currently pressed.
+
+:return: true if the shift key is pressed, false otherwise
+
+Example:
+
+	IsShiftPressed()
+*/
 func IsShiftPressed() bool {
 	return IsModifierKeyPressed(tcell.ModShift)
 }
 
-// IsCtrlPressed checks if the control key is currently pressed
+/*
+IsCtrlPressed is a method which allows you to check if the control key is currently pressed.
+
+:return: true if the control key is pressed, false otherwise
+
+Example:
+
+	IsCtrlPressed()
+*/
 func IsCtrlPressed() bool {
 	return IsModifierKeyPressed(tcell.ModCtrl)
 }
 
-// IsAltPressed checks if the alt key is currently pressed
+/*
+IsAltPressed is a method which allows you to check if the alt key is currently pressed.
+
+:return: true if the alt key is pressed, false otherwise
+
+Example:
+
+	IsAltPressed()
+*/
 func IsAltPressed() bool {
 	return IsModifierKeyPressed(tcell.ModAlt)
 }

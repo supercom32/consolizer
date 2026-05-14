@@ -4,6 +4,15 @@ import (
 	"github.com/supercom32/filesystem"
 )
 
+/*
+LogInfo is a method which allows you to loginfo.
+
+:param info: The info parameter.
+
+Example:
+
+	LogInfo(info)
+*/
 func LogInfo(info string) {
 	var stringToAppend string
 	// if len(parameters) != 0 {

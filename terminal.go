@@ -21,7 +21,7 @@ const (
 )
 
 /*
-defaultValueType is a structure that holds common information about the
+defaultValueType is a class which allows you to This class is a structure that holds common information about the
 current terminal session that needs to be shared.
 */
 type defaultValueType struct {
@@ -37,24 +37,36 @@ type defaultValueType struct {
 }
 
 /*
-commonResource is a variable used to hold shared data that is accessed
-by this package.
+commonResource is a variable used to hold shared data that is accessed by this package.
 */
 var commonResource defaultValueType
 
+/*
+GetVersion is a method which allows you to obtain the current version of the consolizer library.
+
+:return: A string representing the version number.
+
+Example:
+
+	version := GetVersion()
+*/
 func GetVersion() string {
 	return "1"
 }
 
 /*
-InitializeTerminal allows you to initialize consolizer for the first time.
-This method must be called first before any operations take place. The
-parameters 'width' and 'height' represent the display size of the
-terminal instance you wish to create. In addition, the following
-information should be noted:
+InitializeTerminal is a method which allows you to initialize consolizer for the first time. This method must be called
+first before any operations take place. The parameters width and height represent the display size of the terminal
+instance you wish to create. In addition, the following should be noted:
 
-- If you pass in a zero or negative value for ether width or height a panic
-will be generated to fail as fast as possible.
+- If you pass in a zero or negative value for either width or height a panic will be generated to fail as fast as.
+
+:param width: The desired width of the terminal.
+:param height: The desired height of the terminal.
+
+Example:
+
+	InitializeTerminal(80, 25)
 */
 func InitializeTerminal(width int, height int) {
 	InitializeTimerMemory()
@@ -95,6 +107,14 @@ func InitializeTerminal(width int, height int) {
 	go setupPeriodicEventUpdater()
 }
 
+/*
+setupPeriodicEventUpdater is a method which allows you to This method is a background method that updates periodic
+events.
+
+Example:
+
+	go setupPeriodicEventUpdater()
+*/
 func setupPeriodicEventUpdater() {
 	for {
 		UpdatePeriodicEvents()
@@ -102,9 +122,12 @@ func setupPeriodicEventUpdater() {
 }
 
 /*
-setupEventUpdater is a background method that monitors all events coming
-into the terminal session. When an event is detected, it is recorded and
-monitoring continues.
+setupEventUpdater is a method which allows you to This method is a background method that monitors all events coming
+into the terminal session. When an event is detected, it is recorded and monitoring continues.
+
+Example:
+
+	go setupEventUpdater()
 */
 func setupEventUpdater() {
 	for {
@@ -118,10 +141,13 @@ func setupEventUpdater() {
 }
 
 /*
-setupCloseHandler enables the trapping of all unexpected system calls and shuts
-down the terminal gracefully. This means all terminal settings should be reset
-back to normal if anything unexpected happens to the user or if the process is
-killed.
+setupCloseHandler is a method which allows you to This method enables the trapping of all unexpected system calls and
+shuts down the terminal gracefully. This means all terminal settings should be reset back to normal if anything
+unexpected happens to the user or if the process is killed.
+
+Example:
+
+	setupCloseHandler()
 */
 func setupCloseHandler() {
 	channel := make(chan os.Signal)
@@ -135,10 +161,13 @@ func setupCloseHandler() {
 }
 
 /*
-RestoreTerminalSettings allows the user to gracefully return the terminal
-back to its normal settings. This should be called once your application
-is finished using consolizer so that the users terminal environment is not
-left in a bad state.
+RestoreTerminalSettings is a method which allows you to This method allows the user to gracefully return the terminal
+back to its normal settings. This should be called once your application is finished using consolizer so that the users
+terminal environment is not left in a bad state.
+
+Example:
+
+	RestoreTerminalSettings()
 */
 func RestoreTerminalSettings() {
 	commonResource.updateDisplayChannel <- true
@@ -156,6 +185,15 @@ func RestoreTerminalSettings() {
 	}
 }
 
+/*
+getOsType is a method which allows you to obtain the type of operating system currently running.
+
+:return: An integer representing the OS type.
+
+Example:
+
+	osType := getOsType()
+*/
 func getOsType() int {
 	os := runtime.GOOS
 	switch os {
@@ -172,44 +210,49 @@ func getOsType() int {
 }
 
 /*
-GetTerminalSize allows you to obtain width and height of the current terminal
-characters.
+GetTerminalSize is a method which allows you to obtain width and height of the current terminal characters.
+
+:return: The width and height of the terminal.
+
+Example:
+
+	width, height := GetTerminalSize()
 */
 func GetTerminalSize() (int, int) {
 	return commonResource.screen.Size()
 }
 
 /*
-Inkey allows you to read keyboard input from the user's terminal. This
-method returns the character pressed or a keyword representing the
-special key pressed (For example: 'a', 'A', 'escape', 'f10', etc.).
-In addition, the following information should be noted:
+Inkey is a method which allows you to read keyboard input from the user's terminal. This method returns the character
+pressed or a keyword representing the special key pressed (for example: 'a', 'A', 'escape', 'f10', etc.). In addition,
+the following should be noted:
 
-- If more than one keystroke is recorded, it is stored sequentially
-in the input buffer and this method needs to be called repeatedly in
-order to read them.
+  - If more than one keystroke is recorded, it is stored sequentially in the input buffer and this method needs to be
+    called repeatedly in order to read them.
+
+:return: A slice of runes representing the keystroke.
+
+Example:
+
+	keystroke := Inkey()
 */
 func Inkey() []rune {
-	return KeyboardMemory.GetKeystrokeFromKeyboardBuffer()
+	return KeyboardMemory.GetFromBuffer()
 }
 
 /*
-Layer allows you to specify a default layer alias that you wish to use when
-interacting with methods which have a non-layer alias method signature.
-Non-layer alias method signatures can be identified by finding methods which
-have both a layer and non-layer version. This makes interacting with methods
-faster, as the user does not need to provide the layer alias context in which
-he is working on. For example:
+Layer is a method which allows you to specify a default layer alias that you wish to use when interacting with methods
+which have a non-layer alias method signature. Non-layer alias method signatures can be identified by finding methods
+which have both a layer and non-layer version. This makes interacting with methods faster, as the user does not need to
+provide the layer alias context in which he is working on. In addition, the following should be noted:
 
-	// On the layer with a layer alias of "MyForegroundLayer" print a string.
-	consolizer.PrintLayer("MyForegroundLayer", "Hello World")
+- The provided layer instance must be valid and exist.
 
-	// Set the default layer alias to be "MyForegroundLayer".
-	consolizer.Layer("MyForegroundLayer")
+:param layerInstance: A pointer to the layer instance to set as default.
 
-	// Since we set the default layer, we don't need to call the method
-	// PrintLayer anymore. Instead, we can use the shorter method Print.
-	consolizer.Print("Hello World")
+Example:
+
+	consolizer.Layer(myLayerInstance)
 */
 func Layer(layerInstance *LayerInstanceType) {
 	validateLayer(layerInstance.layerAlias)
@@ -217,27 +260,34 @@ func Layer(layerInstance *LayerInstanceType) {
 }
 
 /*
-AddTextStyle allows you to add a new printing style which can be used for
-writing dialog text with. Dialog text printing differs from regular
-printing, since it allows for "typewriter" drawing effects as well as
-changing text attributes on the fly (color, isBold, etc). In addition,
-the following information should be noted:
+AddTextStyle is a method which allows you to add a new printing style which can be used for writing dialog text with.
+Dialog text printing differs from regular printing, since it allows for typewriter drawing effects as well as changing
+text attributes on the fly (color, bold, etc). In addition, the following should be noted:
 
-- This method expects you to pass in a 'textStyleEntry' type obtained by
-calling 'consolizer.NewTextStyle()'. This entry type contains all the
-options available for your text style and can be configured easily
-by setting each attribute accordingly.
+- This method expects you to pass in a textStyleEntry type obtained by calling consolizer.NewTextStyle.
+
+:param textStyleAlias: The alias to assign to the text style.
+:param textStyleEntry: The text style entry to add.
+
+Example:
+
+	AddTextStyle("MyStyle", myStyleEntry)
 */
 func AddTextStyle(textStyleAlias string, textStyleEntry types.TextCellStyleEntryType) {
 	TextStyles.Add(textStyleAlias, &textStyleEntry)
 }
 
 /*
-DeleteTextStyle allows you to remove a text style that was added previously.
-In addition, the following information should be noted:
+DeleteTextStyle is a method which allows you to remove a text style that was added previously. In addition, the
+following should be noted:
 
-- If you attempt to delete an entry that does not exist, then no operation
-will be performed.
+- If you attempt to delete an entry that does not exist, then no operation will be performed.
+
+:param textStyleAlias: The alias of the text style to delete.
+
+Example:
+
+	DeleteTextStyle("MyStyle")
 */
 func DeleteTextStyle(textStyleAlias string) {
 	validateTextStyleExists(textStyleAlias)
@@ -245,104 +295,94 @@ func DeleteTextStyle(textStyleAlias string) {
 }
 
 /*
-NewTextStyle allows you to obtain a new text style entry which can be
-used when printing dialog text. By configuring attributes for your text
-style entry and adding your entry to consolizer, simple markup commands can
-be used to switch between dialog printing styles automatically.
-For example:
+NewTextStyle is a constructor which allows you to obtain a new text style entry which can be used when printing dialog
+text. By configuring attributes for your text style entry and adding your entry to consolizer, simple markup commands
+can be used to switch between dialog printing styles automatically.
 
-	// Create a new text style entry to configure.
+:return: A new text cell style entry.
+
+Example:
+
 	myTextStyleEntry := consolizer.NewTextStyle()
-	// Configure your text style so that the foreground color is red.
-	myTextStyleEntry.ForegroundColor = consolizer.GetRGBColor(255, 0, 0)
-	// AddLayer a new text style called "RedColor".
-	consolizer.AddTextStyle("RedColor", myTextStyleEntry)
 */
 func NewTextStyle() types.TextCellStyleEntryType {
 	return types.NewTextCellStyleEntry()
 }
 
+/*
+NewImageStyle is a constructor which allows you to obtain a new image style entry.
+
+:return: A new image style entry.
+
+Example:
+
+	myImageStyle := NewImageStyle()
+*/
 func NewImageStyle() types.ImageStyleEntryType {
 	return types.NewImageStyleEntry()
 }
 
 /*
-NewTuiStyleEntry allows you to obtain a new style entry which can be used
-for specifying how TUI controls and other TUI drawing operations should
-occur. For example:
+NewTuiStyleEntry is a constructor which allows you to obtain a new style entry which can be used for specifying how TUI
+controls and other TUI drawing operations should occur.
 
-	// Create a new TUI style entry to configure.
+:return: A new TUI style entry.
+
+Example:
+
 	myTuiStyleEntry := consolizer.NewTuiStyleEntry()
-	// Configure the style entry so that the upper left corner character
-	// for drawing a window is the '╔' character. Here we use '\u' to
-	// denote the specific byte value in our code since not all editors may
-	// know how to display the actual character.
-	myTuiStyleEntry.UpperLeftCorner = '\u2554'
-	// Draw a window on the text layer with the alias of "ForegroundLayer",
-	// using the TUI style entry "myTuiStyleEntry", at layer location (0, 0),
-	// with a width and height of 10x10 characters.
-	consolizer.DrawWindow("ForegroundLayer", myTuiStyleEntry, 0, 0, 10, 10)
 */
 func NewTuiStyleEntry() types.TuiStyleEntryType {
 	return types.NewTuiStyleEntry()
 }
 
 /*
-NewSelectionEntry allows you to obtain an entry used for specifying what
-options you want to make available for a given menu prompt. For example:
+NewSelectionEntry is a constructor which allows you to obtain an entry used for specifying what options you want to make
+available for a given menu prompt.
 
-	// Create a new TUI style entry with default settings.
-	tuiStyleEntry := consolizer.NewTuiStyleEntry()
-	// Create a new selection entry to populate our menu entries with.
+:return: A new selection entry.
+
+Example:
+
 	selectionEntry := consolizer.NewSelectionEntry()
-	// AddLayer a selection with the alias "Opt1" and a display value of "OK".
-	selectionEntry.AddLayer("Opt1", "OK")
-	// AddLayer a selection with the alias "Opt2" with the display value of "CANCEL".
-	selectionEntry.AddLayer("Opt2", "CANCEL")
-	// Prompt the user with a vertical selection menu, on the text layer
-	// with the alias "ForegroundLayer", using a default TUI style entry,
-	// a selection entry with two options, at the layer location (0, 0),
-	// with a menu width and height of 15x15 characters.
-	selectionMade := consolizer.GetSelectionFromVerticalMenu ("ForegroundLayer", tuiStyleEntry, selectionEntry, 0, 0, 15, 15)
 */
 func NewSelectionEntry() types.SelectionEntryType {
 	return types.NewSelectionEntry()
 }
 
 /*
-NewAssetList allows you to obtain a list for storing asset information with.
-This is useful for loading assets in bulk since you can specify asset
-information as a collection instead of each one individually. An example
-use of this method is as follows:
+NewAssetList is a constructor which allows you to obtain a list for storing asset information with. This is useful for
+loading assets in bulk since you can specify asset information as a collection instead of each one individually. In
+addition, the following should be noted:
 
-	// Create a new asset list.
+- An asset list can contain multiple asset types.
+
+:return: A new asset list type.
+
+Example:
+
 	assetList := consolizer.NewAssetList()
-	// AddLayer an image file with the image filename 'MyImageFile', and image
-	// alias of 'MyImageAlias'.
-	assetList.AddImage("MyImageFile", "MyImageAlias")
-	// Load the list of images into memory.
-	err := loadImagesInBulk(assetList)
-
-In addition, the following information should be noted:
-
-- An asset list can contain multiple asset types. This allows the same
-asset list to be shared by multiple methods that load different kinds of
-assets.
 */
 func NewAssetList() types.AssetListType {
 	return types.NewAssetList()
 }
 
 /*
-SetLayerZOrder allows you to set the zOrder value for a given layer. In
-addition, the following information should be noted:
+SetLayerZOrder is a method which allows you to set the z-order value for a given layer. In addition, the following
+should be noted:
 
-- The z order priority controls which text layer should be drawn first and
-which text layer should be drawn last. Layers that have a higher priority
-will be drawn on top of layers that have a lower priority. In the event
-that two layers have the same priority, they will be drawn in random order.
-This is to ensure that programmers do not attempt to rely on any specific
-behavior that might be a coincidental side effect.
+- The z-order priority controls which text layer should be drawn first and which text layer should be drawn last.
+
+- Layers that have a higher priority will be drawn on top of layers that have a lower priority.
+
+- In the event that two layers have the same priority, they will be drawn in random order.
+
+:param layerInstance: A pointer to the layer instance.
+:param zOrder: The z-order value to set.
+
+Example:
+
+	SetLayerZOrder(myLayer, 10)
 */
 func SetLayerZOrder(layerInstance *LayerInstanceType, zOrder int) {
 	layerEntry := Layers.Get(layerInstance.layerAlias)
@@ -350,56 +390,87 @@ func SetLayerZOrder(layerInstance *LayerInstanceType, zOrder int) {
 }
 
 /*
-SetZOrder allows you to set the zOrder value for default currently selected
-layer. In addition, the following information should be noted:
+SetZOrder is a method which allows you to set the z-order value for the default currently selected layer. In addition,
+the following should be noted:
 
-- The z order priority controls which text layer should be drawn first and
-which text layer should be drawn last. Layers that have a higher priority
-will be drawn on top of layers that have a lower priority. In the event
-that two layers have the same priority, they will be drawn in random order.
-This is to ensure that programmers do not attempt to rely on any specific
-behavior that might be a coincidental side effect.
+- The z-order priority controls which text layer should be drawn first and which text layer should be drawn last.
+
+- Layers that have a higher priority will be drawn on top of layers that have a lower priority.
+
+:param zOrder: The z-order value to set.
+
+Example:
+
+	SetZOrder(10)
 */
 func SetZOrder(zOrder int) {
 	SetLayerZOrder(commonResource.layerInstance, zOrder)
 }
 
 /*
-SetLayerAlpha allows you to set the alpha value for a given text layer. This lets
-you perform pseudo transparencies by making the layer foreground and background
-colors blend with the layers underneath it to the degree specified. In
-addition, the following information should be noted:
+SetLayerAlpha is a method which allows you to set the alpha value for a given text layer. This lets you perform pseudo
+transparencies by making the layer foreground and background colors blend with the layers underneath it to the degree
+specified. In addition, the following should be noted:
 
-- An alpha value of 1.0 is equal to 100% visible, while an alpha value of
-0.0 is 0% visible. Specifying a value outside this range indicates that
-you want to over amplify or under amplify the color transparency effect.
+- An alpha value of 1.0 is equal to 100% visible, while an alpha value of 0.0 is 0% visible.
 
-- If the percent change specified is outside of the RGB color range (for
-example, if you specified 200%), then the color will simply bottom or max
-out at RGB(0, 0, 0) or RGB(255, 255, 255) respectively.
+- If the percent change specified is outside of the RGB color range, then the color will simply bottom or max out.
+
+:param layerInstance: A pointer to the layer instance.
+:param alphaValue: The alpha value to set.
+
+Example:
+
+	SetLayerAlpha(myLayer, 0.5)
 */
 func SetLayerAlpha(layerInstance *LayerInstanceType, alphaValue float32) {
 	setLayerAlpha(layerInstance, alphaValue)
 }
 
+/*
+setLayerAlpha is a method which allows you to This method is an internal method that sets the alpha value for a given
+layer instance.
+
+:param layerInstance: A pointer to the layer instance.
+:param alphaValue: The alpha value to set.
+
+Example:
+
+	setLayerAlpha(myLayer, 0.5)
+*/
 func setLayerAlpha(layerInstance *LayerInstanceType, alphaValue float32) {
 	layerEntry := Layers.Get(layerInstance.layerAlias)
 	layerEntry.DefaultAttribute.ForegroundAlphaValue = alphaValue
 	layerEntry.DefaultAttribute.BackgroundAlphaValue = alphaValue
 }
 
+/*
+SetLayer is a method which allows you to set the alpha value for the default currently selected layer.
+
+:param alphaValue: The alpha value to set.
+
+Example:
+
+	SetLayer(0.5)
+*/
 func SetLayer(alphaValue float32) {
 	setLayerAlpha(commonResource.layerInstance, alphaValue)
 }
 
 /*
-GetColor allows you to obtain an RGB color from a predefined color palette
-list. This list corresponds to the 16 color ANSI standard, where color
-0 is Black and 15 is Bright White.  In addition, the following information
-should be noted:
+GetColor is a method which allows you to obtain an RGB color from a predefined color palette list. This list corresponds
+to the 16 color ANSI standard, where color 0 is Black and 15 is Bright White. In addition, the following should be
+noted:
 
-- If you specify a color index less than 0 or greater than 15 a panic
-will be generated to fail as fast as possible.
+- If you specify a color index less than 0 or greater than 15 a panic will be generated to fail as fast as possible.
+
+:param colorIndex: The index of the color in the ANSI palette.
+
+:return: The color type corresponding to the index.
+
+Example:
+
+	color := GetColor(1)
 */
 func GetColor(colorIndex int) constants.ColorType {
 	validateColorIndex(colorIndex)
@@ -407,11 +478,21 @@ func GetColor(colorIndex int) constants.ColorType {
 }
 
 /*
-GetRGBColor allows you to obtain a specific RGB color based on the red, green, and
-blue index values provided. In addition, the following information should be noted:
+GetRGBColor is a method which allows you to obtain a specific RGB color based on the red, green, and blue index values
+provided. In addition, the following should be noted:
 
-- If you specify a color channel index less than 0 or greater than 255 a panic
-will be generated to fail as fast as possible.
+  - If you specify a color channel index less than 0 or greater than 255 a panic will be generated to fail as fast as
+    possible.
+
+:param redColorIndex: The red channel value (0-255).
+:param greenColorIndex: The green channel value (0-255).
+:param blueColorIndex: The blue channel value (0-255).
+
+:return: The resulting color type.
+
+Example:
+
+	color := GetRGBColor(255, 128, 0)
 */
 func GetRGBColor(redColorIndex int32, greenColorIndex int32, blueColorIndex int32) constants.ColorType {
 	validateRGBColorIndex(redColorIndex, greenColorIndex, blueColorIndex)
@@ -419,11 +500,16 @@ func GetRGBColor(redColorIndex int32, greenColorIndex int32, blueColorIndex int3
 }
 
 /*
-Color allows you to set default colors on your text layer for printing with.
-The color index specified corresponds to the 16 color ANSI standard, where
-color 0 is Black and 15 is Bright White. If you wish to change colors settings
-for a text layer that is not currently set as your default, use 'ColorLayer'
-instead.
+Color is a method which allows you to set default colors on your text layer for printing with. The color index specified
+corresponds to the 16 color ANSI standard, where color 0 is Black and 15 is Bright White. If you wish to change colors
+settings for a text layer that is not currently set as your default, use ColorLayer instead.
+
+:param foregroundColorIndex: The ANSI index for the foreground color.
+:param backgroundColorIndex: The ANSI index for the background color.
+
+Example:
+
+	Color(15, 0)
 */
 func Color(foregroundColorIndex int, backgroundColorIndex int) {
 	validateDefaultLayerIsNotEmpty()
@@ -431,11 +517,16 @@ func Color(foregroundColorIndex int, backgroundColorIndex int) {
 }
 
 /*
-ColorLayer allows you to set default colors on your specified text layer for
-printing with. The color index specified corresponds to the 16 color ANSI
-standard, where color 0 is Black and 15 is Bright White. If you do not wish
-to specify a text layer, you can use the method 'Color' which will simply
-change the color for the default text layer previously set.
+ColorLayer is a method which allows you to set default colors on your specified text layer for printing with. The color
+index specified corresponds to the 16 color ANSI standard, where color 0 is Black and 15 is Bright White.
+
+:param layerInstance: A pointer to the layer instance.
+:param foregroundColorIndex: The ANSI index for the foreground color.
+:param backgroundColorIndex: The ANSI index for the background color.
+
+Example:
+
+	ColorLayer(myLayer, 15, 0)
 */
 func ColorLayer(layerInstance *LayerInstanceType, foregroundColorIndex int, backgroundColorIndex int) {
 	validateColorIndex(foregroundColorIndex)
@@ -446,10 +537,19 @@ func ColorLayer(layerInstance *LayerInstanceType, foregroundColorIndex int, back
 }
 
 /*
-ColorRGB allows you to set default colors on your text layer for printing with.
-This method allows you to specify colors using RGB color index values within
-the range of 0 to 255. If you wish to change colors settings for a text layer
-that is not currently set as your default, use 'ColorLayerRGB' instead.
+ColorRGB is a method which allows you to set default colors on your text layer for printing with using RGB values. This
+method allows you to specify colors using RGB color index values within the range of 0 to 255.
+
+:param foregroundRedIndex: Red channel for foreground.
+:param foregroundGreenIndex: Green channel for foreground.
+:param foregroundBlueIndex: Blue channel for foreground.
+:param backgroundRedIndex: Red channel for background.
+:param backgroundGreenIndex: Green channel for background.
+:param backgroundBlueIndex: Blue channel for background.
+
+Example:
+
+	ColorRGB(255, 255, 255, 0, 0, 0)
 */
 func ColorRGB(foregroundRedIndex int32, foregroundGreenIndex int32, foregroundBlueIndex int32, backgroundRedIndex int32, backgroundGreenIndex int32, backgroundBlueIndex int32) {
 	validateDefaultLayerIsNotEmpty()
@@ -457,11 +557,20 @@ func ColorRGB(foregroundRedIndex int32, foregroundGreenIndex int32, foregroundBl
 }
 
 /*
-ColorLayerRGB allows you to set default colors on your specified text layer
-for printing with. This method allows you to specify colors using RGB color
-index values within the range of 0 to 255. If you do not wish to specify a
-text layer, you can use the method 'ColorRGB' which will simply change the
-color for the default text layer previously set.
+ColorLayerRGB is a method which allows you to set default colors on your specified text layer for printing with using
+RGB values. This method allows you to specify colors using RGB color index values within the range of 0 to 255.
+
+:param layerInstance: A pointer to the layer instance.
+:param foregroundRed: Red channel for foreground.
+:param foregroundGreen: Green channel for foreground.
+:param foregroundBlue: Blue channel for foreground.
+:param backgroundRed: Red channel for background.
+:param backgroundGreen: Green channel for background.
+:param backgroundBlue: Blue channel for background.
+
+Example:
+
+	ColorLayerRGB(myLayer, 255, 255, 255, 0, 0, 0)
 */
 func ColorLayerRGB(layerInstance *LayerInstanceType, foregroundRed int32, foregroundGreen int32, foregroundBlue int32, backgroundRed int32, backgroundGreen int32, backgroundBlue int32) {
 	foregroundColor := GetRGBColor(foregroundRed, foregroundGreen, foregroundBlue)
@@ -470,18 +579,29 @@ func ColorLayerRGB(layerInstance *LayerInstanceType, foregroundRed int32, foregr
 }
 
 /*
-Color24Bit allows you to color a layer using a 24-bit color expressed as
-an int32. This is useful for when you have colors which are already defined.
-*/
+Color24Bit is a method which allows you to color the default layer using a 24-bit color expressed as an int32.
 
+:param foregroundColor: The 24-bit foreground color.
+:param backgroundColor: The 24-bit background color.
+
+Example:
+
+	Color24Bit(fgColor, bgColor)
+*/
 func Color24Bit(foregroundColor constants.ColorType, backgroundColor constants.ColorType) {
 	ColorLayer24Bit(commonResource.layerInstance, foregroundColor, backgroundColor)
 }
 
 /*
-ColorLayer24Bit allows you to color a layer using a 24-bit color expressed as
-an int32. This is useful for internal methods that already have a 24-bit color
-and do not require to compute it again.
+ColorLayer24Bit is a method which allows you to color a specified layer using a 24-bit color expressed as an int32.
+
+:param layerInstance: A pointer to the layer instance.
+:param foregroundColor: The 24-bit foreground color.
+:param backgroundColor: The 24-bit background color.
+
+Example:
+
+	ColorLayer24Bit(myLayer, fgColor, bgColor)
 */
 func ColorLayer24Bit(layerInstance *LayerInstanceType, foregroundColor constants.ColorType, backgroundColor constants.ColorType) {
 	layerEntry := Layers.Get(layerInstance.layerAlias)
@@ -490,29 +610,20 @@ func ColorLayer24Bit(layerInstance *LayerInstanceType, foregroundColor constants
 }
 
 /*
-Locate allows you to set the default cursor location on your specified text
-layer for printing with. This is useful for when you wish to print text
-at different locations of your text layer at any given time. If you wish to
-change the cursor location for a text layer that is not currently set as your
-default, use 'LocateLayer' instead. In addition, the following information
-should be noted:
+Locate is a method which allows you to set the default cursor location on your specified text layer for printing with.
+In addition, the following should be noted:
 
-- If you pass in a location value that falls outside the dimensions of the
-default text layer, a panic will be generated to fail as fast as possible.
+  - If you pass in a location value that falls outside the dimensions of the default text layer, a panic will be
+    generated.
 
 - Valid text layer locations start at position (0,0) for the upper left corner.
-Since location values do not start at (1,1), valid end positions for the bottom
-right corner will be one less than the text layer width and height. For
-example:
 
-	// Create a new text layer with the alias "ForegroundLayer", at location
-	// (0,0), with a width and height of 15x15, a z order priority of 1,
-	// and no parent layer associated with it.
-	consolizer.AddLayer("ForegroundLayer", 0, 0, 15, 15, 1, "")
-	// Set the text layer with the alias "ForegroundLayer" as our default.
-	consolizer.Layer("ForegroundLayer")
-	// Move our cursor location to the bottom right corner of our text layer.
-	consolizer.Locate(14, 14)
+:param xLocation: The x-axis location for the cursor.
+:param yLocation: The y-axis location for the cursor.
+
+Example:
+
+	Locate(10, 5)
 */
 func Locate(xLocation int, yLocation int) {
 	validateDefaultLayerIsNotEmpty()
@@ -520,27 +631,19 @@ func Locate(xLocation int, yLocation int) {
 }
 
 /*
-LocateLayer allows you to set the default cursor location on your specified text
-layer for printing with. This is useful for when you wish to print text
-at different locations of your text layer at any given time. If you do not
-wish to specify a text layer, you can use the method 'Locate' which will
-simply change the cursor location for the default text layer previously set.
-In addition, the following information should be noted:
+LocateLayer is a method which allows you to set the default cursor location on your specified text layer for printing
+with. In addition, the following should be noted:
 
-- If you pass in a location value that falls outside the dimensions of the
-specified text layer, a panic will be generated to fail as fast as possible.
+  - If you pass in a location value that falls outside the dimensions of the specified text layer, a panic will be
+    generated.
 
-- Valid text layer locations start at position (0,0) for the upper left corner.
-Since location values do not start at (1,1), valid end positions for the bottom
-right corner will be one less than the text layer width and height. For
-example:
+:param layerInstance: A pointer to the layer instance.
+:param xLocation: The x-axis location for the cursor.
+:param yLocation: The y-axis location for the cursor.
 
-	// Create a new text layer with the alias "ForegroundLayer", at location
-	// (0,0), with a width and height of 15x15, a z order priority of 1,
-	// and no parent layer associated with it.
-	consolizer.AddLayer("ForegroundLayer", 0, 0, 15, 15, 1, "")
-	// Move our cursor location to the bottom right corner of our text layer.
-	consolizer.LocateLayer(14, 14)
+Example:
+
+	LocateLayer(myLayer, 10, 5)
 */
 func LocateLayer(layerInstance *LayerInstanceType, xLocation int, yLocation int) {
 	validateLayer(layerInstance.layerAlias)
@@ -551,19 +654,19 @@ func LocateLayer(layerInstance *LayerInstanceType, xLocation int, yLocation int)
 }
 
 /*
-Print allows you to write text to the default text layer. If you wish to
-print to a text layer that is not currently set as the default, use
-'PrintLayer' instead. In addition, the following information should be noted:
+Print is a method which allows you to write text to the default text layer. In addition, the following should be noted:
 
-- When text is written to the text layer, the cursor position is also updated
-to reflect its new location. Like a typewriter, the cursor position moves to
-the start of the next line after each print statement.
+- When text is written to the text layer, the cursor position is also updated to reflect its new location.
 
-- If the string to print ends up being too long to fit at its current location,
-then only the visible portion of your string will be printed.
+- If the string to print ends up being too long to fit at its current location, then only the visible portion of your.
 
-- If printing has not yet finished and there are no available lines left, then
-all remaining characters will be discarded and printing will stop.
+- If printing has not yet finished and there are no available lines left, then all remaining characters will be.
+
+:param textToPrint: The string of text to print.
+
+Example:
+
+	Print("Hello World")
 */
 func Print(textToPrint string) {
 	validateDefaultLayerIsNotEmpty()
@@ -571,20 +674,19 @@ func Print(textToPrint string) {
 }
 
 /*
-PrintLayer allows you to write text to a specified text layer. If you do not
-wish to specify a text layer, you can use the method 'Print' which will
-simply print to the default text layer previously set. In addition, the
-following information should be noted:
+PrintLayer is a method which allows you to write text to a specified text layer. In addition, the following should be
+noted:
 
-- When text is written to the text layer, the cursor position is also updated
-to reflect its new location. Like a typewriter, the cursor position moves to
-the start of the next line after each print statement.
+- When text is written to the text layer, the cursor position is also updated to reflect its new location.
 
-- If the string to print ends up being too long to fit at its current location,
-then only the visible portion of your string will be printed.
+- If the string to print ends up being too long to fit at its current location, then only the visible portion of your.
 
-- If printing has not yet finished and there are no available lines left, then
-all remaining characters will be discarded and printing will stop.
+:param layerInstance: A pointer to the layer instance.
+:param textToPrint: The string of text to print.
+
+Example:
+
+	PrintLayer(myLayer, "Hello World")
 */
 func PrintLayer(layerInstance *LayerInstanceType, textToPrint string) {
 	layerEntry := Layers.Get(layerInstance.layerAlias)
@@ -599,13 +701,23 @@ func PrintLayer(layerInstance *LayerInstanceType, textToPrint string) {
 }
 
 /*
-printLayer allows you to write text to a text layer. This is useful
-for internal methods that want to write text to a text layer directly, without
-effecting user settings (such as current cursor location, etc). In addition,
-the following information should be noted:
+printLayer is a method which allows you to write text to a text layer directly. This is useful for internal methods that
+want to write text to a text layer directly, without affecting user settings. In addition, the following should be
+noted:
 
-- If the location to print falls outside the range of the text layer,
-then only the visible portion of your text will be printed.
+- If the location to print falls outside the range of the text layer, then only the visible portion of your text will.
+
+:param layerEntry: A pointer to the layer entry.
+:param attributeEntry: The attribute entry for the text.
+:param xLocation: The x-axis location.
+:param yLocation: The y-axis location.
+:param textToPrint: A slice of runes to print.
+
+:return: The final x-axis location after printing.
+
+Example:
+
+	printLayer(layerEntry, attr, 0, 0, runes)
 */
 func printLayer(layerEntry *types.LayerEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, textToPrint []rune) int {
 	layerWidth := layerEntry.Width
@@ -639,9 +751,11 @@ func printLayer(layerEntry *types.LayerEntryType, attributeEntry types.Attribute
 }
 
 /*
-Clear allows you to empty the default text layer of all its contents. If you
-wish to clear a text layer that is not currently set as the default, use
-'ClearLayer' instead.
+Clear is a method which allows you to empty the default text layer of all its contents.
+
+Example:
+
+	Clear()
 */
 func Clear() {
 	validateDefaultLayerIsNotEmpty()
@@ -649,13 +763,31 @@ func Clear() {
 }
 
 /*
-clearLayer allows you to empty the specified text layer of all its contents.
-This is useful for internal methods that want to clear a text layer directly.
+clear is a method which allows you to empty the specified text layer of all its contents.
+
+:param layerEntry: A pointer to the layer entry to clear.
+
+Example:
+
+	clearLayer(layerEntry)
 */
 func clearLayer(layerEntry *types.LayerEntryType) {
 	types.InitializeCharacterMemory(layerEntry)
 }
 
+/*
+GetCharacterOnScreen is a method which allows you to obtain the character currently being displayed on the screen at a
+specific location.
+
+:param xLocation: The x-axis location.
+:param yLocation: The y-axis location.
+
+:return: The rune at the specified location.
+
+Example:
+
+	char := GetCharacterOnScreen(10, 5)
+*/
 func GetCharacterOnScreen(xLocation int, yLocation int) rune {
 	layerEntry := commonResource.screenLayer
 	validateLayerLocationByLayerEntry(&layerEntry, xLocation, yLocation)
@@ -663,10 +795,20 @@ func GetCharacterOnScreen(xLocation int, yLocation int) rune {
 }
 
 /*
-scrollCharacterMemory allows you to advance the specified text layer up by one
-row. This means that the first row is discarded and all subsequent rows are
-moved up by one position. The new row created at the bottom of the text layer
-will be filled with spaces (" ") colored with the layers default attributes.
+scrollCharacterMemory is a method which allows you to advance the specified text layer up by one row. In addition, the
+following should be noted:
+
+- The first row is discarded and all subsequent rows are moved up by one position.
+
+- The new row created at the bottom of the text layer will be filled with spaces.
+
+:param layerEntry: A pointer to the layer entry to scroll.
+
+:return: The updated character memory.
+
+Example:
+
+	scrollCharacterMemory(layerEntry)
 */
 func scrollCharacterMemory(layerEntry *types.LayerEntryType) [][]types.CharacterEntryType {
 	layerWidth := layerEntry.Width
@@ -685,12 +827,20 @@ func scrollCharacterMemory(layerEntry *types.LayerEntryType) [][]types.Character
 }
 
 /*
-getRuneOnLayer allows you to obtain a specific rune at the location specified
-on the given text layer. In addition, the following information should be
-noted:
+getRuneOnLayer is a method which allows you to obtain a specific rune at the location specified on the given text layer.
+In addition, the following should be noted:
 
-- If the location specified is outside the valid range of the text layer, then
-a panic will be thrown to fail as fast as possible.
+- If the location specified is outside the valid range, 0 is returned.
+
+:param layerEntry: A pointer to the layer entry.
+:param xLocation: The x-axis location.
+:param yLocation: The y-axis location.
+
+:return: The rune at the specified location.
+
+Example:
+
+	char := getRuneOnLayer(layerEntry, 10, 5)
 */
 func getRuneOnLayer(layerEntry *types.LayerEntryType, xLocation int, yLocation int) rune {
 	// validateLayerLocationByLayerEntry(layerEntry, xLocation, yLocation)
@@ -705,18 +855,18 @@ func getRuneOnLayer(layerEntry *types.LayerEntryType, xLocation int, yLocation i
 }
 
 /*
-GetCellIdUnderMouseLocation allows you to obtain the cell ID for the text
-directly under your mouse cursor. This is useful for tracking
-elements on a screen, creating "hot spots", or interactive zones which you
-want the user to interact with. In addition, the following information should be
-noted:
+GetCellIdUnderMouseLocation is a method which allows you to obtain the cell ID for the text directly under your mouse
+cursor. In addition, the following should be noted:
 
-- If multiple text layers are being displayed, the cell ID returned will be
-from the top-most visible text cell.
+- If multiple text layers are being displayed, the cell ID returned will be from the top-most visible text cell.
 
-- The cell ID returned will only reflect what is currently being displayed
-on the terminal display. If you wish for any new changes to take effect,
-call 'UpdateDisplay' to refresh the visible display area first.
+- The cell ID returned will only reflect what is currently being displayed on the terminal display.
+
+:return: The cell ID under the mouse cursor.
+
+Example:
+
+	cellId := GetCellIdUnderMouseLocation()
 */
 func GetCellIdUnderMouseLocation() int {
 	mouseXLocation, mouseYLocation, _, _ := GetMouseStatus()
@@ -724,9 +874,17 @@ func GetCellIdUnderMouseLocation() int {
 }
 
 /*
-getCellIdByLayerAlias allows you to obtain a cell ID from a given text layer
-by layer alias. This is simply a wrapper method that converts the text
-layer alias into a layer entry and calls 'getCellIdByLayerEntry'.
+getCellIdByLayerAlias is a method which allows you to obtain a cell ID from a given text layer by layer alias.
+
+:param layerAlias: The alias of the layer.
+:param mouseXLocation: The x-axis location.
+:param mouseYLocation: The y-axis location.
+
+:return: The cell ID at the specified location.
+
+Example:
+
+	cellId := getCellIdByLayerAlias("MyLayer", 10, 5)
 */
 func getCellIdByLayerAlias(layerAlias string, mouseXLocation int, mouseYLocation int) int {
 	validateLayer(layerAlias)
@@ -735,11 +893,20 @@ func getCellIdByLayerAlias(layerAlias string, mouseXLocation int, mouseYLocation
 }
 
 /*
-getCellIdByLayerEntry allows you to obtain a cell ID from a given text layer
-by layer entry. In addition, the following information should be noted:
+getCellIdByLayerEntry is a method which allows you to obtain a cell ID from a given text layer by layer entry. In
+addition, the following should be noted:
 
-- If the location specified is outside the valid range of the text layer, then
-a value of '-1' is returned instead.
+- If the location specified is outside the valid range of the text layer, then a value of -1 is returned.
+
+:param layerEntry: A pointer to the layer entry.
+:param xLocation: The x-axis location.
+:param yLocation: The y-axis location.
+
+:return: The cell ID at the specified location.
+
+Example:
+
+	cellId := getCellIdByLayerEntry(layerEntry, 10, 5)
 */
 func getCellIdByLayerEntry(layerEntry *types.LayerEntryType, xLocation int, yLocation int) int {
 	returnValue := -1
@@ -755,14 +922,18 @@ func getCellIdByLayerEntry(layerEntry *types.LayerEntryType, xLocation int, yLoc
 }
 
 /*
-UpdateDisplay allows you to synchronize the terminals visible display area with
-your current changes. In addition, the following information should be noted:
+UpdateDisplay is a method which allows you to synchronize the terminal's visible display area with your current changes.
+In addition, the following should be noted:
 
-- All text layers are sorted from lowest to highest z order priority level.
+- All text layers are sorted from lowest to highest z-order priority level.
 
-- Layers with the same z order priority will appear in random display order.
-This is to ensure that programmers do not attempt to rely on any specific
-behavior that might be a coincidental side effect.
+- Layers with the same z-order priority will appear in random display order.
+
+:param isRefreshForced: Whether to force a full refresh of the screen.
+
+Example:
+
+	UpdateDisplay(false)
 */
 func UpdateDisplay(isRefreshForced bool) {
 	commonResource.displayUpdate.Lock()
@@ -772,35 +943,38 @@ func UpdateDisplay(isRefreshForced bool) {
 	sortedLayerAliasSlice := layer.GetSortedLayerMemoryAliasSlice()
 	baseLayerEntry := types.NewLayerEntry("", "", commonResource.terminalWidth, commonResource.terminalHeight)
 	baseLayerEntry = renderLayers(&baseLayerEntry, sortedLayerAliasSlice)
-	Tooltip.renderAllTooltips(baseLayerEntry)
+	Tooltip.renderAll(baseLayerEntry)
 	DrawLayerToScreen(&baseLayerEntry, isRefreshForced)
 	commonResource.screenLayer = baseLayerEntry
 }
 
+/*
+RefreshDisplay is a method which allows you to sync the terminal screen.
+
+Example:
+
+	RefreshDisplay()
+*/
 func RefreshDisplay() {
 	commonResource.screen.Sync()
 }
 
 /*
-renderLayers allows you to render a list of text layers to the specified root
-text layer. In addition, the following information should be noted:
+renderLayers is a method which allows you to render a list of text layers to the specified root text layer. In addition,
+the following should be noted:
 
-- The root layer entry is considered the parent entry. Only text layers under
-the specified parent will be rendered on it.
-
-- If a text layer being rendered is a parent, then all child text layers will
-be rendered on the parent before the parent is drawn. This is done by making
-a recursive call to 'renderLayers' with the new parent layer.
-
-- The list of text layers alias provided should be sorted so that layers with
-a lower z order priority are rendered first.
+- If a text layer being rendered is a parent, then all child text layers will be rendered recursively.
 
 - Any text layer which is marked as not visible will be ignored.
 
-- All rendering occurs on a temporary text layer until it is ready to be
-overlaid on the final (terminal ready) text layer. Button and other special
-TUI controls are also dynamically rendered at this time so that the original
-text layer data underneath them is preserved.
+:param rootLayerEntry: A pointer to the root layer entry.
+:param sortedLayerAliasSlice: A list of layer aliases sorted by z-order.
+
+:return: The rendered root layer entry.
+
+Example:
+
+	renderLayers(&rootLayer, aliases)
 */
 func renderLayers(rootLayerEntry *types.LayerEntryType, sortedLayerAliasSlice LayerAliasZOrderPairList) types.LayerEntryType {
 	baseLayerEntry := types.NewLayerEntry("", "", 0, 0, rootLayerEntry)
@@ -830,35 +1004,47 @@ func renderLayers(rootLayerEntry *types.LayerEntryType, sortedLayerAliasSlice La
 }
 
 /*
-renderControls allows you to draw various control elements on the specified layer.
-The order of drawing matters, as complex controls are drawn first above basic controls
-to ensure that any pop-up controls appear over complex controls.
+renderControls is a method which allows you to draw various control elements on the specified layer. The order of
+drawing matters, as complex controls are drawn first above basic controls. In addition, the following should be noted:
 
-Note: Tooltip hotspot zones must be drawn before FileMenu to prevent them from
-capturing clicks intended for file menu headings.
+- Tooltip hotspot zones must be drawn before FileMenu to prevent them from capturing clicks intended for file menu.
+
+:param currentLayerEntry: The layer entry to render controls for.
+
+Example:
+
+	renderControls(layerEntry)
 */
 func renderControls(currentLayerEntry types.LayerEntryType) {
-	Button.drawButtonsOnLayer(currentLayerEntry)
-	TextField.drawTextFieldOnLayer(currentLayerEntry)
-	Checkbox.drawCheckboxesOnLayer(currentLayerEntry)
-	radioButton.drawRadioButtonsOnLayer(currentLayerEntry)
-	ProgressBar.drawProgressBarsOnLayer(currentLayerEntry)
-	Label.drawLabelsOnLayer(currentLayerEntry)
-	scrollbar.drawScrollbarsOnLayer(currentLayerEntry)
+	Button.drawOnLayer(currentLayerEntry)
+	TextField.drawOnLayer(currentLayerEntry)
+	Checkbox.drawOnLayer(currentLayerEntry)
+	radioButton.drawOnLayer(currentLayerEntry)
+	ProgressBar.drawOnLayer(currentLayerEntry)
+	Label.drawOnLayer(currentLayerEntry)
+	scrollbar.drawOnLayer(currentLayerEntry)
 
-	textbox.drawTextboxesOnLayer(currentLayerEntry)
-	Tooltip.drawTooltipHotspotZonesOnLayer(currentLayerEntry)
-	viewport.drawViewportsOnLayer(currentLayerEntry)
-	FileMenu.drawFileMenusOnLayer(currentLayerEntry) // File menu must appear before selector or selectors won't render when menu is open.
-	Dropdown.drawDropdownsOnLayer(currentLayerEntry) // Dropdowns must come before selectors, or it won't show on top.
+	textbox.drawOnLayer(currentLayerEntry)
+	Tooltip.drawHotspotZonesOnLayer(currentLayerEntry)
+	viewport.drawOnLayer(currentLayerEntry)
+	FileMenu.drawOnLayer(currentLayerEntry) // File menu must appear before selector or selectors won't render when menu is open.
+	Dropdown.drawOnLayer(currentLayerEntry) // Dropdowns must come before selectors, or it won't show on top.
 	Selector.drawSelectorsOnLayer(currentLayerEntry)
 
 }
 
 /*
-overlayLayersByLayerAlias allows you to overlay a text layer by its layer
-alias. This is useful when you do not have actual layer data and only
-know the alias of the layer you wish to overlay.
+overlayLayersByLayerAlias is a method which allows you to overlay a text layer by its layer alias. In addition, the
+following should be noted:
+
+- This is useful when you do not have actual layer data and only know the alias.
+
+:param sourceLayerAlias: The alias of the source layer.
+:param targetLayerEntry: A pointer to the target layer entry.
+
+Example:
+
+	overlayLayersByLayerAlias("SrcLayer", &targetLayer)
 */
 func overlayLayersByLayerAlias(sourceLayerAlias string, targetLayerEntry *types.LayerEntryType) {
 	validateLayer(sourceLayerAlias)
@@ -867,11 +1053,21 @@ func overlayLayersByLayerAlias(sourceLayerAlias string, targetLayerEntry *types.
 }
 
 /*
-copyCharacterMemory allows you to copy a portion of a source character memory to a target character memory.
-In addition, the following information should be noted:
+copyCharacterMemory is a method which allows you to copy a portion of a source character memory to a target character
+memory. In addition, the following should be noted:
 
 - If the source character memory to be drawn is outside the target, then only the visible portion will be rendered.
-- If the source character memory is found to be completely outside the range of the target, then no rendering will occur.
+
+:param sourceCharacterMemory: The source memory to copy from.
+:param targetCharacterMemory: The target memory to copy to.
+:param xLocation: The x-axis location in the target.
+:param yLocation: The y-axis location in the target.
+:param width: The width to copy.
+:param height: The height to copy.
+
+Example:
+
+	copyCharacterMemory(srcMem, targetMem, 0, 0, 10, 10)
 */
 func copyCharacterMemory(sourceCharacterMemory [][]types.CharacterEntryType, targetCharacterMemory [][]types.CharacterEntryType, xLocation, yLocation, width, height int) {
 	sourceHeight := len(sourceCharacterMemory)
@@ -908,21 +1104,20 @@ func copyCharacterMemory(sourceCharacterMemory [][]types.CharacterEntryType, tar
 }
 
 /*
-overlayLayers allows you to overlay one text layer on top of another text
-layer. In addition, the following information should be noted:
+overlayLayers is a method which allows you to overlay one text layer on top of another text layer. In addition, the
+following should be noted:
 
-- If the source text layer is set to be drawn outside the target layer,
-then only the visible portion of the source text layer will be rendered.
+- If the source rune to be drawn is null, then it will be considered transparent.
 
-- If the source text layer is found to be completely outside the range
-of the target layer, then no rendering will occur.
+- If a transparent rune has a foreground or background alpha value set, then it will be drawn as a shadow.
 
-- If the source rune to be drawn is null, then it will be considered
-transparent.
+:param sourceLayerEntry: A pointer to the source layer entry.
+:param targetLayerEntry: A pointer to the target layer entry.
+:param isOpaque: Whether the source layer should be treated as opaque.
 
-- If a transparent rune has a foreground or background alpha value set,
-then it will be drawn as a shadow with the color and intensity matching
-the rune underneath it.
+Example:
+
+	overlayLayers(&srcLayer, &targetLayer, false)
 */
 func overlayLayers(sourceLayerEntry *types.LayerEntryType, targetLayerEntry *types.LayerEntryType, isOpaque bool) {
 	// 1. Simplified Clipping Logic (Integer Math)
@@ -1055,9 +1250,17 @@ func overlayLayers(sourceLayerEntry *types.LayerEntryType, targetLayerEntry *typ
 }
 
 /*
-DrawLayerToScreen allows you to render a text layer to the visible terminal
-screen. If debug is enabled, this method does nothing since the terminal
-is virtual.
+DrawLayerToScreen is a method which allows you to render a text layer to the visible terminal screen. In addition, the
+following should be noted:
+
+- If debug is enabled, this method does nothing since the terminal is virtual.
+
+:param layerEntry: A pointer to the layer entry to draw.
+:param isForcedRefreshRequired: Whether to force a full refresh of the screen.
+
+Example:
+
+	DrawLayerToScreen(layerEntry, false)
 */
 func DrawLayerToScreen(layerEntry *types.LayerEntryType, isForcedRefreshRequired bool) {
 	if !commonResource.isDebugEnabled {
@@ -1085,6 +1288,15 @@ func DrawLayerToScreen(layerEntry *types.LayerEntryType, isForcedRefreshRequired
 	}
 }
 
+/*
+GetOs is a method which allows you to obtain the name of the operating system currently running.
+
+:return: A string representing the OS.
+
+Example:
+
+	osName := GetOs()
+*/
 func GetOs() string {
 	switch runtime.GOOS {
 	case "windows":

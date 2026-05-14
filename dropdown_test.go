@@ -8,6 +8,14 @@ import (
 	"testing"
 )
 
+/*
+TestDropdownDefaultState is a test which allows you to verify that a dropdown control is rendered correctly with its
+default state.
+
+Example:
+
+	TestDropdownDefaultState(test)
+*/
 func TestDropdownDefaultState(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	selectionEntry := types.NewSelectionEntry()
@@ -26,6 +34,14 @@ func TestDropdownDefaultState(test *testing.T) {
 	}
 }
 
+/*
+TestDropdownWithDefaultSelection is a test which allows you to verify that a dropdown control correctly displays a pre-
+selected item upon initialization.
+
+Example:
+
+	TestDropdownWithDefaultSelection(test)
+*/
 func TestDropdownWithDefaultSelection(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	selectionEntry := types.NewSelectionEntry()
@@ -54,6 +70,14 @@ func TestDropdownWithDefaultSelection(test *testing.T) {
 	}
 }
 
+/*
+TestDropdownOpenState is a test which allows you to verify that a dropdown tray and its selector are correctly displayed
+when the dropdown is opened.
+
+Example:
+
+	TestDropdownOpenState(test)
+*/
 func TestDropdownOpenState(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	selectionEntry := types.NewSelectionEntry()
@@ -84,6 +108,14 @@ func TestDropdownOpenState(test *testing.T) {
 	}
 }
 
+/*
+TestDropdownChangeSelection is a test which allows you to verify that selecting a new item from an open dropdown tray
+correctly updates the dropdown's value.
+
+Example:
+
+	TestDropdownChangeSelection(test)
+*/
 func TestDropdownChangeSelection(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	selectionEntry := types.NewSelectionEntry()
@@ -127,6 +159,14 @@ func TestDropdownChangeSelection(test *testing.T) {
 	}
 }
 
+/*
+TestDropdownWithManyItems is a test which allows you to verify that a dropdown correctly handles a large number of
+items, including the rendering of a scrollbar when the tray is opened.
+
+Example:
+
+	TestDropdownWithManyItems(test)
+*/
 func TestDropdownWithManyItems(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	selectionEntry := types.NewSelectionEntry()
@@ -161,6 +201,14 @@ func TestDropdownWithManyItems(test *testing.T) {
 	}
 }
 
+/*
+TestDropdownScrolling is a test which allows you to verify that a dropdown tray correctly scrolls its items when a
+scrollbar interaction occurs.
+
+Example:
+
+	TestDropdownScrolling(test)
+*/
 func TestDropdownScrolling(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	selectionEntry := types.NewSelectionEntry()
@@ -199,6 +247,14 @@ func TestDropdownScrolling(test *testing.T) {
 	}
 }
 
+/*
+TestDropdownDelete is a test which allows you to verify that a dropdown control can be successfully deleted from its
+parent layer.
+
+Example:
+
+	TestDropdownDelete(test)
+*/
 func TestDropdownDelete(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	selectionEntry := types.NewSelectionEntry()
@@ -222,6 +278,14 @@ func TestDropdownDelete(test *testing.T) {
 	}
 }
 
+/*
+TestDropdownDeleteAll is a test which allows you to verify that all dropdown controls on a layer can be successfully
+deleted at once.
+
+Example:
+
+	TestDropdownDeleteAll(test)
+*/
 func TestDropdownDeleteAll(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	selectionEntry := types.NewSelectionEntry()
@@ -232,7 +296,7 @@ func TestDropdownDeleteAll(test *testing.T) {
 	UpdateDisplay(false)
 
 	// Delete all dropdowns
-	Dropdown.DeleteAllDropdowns(layer1.layerAlias)
+	Dropdown.DeleteAll(layer1.layerAlias)
 
 	UpdateDisplay(false)
 	layerEntry := commonResource.screenLayer
@@ -246,6 +310,14 @@ func TestDropdownDeleteAll(test *testing.T) {
 	}
 }
 
+/*
+TestDropdownFocus is a test which allows you to verify that a dropdown control correctly handles gaining focus and
+renders accordingly.
+
+Example:
+
+	TestDropdownFocus(test)
+*/
 func TestDropdownFocus(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	selectionEntry := types.NewSelectionEntry()
