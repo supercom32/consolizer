@@ -427,28 +427,29 @@ func TestLayerGlobalMethods(t *testing.T) {
 	layer.ReInitializeScreenMemory()
 	// Test AddLayer
 	layerInstance := AddLayer(0, 0, 10, 10, 1, nil)
-	if !isLayerExists(layerInstance.layerAlias) {
+	layerAlias := layerInstance.layerAlias
+	if !isLayerExists(layerAlias) {
 		t.Error("Layer should exist after AddLayer")
 	}
 
-	// Test MoveLayerByAbsoluteValue
-	MoveLayerByAbsoluteValue(layerInstance.layerAlias, 5, 5)
-	layerEntry := Layers.Get(layerInstance.layerAlias)
+	// Test layerInstance.MoveLayerByAbsoluteValue
+	layerInstance.MoveLayerByAbsoluteValue(5, 5)
+	layerEntry := Layers.Get(layerAlias)
 	if layerEntry.ScreenXLocation != 5 || layerEntry.ScreenYLocation != 5 {
 		t.Error("Layer should be moved to absolute position (5,5)")
 	}
 
-	// Test MoveLayerByRelativeValue
-	MoveLayerByRelativeValue(layerInstance.layerAlias, 1, 1)
-	layerEntry = Layers.Get(layerInstance.layerAlias)
+	// Test layerInstance.MoveLayerByRelativeValue
+	layerInstance.MoveLayerByRelativeValue(1, 1)
+	layerEntry = Layers.Get(layerAlias)
 	if layerEntry.ScreenXLocation != 6 || layerEntry.ScreenYLocation != 6 {
 		t.Error("Layer should be moved by relative position (1,1)")
 	}
 
-	// Test DeleteLayer
-	DeleteLayer(layerInstance)
-	if isLayerExists(layerInstance.layerAlias) {
-		t.Error("Layer should not exist after DeleteLayer")
+	// Test layerInstance.Delete()
+	layerInstance.Delete()
+	if isLayerExists(layerAlias) {
+		t.Error("Layer should not exist after Delete()")
 	}
 
 	// Test DeleteAllLayers

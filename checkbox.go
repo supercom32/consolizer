@@ -18,40 +18,6 @@ var Checkbox checkboxType
 var Checkboxes = memory.NewControlMemoryManager[types.CheckboxEntryType]()
 
 /*
-Delete is a method which allows you to remove a checkbox from a text layer.
-
-:param layerAlias: The alias of the layer the checkbox is on.
-:param checkboxAlias: The alias of the checkbox to remove.
-
-Example:
-
-	DeleteCheckbox("layer1", "cb1")
-*/
-func DeleteCheckbox(layerAlias string, checkboxAlias string) {
-	// Use ControlMemoryManager to remove the checkbox entry
-	Checkboxes.Remove(layerAlias, checkboxAlias)
-}
-
-/*
-DeleteAllCheckboxesFromLayer is a method which allows you to delete all checkboxes on a given text layer.
-
-:param layerAlias: The alias of the layer to remove all checkboxes from.
-
-Example:
-
-	DeleteAllCheckboxesFromLayer("layer1")
-*/
-func DeleteAllCheckboxesFromLayer(layerAlias string) {
-	// GetLayer all checkbox entries from the layer
-	checkboxes := Checkboxes.GetAllEntries(layerAlias)
-
-	// Loop through all entries and delete them
-	for _, checkbox := range checkboxes {
-		Checkboxes.Remove(layerAlias, checkbox.Label) // Assuming checkbox.Label is used as the alias
-	}
-}
-
-/*
 Delete is a method which allows you to remove a checkbox instance from its memory manager.
 
 :return: A nil pointer of type CheckboxInstanceType.

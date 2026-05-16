@@ -31,17 +31,7 @@ func init() {
 	layer.ReInitializeScreenMemory()
 }
 
-/*
-ClearLayer is a method which allows you to empty the specified text layer of all its contents. If you do not wish to
-specify a text layer, you can use the method 'Clear' which will simply clear the default text layer previously set.
-
-:param layerInstance: A pointer to the layer instance that you wish to clear.
-
-Example:
-
-	ClearLayer(layerInstance)
-*/
-func ClearLayer(layerInstance *LayerInstanceType) {
+func clearLayerInstance(layerInstance *LayerInstanceType) {
 	layerEntry := Layers.Get(layerInstance.layerAlias)
 	layer.clear(layerEntry)
 }
@@ -573,6 +563,7 @@ func (shared *layerType) Delete(layerAlias string) {
 	Textboxes.RemoveAll(layerAlias)
 	TextFields.RemoveAll(layerAlias)
 	Tooltips.RemoveAll(layerAlias)
+	Viewports.RemoveAll(layerAlias)
 	// Remove the layer itself
 	Layers.Remove(layerAlias)
 
@@ -1187,7 +1178,7 @@ Example:
 */
 func (shared *LayerInstanceType) AddViewport(styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, height int, isLinesWrapped bool, isBorderDrawn bool, maxHistoryLines int) ViewportInstanceType {
 	viewportAlias := getUUID()
-	viewportInstance := AddViewport(shared.layerAlias, viewportAlias, styleEntry, xLocation, yLocation, width, height, isLinesWrapped, isBorderDrawn, maxHistoryLines)
+	viewportInstance := viewport.Add(shared.layerAlias, viewportAlias, styleEntry, xLocation, yLocation, width, height, isLinesWrapped, isBorderDrawn, maxHistoryLines)
 	return viewportInstance
 }
 
@@ -1219,6 +1210,266 @@ func (shared *LayerInstanceType) AddFileMenu(styleEntry types.TuiStyleEntryType,
 	menuAlias := getUUID()
 	fileMenuInstance := FileMenu.Add(shared.layerAlias, menuAlias, styleEntry, menuHeadings, menuSelections, xLocation, yLocation, isEnabled)
 	return fileMenuInstance
+}
+
+/*
+DeleteAllButtons is a method which allows you to remove all buttons from the current layer.
+
+Example:
+
+	layerInstance.DeleteAllButtons()
+*/
+func (shared *LayerInstanceType) DeleteAllButtons() {
+	Buttons.RemoveAll(shared.layerAlias)
+}
+
+/*
+DeleteAllCheckboxes is a method which allows you to remove all checkboxes from the current layer.
+
+Example:
+
+	layerInstance.DeleteAllCheckboxes()
+*/
+func (shared *LayerInstanceType) DeleteAllCheckboxes() {
+	Checkboxes.RemoveAll(shared.layerAlias)
+}
+
+/*
+DeleteAllDropdowns is a method which allows you to remove all dropdowns from the current layer.
+
+Example:
+
+	layerInstance.DeleteAllDropdowns()
+*/
+func (shared *LayerInstanceType) DeleteAllDropdowns() {
+	Dropdowns.RemoveAll(shared.layerAlias)
+}
+
+/*
+DeleteAllLabels is a method which allows you to remove all labels from the current layer.
+
+Example:
+
+	layerInstance.DeleteAllLabels()
+*/
+func (shared *LayerInstanceType) DeleteAllLabels() {
+	Labels.RemoveAll(shared.layerAlias)
+}
+
+/*
+DeleteAllProgressBars is a method which allows you to remove all progress bars from the current layer.
+
+Example:
+
+	layerInstance.DeleteAllProgressBars()
+*/
+func (shared *LayerInstanceType) DeleteAllProgressBars() {
+	ProgressBars.RemoveAll(shared.layerAlias)
+}
+
+/*
+DeleteAllRadioButtons is a method which allows you to remove all radio buttons from the current layer.
+
+Example:
+
+	layerInstance.DeleteAllRadioButtons()
+*/
+func (shared *LayerInstanceType) DeleteAllRadioButtons() {
+	RadioButtons.RemoveAll(shared.layerAlias)
+}
+
+/*
+DeleteAllScrollbars is a method which allows you to remove all scroll bars from the current layer.
+
+Example:
+
+	layerInstance.DeleteAllScrollbars()
+*/
+func (shared *LayerInstanceType) DeleteAllScrollbars() {
+	ScrollBars.RemoveAll(shared.layerAlias)
+}
+
+/*
+DeleteAllSelectors is a method which allows you to remove all selectors from the current layer.
+
+Example:
+
+	layerInstance.DeleteAllSelectors()
+*/
+func (shared *LayerInstanceType) DeleteAllSelectors() {
+	Selectors.RemoveAll(shared.layerAlias)
+}
+
+/*
+DeleteAllTextFields is a method which allows you to remove all text fields from the current layer.
+
+Example:
+
+	layerInstance.DeleteAllTextFields()
+*/
+func (shared *LayerInstanceType) DeleteAllTextFields() {
+	TextFields.RemoveAll(shared.layerAlias)
+}
+
+/*
+DeleteAllTextboxes is a method which allows you to remove all textboxes from the current layer.
+
+Example:
+
+	layerInstance.DeleteAllTextboxes()
+*/
+func (shared *LayerInstanceType) DeleteAllTextboxes() {
+	Textboxes.RemoveAll(shared.layerAlias)
+}
+
+/*
+DeleteAllTooltips is a method which allows you to remove all tooltips from the current layer.
+
+Example:
+
+	layerInstance.DeleteAllTooltips()
+*/
+func (shared *LayerInstanceType) DeleteAllTooltips() {
+	Tooltips.RemoveAll(shared.layerAlias)
+}
+
+/*
+DeleteAllViewports is a method which allows you to remove all viewports from the current layer.
+
+Example:
+
+	layerInstance.DeleteAllViewports()
+*/
+func (shared *LayerInstanceType) DeleteAllViewports() {
+	Viewports.RemoveAll(shared.layerAlias)
+}
+
+/*
+DeleteAllFileMenus is a method which allows you to remove all file menus from the current layer.
+
+Example:
+
+	layerInstance.DeleteAllFileMenus()
+*/
+func (shared *LayerInstanceType) DeleteAllFileMenus() {
+	FileMenus.RemoveAll(shared.layerAlias)
+}
+
+/*
+Print is a method which allows you to write text to the current layer. In addition, the following should be noted:
+
+- When text is written to the text layer, the cursor position is also updated to reflect its new location.
+
+- If the string to print ends up being too long to fit at its current location, then only the visible portion of your.
+
+:param textToPrint: The string of text to print.
+
+Example:
+
+	layerInstance.Print("Hello World")
+*/
+func (shared *LayerInstanceType) Print(textToPrint string) {
+	printLayerInstance(shared, textToPrint)
+}
+
+/*
+Locate is a method which allows you to set the default cursor location on your text layer for printing with. In
+addition, the following should be noted:
+
+  - If you pass in a location value that falls outside the dimensions of the default text layer, a panic will be
+    generated.
+
+- Valid text layer locations start at position (0,0) for the upper left corner.
+
+:param xLocation: The x-axis location for the cursor.
+:param yLocation: The y-axis location for the cursor.
+
+Example:
+
+	layerInstance.Locate(10, 5)
+*/
+func (shared *LayerInstanceType) Locate(xLocation int, yLocation int) {
+	locateLayerInstance(shared, xLocation, yLocation)
+}
+
+/*
+Color is a method which allows you to set default colors on your text layer for printing with. The color index specified
+corresponds to the 16 color ANSI standard, where color 0 is Black and 15 is Bright White.
+
+:param foregroundColorIndex: The ANSI index for the foreground color.
+:param backgroundColorIndex: The ANSI index for the background color.
+
+Example:
+
+	layerInstance.Color(15, 0)
+*/
+func (shared *LayerInstanceType) Color(foregroundColorIndex int, backgroundColorIndex int) {
+	colorLayerInstance(shared, foregroundColorIndex, backgroundColorIndex)
+}
+
+/*
+ColorRGB is a method which allows you to set default colors on your text layer for printing with using RGB values. This
+method allows you to specify colors using RGB color index values within the range of 0 to 255.
+
+:param foregroundRedIndex: Red channel for foreground.
+:param foregroundGreenIndex: Green channel for foreground.
+:param foregroundBlueIndex: Blue channel for foreground.
+:param backgroundRedIndex: Red channel for background.
+:param backgroundGreenIndex: Green channel for background.
+:param backgroundBlueIndex: Blue channel for background.
+
+Example:
+
+	layerInstance.ColorRGB(255, 255, 255, 0, 0, 0)
+*/
+func (shared *LayerInstanceType) ColorRGB(foregroundRedIndex int32, foregroundGreenIndex int32, foregroundBlueIndex int32, backgroundRedIndex int32, backgroundGreenIndex int32, backgroundBlueIndex int32) {
+	colorLayerRGBInstance(shared, foregroundRedIndex, foregroundGreenIndex, foregroundBlueIndex, backgroundRedIndex, backgroundGreenIndex, backgroundBlueIndex)
+}
+
+/*
+Color24Bit is a method which allows you to color the current layer using a 24-bit color expressed as an int32.
+
+:param foregroundColor: The 24-bit foreground color.
+:param backgroundColor: The 24-bit background color.
+
+Example:
+
+	layerInstance.Color24Bit(fgColor, bgColor)
+*/
+func (shared *LayerInstanceType) Color24Bit(foregroundColor constants.ColorType, backgroundColor constants.ColorType) {
+	colorLayer24BitInstance(shared, foregroundColor, backgroundColor)
+}
+
+/*
+SetAlpha is a method which allows you to set the alpha value for the current layer. This lets you perform pseudo
+transparencies by making the layer foreground and background colors blend with the layers underneath it to the degree
+specified. In addition, the following should be noted:
+
+- An alpha value of 1.0 is equal to 100% visible, while an alpha value of 0.0 is 0% visible.
+
+- If the percent change specified is outside of the RGB color range, then the color will simply bottom or max out.
+
+:param alphaValue: The alpha value to set.
+
+Example:
+
+	layerInstance.SetAlpha(0.5)
+*/
+func (shared *LayerInstanceType) SetAlpha(alphaValue float32) {
+	setLayerAlphaInstance(shared, alphaValue)
+}
+
+/*
+SetZOrder is a method which allows you to set the z-order priority for the current layer.
+
+:param zOrder: The z-order value to set.
+
+Example:
+
+	layerInstance.SetZOrder(10)
+*/
+func (shared *LayerInstanceType) SetZOrder(zOrder int) {
+	setLayerZOrderInstance(shared, zOrder)
 }
 
 /*
@@ -1467,10 +1718,7 @@ Example:
 	layerInstance.MoveLayerByAbsoluteValue(10, 5)
 */
 func (shared *LayerInstanceType) MoveLayerByAbsoluteValue(xLocation int, yLocation int) {
-	validateLayer(shared.layerAlias)
-	layerEntry := Layers.Get(shared.layerAlias)
-	layerEntry.ScreenXLocation = xLocation
-	layerEntry.ScreenYLocation = yLocation
+	moveLayerByAbsoluteValue(shared.layerAlias, xLocation, yLocation)
 }
 
 /*
@@ -1489,10 +1737,7 @@ Example:
 	layerInstance.MoveLayerByRelativeValue(-1, 2)
 */
 func (shared *LayerInstanceType) MoveLayerByRelativeValue(xLocation int, yLocation int) {
-	validateLayer(shared.layerAlias)
-	layerEntry := Layers.Get(shared.layerAlias)
-	layerEntry.ScreenXLocation += xLocation
-	layerEntry.ScreenYLocation += yLocation
+	moveLayerByRelativeValue(shared.layerAlias, xLocation, yLocation)
 }
 
 /*
@@ -1581,77 +1826,6 @@ GetSize is a method which allows you to retrieve the current width and height of
 :return: The width and height of the layer.
 
 Example:
-
-	w, h := layerInstance.GetSize()
-*/
-func (shared *LayerInstanceType) GetSize() (int, int) {
-	validateLayer(shared.layerAlias)
-	layerEntry := Layers.Get(shared.layerAlias)
-	return layerEntry.Width, layerEntry.Height
-}
-
-/*
-SetZOrder is a method which allows you to set the z-order of the current layer. The z-order determines the rendering
-priority of layers, with higher values being rendered on top of lower values.
-
-:param zOrder: The new z-order value for the layer.
-
-Example:
-
-	layerInstance.SetZOrder(10)
-*/
-func (shared *LayerInstanceType) SetZOrder(zOrder int) {
-	validateLayer(shared.layerAlias)
-	layerEntry := Layers.Get(shared.layerAlias)
-	layerEntry.ZOrder = zOrder
-}
-
-/*
-GetZOrder is a method which allows you to retrieve the current z-order of the layer. The z-order determines the
-rendering priority of layers.
-
-:return: The current z-order value.
-
-Example:
-
-	z := layerInstance.GetZOrder()
-*/
-func (shared *LayerInstanceType) GetZOrder() int {
-	validateLayer(shared.layerAlias)
-	layerEntry := Layers.Get(shared.layerAlias)
-	return layerEntry.ZOrder
-}
-
-/*
-SetAlpha is a method which allows you to set the alpha value for a given text layer. This lets you perform pseudo
-transparencies by making the layer foreground and background colors blend with the layers underneath it to the degree
-specified. In addition, the following should be noted:
-
-  - An alpha value of 1.0 is equal to 100% visible, while an alpha value of 0.0 is 0% visible. Specifying a value outside
-    this range indicates that you want to over amplify or under amplify the color transparency effect.
-
-  - If the percent change specified is outside of the RGB color range (for example, if you specified 200%), then the color
-    will simply bottom or max out at RGB(0, 0, 0) or RGB(255, 255, 255) respectively.
-
-:param alphaValue: The alpha value to apply to the layer.
-
-Example:
-
-	layerInstance.SetAlpha(0.5)
-*/
-func (shared *LayerInstanceType) SetAlpha(alphaValue float32) {
-	validateLayer(shared.layerAlias)
-	layerEntry := Layers.Get(shared.layerAlias)
-	layerEntry.DefaultAttribute.ForegroundAlphaValue = alphaValue
-	layerEntry.DefaultAttribute.BackgroundAlphaValue = alphaValue
-}
-
-/*
-GetAlpha is a method which allows you to retrieve the alpha value for a given text layer. This value represents the
-layer's transparency level.
-
-:return: The current alpha value of the layer.
-
 Example:
 
 	alpha := layerInstance.GetAlpha()
@@ -1757,75 +1931,7 @@ Example:
 	layerInstance.ColorStyle(myStyle)
 */
 func (shared *LayerInstanceType) ColorStyle(styleEntry types.TuiStyleEntryType) {
-	shared.colorLayer(*shared, styleEntry.Text.ForegroundColor, styleEntry.Text.BackgroundColor)
-}
-
-/*
-Color is a method which allows you to set default colors on your text layer for printing with. The color index specified
-corresponds to the 16 color ANSI standard, where color 0 is Black and 15 is Bright White.
-
-:param foregroundColorIndex: The ANSI color index for the foreground.
-:param backgroundColorIndex: The ANSI color index for the background.
-
-Example:
-
-	layerInstance.Color(15, 0)
-*/
-func (shared *LayerInstanceType) Color(foregroundColorIndex int, backgroundColorIndex int) {
-	validateColorIndex(foregroundColorIndex)
-	validateColorIndex(backgroundColorIndex)
-	shared.colorLayer(*shared, constants.AnsiColorByIndex[foregroundColorIndex], constants.AnsiColorByIndex[backgroundColorIndex])
-}
-
-/*
-colorLayer is a method which allows you to set default colors on your specified text layer for printing with.
-
-:param layerInstance: The layer instance to apply the colors to.
-:param foregroundColor: The color type for the foreground.
-:param backgroundColor: The color type for the background.
-
-Example:
-
-	shared.colorLayer(instance, fgColor, bgColor)
-*/
-func (shared *LayerInstanceType) colorLayer(layerInstance LayerInstanceType, foregroundColor constants.ColorType, backgroundColor constants.ColorType) {
-	layerEntry := Layers.Get(layerInstance.layerAlias)
-	layerEntry.DefaultAttribute.ForegroundColor = foregroundColor
-	layerEntry.DefaultAttribute.BackgroundColor = backgroundColor
-}
-
-/*
-ColorRGB is a method which allows you to set default colors on your text layer for printing with. This method allows you
-to specify colors using RGB color index values within the range of 0 to 255.
-
-:param foregroundRedIndex: The red component of the foreground color.
-:param foregroundGreenIndex: The green component of the foreground color.
-:param foregroundBlueIndex: The blue component of the foreground color.
-:param backgroundRedIndex: The red component of the background color.
-:param backgroundGreenIndex: The green component of the background color.
-:param backgroundBlueIndex: The blue component of the background color.
-
-Example:
-
-	layerInstance.ColorRGB(255, 0, 0, 0, 0, 0)
-*/
-func (shared *LayerInstanceType) ColorRGB(foregroundRedIndex int32, foregroundGreenIndex int32, foregroundBlueIndex int32, backgroundRedIndex int32, backgroundGreenIndex int32, backgroundBlueIndex int32) {
-	shared.colorLayer(*shared, GetRGBColor(foregroundRedIndex, foregroundGreenIndex, foregroundBlueIndex), GetRGBColor(backgroundRedIndex, backgroundGreenIndex, backgroundBlueIndex))
-}
-
-/*
-Color24Bit is a method which allows you to color a layer using a 24-bit color expressed as an int32. This is useful for
-when you have colors which are already defined.
-
-:param foregroundColor: The 24-bit color for the foreground.
-:param backgroundColor: The 24-bit color for the background.
-
-Example:
-
-	layerInstance.Color24Bit(0xFF0000, 0x000000)
-*/
-func (shared *LayerInstanceType) Color24Bit(foregroundColor constants.ColorType, backgroundColor constants.ColorType) {
-	shared.colorLayer(*shared, foregroundColor, backgroundColor)
+	colorLayerInstance(shared, int(styleEntry.Text.ForegroundColor), int(styleEntry.Text.BackgroundColor))
 }
 
 /*
@@ -1864,108 +1970,6 @@ func (shared *LayerInstanceType) Resize(width int, height int) {
 	layerEntry.Width = width
 	layerEntry.Height = height
 	layerEntry.CharacterMemory = newCharacterMemory
-}
-
-/*
-Locate is a method which allows you to set the default cursor location on your specified text layer for printing with.
-This is useful for when you wish to print text at different locations of your text layer at any given time. In addition,
-the following should be noted:
-
-  - If you pass in a location value that falls outside the dimensions of the default text layer, a panic will be generated
-    to fail as fast as possible.
-
-- Valid text layer locations start at position (0,0) for the upper left corner.
-
-:param xLocation: The X-coordinate for the cursor position.
-:param yLocation: The Y-coordinate for the cursor position.
-
-Example:
-
-	layerInstance.Locate(10, 10)
-*/
-func (shared *LayerInstanceType) Locate(xLocation int, yLocation int) {
-	validateDefaultLayerIsNotEmpty()
-	LocateLayer(shared, xLocation, yLocation)
-}
-
-/*
-printLayer is a method which allows you to write text to a text layer. This is useful for internal methods that want to
-write text to a text layer directly, without affecting user settings (such as current cursor location, etc). In
-addition, the following should be noted:
-
-  - If the location to print falls outside the range of the text layer, then only the visible portion of your text will be
-    printed.
-
-:param layerEntry: A pointer to the layer entry structure where text will be printed.
-:param attributeEntry: The attribute entry containing styling information.
-:param xLocation: The starting X coordinate for the text.
-:param yLocation: The starting Y coordinate for the text.
-:param textToPrint: A slice of runes representing the text to print.
-
-:return: The final cursor X position relative to the starting position.
-
-Example:
-
-	finalX := layerInstance.printLayer(layerEntry, attr, 0, 0, rune("Hello"))
-*/
-func (shared *LayerInstanceType) printLayer(layerEntry *types.LayerEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, textToPrint []rune) int {
-	layerWidth := layerEntry.Width
-	layerHeight := layerEntry.Height
-	cursorXLocation := xLocation
-	cursorYLocation := yLocation
-	characterMemory := layerEntry.CharacterMemory
-	for _, currentCharacter := range textToPrint {
-		if cursorXLocation >= 0 && cursorXLocation < layerWidth && cursorYLocation >= 0 && cursorYLocation < layerHeight {
-			originalBackgroundColor := characterMemory[cursorYLocation][cursorXLocation].AttributeEntry.BackgroundColor
-			characterMemory[cursorYLocation][cursorXLocation].AttributeEntry = types.NewAttributeEntry(&attributeEntry)
-			characterMemory[cursorYLocation][cursorXLocation].Character = currentCharacter
-			if stringformat.IsRuneCharacterWide(currentCharacter) {
-				cursorXLocation++
-				if cursorXLocation >= layerWidth {
-					return cursorXLocation - xLocation
-				}
-				characterMemory[cursorYLocation][cursorXLocation].AttributeEntry = types.NewAttributeEntry(&attributeEntry)
-				characterMemory[cursorYLocation][cursorXLocation].Character = ' '
-			}
-			if characterMemory[cursorYLocation][cursorXLocation].AttributeEntry.IsBackgroundTransparent {
-				characterMemory[cursorYLocation][cursorXLocation].AttributeEntry.BackgroundColor = originalBackgroundColor
-			}
-		}
-		cursorXLocation++
-		if cursorXLocation >= layerWidth {
-			return cursorXLocation - xLocation
-		}
-	}
-	return cursorXLocation - xLocation
-}
-
-/*
-Print is a method which allows you to write text to the default text layer. In addition, the following should be noted:
-
-- When text is written to the text layer, the cursor position is also updated to reflect its new location. Like a.
-
-- If the string to print ends up being too long to fit at its current location, then only the visible portion of your.
-
-- If printing has not yet finished and there are no available lines left, then all remaining characters will be.
-
-:param textToPrint: The string content to print to the layer.
-
-Example:
-
-	layerInstance.Print("Hello World")
-*/
-func (shared *LayerInstanceType) Print(textToPrint string) {
-	validateDefaultLayerIsNotEmpty()
-	formattedTextToPrint := fmt.Sprint(textToPrint)
-	layerEntry := Layers.Get(shared.layerAlias)
-	if layerEntry.CursorYLocation >= layerEntry.Height {
-		layerEntry.CursorYLocation = layerEntry.Height - 1
-		layerEntry.CharacterMemory = scrollCharacterMemory(layerEntry)
-	}
-	arrayOfRunes := stringformat.GetRunesFromString(formattedTextToPrint)
-	shared.printLayer(layerEntry, layerEntry.DefaultAttribute, layerEntry.CursorXLocation, layerEntry.CursorYLocation, arrayOfRunes)
-	layerEntry.CursorXLocation = 0
-	layerEntry.CursorYLocation = layerEntry.CursorYLocation + 1
 }
 
 /*
@@ -2142,59 +2146,11 @@ func AddLayer(xLocation int, yLocation int, width int, height int, zOrderPriorit
 	}
 	layer.Add(layerAlias, xLocation, yLocation, width, height, zOrderPriority, parentAlias)
 	layerInstance := LayerInstanceType{layerAlias: layerAlias, parentAlias: parentAlias}
-	commonResource.layerInstance = &layerInstance
 	return &layerInstance
 }
 
 /*
 MoveLayerByAbsoluteValue is a method which allows you to move a text layer by an absolute value. This is useful if you
-know exactly what position you wish to move your text layer to. In addition, the following should be noted:
-
-  - If you move your layer outside the visible terminal display, only the visible display area will be rendered.
-    Likewise,.
-
-:param layerAlias: The alias of the layer to move.
-:param xLocation: The new absolute X-coordinate for the layer.
-:param yLocation: The new absolute Y-coordinate for the layer.
-
-Example:
-
-	MoveLayerByAbsoluteValue("myLayer", 10, 5)
-*/
-func MoveLayerByAbsoluteValue(layerAlias string, xLocation int, yLocation int) {
-	validateLayer(layerAlias)
-	layerEntry := Layers.Get(layerAlias)
-	layerEntry.ScreenXLocation = xLocation
-	layerEntry.ScreenYLocation = yLocation
-}
-
-/*
-MoveLayerByRelativeValue is a method which allows you to move a text layer by a relative value. This is useful for
-windows, foregrounds, backgrounds, or any kind of animations or movement you may wish to do in increments. In addition,
-the following should be noted:
-
-  - If you move your layer outside the visible terminal display, only the visible display area will be rendered. Likewise,
-    if your text layer is a child of a parent layer, then only the visible display area will be rendered on the parent.
-
-:param layerAlias: The alias of the layer to move.
-:param xLocation: The relative X-coordinate offset.
-:param yLocation: The relative Y-coordinate offset.
-
-Example:
-
-	MoveLayerByRelativeValue("myLayer", -1, 2)
-*/
-func MoveLayerByRelativeValue(layerAlias string, xLocation int, yLocation int) {
-	validateLayer(layerAlias)
-	layerEntry := Layers.Get(layerAlias)
-	layerEntry.ScreenXLocation += xLocation
-	layerEntry.ScreenYLocation += yLocation
-}
-
-/*
-deleteLayer is a method which allows you to remove a text layer. In addition, the following should be noted:
-
-- When a text layer is deleted, all child text layers are recursively deleted as well.
 
 - If any dynamically drawn TUI controls reference the deleted layer, they will still be present but no longer rendered.
 
@@ -2212,32 +2168,20 @@ Example:
 func deleteLayer(layerAlias string) {
 	validateLayer(layerAlias)
 	layer.Delete(layerAlias)
-	if commonResource.layerInstance.layerAlias == layerAlias {
-		nextLayerAlias := layer.GetNextAlias()
-		// If last entry and no more layers, just return. Do not set anything.
-		if nextLayerAlias == "" {
-			commonResource.layerInstance = &LayerInstanceType{layerAlias: "", parentAlias: ""}
-			return
-		}
-		nextLayerInstance := Layers.Get(nextLayerAlias)
-		commonResource.layerInstance = &LayerInstanceType{layerAlias: nextLayerAlias, parentAlias: nextLayerInstance.ParentAlias}
-	}
 }
 
-/*
-Delete is a method which allows you to remove a text layer instance from the system.
+func moveLayerByAbsoluteValue(layerAlias string, xLocation int, yLocation int) {
+	validateLayer(layerAlias)
+	layerEntry := Layers.Get(layerAlias)
+	layerEntry.ScreenXLocation = xLocation
+	layerEntry.ScreenYLocation = yLocation
+}
 
-:param layerInstance: A pointer to the layer instance to be deleted.
-
-:return: A nil pointer of type LayerInstanceType.
-
-Example:
-
-	layerInstance = DeleteLayer(layerInstance)
-*/
-func DeleteLayer(layerInstance *LayerInstanceType) *LayerInstanceType {
-	deleteLayer(layerInstance.layerAlias)
-	return nil
+func moveLayerByRelativeValue(layerAlias string, xLocation int, yLocation int) {
+	validateLayer(layerAlias)
+	layerEntry := Layers.Get(layerAlias)
+	layerEntry.ScreenXLocation += xLocation
+	layerEntry.ScreenYLocation += yLocation
 }
 
 /*

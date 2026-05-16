@@ -24,30 +24,6 @@ var viewport viewportType
 var Viewports = memory.NewControlMemoryManager[types.ViewportEntryType]()
 
 /*
-Add is a method which allows you to create a new viewport control and add it to the specified layer.
-
-:param layerAlias: The alias of the layer to add the viewport to.
-:param viewportAlias: The unique alias for the new viewport.
-:param styleEntry: The TUI style entry defining the viewport's appearance.
-:param xLocation: The X coordinate for the top-left corner of the viewport.
-:param yLocation: The Y coordinate for the top-left corner of the viewport.
-:param width: The width of the viewport.
-:param height: The height of the viewport.
-:param isLinesWrapped: Specifies if text lines should be automatically wrapped.
-:param isBorderDrawn: Specifies if a border should be drawn around the viewport.
-:param maxHistoryLines: The maximum number of lines to keep in the viewport's history.
-
-:return: A ViewportInstanceType representing the newly created viewport.
-
-Example:
-
-	vp := AddViewport("main", "myVP", style, 0, 0, 40, 10, true, true, 100)
-*/
-func AddViewport(layerAlias string, viewportAlias string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, height int, isLinesWrapped bool, isBorderDrawn bool, maxHistoryLines int) ViewportInstanceType {
-	return viewport.Add(layerAlias, viewportAlias, styleEntry, xLocation, yLocation, width, height, isLinesWrapped, isBorderDrawn, maxHistoryLines)
-}
-
-/*
 GetViewport is a method which allows you to retrieve a viewport entry by its layer and viewport alias.
 
 :param layerAlias: The alias of the layer the viewport belongs to.
@@ -77,38 +53,6 @@ Example:
 */
 func IsViewportExists(layerAlias string, viewportAlias string) bool {
 	return Viewports.IsExists(layerAlias, viewportAlias)
-}
-
-/*
-Delete is a method which allows you to remove a viewport from the specified layer.
-
-:param layerAlias: The alias of the layer the viewport belongs to.
-:param viewportAlias: The alias of the viewport to delete.
-
-Example:
-
-	DeleteViewport("main", "myVP")
-*/
-func DeleteViewport(layerAlias string, viewportAlias string) {
-	viewport.Delete(layerAlias, viewportAlias)
-}
-
-/*
-DeleteAll is a method which allows you to remove all viewports from the specified layer.
-
-:param layerAlias: The alias of the layer to clear viewports from.
-
-Example:
-
-	DeleteAllViewports("main")
-*/
-func DeleteAllViewports(layerAlias string) {
-	// Get all entries for the layer
-	entries := Viewports.GetAllEntries(layerAlias)
-	// Remove each entry
-	for _, entry := range entries {
-		Viewports.Remove(layerAlias, entry.Alias)
-	}
 }
 
 /*
@@ -770,7 +714,7 @@ Add is a method which allows you to add a new viewport to the specified layer.
 
 Example:
 
-	vp := viewport.AddViewport("main", "myVP", style, 0, 0, 40, 10, true, true, 100)
+	vp := viewport.Add("main", "myVP", style, 0, 0, 40, 10, true, true, 100)
 */
 func (shared *viewportType) Add(layerAlias string, viewportAlias string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, height int, isLinesWrapped bool, isBorderDrawn bool, maxHistoryLines int) ViewportInstanceType {
 	var viewportInstance ViewportInstanceType

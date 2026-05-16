@@ -23,48 +23,6 @@ var textbox textboxType
 var Textboxes = memory.NewControlMemoryManager[types.TextboxEntryType]()
 
 /*
-Add is a method which allows you to add a new textbox entry to a layer.
-
-:param layerAlias: The alias of the layer to add the textbox to.
-:param textboxAlias: The alias of the textbox to create.
-:param styleEntry: The TUI style entry to use for the textbox.
-:param xLocation: The X coordinate of the textbox.
-:param yLocation: The Y coordinate of the textbox.
-:param width: The width of the textbox.
-:param height: The height of the textbox.
-:param isBorderDrawn: Whether to draw a border around the textbox.
-
-Example:
-
-	AddTextbox("layer1", "textbox1", style, 10, 10, 20, 5, true)
-*/
-func AddTextbox(layerAlias string, textboxAlias string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, height int, isBorderDrawn bool) {
-	textboxEntry := types.NewTexboxEntry()
-	textboxEntry.Alias = textboxAlias
-	textboxEntry.StyleEntry = styleEntry
-	textboxEntry.XLocation = xLocation
-	textboxEntry.YLocation = yLocation
-	textboxEntry.Width = width
-	textboxEntry.Height = height
-	textboxEntry.IsBorderDrawn = isBorderDrawn
-	textboxEntry.TooltipAlias = stringformat.GetLastSortedUUID()
-
-	// Initialize TextData with at least one empty line to prevent nil pointer dereferences
-	textboxEntry.TextData = [][]rune{[]rune{' '}}
-
-	// Create associated tooltip (always created but disabled by default)
-	Tooltip.Add(layerAlias, textboxEntry.TooltipAlias, "", styleEntry,
-		textboxEntry.XLocation, textboxEntry.YLocation,
-		textboxEntry.Width, textboxEntry.Height,
-		textboxEntry.XLocation, textboxEntry.YLocation+textboxEntry.Height+1,
-		textboxEntry.Width, 3,
-		false, true, constants.DefaultTooltipHoverTime)
-
-	// Use the generic memory manager to add the textbox entry
-	Textboxes.Add(layerAlias, textboxAlias, &textboxEntry)
-}
-
-/*
 GetTextbox is a method which allows you to retrieve a textbox entry by its layer and alias.
 
 :param layerAlias: The alias of the layer containing the textbox.
@@ -100,47 +58,6 @@ Example:
 func IsTextboxExists(layerAlias string, textboxAlias string) bool {
 	// Use the generic memory manager to check existence
 	return Textboxes.Get(layerAlias, textboxAlias) != nil
-}
-
-/*
-Delete is a method which allows you to delete a textbox from a layer.
-
-:param layerAlias: The alias of the layer containing the textbox.
-:param textboxAlias: The alias of the textbox to delete.
-
-Example:
-
-	DeleteTextbox("layer1", "textbox1")
-*/
-func DeleteTextbox(layerAlias string, textboxAlias string) {
-	// Use the generic memory manager to remove the textbox entry
-	Textboxes.Remove(layerAlias, textboxAlias)
-}
-
-/*
-DeleteAll is a method which allows you to delete all textboxes from a given layer. In addition, the following
-information should be noted:
-
-- All textboxes on the specified layer will be removed.
-
-- All memory associated with the textboxes will be freed.
-
-- The textboxes will be removed from the tab index if they were added.
-
-:param layerAlias: The alias of the layer to delete all textboxes from.
-
-Example:
-
-	DeleteAllTextboxes("layer1")
-*/
-func DeleteAllTextboxes(layerAlias string) {
-	// Retrieve all textboxes in the specified layer
-	textboxes := Textboxes.GetAllEntries(layerAlias)
-
-	// Loop through all entries and delete them
-	for _, textbox := range textboxes {
-		Textboxes.Remove(layerAlias, textbox.Alias) // Assuming textbox.Alias contains the alias
-	}
 }
 
 /*
@@ -803,7 +720,7 @@ addition, the following should be noted:
 
 Example:
 
-	instance := textbox.AddTextbox("layer1", "textbox1", style, 10, 10, 20, 5, true)
+	instance := textbox.Add("layer1", "textbox1", style, 10, 10, 20, 5, true)
 */
 func (shared *textboxType) Add(layerAlias string, textboxAlias string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, height int, isBorderDrawn bool) TextboxInstanceType {
 	newTextboxEntry := types.NewTexboxEntry()

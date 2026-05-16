@@ -352,9 +352,9 @@ func moveLayerIfRequired() bool {
 		if previousButtonPressed != 0 && eventStateMemory.stateId == constants.EventStateDragAndDrop && isLayerExists(eventStateMemory.currentlyFocusedControl.layerAlias) {
 			xMove := mouseXLocation - previousMouseXLocation
 			yMove := mouseYLocation - previousMouseYLocation
-			MoveLayerByRelativeValue(eventStateMemory.currentlyFocusedControl.layerAlias, xMove, yMove)
+			moveLayerByRelativeValue(eventStateMemory.currentlyFocusedControl.layerAlias, xMove, yMove)
 			if isInteractiveLayerOffscreen(eventStateMemory.currentlyFocusedControl.layerAlias) {
-				MoveLayerByRelativeValue(eventStateMemory.currentlyFocusedControl.layerAlias, -xMove, -yMove)
+				moveLayerByRelativeValue(eventStateMemory.currentlyFocusedControl.layerAlias, -xMove, -yMove)
 			}
 			isScreenUpdateRequired = true
 		} else if characterEntry.AttributeEntry.CellType == constants.CellTypeFrameTop && eventStateMemory.stateId != constants.EventStateDragAndDrop {

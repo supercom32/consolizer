@@ -35,32 +35,6 @@ func IsRadioButtonExists(layerAlias string, radioButtonAlias string) bool {
 }
 
 /*
-Delete is a method which allows you to remove a specified radio button from a text layer.
-
-:param layerAlias: The alias of the layer from which to remove the radio button.
-:param radioButtonAlias: The alias of the radio button to remove.
-*/
-func DeleteRadioButton(layerAlias string, radioButtonAlias string) {
-	// Use ControlMemoryManager to remove the radio button entry
-	RadioButtons.Remove(layerAlias, radioButtonAlias)
-}
-
-/*
-DeleteAllRadioButtonsFromLayer is a method which allows you to remove all radio buttons from a specified layer.
-
-:param layerAlias: The alias of the layer from which to remove all radio buttons.
-*/
-func DeleteAllRadioButtonsFromLayer(layerAlias string) {
-	// GetLayer all radio button entries from the layer
-	radioButtons := RadioButtons.GetAllEntries(layerAlias)
-
-	// Loop through all entries and delete them
-	for _, radioButton := range radioButtons {
-		RadioButtons.Remove(layerAlias, radioButton.Alias) // Assuming radioButton.Alias is used as the alias
-	}
-}
-
-/*
 AddToTabIndex is a method which allows you to add the radio button to the tab navigation index.
 */
 func (shared *RadioButtonInstanceType) AddToTabIndex() {

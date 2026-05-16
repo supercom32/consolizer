@@ -480,6 +480,10 @@ func (shared *BaseControlInstanceType) Delete() *BaseControlInstanceType {
 		if RadioButtons.IsExists(shared.layerAlias, shared.controlAlias) {
 			RadioButtons.Remove(shared.layerAlias, shared.controlAlias)
 		}
+	case constants.TYPE_VIEWPORT:
+		if Viewports.IsExists(shared.layerAlias, shared.controlAlias) {
+			Viewports.Remove(shared.layerAlias, shared.controlAlias)
+		}
 	}
 	return nil
 }

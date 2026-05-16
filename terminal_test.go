@@ -26,26 +26,11 @@ func TestTerminalAddLayer(test *testing.T) {
 	assert.Equalf(test, layer3.layerAlias, layerEntry.LayerAlias, "Failed to get layer entry!")
 }
 
-func TestTerminalDefaultLayer(test *testing.T) {
-	commonResource.isDebugEnabled = true
-	InitializeTerminal(20, 20)
-	layer1 := AddLayer(0, 0, 20, 20, 1, nil)
-	assert.Equalf(test, layer1.layerAlias, commonResource.layerInstance.layerAlias, "When creating a new layer, the default layer was not updated correctly!")
-	layer2 := AddLayer(0, 0, 20, 20, 2, nil)
-	assert.Equalf(test, layer2.layerAlias, commonResource.layerInstance.layerAlias, "When creating a new layer, the default layer was not updated correctly!")
-	layer3 := AddLayer(0, 0, 20, 20, 3, nil)
-	assert.Equalf(test, layer3.layerAlias, commonResource.layerInstance.layerAlias, "When creating a new layer, the default layer was not updated correctly!")
-	Layer(layer1)
-	assert.Equalf(test, layer1.layerAlias, commonResource.layerInstance.layerAlias, "When creating a new layer, the default layer was not updated correctly!")
-	Layer(layer2)
-	assert.Equalf(test, layer2.layerAlias, commonResource.layerInstance.layerAlias, "When creating a new layer, the default layer was not updated correctly!")
-}
-
 func TestTerminalSetAlpha(test *testing.T) {
 	commonResource.isDebugEnabled = true
 	InitializeTerminal(20, 20)
 	layer1 := AddLayer(0, 0, 20, 20, 1, nil)
-	SetLayerAlpha(layer1, 50)
+	layer1.SetAlpha(50.0)
 	layerEntry := Layers.Get(layer1.layerAlias)
 	alphaValue := layerEntry.DefaultAttribute.ForegroundAlphaValue
 	assert.Equalf(test, float32(50), alphaValue, "Setting the foreground alpha value for a layer failed.")
@@ -158,14 +143,14 @@ func TestTerminalLocate(test *testing.T) {
 	yLocation := 10
 	InitializeTerminal(20, 20)
 	layer1 := AddLayer(0, 0, 20, 20, 1, nil)
-	Locate(xLocation, yLocation)
+	layer1.Locate(xLocation, yLocation)
 	layerEntry := Layers.Get(layer1.layerAlias)
 	expectedValues := recast.GetArrayOfInterfaces(xLocation, yLocation)
 	obtainedValues := recast.GetArrayOfInterfaces(layerEntry.CursorXLocation, layerEntry.CursorYLocation)
 	assert.Equalf(test, expectedValues, obtainedValues, "The cursor position did not move to the location specified.")
 	xLocation = 15
 	yLocation = 15
-	Locate(xLocation, yLocation)
+	layer1.Locate(xLocation, yLocation)
 	expectedValues = recast.GetArrayOfInterfaces(xLocation, yLocation)
 	obtainedValues = recast.GetArrayOfInterfaces(layerEntry.CursorXLocation, layerEntry.CursorYLocation)
 	assert.Equalf(test, expectedValues, obtainedValues, "The cursor position did not move to the location specified.")
@@ -214,7 +199,7 @@ func TestTerminalClear(test *testing.T) {
 		fmt.Println("Expected:\n", expectedValueBase64)
 		fmt.Println("Obtained:\n", obtainedValueBase64)
 	}
-	Clear()
+	layer1.Clear()
 	obtainedValue = layerEntry.GetBasicAnsiStringAsBase64()
 	expectedValue = "G1szODsyOzI1NTsyNTU7MjU1bRtbNDg7MjswOzA7MG0gICAgICAgICAgICAgIBtbMzg7MjswOzA7MG0bWzQ4OzI7MDswOzBtChtbMzg7MjsyNTU7MjU1OzI1NW0gICAgICAgICAgICAgIBtbMzg7MjswOzA7MG0bWzQ4OzI7MDswOzBtChtbMzg7MjsyNTU7MjU1OzI1NW0gICAgICAgICAgICAgIBtbMzg7MjswOzA7MG0bWzQ4OzI7MDswOzBtChtbMzg7MjsyNTU7MjU1OzI1NW0gICAgICAgICAgICAgIBtbMzg7MjswOzA7MG0bWzQ4OzI7MDswOzBtChtbMzg7MjsyNTU7MjU1OzI1NW0gICAgICAgICAgICAgIBtbMzg7MjswOzA7MG0bWzQ4OzI7MDswOzBtChtbMzg7MjsyNTU7MjU1OzI1NW0gICAgICAgICAgICAgIBtbMzg7MjswOzA7MG0bWzQ4OzI7MDswOzBtChtbMzg7MjsyNTU7MjU1OzI1NW0gICAgICAgICAgICAgIBtbMzg7MjswOzA7MG0bWzQ4OzI7MDswOzBtChtbMzg7MjsyNTU7MjU1OzI1NW0gICAgICAgICAgICAgIBtbMzg7MjswOzA7MG0bWzQ4OzI7MDswOzBtCg=="
 	obtainedValueBase64 = layerEntry.GetAnsiStringFromBase64(obtainedValue)
@@ -257,7 +242,7 @@ func TestTerminalGetRuneOnLayer(test *testing.T) {
 	attributeEntry := types.NewAttributeEntry()
 	attributeEntry.CellUserId = 999
 	arrayOfRunes := stringformat.GetRunesFromString("T")
-	layer1.printLayer(layerEntry, attributeEntry, 3, 7, arrayOfRunes)
+	layer.printLayer(layerEntry, attributeEntry, 3, 7, arrayOfRunes)
 	obtainedValue := getCellIdByLayerAlias(layer1.layerAlias, 3, 7)
 	expectedValue := 999
 	assert.Equalf(test, expectedValue, obtainedValue, "The expected cell ID was not found at the specified location!")

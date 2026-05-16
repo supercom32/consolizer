@@ -22,10 +22,9 @@ func TestPrintDialogWithTextStyles(test *testing.T) {
 	textStyleAlias := "redColor"
 	InitializeTerminal(layerWidth, layerHeight)
 	layerAlias1 := AddLayer(0, 0, layerWidth, layerHeight, 1, nil)
-	Layer(layerAlias1)
-	Color(4, 6)
+	layerAlias1.Color(4, 6)
 	layerAlias1.FillLayer("a1a2a3a4a5")
-	Color(8, 9)
+	layerAlias1.Color(8, 9)
 	attributeEntry := NewTextStyle()
 	attributeEntry.ForegroundColor = GetRGBColor(255, 0, 0)
 	AddTextStyle(textStyleAlias, attributeEntry)

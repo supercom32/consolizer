@@ -42,7 +42,7 @@ func testProgressBar() {
 	layer1.ColorRGB(255, 0, 0, 0, 0, 0)
 	layer1.FillLayer("#")
 	layer2.FillLayer("@")
-	Locate(0, 0)
+	layer1.Locate(0, 0)
 	styleEntry := types.NewTuiStyleEntry()
 	styleEntry.Selector.TextAlignment = 0
 	styleEntry.ProgressBar.UnfilledBackgroundColor = constants.ColorBrightGreen
@@ -67,23 +67,23 @@ func testProgressBar() {
 		if key == "h" {
 			// Increment horizontal progress bar
 			horizontalProgressBar.IncrementValue()
-			Locate(0, 3)
+			layer1.Locate(0, 3)
 			layer1.Print("Horizontal: " + horizontalProgressBar.GetValueAsPercent() + "%  ")
 		}
 		if key == "v" {
 			// Increment vertical progress bar
 			verticalProgressBar.IncrementValue()
-			Locate(0, 4)
+			layer1.Locate(0, 4)
 			layer1.Print("Vertical: " + verticalProgressBar.GetValueAsPercent() + "%  ")
 		}
 		if key == "r" {
 			// Reset progress bars
 			horizontalProgressBar.SetValue(0)
 			verticalProgressBar.SetValue(0)
-			Locate(0, 3)
-			Print("Horizontal: 0%  ")
-			Locate(0, 4)
-			Print("Vertical: 0%  ")
+			layer1.Locate(0, 3)
+			layer1.Print("Horizontal: 0%  ")
+			layer1.Locate(0, 4)
+			layer1.Print("Vertical: 0%  ")
 		}
 		if key == "q" {
 			break
@@ -105,7 +105,7 @@ func testRadioButtons() {
 	layer1.ColorRGB(255, 0, 0, 0, 0, 0)
 	layer1.FillLayer("#")
 	layer2.FillLayer("@")
-	Locate(0, 0)
+	layer1.Locate(0, 0)
 
 	layer1.Print("Enable ☑ Enable ○ ● (U+25CB, U+25CF) ▾☒♪")
 	styleEntry := types.NewTuiStyleEntry()
@@ -148,7 +148,7 @@ func testTextboxes() {
 	layer1.ColorRGB(255, 0, 0, 0, 0, 0)
 	layer1.FillLayer("#")
 	layer2.FillLayer("@")
-	Locate(0, 0)
+	layer1.Locate(0, 0)
 	layer1.Print("Enable ☑ Enable ○ ● (U+25CB, U+25CF)")
 	styleEntry := types.NewTuiStyleEntry()
 	styleEntry.Selector.TextAlignment = 2
@@ -256,13 +256,13 @@ func testDropdown() {
 	for {
 		UpdateDisplay(false)
 		key := string(Inkey())
-		// fmt.Print(key)
+		// fmt.layer1.Print(key)
 		if key == "w" {
-			Locate(0, 0)
-			PrintLayer(layer1, "                                                ")
-			Locate(0, 0)
+			layer1.Locate(0, 0)
+			layer1.Print("                                                ")
+			layer1.Locate(0, 0)
 			_, _, pressed, _ := GetPreviousMouseStatus()
-			PrintLayer(layer1, "***"+strconv.Itoa(int(pressed))+"***")
+			layer1.Print("***" + strconv.Itoa(int(pressed)) + "***")
 		}
 		if key == "q" {
 			break
@@ -281,7 +281,6 @@ func testScrollBars() {
 	InitializeTerminal(80, 40)
 	layer1 := AddLayer(0, 0, 80, 40, 1, nil)
 	layer2 := AddLayer(20, 15, 40, 20, 1, layer1)
-	Layer(layer1)
 	layer1.FillLayer("#")
 	layer2.FillLayer("@")
 	styleEntry := types.NewTuiStyleEntry()
@@ -310,7 +309,7 @@ func testScrollBars() {
 		layer1.Locate(10, 1)
 		layer1.Print(strconv.Itoa(s2.getScrollValue()))
 		key := string(Inkey())
-		// fmt.Print(key)
+		// fmt.layer1.Print(key)
 		if key == "q" {
 			break
 		}
@@ -354,7 +353,7 @@ func testSelector() {
 		layer1.Locate(3, 4)
 		// PrintLayer(layerAlias1, menuBarInstance2.GetSelected())
 		key := string(Inkey())
-		// fmt.Print(key)
+		// fmt.layer1.Print(key)
 		if key == "q" {
 			break
 		}
@@ -386,7 +385,7 @@ func testTextField() {
 	for {
 		mouseXLocation, mouseYLocation, _, _ := GetMouseStatus()
 		characterEntry := getCellInformationUnderMouseCursor(mouseXLocation, mouseYLocation)
-		Locate(0, 0)
+		layer1.Locate(0, 0)
 		layer1.Print(fmt.Sprintf("%d, %d   ", characterEntry.AttributeEntry.CellControlId, characterEntry.AttributeEntry.CellControlLocation))
 		UpdateDisplay(false)
 		time.Sleep(50 * time.Millisecond)

@@ -124,20 +124,6 @@ func validateTextStyleExists(textStyleAlias string) {
 }
 
 /*
-validateDefaultLayerIsNotEmpty is a method which allows you to validate that a default layer has been established and is
-not empty.
-
-Example:
-
-	validateDefaultLayerIsNotEmpty()
-*/
-func validateDefaultLayerIsNotEmpty() {
-	if commonResource.layerInstance.layerAlias == "" {
-		safeSttyPanic(fmt.Sprintf("The action could not be completed since no default text layer exists!"))
-	}
-}
-
-/*
 validateTerminalWidthAndHeight is a method which allows you to validate that the specified terminal width and height are
 greater than zero.
 

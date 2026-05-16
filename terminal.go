@@ -11,6 +11,7 @@ import (
 	"runtime"
 	"sync"
 	"syscall"
+	"time"
 )
 
 const (
@@ -26,7 +27,6 @@ current terminal session that needs to be shared.
 */
 type defaultValueType struct {
 	screen               tcell.Screen
-	layerInstance        *LayerInstanceType // What happens when last layer is deleted? This needs to be updated.
 	terminalWidth        int
 	terminalHeight       int
 	screenLayer          types.LayerEntryType
@@ -118,6 +118,7 @@ Example:
 func setupPeriodicEventUpdater() {
 	for {
 		UpdatePeriodicEvents()
+		time.Sleep(10 * time.Millisecond)
 	}
 }
 
@@ -241,25 +242,6 @@ func Inkey() []rune {
 }
 
 /*
-Layer is a method which allows you to specify a default layer alias that you wish to use when interacting with methods
-which have a non-layer alias method signature. Non-layer alias method signatures can be identified by finding methods
-which have both a layer and non-layer version. This makes interacting with methods faster, as the user does not need to
-provide the layer alias context in which he is working on. In addition, the following should be noted:
-
-- The provided layer instance must be valid and exist.
-
-:param layerInstance: A pointer to the layer instance to set as default.
-
-Example:
-
-	consolizer.Layer(myLayerInstance)
-*/
-func Layer(layerInstance *LayerInstanceType) {
-	validateLayer(layerInstance.layerAlias)
-	commonResource.layerInstance = layerInstance
-}
-
-/*
 AddTextStyle is a method which allows you to add a new printing style which can be used for writing dialog text with.
 Dialog text printing differs from regular printing, since it allows for typewriter drawing effects as well as changing
 text attributes on the fly (color, bold, etc). In addition, the following should be noted:
@@ -368,7 +350,7 @@ func NewAssetList() types.AssetListType {
 }
 
 /*
-SetLayerZOrder is a method which allows you to set the z-order value for a given layer. In addition, the following
+setLayerZOrderInstance is a method which allows you to set the z-order value for a given layer. In addition, the following
 should be noted:
 
 - The z-order priority controls which text layer should be drawn first and which text layer should be drawn last.
@@ -382,33 +364,15 @@ should be noted:
 
 Example:
 
-	SetLayerZOrder(myLayer, 10)
+	setLayerZOrderInstance(myLayer, 10)
 */
-func SetLayerZOrder(layerInstance *LayerInstanceType, zOrder int) {
+func setLayerZOrderInstance(layerInstance *LayerInstanceType, zOrder int) {
 	layerEntry := Layers.Get(layerInstance.layerAlias)
 	layerEntry.ZOrder = zOrder
 }
 
 /*
-SetZOrder is a method which allows you to set the z-order value for the default currently selected layer. In addition,
-the following should be noted:
-
-- The z-order priority controls which text layer should be drawn first and which text layer should be drawn last.
-
-- Layers that have a higher priority will be drawn on top of layers that have a lower priority.
-
-:param zOrder: The z-order value to set.
-
-Example:
-
-	SetZOrder(10)
-*/
-func SetZOrder(zOrder int) {
-	SetLayerZOrder(commonResource.layerInstance, zOrder)
-}
-
-/*
-SetLayerAlpha is a method which allows you to set the alpha value for a given text layer. This lets you perform pseudo
+setLayerAlphaInstance is a method which allows you to set the alpha value for a given text layer. This lets you perform pseudo
 transparencies by making the layer foreground and background colors blend with the layers underneath it to the degree
 specified. In addition, the following should be noted:
 
@@ -421,40 +385,12 @@ specified. In addition, the following should be noted:
 
 Example:
 
-	SetLayerAlpha(myLayer, 0.5)
+	setLayerAlphaInstance(myLayer, 0.5)
 */
-func SetLayerAlpha(layerInstance *LayerInstanceType, alphaValue float32) {
-	setLayerAlpha(layerInstance, alphaValue)
-}
-
-/*
-setLayerAlpha is a method which allows you to This method is an internal method that sets the alpha value for a given
-layer instance.
-
-:param layerInstance: A pointer to the layer instance.
-:param alphaValue: The alpha value to set.
-
-Example:
-
-	setLayerAlpha(myLayer, 0.5)
-*/
-func setLayerAlpha(layerInstance *LayerInstanceType, alphaValue float32) {
+func setLayerAlphaInstance(layerInstance *LayerInstanceType, alphaValue float32) {
 	layerEntry := Layers.Get(layerInstance.layerAlias)
 	layerEntry.DefaultAttribute.ForegroundAlphaValue = alphaValue
 	layerEntry.DefaultAttribute.BackgroundAlphaValue = alphaValue
-}
-
-/*
-SetLayer is a method which allows you to set the alpha value for the default currently selected layer.
-
-:param alphaValue: The alpha value to set.
-
-Example:
-
-	SetLayer(0.5)
-*/
-func SetLayer(alphaValue float32) {
-	setLayerAlpha(commonResource.layerInstance, alphaValue)
 }
 
 /*
@@ -500,24 +436,7 @@ func GetRGBColor(redColorIndex int32, greenColorIndex int32, blueColorIndex int3
 }
 
 /*
-Color is a method which allows you to set default colors on your text layer for printing with. The color index specified
-corresponds to the 16 color ANSI standard, where color 0 is Black and 15 is Bright White. If you wish to change colors
-settings for a text layer that is not currently set as your default, use ColorLayer instead.
-
-:param foregroundColorIndex: The ANSI index for the foreground color.
-:param backgroundColorIndex: The ANSI index for the background color.
-
-Example:
-
-	Color(15, 0)
-*/
-func Color(foregroundColorIndex int, backgroundColorIndex int) {
-	validateDefaultLayerIsNotEmpty()
-	ColorLayer(commonResource.layerInstance, foregroundColorIndex, backgroundColorIndex)
-}
-
-/*
-ColorLayer is a method which allows you to set default colors on your specified text layer for printing with. The color
+colorLayerInstance is a method which allows you to set default colors on your specified text layer for printing with. The color
 index specified corresponds to the 16 color ANSI standard, where color 0 is Black and 15 is Bright White.
 
 :param layerInstance: A pointer to the layer instance.
@@ -526,9 +445,9 @@ index specified corresponds to the 16 color ANSI standard, where color 0 is Blac
 
 Example:
 
-	ColorLayer(myLayer, 15, 0)
+	colorLayerInstance(myLayer, 15, 0)
 */
-func ColorLayer(layerInstance *LayerInstanceType, foregroundColorIndex int, backgroundColorIndex int) {
+func colorLayerInstance(layerInstance *LayerInstanceType, foregroundColorIndex int, backgroundColorIndex int) {
 	validateColorIndex(foregroundColorIndex)
 	validateColorIndex(backgroundColorIndex)
 	layerEntry := Layers.Get(layerInstance.layerAlias)
@@ -537,27 +456,7 @@ func ColorLayer(layerInstance *LayerInstanceType, foregroundColorIndex int, back
 }
 
 /*
-ColorRGB is a method which allows you to set default colors on your text layer for printing with using RGB values. This
-method allows you to specify colors using RGB color index values within the range of 0 to 255.
-
-:param foregroundRedIndex: Red channel for foreground.
-:param foregroundGreenIndex: Green channel for foreground.
-:param foregroundBlueIndex: Blue channel for foreground.
-:param backgroundRedIndex: Red channel for background.
-:param backgroundGreenIndex: Green channel for background.
-:param backgroundBlueIndex: Blue channel for background.
-
-Example:
-
-	ColorRGB(255, 255, 255, 0, 0, 0)
-*/
-func ColorRGB(foregroundRedIndex int32, foregroundGreenIndex int32, foregroundBlueIndex int32, backgroundRedIndex int32, backgroundGreenIndex int32, backgroundBlueIndex int32) {
-	validateDefaultLayerIsNotEmpty()
-	ColorLayerRGB(commonResource.layerInstance, foregroundRedIndex, foregroundGreenIndex, foregroundBlueIndex, backgroundRedIndex, backgroundGreenIndex, backgroundBlueIndex)
-}
-
-/*
-ColorLayerRGB is a method which allows you to set default colors on your specified text layer for printing with using
+colorLayerRGBInstance is a method which allows you to set default colors on your specified text layer for printing with using
 RGB values. This method allows you to specify colors using RGB color index values within the range of 0 to 255.
 
 :param layerInstance: A pointer to the layer instance.
@@ -570,30 +469,16 @@ RGB values. This method allows you to specify colors using RGB color index value
 
 Example:
 
-	ColorLayerRGB(myLayer, 255, 255, 255, 0, 0, 0)
+	colorLayerRGBInstance(myLayer, 255, 255, 255, 0, 0, 0)
 */
-func ColorLayerRGB(layerInstance *LayerInstanceType, foregroundRed int32, foregroundGreen int32, foregroundBlue int32, backgroundRed int32, backgroundGreen int32, backgroundBlue int32) {
+func colorLayerRGBInstance(layerInstance *LayerInstanceType, foregroundRed int32, foregroundGreen int32, foregroundBlue int32, backgroundRed int32, backgroundGreen int32, backgroundBlue int32) {
 	foregroundColor := GetRGBColor(foregroundRed, foregroundGreen, foregroundBlue)
 	backgroundColor := GetRGBColor(backgroundRed, backgroundGreen, backgroundBlue)
-	ColorLayer24Bit(layerInstance, foregroundColor, backgroundColor)
+	colorLayer24BitInstance(layerInstance, foregroundColor, backgroundColor)
 }
 
 /*
-Color24Bit is a method which allows you to color the default layer using a 24-bit color expressed as an int32.
-
-:param foregroundColor: The 24-bit foreground color.
-:param backgroundColor: The 24-bit background color.
-
-Example:
-
-	Color24Bit(fgColor, bgColor)
-*/
-func Color24Bit(foregroundColor constants.ColorType, backgroundColor constants.ColorType) {
-	ColorLayer24Bit(commonResource.layerInstance, foregroundColor, backgroundColor)
-}
-
-/*
-ColorLayer24Bit is a method which allows you to color a specified layer using a 24-bit color expressed as an int32.
+colorLayer24BitInstance is a method which allows you to color a specified layer using a 24-bit color expressed as an int32.
 
 :param layerInstance: A pointer to the layer instance.
 :param foregroundColor: The 24-bit foreground color.
@@ -601,37 +486,16 @@ ColorLayer24Bit is a method which allows you to color a specified layer using a 
 
 Example:
 
-	ColorLayer24Bit(myLayer, fgColor, bgColor)
+	colorLayer24BitInstance(myLayer, fgColor, bgColor)
 */
-func ColorLayer24Bit(layerInstance *LayerInstanceType, foregroundColor constants.ColorType, backgroundColor constants.ColorType) {
+func colorLayer24BitInstance(layerInstance *LayerInstanceType, foregroundColor constants.ColorType, backgroundColor constants.ColorType) {
 	layerEntry := Layers.Get(layerInstance.layerAlias)
 	layerEntry.DefaultAttribute.ForegroundColor = foregroundColor
 	layerEntry.DefaultAttribute.BackgroundColor = backgroundColor
 }
 
 /*
-Locate is a method which allows you to set the default cursor location on your specified text layer for printing with.
-In addition, the following should be noted:
-
-  - If you pass in a location value that falls outside the dimensions of the default text layer, a panic will be
-    generated.
-
-- Valid text layer locations start at position (0,0) for the upper left corner.
-
-:param xLocation: The x-axis location for the cursor.
-:param yLocation: The y-axis location for the cursor.
-
-Example:
-
-	Locate(10, 5)
-*/
-func Locate(xLocation int, yLocation int) {
-	validateDefaultLayerIsNotEmpty()
-	LocateLayer(commonResource.layerInstance, xLocation, yLocation)
-}
-
-/*
-LocateLayer is a method which allows you to set the default cursor location on your specified text layer for printing
+locateLayerInstance is a method which allows you to set the default cursor location on your specified text layer for printing
 with. In addition, the following should be noted:
 
   - If you pass in a location value that falls outside the dimensions of the specified text layer, a panic will be
@@ -643,9 +507,9 @@ with. In addition, the following should be noted:
 
 Example:
 
-	LocateLayer(myLayer, 10, 5)
+	locateLayerInstance(myLayer, 10, 5)
 */
-func LocateLayer(layerInstance *LayerInstanceType, xLocation int, yLocation int) {
+func locateLayerInstance(layerInstance *LayerInstanceType, xLocation int, yLocation int) {
 	validateLayer(layerInstance.layerAlias)
 	layerEntry := Layers.Get(layerInstance.layerAlias)
 	validateLayerLocationByLayerEntry(layerEntry, xLocation, yLocation)
@@ -654,27 +518,7 @@ func LocateLayer(layerInstance *LayerInstanceType, xLocation int, yLocation int)
 }
 
 /*
-Print is a method which allows you to write text to the default text layer. In addition, the following should be noted:
-
-- When text is written to the text layer, the cursor position is also updated to reflect its new location.
-
-- If the string to print ends up being too long to fit at its current location, then only the visible portion of your.
-
-- If printing has not yet finished and there are no available lines left, then all remaining characters will be.
-
-:param textToPrint: The string of text to print.
-
-Example:
-
-	Print("Hello World")
-*/
-func Print(textToPrint string) {
-	validateDefaultLayerIsNotEmpty()
-	PrintLayer(commonResource.layerInstance, textToPrint)
-}
-
-/*
-PrintLayer is a method which allows you to write text to a specified text layer. In addition, the following should be
+printLayerInstance is a method which allows you to write text to a specified text layer. In addition, the following should be
 noted:
 
 - When text is written to the text layer, the cursor position is also updated to reflect its new location.
@@ -686,9 +530,9 @@ noted:
 
 Example:
 
-	PrintLayer(myLayer, "Hello World")
+	printLayerInstance(myLayer, "Hello World")
 */
-func PrintLayer(layerInstance *LayerInstanceType, textToPrint string) {
+func printLayerInstance(layerInstance *LayerInstanceType, textToPrint string) {
 	layerEntry := Layers.Get(layerInstance.layerAlias)
 	if layerEntry.CursorYLocation >= layerEntry.Height {
 		layerEntry.CursorYLocation = layerEntry.Height - 1
@@ -751,19 +595,7 @@ func printLayer(layerEntry *types.LayerEntryType, attributeEntry types.Attribute
 }
 
 /*
-Clear is a method which allows you to empty the default text layer of all its contents.
-
-Example:
-
-	Clear()
-*/
-func Clear() {
-	validateDefaultLayerIsNotEmpty()
-	ClearLayer(commonResource.layerInstance)
-}
-
-/*
-clear is a method which allows you to empty the specified text layer of all its contents.
+clearLayer is a method which allows you to empty the specified text layer of all its contents.
 
 :param layerEntry: A pointer to the layer entry to clear.
 
@@ -1086,21 +918,15 @@ func copyCharacterMemory(sourceCharacterMemory [][]types.CharacterEntryType, tar
 	if targetWidth == 0 {
 		return
 	}
-	var waitGroup sync.WaitGroup
-	waitGroup.Add(height)
 	for currentRow := 0; currentRow < height; currentRow++ {
-		go func(row int) {
-			defer waitGroup.Done()
-			for currentColumn := 0; currentColumn < width; currentColumn++ {
-				targetColumn := xLocation + currentColumn
-				targetRow := yLocation + row
-				if currentColumn < sourceWidth && row < sourceHeight && targetColumn < targetWidth && targetRow < targetHeight {
-					targetCharacterMemory[targetRow][targetColumn] = sourceCharacterMemory[row][currentColumn]
-				}
+		for currentColumn := 0; currentColumn < width; currentColumn++ {
+			targetColumn := xLocation + currentColumn
+			targetRow := yLocation + currentRow
+			if currentColumn < sourceWidth && currentRow < sourceHeight && targetColumn < targetWidth && targetRow < targetHeight {
+				targetCharacterMemory[targetRow][targetColumn] = sourceCharacterMemory[currentRow][currentColumn]
 			}
-		}(currentRow)
+		}
 	}
-	waitGroup.Wait()
 }
 
 /*
