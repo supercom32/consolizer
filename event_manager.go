@@ -130,12 +130,6 @@ func UpdateEventQueues() {
 		mouseXLocation, mouseYLocation := event.Position()
 		var mouseButtonNumber uint
 		mouseButton := event.Buttons()
-		// If a mouse button is pressed, find what control is under the mouse
-		// so we can set focus to it.
-		if mouseButton&tcell.Button1 != 0 {
-			characterEntry := getCellInformationUnderMouseCursor(mouseXLocation, mouseYLocation)
-			setFocusedControl(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias, characterEntry.AttributeEntry.CellType)
-		}
 		for index := uint(0); index < 8; index++ {
 			if int(mouseButton)&(1<<index) != 0 {
 				mouseButtonNumber = index + 1
@@ -169,6 +163,13 @@ func UpdateEventQueues() {
 			isScreenUpdateRequired = true
 			// Don't accept any new mouse manipulations if you're in drag-and-drop mode.
 			return
+		}
+
+		// If a mouse button is pressed, find what control is under the mouse
+		// so we can set focus to it.
+		if mouseButton&tcell.Button1 != 0 && eventStateMemory.stateId == constants.EventStateNone {
+			characterEntry := getCellInformationUnderMouseCursor(mouseXLocation, mouseYLocation)
+			setFocusedControl(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias, characterEntry.AttributeEntry.CellType)
 		}
 		if Tooltip.updateMouseEvent() {
 			isScreenUpdateRequired = true
@@ -360,7 +361,7 @@ func moveLayerIfRequired() bool {
 		} else if characterEntry.AttributeEntry.CellType == constants.CellTypeFrameTop && eventStateMemory.stateId != constants.EventStateDragAndDrop {
 			// Only set the drag state and focused control if we're not already dragging
 			eventStateMemory.stateId = constants.EventStateDragAndDrop
-			eventStateMemory.currentlyFocusedControl.layerAlias = characterEntry.LayerAlias
+			setFocusedControl(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias, characterEntry.AttributeEntry.CellType)
 		}
 	} else {
 		eventStateMemory.stateId = constants.EventStateNone
