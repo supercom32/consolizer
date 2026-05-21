@@ -192,10 +192,14 @@ func drawLabel(layerEntry *types.LayerEntryType, labelAlias string, labelValue s
 	attributeEntry.CellControlAlias = labelAlias
 	emptyString := strings.Repeat(" ", width)
 	layer.printLayer(layerEntry, attributeEntry, xLocation, yLocation, stringformat.GetRunesFromString(emptyString))
-	if len(labelValue) > width {
-		labelValue = string([]rune(labelValue)[:width-3])
-		labelValue = labelValue + "..."
-	}
 	arrayOfRunes := stringformat.GetRunesFromString(labelValue)
+	if stringformat.GetWidthOfRunesWhenPrinted(arrayOfRunes) > width {
+		if width > 3 {
+			arrayOfRunes = stringformat.GetMaxCharactersThatFitInStringSize(arrayOfRunes, width-3)
+			arrayOfRunes = append(arrayOfRunes, '.', '.', '.')
+		} else {
+			arrayOfRunes = stringformat.GetMaxCharactersThatFitInStringSize(arrayOfRunes, width)
+		}
+	}
 	layer.printLayer(layerEntry, attributeEntry, xLocation, yLocation, arrayOfRunes)
 }

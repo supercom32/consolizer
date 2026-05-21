@@ -7,7 +7,6 @@ import (
 
 	"github.com/supercom32/consolizer/constants"
 	"github.com/supercom32/consolizer/types"
-	"github.com/u2takey/go-utils/strings"
 )
 
 type ProgressBarInstanceType struct {
@@ -406,50 +405,37 @@ func drawProgressBar(layerEntry *types.LayerEntryType, progressBarAlias string, 
 
 	// Handle label display
 	arrayOfRunes := stringformat.GetRunesFromString(progressBarLabel)
+	labelWidth := stringformat.GetWidthOfRunesWhenPrinted(arrayOfRunes)
 	attributeEntry.ForegroundColor = styleEntry.ProgressBar.TextForegroundColor
 	attributeEntry.BackgroundColor = styleEntry.ProgressBar.TextBackgroundColor
 	attributeEntry.IsBackgroundTransparent = isBackgroundTransparent
 
 	if !isVertical {
 		// For horizontal progress bars, check if label is too long for width
-		if len(progressBarLabel) > width {
+		if labelWidth > width {
 			if width <= 3 {
-				// If width is too small, just show what we can or nothing
-				if width > 0 {
-					progressBarLabel = progressBarLabel[:width]
-				} else {
-					progressBarLabel = ""
-				}
+				arrayOfRunes = stringformat.GetMaxCharactersThatFitInStringSize(arrayOfRunes, width)
 			} else {
-				progressBarLabel = strings.ShortenString(progressBarLabel, width-3)
-				progressBarLabel = progressBarLabel + "..."
+				arrayOfRunes = stringformat.GetMaxCharactersThatFitInStringSize(arrayOfRunes, width-3)
+				arrayOfRunes = append(arrayOfRunes, '.', '.', '.')
 			}
-			arrayOfRunes = stringformat.GetRunesFromString(progressBarLabel)
+			labelWidth = stringformat.GetWidthOfRunesWhenPrinted(arrayOfRunes)
 		}
 		// Center the label for horizontal progress bars
-		centerXLocation := (width - len(progressBarLabel)) / 2
+		centerXLocation := (width - labelWidth) / 2
 		centerYLocation := height / 2
 		layer.printLayer(layerEntry, attributeEntry, xLocation+centerXLocation, yLocation+centerYLocation, arrayOfRunes)
 	} else {
 		// For vertical progress bars, check if label is too long for height
-		if len(progressBarLabel) > height {
-			if height <= 3 {
-				// If height is too small, just show what we can or nothing
-				if height > 0 {
-					progressBarLabel = progressBarLabel[:height]
-				} else {
-					progressBarLabel = ""
-				}
-			} else {
-				progressBarLabel = strings.ShortenString(progressBarLabel, height-3)
-				progressBarLabel = progressBarLabel + "..."
-			}
-			arrayOfRunes = stringformat.GetRunesFromString(progressBarLabel)
+		numberOfRunes := len(arrayOfRunes)
+		if numberOfRunes > height {
+			arrayOfRunes = arrayOfRunes[:height]
+			numberOfRunes = len(arrayOfRunes)
 		}
 		// For vertical progress bars, print each character vertically and center it
 		centerXLocation := width / 2
 		// Calculate vertical starting position to center the label
-		centerYLocation := (height - len(progressBarLabel)) / 2
+		centerYLocation := (height - numberOfRunes) / 2
 
 		// Print each character of the label vertically
 		for i, char := range arrayOfRunes {

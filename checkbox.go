@@ -117,12 +117,14 @@ func (shared *checkboxType) Add(layerAlias string, checkboxAlias string, checkbo
 	checkboxEntry.IsEnabled = isEnabled
 	checkboxEntry.TooltipAlias = stringformat.GetLastSortedUUID()
 
+	arrayOfRunes := stringformat.GetRunesFromString(checkboxLabel)
+	labelWidth := stringformat.GetWidthOfRunesWhenPrinted(arrayOfRunes)
 	// Create associated tooltip (always created but disabled by default)
 	tooltipInstance := Tooltip.Add(layerAlias, checkboxEntry.TooltipAlias, "", styleEntry,
 		checkboxEntry.XLocation, checkboxEntry.YLocation,
-		len(checkboxLabel)+2, 1,
+		labelWidth+2, 1,
 		checkboxEntry.XLocation, checkboxEntry.YLocation+1,
-		len(checkboxLabel)+2, 3,
+		labelWidth+2, 3,
 		false, true, constants.DefaultTooltipHoverTime)
 	tooltipInstance.SetEnabled(false)
 	tooltipInstance.setParentControlAlias(checkboxAlias)

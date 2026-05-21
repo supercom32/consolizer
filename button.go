@@ -262,8 +262,10 @@ func (shared *buttonType) draw(layerEntry *types.LayerEntryType, buttonAlias str
 	if height < 3 {
 		height = 3
 	}
-	if width-2 <= len(buttonLabel) {
-		width = len(buttonLabel) + 2
+	arrayOfRunes := stringformat.GetRunesFromString(buttonLabel)
+	labelWidth := stringformat.GetWidthOfRunesWhenPrinted(arrayOfRunes)
+	if width-2 <= labelWidth {
+		width = labelWidth + 2
 	}
 	localStyleEntry.Window.LineDrawingTextForegroundColor = localStyleEntry.Button.RaisedColor
 	localStyleEntry.Window.LineDrawingTextBackgroundColor = localStyleEntry.Button.BackgroundColor
@@ -273,9 +275,8 @@ func (shared *buttonType) draw(layerEntry *types.LayerEntryType, buttonAlias str
 	} else {
 		drawFrame(layerEntry, localStyleEntry, attributeEntry, constants.FrameStyleRaised, xLocation, yLocation, width, height, false)
 	}
-	centerXLocation := (width - len(buttonLabel)) / 2
+	centerXLocation := (width - labelWidth) / 2
 	centerYLocation := height / 2
-	arrayOfRunes := stringformat.GetRunesFromString(buttonLabel)
 	if isSelected {
 		attributeEntry.IsUnderlined = true
 	}

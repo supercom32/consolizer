@@ -133,12 +133,14 @@ func (shared *radioButtonType) Add(layerAlias string, radioButtonAlias string, r
 	radioButtonEntry.IsSelected = isSelected
 	radioButtonEntry.TooltipAlias = stringformat.GetLastSortedUUID()
 
+	arrayOfRunes := stringformat.GetRunesFromString(radioButtonLabel)
+	labelWidth := stringformat.GetWidthOfRunesWhenPrinted(arrayOfRunes)
 	// Create associated tooltip (always created but disabled by default)
 	tooltipInstance := Tooltip.Add(layerAlias, radioButtonEntry.TooltipAlias, "", styleEntry,
 		radioButtonEntry.XLocation, radioButtonEntry.YLocation,
-		len(radioButtonLabel)+2, 1,
+		labelWidth+2, 1,
 		radioButtonEntry.XLocation, radioButtonEntry.YLocation+1,
-		len(radioButtonLabel)+2, 3,
+		labelWidth+2, 3,
 		false, true, constants.DefaultTooltipHoverTime)
 	tooltipInstance.SetEnabled(false)
 	tooltipInstance.setParentControlAlias(radioButtonAlias)

@@ -452,11 +452,13 @@ func drawFrameLabel(layerEntry *types.LayerEntryType, styleEntry types.TuiStyleE
 	attributeEntry := types.NewAttributeEntry()
 	attributeEntry.ForegroundColor = styleEntry.Window.LineDrawingTextForegroundColor
 	attributeEntry.BackgroundColor = styleEntry.Window.LineDrawingTextBackgroundColor
+	arrayOfRunes := stringformat.GetRunesFromString(label)
+	labelWidth := stringformat.GetWidthOfRunesWhenPrinted(arrayOfRunes)
 	layer.printLayer(layerEntry, attributeEntry, xLocation, yLocation, []rune("[ "))
-	layer.printLayer(layerEntry, attributeEntry, xLocation+2+len(label), yLocation, []rune(" ]"))
+	layer.printLayer(layerEntry, attributeEntry, xLocation+2+labelWidth, yLocation, []rune(" ]"))
 	attributeEntry.ForegroundColor = styleEntry.Window.LineDrawingTextLabelForegroundColor
 	attributeEntry.BackgroundColor = styleEntry.Window.LineDrawingTextLabelBackgroundColor
-	layer.printLayer(layerEntry, attributeEntry, xLocation+2, yLocation, []rune(label))
+	layer.printLayer(layerEntry, attributeEntry, xLocation+2, yLocation, arrayOfRunes)
 }
 
 /*

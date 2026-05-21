@@ -447,7 +447,7 @@ func (shared *dropdownType) draw(layerEntry *types.LayerEntryType, dropdownAlias
 	// Invert colors for the dropdown arrow
 	attributeEntry.ForegroundColor = localStyleEntry.Dropdown.BackgroundColor
 	attributeEntry.BackgroundColor = localStyleEntry.Dropdown.ForegroundColor
-	printLayer(layerEntry, attributeEntry, dropdownEntry.XLocation+len(arrayOfRunes), dropdownEntry.YLocation, []rune{constants.CharTriangleDown})
+	printLayer(layerEntry, attributeEntry, dropdownEntry.XLocation+stringformat.GetWidthOfRunesWhenPrinted(arrayOfRunes), dropdownEntry.YLocation, []rune{constants.CharTriangleDown})
 }
 
 /*
