@@ -5,7 +5,12 @@ import (
 	"github.com/supercom32/consolizer/constants"
 )
 
-// FrameStyle contains character definitions for UI elements
+/*
+FrameStyle is a structure which contains character definitions for UI elements.
+
+Example:
+    var frameStyle FrameStyle
+*/
 type FrameStyle struct {
 	UpperLeftCorner     rune
 	UpperRightCorner    rune
@@ -24,13 +29,23 @@ type FrameStyle struct {
 	BackgroundColor     constants.ColorType
 }
 
-// LabelStyle contains styles for labels
+/*
+LabelStyle is a structure which contains styles for labels.
+
+Example:
+    var labelStyle LabelStyle
+*/
 type LabelStyle struct {
 	ForegroundColor constants.ColorType
 	BackgroundColor constants.ColorType
 }
 
-// CheckboxStyle contains styles for checkboxes
+/*
+CheckboxStyle is a structure which contains styles for checkboxes.
+
+Example:
+    var checkboxStyle CheckboxStyle
+*/
 type CheckboxStyle struct {
 	ForegroundColor     constants.ColorType
 	BackgroundColor     constants.ColorType
@@ -38,7 +53,12 @@ type CheckboxStyle struct {
 	UnselectedCharacter rune
 }
 
-// RadioButtonStyle contains styles for radio buttons
+/*
+RadioButtonStyle is a structure which contains styles for radio buttons.
+
+Example:
+    var radioButtonStyle RadioButtonStyle
+*/
 type RadioButtonStyle struct {
 	ForegroundColor     constants.ColorType
 	BackgroundColor     constants.ColorType
@@ -46,7 +66,12 @@ type RadioButtonStyle struct {
 	UnselectedCharacter rune
 }
 
-// ScrollbarStyle contains styles for scrollbars
+/*
+ScrollbarStyle is a structure which contains styles for scrollbars.
+
+Example:
+    var scrollbarStyle ScrollbarStyle
+*/
 type ScrollbarStyle struct {
 	TrackPattern    rune
 	Handle          rune
@@ -59,7 +84,12 @@ type ScrollbarStyle struct {
 	HandleColor     constants.ColorType
 }
 
-// ProgressBarStyle contains styles for progress bars
+/*
+ProgressBarStyle is a structure which contains styles for progress bars.
+
+Example:
+    var progressBarStyle ProgressBarStyle
+*/
 type ProgressBarStyle struct {
 	UnfilledPattern         rune
 	FilledPattern           rune
@@ -72,7 +102,12 @@ type ProgressBarStyle struct {
 	IsHighResolution        bool
 }
 
-// TextFieldStyle contains styles for text fields
+/*
+TextFieldStyle is a structure which contains styles for text fields.
+
+Example:
+    var textFieldStyle TextFieldStyle
+*/
 type TextFieldStyle struct {
 	ForegroundColor          constants.ColorType
 	BackgroundColor          constants.ColorType
@@ -82,7 +117,12 @@ type TextFieldStyle struct {
 	CursorBackgroundColor    constants.ColorType
 }
 
-// TextboxStyle contains styles for textboxes
+/*
+TextboxStyle is a structure which contains styles for textboxes.
+
+Example:
+    var textboxStyle TextboxStyle
+*/
 type TextboxStyle struct {
 	ForegroundColor          constants.ColorType
 	BackgroundColor          constants.ColorType
@@ -92,7 +132,12 @@ type TextboxStyle struct {
 	CursorBackgroundColor    constants.ColorType
 }
 
-// SelectorStyle contains styles for selectors
+/*
+SelectorStyle is a structure which contains styles for selectors.
+
+Example:
+    var selectorStyle SelectorStyle
+*/
 type SelectorStyle struct {
 	ForegroundColor          constants.ColorType
 	BackgroundColor          constants.ColorType
@@ -103,7 +148,12 @@ type SelectorStyle struct {
 	IsShadowDrawn            bool
 }
 
-// ButtonStyle contains styles for buttons
+/*
+ButtonStyle is a structure which contains styles for buttons.
+
+Example:
+    var buttonStyle ButtonStyle
+*/
 type ButtonStyle struct {
 	RaisedColor        constants.ColorType
 	ForegroundColor    constants.ColorType
@@ -111,7 +161,12 @@ type ButtonStyle struct {
 	LabelDisabledColor constants.ColorType
 }
 
-// TooltipStyle contains styles for tooltips
+/*
+TooltipStyle is a structure which contains styles for tooltips.
+
+Example:
+    var tooltipStyle TooltipStyle
+*/
 type TooltipStyle struct {
 	ForegroundColor     constants.ColorType
 	BackgroundColor     constants.ColorType
@@ -120,7 +175,12 @@ type TooltipStyle struct {
 	DrawWindow          bool
 }
 
-// WindowStyle contains styles for windows
+/*
+WindowStyle is a structure which contains styles for windows.
+
+Example:
+    var windowStyle WindowStyle
+*/
 type WindowStyle struct {
 	IsHeaderDrawn                       bool
 	IsFooterDrawn                       bool
@@ -133,12 +193,23 @@ type WindowStyle struct {
 	LineDrawingTextLabelBackgroundColor constants.ColorType
 }
 
+/*
+BarStyle is a structure which represents styles for bars.
+
+Example:
+    var barStyle BarStyle
+*/
 type BarStyle struct {
 	ForegroundColor constants.ColorType
 	BackgroundColor constants.ColorType
 }
 
-// FileMenuStyle contains styles for file menus
+/*
+FileMenuStyle is a structure which contains styles for file menus.
+
+Example:
+    var fileMenuStyle FileMenuStyle
+*/
 type FileMenuStyle struct {
 	ForegroundColor          constants.ColorType
 	BackgroundColor          constants.ColorType
@@ -146,19 +217,35 @@ type FileMenuStyle struct {
 	HighlightBackgroundColor constants.ColorType
 }
 
-// DropdownStyle contains styles for dropdowns
+/*
+DropdownStyle is a structure which contains styles for dropdowns.
+
+Example:
+    var dropdownStyle DropdownStyle
+*/
 type DropdownStyle struct {
 	ForegroundColor constants.ColorType
 	BackgroundColor constants.ColorType
 	TextAlignment   int
 }
 
+/*
+TextStyle is a structure which represents styles for text.
+
+Example:
+    var textStyle TextStyle
+*/
 type TextStyle struct {
 	ForegroundColor constants.ColorType
 	BackgroundColor constants.ColorType
 }
 
-// TuiStyleEntryType contains all UI style definitions
+/*
+TuiStyleEntryType is a structure which contains all UI style definitions.
+
+Example:
+    var tuiStyle TuiStyleEntryType
+*/
 type TuiStyleEntryType struct {
 	Text        TextStyle
 	Frame       FrameStyle
@@ -179,13 +266,10 @@ type TuiStyleEntryType struct {
 }
 
 /*
-GetEntryAsJsonDump is a method which allows you to getentryasjsondump.
-
-:return: string
+GetEntryAsJsonDump is a method which allows you to get a JSON string representation of the TUI style entry.
 
 Example:
-
-	instance.GetEntryAsJsonDump()
+    instance.GetEntryAsJsonDump()
 */
 func (shared TuiStyleEntryType) GetEntryAsJsonDump() string {
 	j, err := json.Marshal(shared)
@@ -196,16 +280,11 @@ func (shared TuiStyleEntryType) GetEntryAsJsonDump() string {
 }
 
 /*
-NewTuiStyleEntry is a constructor which allows you to creates a new TuiStyleEntryType with default values or copies from
-an existing one.
-
-:param existingStyleEntry: The existingStyleEntry parameter.
-
-:return: TuiStyleEntryType
+NewTuiStyleEntry is a constructor which allows you to create a new TuiStyleEntryType with default values or copy from an
+existing one.
 
 Example:
-
-	NewTuiStyleEntry(existingStyleEntry)
+    NewTuiStyleEntry(existingStyleEntry)
 */
 func NewTuiStyleEntry(existingStyleEntry ...*TuiStyleEntryType) TuiStyleEntryType {
 	var styleEntry TuiStyleEntryType

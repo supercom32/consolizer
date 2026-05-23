@@ -7,6 +7,12 @@ import (
 	"github.com/supercom32/consolizer/types"
 )
 
+/*
+DropdownInstanceType is a structure which represents an instance of a dropdown control.
+
+Example:
+    var dropdownInstance DropdownInstanceType
+*/
 type DropdownInstanceType struct {
 	BaseControlInstanceType
 }
@@ -14,7 +20,7 @@ type DropdownInstanceType struct {
 type dropdownType struct{}
 
 /*
-updateKeyboardEvent is a method which allows you to update the state of all dropdowns according to the current keyboard
+updateKeyboardEvent is a method which updates the state of all dropdowns according to the current keyboard
 event. In addition, the following should be noted:
 
 - Handles Enter key to open/close the dropdown.
@@ -23,12 +29,7 @@ event. In addition, the following should be noted:
 
 - Returns true if the screen needs to be updated due to state changes.
 
-:param keystroke: The keyboard event as a slice of runes.
-
-:return: Whether a screen update is required and whether the keystroke was consumed.
-
 Example:
-
 	isUpdate, isConsumed := Dropdown.updateKeyboardEvent(keystroke)
 */
 func (shared *dropdownType) updateKeyboardEvent(keystroke []rune) (bool, bool) {
@@ -124,16 +125,13 @@ var Dropdowns = memory.NewControlMemoryManager[types.DropdownEntryType]()
 // ============================================================================
 
 /*
-Delete is a method which allows you to remove a dropdown from a text layer. In addition, the following should be noted:
+Delete is a method which removes a dropdown from a text layer. In addition, the following should be noted:
 
 - If you attempt to delete a dropdown which does not exist, then the request will simply be ignored.
 
 - All memory associated with the dropdown will be freed.
 
-:return: A pointer to the dropdown instance (always nil).
-
 Example:
-
 	dropdown.Delete()
 */
 func (shared *DropdownInstanceType) Delete() *DropdownInstanceType {
@@ -142,7 +140,7 @@ func (shared *DropdownInstanceType) Delete() *DropdownInstanceType {
 }
 
 /*
-AddToTabIndex is a method which allows you to add a dropdown to the tab index. This enables keyboard navigation between
+AddToTabIndex is a method which adds a dropdown to the tab index. This enables keyboard navigation between
 controls using the tab key. In addition, the following should be noted:
 
 - The dropdown will be added to the tab order based on the order in which it was created.
@@ -150,7 +148,6 @@ controls using the tab key. In addition, the following should be noted:
 - The tab index is used to determine which control receives focus when the tab key is pressed.
 
 Example:
-
 	dropdown.AddToTabIndex()
 */
 func (shared *DropdownInstanceType) AddToTabIndex() {
@@ -158,17 +155,14 @@ func (shared *DropdownInstanceType) AddToTabIndex() {
 }
 
 /*
-GetValue is a method which allows you to retrieve the currently selected value from a dropdown. In addition, the
+GetValue is a method which retrieves the currently selected value from a dropdown. In addition, the
 following should be noted:
 
 - Returns the display value of the currently selected item.
 
 - If the dropdown does not exist, returns an empty string.
 
-:return: The display value of the selected item.
-
 Example:
-
 	val := dropdown.GetValue()
 */
 func (shared *DropdownInstanceType) GetValue() string {
@@ -181,7 +175,7 @@ func (shared *DropdownInstanceType) GetValue() string {
 }
 
 /*
-GetAlias is a method which allows you to retrieve the currently selected alias from a dropdown. In addition, the
+GetAlias is a method which retrieves the currently selected alias from a dropdown. In addition, the
 following should be noted:
 
 - Returns the internal alias of the currently selected item.
@@ -190,10 +184,7 @@ following should be noted:
 
 - The alias is typically used for programmatic access to the selection.
 
-:return: The alias of the selected item.
-
 Example:
-
 	alias := dropdown.GetAlias()
 */
 func (shared *DropdownInstanceType) GetAlias() string {
@@ -206,12 +197,9 @@ func (shared *DropdownInstanceType) GetAlias() string {
 }
 
 /*
-GetSelectedItemIndex is a method which allows you to retrieve the index of the currently selected item in the dropdown.
-
-:return: The index of the selected item.
+GetSelectedItemIndex is a method which retrieves the index of the currently selected item in the dropdown.
 
 Example:
-
 	index := dropdown.GetSelectedItemIndex()
 */
 func (shared *DropdownInstanceType) GetSelectedItemIndex() int {
@@ -220,12 +208,9 @@ func (shared *DropdownInstanceType) GetSelectedItemIndex() int {
 }
 
 /*
-SetSelectedItemIndex is a method which allows you to set the currently selected item in the dropdown by its index.
-
-:param itemIndex: The index of the item to select.
+SetSelectedItemIndex is a method which sets the currently selected item in the dropdown by its index.
 
 Example:
-
 	dropdown.SetSelectedItemIndex(2)
 */
 func (shared *DropdownInstanceType) SetSelectedItemIndex(itemIndex int) {
@@ -238,7 +223,7 @@ func (shared *DropdownInstanceType) SetSelectedItemIndex(itemIndex int) {
 }
 
 /*
-SetSelectionEntry is a method which allows you to overwrite the selection entry for a dropdown. In addition, the
+SetSelectionEntry is a method which overwrites the selection entry for a dropdown. In addition, the
 following should be noted:
 
 - This replaces the list of items that can be selected in the dropdown.
@@ -247,10 +232,7 @@ following should be noted:
 
 - The associated selector and scrollbar will be updated to reflect the new items.
 
-:param selectionEntry: The new selection entry containing the items to be displayed in the dropdown.
-
 Example:
-
 	dropdown.SetSelectionEntry(newSelection)
 */
 func (shared *DropdownInstanceType) SetSelectionEntry(selectionEntry types.SelectionEntryType) {
@@ -267,7 +249,7 @@ func (shared *DropdownInstanceType) SetSelectionEntry(selectionEntry types.Selec
 }
 
 /*
-Add is a method which allows you to create a new dropdown control on a text layer. In addition, the following should be
+Add is a method which creates a new dropdown control on a text layer. In addition, the following should be
 noted:
 
 - The dropdown consists of a main control and an associated selector for the dropdown tray.
@@ -278,20 +260,7 @@ noted:
 
 - The default selected item can be specified when creating the dropdown.
 
-:param layerAlias: The alias of the layer to add the dropdown to.
-:param dropdownAlias: The unique alias for the new dropdown.
-:param styleEntry: The TUI style entry to use for rendering.
-:param selectionEntry: The selection entry containing the items for the dropdown.
-:param xLocation: The X coordinate for the dropdown.
-:param yLocation: The Y coordinate for the dropdown.
-:param selectorHeight: The height of the dropdown tray when open.
-:param itemWidth: The width of the dropdown items.
-:param defaultItemSelected: The index of the item to be selected by default.
-
-:return: A new dropdown instance.
-
 Example:
-
 	dropdown := Dropdown.Add("layer1", "myDropdown", style, items, 10, 10, 5, 15, 0)
 */
 func (shared *dropdownType) Add(layerAlias string, dropdownAlias string, styleEntry types.TuiStyleEntryType, selectionEntry types.SelectionEntryType, xLocation int, yLocation int, selectorHeight int, itemWidth int, defaultItemSelected int) DropdownInstanceType {
@@ -347,18 +316,14 @@ func (shared *dropdownType) Add(layerAlias string, dropdownAlias string, styleEn
 }
 
 /*
-Delete is a method which allows you to remove a dropdown from a text layer. In addition, the following should be
+Delete is a method which removes a dropdown from a text layer. In addition, the following should be
 noted:
 
 - If you attempt to delete a dropdown which does not exist, then the request will simply be ignored.
 
 - All memory associated with the dropdown will be freed.
 
-:param layerAlias: The alias of the layer containing the dropdown.
-:param dropdownAlias: The alias of the dropdown to delete.
-
 Example:
-
 	Dropdown.Delete("layer1", "myDropdown")
 */
 func (shared *dropdownType) Delete(layerAlias string, dropdownAlias string) {
@@ -366,17 +331,14 @@ func (shared *dropdownType) Delete(layerAlias string, dropdownAlias string) {
 }
 
 /*
-DeleteAll is a method which allows you to delete all dropdowns from a text layer. In addition, the following
+DeleteAll is a method which deletes all dropdowns from a text layer. In addition, the following
 should be noted:
 
 - This operation cannot be undone.
 
 - All memory associated with the dropdowns will be freed.
 
-:param layerAlias: The alias of the layer from which to delete all dropdowns.
-
 Example:
-
 	Dropdown.DeleteAll("layer1")
 */
 func (shared *dropdownType) DeleteAll(layerAlias string) {
@@ -384,7 +346,7 @@ func (shared *dropdownType) DeleteAll(layerAlias string) {
 }
 
 /*
-drawOnLayer is a method which allows you to draw all dropdowns on a given text layer. In addition, the
+drawOnLayer is a method which draws all dropdowns on a given text layer. In addition, the
 following should be noted:
 
 - Dropdowns are drawn in alphabetical order by their alias.
@@ -393,10 +355,7 @@ following should be noted:
 
 - The dropdown tray (selector) is only drawn when the dropdown is open.
 
-:param layerEntry: The layer entry on which to draw the dropdowns.
-
 Example:
-
 	Dropdown.drawOnLayer(layer)
 */
 func (shared *dropdownType) drawOnLayer(layerEntry types.LayerEntryType) {
@@ -407,7 +366,7 @@ func (shared *dropdownType) drawOnLayer(layerEntry types.LayerEntryType) {
 }
 
 /*
-draw is a method which allows you to draw a single dropdown on a given text layer. In addition, the following
+draw is a method which draws a single dropdown on a given text layer. In addition, the following
 should be noted:
 
 - The dropdown is drawn with a border and a down arrow indicator.
@@ -416,11 +375,7 @@ should be noted:
 
 - The dropdown uses the style entry's foreground and background colors for rendering.
 
-:param layerEntry: The layer entry on which to draw the dropdown.
-:param dropdownAlias: The alias of the dropdown to draw.
-
 Example:
-
 	Dropdown.draw(layer, "myDropdown")
 */
 func (shared *dropdownType) draw(layerEntry *types.LayerEntryType, dropdownAlias string) {
@@ -451,7 +406,7 @@ func (shared *dropdownType) draw(layerEntry *types.LayerEntryType, dropdownAlias
 }
 
 /*
-updateStateMouse is a method which allows you to update the state of all dropdowns according to the current
+updateStateMouse is a method which updates the state of all dropdowns according to the current
 mouse event state. In addition, the following should be noted:
 
 - Handles mouse clicks to open/close dropdowns.
@@ -460,10 +415,7 @@ mouse event state. In addition, the following should be noted:
 
 - Returns true if the screen needs to be updated due to state changes.
 
-:return: Whether a screen update is required.
-
 Example:
-
 	isUpdate := Dropdown.updateStateMouse()
 */
 func (shared *dropdownType) updateStateMouse() bool {
@@ -538,7 +490,7 @@ func (shared *dropdownType) updateStateMouse() bool {
 }
 
 /*
-closeAllOpenOnLayer is a method which allows you to close all dropdowns for a given layer alias. In addition,
+closeAllOpenOnLayer is a method which closes all dropdowns for a given layer alias. In addition,
 the following should be noted:
 
 - This method is called when clicking outside of any dropdown.
@@ -547,12 +499,7 @@ the following should be noted:
 
 - The selected item is updated if it was changed while the dropdown was open.
 
-:param layerAlias: The alias of the layer for which to close all open dropdowns.
-
-:return: Whether any dropdown was actually closed.
-
 Example:
-
 	isClosed := Dropdown.closeAllOpenOnLayer("layer1")
 */
 func (shared *dropdownType) closeAllOpenOnLayer(layerAlias string) bool {
@@ -578,7 +525,7 @@ func (shared *dropdownType) closeAllOpenOnLayer(layerAlias string) bool {
 }
 
 /*
-closeAllOpen is a method which allows you to close all dropdowns on all layers. In addition, the following
+closeAllOpen is a method which closes all dropdowns on all layers. In addition, the following
 should be noted:
 
 - This method is useful for ensuring no dropdowns remain open when changing application state.
@@ -587,10 +534,7 @@ should be noted:
 
 - The selected item is updated if it was changed while the dropdown was open.
 
-:return: Whether any dropdown was actually closed.
-
 Example:
-
 	isClosed := Dropdown.closeAllOpen()
 */
 func (shared *dropdownType) closeAllOpen() bool {
@@ -607,7 +551,7 @@ func (shared *dropdownType) closeAllOpen() bool {
 }
 
 /*
-Get is a method which allows you to retrieve a dropdown entry from the control memory manager. In addition, the
+Get is a method which retrieves a dropdown entry from the control memory manager. In addition, the
 following should be noted:
 
 - Returns a pointer to the dropdown entry if it exists, nil otherwise.
@@ -616,13 +560,7 @@ following should be noted:
 
 - This method is used internally by other dropdown methods to access control data.
 
-:param layerAlias: The alias of the layer containing the dropdown.
-:param dropdownAlias: The alias of the dropdown to retrieve.
-
-:return: A pointer to the dropdown entry.
-
 Example:
-
 	entry := Dropdown.Get("layer1", "myDropdown")
 */
 func (shared *dropdownType) Get(layerAlias string, dropdownAlias string) *types.DropdownEntryType {
@@ -630,7 +568,7 @@ func (shared *dropdownType) Get(layerAlias string, dropdownAlias string) *types.
 }
 
 /*
-IsExists is a method which allows you to check if a dropdown exists in the control memory manager. In addition, the
+IsExists is a method which checks if a dropdown exists in the control memory manager. In addition, the
 following should be noted:
 
 - Returns true if the dropdown exists, false otherwise.
@@ -639,13 +577,7 @@ following should be noted:
 
 - Useful for preventing null pointer exceptions when accessing dropdown properties.
 
-:param layerAlias: The alias of the layer to check.
-:param dropdownAlias: The alias of the dropdown to check.
-
-:return: Whether the dropdown exists.
-
 Example:
-
 	exists := Dropdown.IsExists("layer1", "myDropdown")
 */
 func (shared *dropdownType) IsExists(layerAlias string, dropdownAlias string) bool {
@@ -653,7 +585,7 @@ func (shared *dropdownType) IsExists(layerAlias string, dropdownAlias string) bo
 }
 
 /*
-GetAllEntries is a method which allows you to retrieve all dropdown entries for a given layer. In addition, the
+GetAllEntries is a method which retrieves all dropdown entries for a given layer. In addition, the
 following should be noted:
 
 - Returns a slice of all dropdown entries for the specified layer.
@@ -662,12 +594,7 @@ following should be noted:
 
 - This method is useful for iterating over all dropdowns on a layer.
 
-:param layerAlias: The alias of the layer to retrieve entries for.
-
-:return: A slice of pointers to dropdown entries.
-
 Example:
-
 	entries := Dropdown.GetAllEntries("layer1")
 */
 func (shared *dropdownType) GetAllEntries(layerAlias string) []*types.DropdownEntryType {

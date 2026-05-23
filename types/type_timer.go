@@ -4,6 +4,12 @@ import (
 	"encoding/json"
 )
 
+/*
+TimerEntryType is a structure which represents a timer control.
+
+Example:
+    var timer types.TimerEntryType
+*/
 type TimerEntryType struct {
 	IsTimerEnabled bool
 	StartTime      int64
@@ -11,8 +17,7 @@ type TimerEntryType struct {
 }
 
 /*
-MarshalJSON is a method which allows you to convert a timer entry to JSON format. In addition, the following information
-should be noted:
+MarshalJSON is a method which allows you to convert a timer entry to JSON format. In addition, the following should be noted:
 
 - Implements the json.Marshaler interface for TimerEntryType.
 
@@ -21,8 +26,7 @@ should be noted:
 - Used for serializing timer entries when saving state or transmitting data.
 
 Example:
-
-	instance.MarshalJSON()
+    instance.MarshalJSON()
 */
 func (shared TimerEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
@@ -41,8 +45,7 @@ func (shared TimerEntryType) MarshalJSON() ([]byte, error) {
 }
 
 /*
-GetEntryAsJsonDump is a method which allows you to get a JSON string representation of the timer entry. In addition, the
-following information should be noted:
+GetEntryAsJsonDump is a method which allows you to get a JSON string representation of the timer entry. In addition, the following should be noted:
 
 - Returns a formatted JSON string of the timer entry.
 
@@ -50,11 +53,8 @@ following information should be noted:
 
 - The output is human-readable and includes all timer properties.
 
-:return: string
-
 Example:
-
-	instance.GetEntryAsJsonDump()
+    instance.GetEntryAsJsonDump()
 */
 func (shared TimerEntryType) GetEntryAsJsonDump() string {
 	j, err := json.Marshal(shared)
@@ -65,8 +65,7 @@ func (shared TimerEntryType) GetEntryAsJsonDump() string {
 }
 
 /*
-NewTimerEntry is a constructor which allows you to create a new timer entry. In addition, the following information
-should be noted:
+NewTimerEntry is a constructor which allows you to create a new timer entry. In addition, the following should be noted:
 
 - Initializes a timer entry with default values.
 
@@ -74,13 +73,8 @@ should be noted:
 
 - The timer can be started, stopped, and reset using the appropriate methods.
 
-:param existingTimerEntry: The existingTimerEntry parameter.
-
-:return: TimerEntryType
-
 Example:
-
-	NewTimerEntry(existingTimerEntry)
+    NewTimerEntry(existingTimerEntry)
 */
 func NewTimerEntry(existingTimerEntry ...*TimerEntryType) TimerEntryType {
 	var timerEntry TimerEntryType

@@ -5,8 +5,13 @@ import (
 	"reflect"
 )
 
-// ViewportEntryType represents a read-only text viewport control.
-// It supports scrollback history, text wrapping, and markup codes for text colorization.
+/*
+ViewportEntryType is a structure which represents a read-only text viewport control. It supports scrollback history,
+text wrapping, and markup codes for text colorization.
+
+Example:
+    var viewport ViewportEntryType
+*/
 type ViewportEntryType struct {
 	BaseControlType
 	HorizontalScrollbarAlias string
@@ -23,11 +28,8 @@ type ViewportEntryType struct {
 /*
 GetAlias is a method which allows you to retrieve the alias of a viewport control.
 
-:return: string
-
 Example:
-
-	instance.GetAlias()
+    instance.GetAlias()
 */
 func (shared ViewportEntryType) GetAlias() string {
 	return shared.Alias
@@ -37,8 +39,7 @@ func (shared ViewportEntryType) GetAlias() string {
 MarshalJSON is a method which allows you to serialize a viewport control to JSON.
 
 Example:
-
-	instance.MarshalJSON()
+    instance.MarshalJSON()
 */
 func (shared ViewportEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
@@ -73,11 +74,8 @@ func (shared ViewportEntryType) MarshalJSON() ([]byte, error) {
 /*
 GetEntryAsJsonDump is a method which allows you to get a JSON string representation of a viewport control.
 
-:return: string
-
 Example:
-
-	instance.GetEntryAsJsonDump()
+    instance.GetEntryAsJsonDump()
 */
 func (shared ViewportEntryType) GetEntryAsJsonDump() string {
 	j, err := json.Marshal(shared)
@@ -90,13 +88,8 @@ func (shared ViewportEntryType) GetEntryAsJsonDump() string {
 /*
 NewViewportEntry is a constructor which allows you to create a new viewport control.
 
-:param existingViewportEntry: The existingViewportEntry parameter.
-
-:return: ViewportEntryType
-
 Example:
-
-	NewViewportEntry(existingViewportEntry)
+    NewViewportEntry(existingViewportEntry)
 */
 func NewViewportEntry(existingViewportEntry ...*ViewportEntryType) ViewportEntryType {
 	var viewportEntry ViewportEntryType
@@ -124,14 +117,8 @@ func NewViewportEntry(existingViewportEntry ...*ViewportEntryType) ViewportEntry
 /*
 IsViewportEntryEqual is a method which allows you to compare two viewport controls for equality.
 
-:param sourceViewportEntry: The sourceViewportEntry parameter.
-:param targetViewportEntry: The targetViewportEntry parameter.
-
-:return: bool
-
 Example:
-
-	IsViewportEntryEqual(sourceViewportEntry, targetViewportEntry)
+    IsViewportEntryEqual(sourceViewportEntry, targetViewportEntry)
 */
 func IsViewportEntryEqual(sourceViewportEntry *ViewportEntryType, targetViewportEntry *ViewportEntryType) bool {
 	return sourceViewportEntry.BaseControlType.IsEqual(&targetViewportEntry.BaseControlType) &&
@@ -149,13 +136,8 @@ func IsViewportEntryEqual(sourceViewportEntry *ViewportEntryType, targetViewport
 /*
 GetViewportAlias is a method which allows you to retrieve the alias of a viewport control.
 
-:param entry: The entry parameter.
-
-:return: string
-
 Example:
-
-	GetViewportAlias(entry)
+    GetViewportAlias(entry)
 */
 func GetViewportAlias(entry *ViewportEntryType) string {
 	return entry.Alias

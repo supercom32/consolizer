@@ -4,6 +4,14 @@ import (
 	"encoding/json"
 )
 
+/*
+ScrollbarEntryType is a structure which contains the properties for a scroll bar control. In addition, the following should be noted:
+
+- This type is used to represent the state of a scroll bar in the TUI.
+
+Example:
+    var scrollbar types.ScrollbarEntryType
+*/
 type ScrollbarEntryType struct {
 	BaseControlType
 	Length             int
@@ -17,8 +25,7 @@ type ScrollbarEntryType struct {
 }
 
 /*
-GetAlias is a method which allows you to retrieve the alias of a scroll bar control. In addition, the following
-information should be noted:
+GetAlias is a method which retrieves the alias of a scroll bar control. In addition, the following should be noted:
 
 - Returns the unique identifier for the scroll bar.
 
@@ -26,19 +33,15 @@ information should be noted:
 
 - The alias is set when the scroll bar is created.
 
-:return: string
-
 Example:
-
-	instance.GetAlias()
+    instance.GetAlias()
 */
 func (shared ScrollbarEntryType) GetAlias() string {
 	return shared.Alias
 }
 
 /*
-MarshalJSON is a method which allows you to serialize a scroll bar control to JSON. In addition, the following
-information should be noted:
+MarshalJSON is a method which serializes a scroll bar control to JSON and returns the resulting byte array. In addition, the following should be noted:
 
 - Converts the scroll bar's state to a JSON representation.
 
@@ -47,8 +50,7 @@ information should be noted:
 - Used for saving and loading scroll bar configurations.
 
 Example:
-
-	instance.MarshalJSON()
+    instance.MarshalJSON()
 */
 func (shared ScrollbarEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
@@ -79,8 +81,7 @@ func (shared ScrollbarEntryType) MarshalJSON() ([]byte, error) {
 }
 
 /*
-GetEntryAsJsonDump is a method which allows you to get a JSON string representation of a scroll bar control. In
-addition, the following information should be noted:
+GetEntryAsJsonDump is a method which returns a JSON string representation of a scroll bar control. In addition, the following should be noted:
 
 - Returns a formatted JSON string of the scroll bar's state.
 
@@ -88,11 +89,8 @@ addition, the following information should be noted:
 
 - Panics if JSON marshaling fails.
 
-:return: string
-
 Example:
-
-	instance.GetEntryAsJsonDump()
+    instance.GetEntryAsJsonDump()
 */
 func (shared ScrollbarEntryType) GetEntryAsJsonDump() string {
 	j, err := json.Marshal(shared)
@@ -103,8 +101,7 @@ func (shared ScrollbarEntryType) GetEntryAsJsonDump() string {
 }
 
 /*
-GetScrollBarAlias is a method which allows you to retrieve the alias of a scroll bar control. In addition, the following
-information should be noted:
+GetScrollBarAlias is a method which retrieves the alias of a scroll bar control. In addition, the following should be noted:
 
 - Returns the unique identifier for the scroll bar.
 
@@ -112,21 +109,15 @@ information should be noted:
 
 - The alias is used to reference the scroll bar in other operations.
 
-:param entry: The entry parameter.
-
-:return: string
-
 Example:
-
-	GetScrollBarAlias(entry)
+    GetScrollBarAlias(entry)
 */
 func GetScrollBarAlias(entry *ScrollbarEntryType) string {
 	return entry.Alias
 }
 
 /*
-NewScrollbarEntry is a constructor which allows you to create a new scroll bar control. In addition, the following
-information should be noted:
+NewScrollbarEntry is a constructor which creates and returns a new scroll bar control. In addition, the following should be noted:
 
 - Initializes a scroll bar with default values.
 
@@ -134,13 +125,8 @@ information should be noted:
 
 - Sets up the base control properties and scroll bar-specific fields.
 
-:param existingScrollbarEntry: The existingScrollbarEntry parameter.
-
-:return: ScrollbarEntryType
-
 Example:
-
-	NewScrollbarEntry(existingScrollbarEntry)
+    NewScrollbarEntry(existingScrollbarEntry)
 */
 func NewScrollbarEntry(existingScrollbarEntry ...*ScrollbarEntryType) ScrollbarEntryType {
 	var scrollbarEntry ScrollbarEntryType
@@ -159,16 +145,10 @@ func NewScrollbarEntry(existingScrollbarEntry ...*ScrollbarEntryType) ScrollbarE
 }
 
 /*
-IsScrollbarEntryEqual is a method which allows you to isscrollbarentryequal.
-
-:param sourceScrollbarEntry: The sourceScrollbarEntry parameter.
-:param targetScrollBarEntry: The targetScrollBarEntry parameter.
-
-:return: bool
+IsScrollbarEntryEqual is a method which compares two scroll bar entries for equality and returns true if they are equal.
 
 Example:
-
-	IsScrollbarEntryEqual(sourceScrollbarEntry, targetScrollBarEntry)
+    IsScrollbarEntryEqual(sourceScrollbarEntry, targetScrollBarEntry)
 */
 func IsScrollbarEntryEqual(sourceScrollbarEntry *ScrollbarEntryType, targetScrollBarEntry *ScrollbarEntryType) bool {
 	if sourceScrollbarEntry.Length == targetScrollBarEntry.Length &&

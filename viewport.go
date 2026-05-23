@@ -9,31 +9,33 @@ import (
 	"github.com/supercom32/consolizer/types"
 )
 
-// ViewportInstanceType represents a viewport instance that can be manipulated.
+/*
+ViewportInstanceType is a structure which represents a viewport instance that can be manipulated.
+*/
 type ViewportInstanceType struct {
 	BaseControlInstanceType
 }
 
-// viewportType is the internal type that manages all viewports.
+/*
+viewportType is a structure which is the internal type that manages all viewports.
+*/
 type viewportType struct{}
 
-// viewport is the global instance for managing viewport controls.
+/*
+viewport is a variable which acts as the global instance for managing viewport controls.
+*/
 var viewport viewportType
 
-// Viewports is the global instance for managing all viewport controls.
+/*
+Viewports is a variable which acts as the global instance for managing the memory of all viewport controls.
+*/
 var Viewports = memory.NewControlMemoryManager[types.ViewportEntryType]()
 
 /*
 GetViewport is a method which allows you to retrieve a viewport entry by its layer and viewport alias.
 
-:param layerAlias: The alias of the layer the viewport belongs to.
-:param viewportAlias: The alias of the viewport to retrieve.
-
-:return: A pointer to the ViewportEntryType, or nil if not found.
-
 Example:
-
-	entry := GetViewport("main", "myVP")
+    entry := GetViewport("main", "myVP")
 */
 func GetViewport(layerAlias string, viewportAlias string) *types.ViewportEntryType {
 	return Viewports.Get(layerAlias, viewportAlias)
@@ -42,14 +44,8 @@ func GetViewport(layerAlias string, viewportAlias string) *types.ViewportEntryTy
 /*
 IsViewportExists is a method which allows you to check if a viewport exists in the specified layer.
 
-:param layerAlias: The alias of the layer to check.
-:param viewportAlias: The alias of the viewport to check for.
-
-:return: True if the viewport exists, false otherwise.
-
 Example:
-
-	exists := IsViewportExists("main", "myVP")
+    exists := IsViewportExists("main", "myVP")
 */
 func IsViewportExists(layerAlias string, viewportAlias string) bool {
 	return Viewports.IsExists(layerAlias, viewportAlias)
@@ -58,13 +54,8 @@ func IsViewportExists(layerAlias string, viewportAlias string) bool {
 /*
 Println is a method which allows you to add text to the viewport followed by a new line.
 
-:param text: The text string to be printed in the viewport.
-
-:return: A pointer to the ViewportInstanceType for chaining.
-
 Example:
-
-	vp.Println("Hello World!")
+    vp.Println("Hello World!")
 */
 func (shared *ViewportInstanceType) Println(text string) *ViewportInstanceType {
 	viewportEntry := GetViewport(shared.layerAlias, shared.controlAlias)
@@ -86,13 +77,8 @@ func (shared *ViewportInstanceType) Println(text string) *ViewportInstanceType {
 Print is a method which allows you to add text to the viewport by appending to the last line. If the text contains
 control characters like \n, it will start a new line.
 
-:param text: The text string to be printed in the viewport.
-
-:return: A pointer to the ViewportInstanceType for chaining.
-
 Example:
-
-	vp.Print("Appending some text...")
+    vp.Print("Appending some text...")
 */
 func (shared *ViewportInstanceType) Print(text string) *ViewportInstanceType {
 	viewportEntry := GetViewport(shared.layerAlias, shared.controlAlias)
@@ -119,13 +105,8 @@ func (shared *ViewportInstanceType) Print(text string) *ViewportInstanceType {
 SetContent is a method which allows you to clear the viewport and set its content to the given text. This method resets
 the viewport scroll position to the top-left.
 
-:param text: The new text content for the viewport.
-
-:return: A pointer to the ViewportInstanceType for chaining.
-
 Example:
-
-	vp.SetContent("New content starts here.")
+    vp.SetContent("New content starts here.")
 */
 func (shared *ViewportInstanceType) SetContent(text string) *ViewportInstanceType {
 	viewportEntry := GetViewport(shared.layerAlias, shared.controlAlias)
@@ -158,14 +139,8 @@ func (shared *ViewportInstanceType) SetContent(text string) *ViewportInstanceTyp
 /*
 SetViewport is a method which allows you to set the viewport scroll position.
 
-:param xLocation: The X coordinate to scroll to.
-:param yLocation: The Y coordinate to scroll to.
-
-:return: A pointer to the ViewportInstanceType for chaining.
-
 Example:
-
-	vp.SetViewport(0, 10)
+    vp.SetViewport(0, 10)
 */
 func (shared *ViewportInstanceType) SetViewport(xLocation int, yLocation int) *ViewportInstanceType {
 	viewportEntry := GetViewport(shared.layerAlias, shared.controlAlias)
@@ -186,11 +161,8 @@ func (shared *ViewportInstanceType) SetViewport(xLocation int, yLocation int) *V
 /*
 ScrollToBottom is a method which allows you to scroll the viewport to the bottom of its content.
 
-:return: A pointer to the ViewportInstanceType for chaining.
-
 Example:
-
-	vp.ScrollToBottom()
+    vp.ScrollToBottom()
 */
 func (shared *ViewportInstanceType) ScrollToBottom() *ViewportInstanceType {
 	viewportEntry := GetViewport(shared.layerAlias, shared.controlAlias)
@@ -207,13 +179,8 @@ func (shared *ViewportInstanceType) ScrollToBottom() *ViewportInstanceType {
 /*
 SetMaxHistoryLines is a method which allows you to set the maximum number of lines to keep in history.
 
-:param maxLines: The maximum number of history lines to keep.
-
-:return: A pointer to the ViewportInstanceType for chaining.
-
 Example:
-
-	vp.SetMaxHistoryLines(500)
+    vp.SetMaxHistoryLines(500)
 */
 func (shared *ViewportInstanceType) SetMaxHistoryLines(maxLines int) *ViewportInstanceType {
 	viewportEntry := GetViewport(shared.layerAlias, shared.controlAlias)
@@ -232,13 +199,8 @@ func (shared *ViewportInstanceType) SetMaxHistoryLines(maxLines int) *ViewportIn
 /*
 EnableHistory is a method which allows you to enable or disable history tracking for the viewport.
 
-:param enabled: Specifies if history tracking should be enabled.
-
-:return: A pointer to the ViewportInstanceType for chaining.
-
 Example:
-
-	vp.EnableHistory(true)
+    vp.EnableHistory(true)
 */
 func (shared *ViewportInstanceType) EnableHistory(enabled bool) *ViewportInstanceType {
 	viewportEntry := GetViewport(shared.layerAlias, shared.controlAlias)
@@ -259,11 +221,8 @@ func (shared *ViewportInstanceType) EnableHistory(enabled bool) *ViewportInstanc
 /*
 Clear is a method which allows you to clear all text from the viewport.
 
-:return: A pointer to the ViewportInstanceType for chaining.
-
 Example:
-
-	vp.Clear()
+    vp.Clear()
 */
 func (shared *ViewportInstanceType) Clear() *ViewportInstanceType {
 	viewportEntry := GetViewport(shared.layerAlias, shared.controlAlias)
@@ -285,13 +244,8 @@ func (shared *ViewportInstanceType) Clear() *ViewportInstanceType {
 /*
 SetTransparent is a method which allows you to set whether the viewport background is transparent.
 
-:param isTransparent: Specifies if the background should be transparent.
-
-:return: A pointer to the ViewportInstanceType for chaining.
-
 Example:
-
-	vp.SetTransparent(true)
+    vp.SetTransparent(true)
 */
 func (shared *ViewportInstanceType) SetTransparent(isTransparent bool) *ViewportInstanceType {
 	viewportEntry := GetViewport(shared.layerAlias, shared.controlAlias)
@@ -306,13 +260,8 @@ func (shared *ViewportInstanceType) SetTransparent(isTransparent bool) *Viewport
 /*
 printText is a method which allows you to process and add text to the viewport.
 
-:param viewportEntry: The viewport entry to add text to.
-:param textToPrint: The text string to be added.
-:param autoScrollToBottom: Optional parameter to specify if the viewport should auto-scroll to the bottom.
-
 Example:
-
-	viewport.printText(entry, "New line of text", true)
+    viewport.printText(entry, "New line of text", true)
 */
 func (shared *viewportType) printText(viewportEntry *types.ViewportEntryType, textToPrint string, autoScrollToBottom ...bool) {
 	// Get the effective width (accounting for border if present)
@@ -349,15 +298,8 @@ func (shared *viewportType) printText(viewportEntry *types.ViewportEntryType, te
 /*
 processTextWithMarkup is a method which allows you to process text with markup and word wrapping.
 
-:param textToPrint: The text string to process.
-:param widthOfLineInCharacters: The maximum width allowed for each line.
-:param isLinesWrapped: Specifies if lines should be wrapped.
-
-:return: A 2D slice of runes representing the processed lines.
-
 Example:
-
-	lines := viewport.processTextWithMarkup("Wrapped text content", 40, true)
+    lines := viewport.processTextWithMarkup("Wrapped text content", 40, true)
 */
 func (shared *viewportType) processTextWithMarkup(textToPrint string, widthOfLineInCharacters int, isLinesWrapped bool) [][]rune {
 	var result [][]rune
@@ -412,11 +354,8 @@ func (shared *viewportType) processTextWithMarkup(textToPrint string, widthOfLin
 /*
 trimHistory is a method which allows you to trim the viewport's history to the maximum number of lines allowed.
 
-:param viewportEntry: The viewport entry to trim history for.
-
 Example:
-
-	viewport.trimHistory(entry)
+    viewport.trimHistory(entry)
 */
 func (shared *viewportType) trimHistory(viewportEntry *types.ViewportEntryType) {
 	if viewportEntry.IsHistoryEnabled && len(viewportEntry.TextData) > viewportEntry.MaxHistoryLines {
@@ -432,11 +371,8 @@ func (shared *viewportType) trimHistory(viewportEntry *types.ViewportEntryType) 
 /*
 trimToVisible is a method which allows you to trim the viewport's text data to only what is currently visible.
 
-:param viewportEntry: The viewport entry to trim.
-
 Example:
-
-	viewport.trimToVisible(entry)
+    viewport.trimToVisible(entry)
 */
 func (shared *viewportType) trimToVisible(viewportEntry *types.ViewportEntryType) {
 	effectiveHeight := viewportEntry.Height
@@ -455,12 +391,8 @@ func (shared *viewportType) trimToVisible(viewportEntry *types.ViewportEntryType
 appendToLastLine is a method which allows you to append text to the last line of the viewport. If the text contains
 control characters like \n, it will start a new line.
 
-:param viewportEntry: The viewport entry to append text to.
-:param textToPrint: The text string to append.
-
 Example:
-
-	viewport.appendToLastLine(entry, " More text")
+    viewport.appendToLastLine(entry, " More text")
 */
 func (shared *viewportType) appendToLastLine(viewportEntry *types.ViewportEntryType, textToPrint string) {
 	// Get the effective width (accounting for border if present)
@@ -523,12 +455,8 @@ func (shared *viewportType) appendToLastLine(viewportEntry *types.ViewportEntryT
 updateScrollbarBasedOnViewportViewport is a method which allows you to update scrollbar positions based on the current
 viewport scroll position.
 
-:param layerAlias: The alias of the layer the viewport belongs to.
-:param viewportAlias: The alias of the viewport to update scrollbars for.
-
 Example:
-
-	viewport.updateScrollbarBasedOnViewportViewport("main", "myVP")
+    viewport.updateScrollbarBasedOnViewportViewport("main", "myVP")
 */
 func (shared *viewportType) updateScrollbarBasedOnViewportViewport(layerAlias string, viewportAlias string) {
 	viewportEntry := GetViewport(layerAlias, viewportAlias)
@@ -554,14 +482,8 @@ func (shared *viewportType) updateScrollbarBasedOnViewportViewport(layerAlias st
 /*
 getMaxHorizontalTextValue is a method which allows you to obtain the maximum width of text in the viewport.
 
-:param layerAlias: The alias of the layer the viewport belongs to.
-:param viewportAlias: The alias of the viewport to check.
-
-:return: The maximum width found among all lines in the viewport.
-
 Example:
-
-	width := viewport.getMaxHorizontalTextValue("main", "myVP")
+    width := viewport.getMaxHorizontalTextValue("main", "myVP")
 */
 func (shared *viewportType) getMaxHorizontalTextValue(layerAlias string, viewportAlias string) int {
 	viewportEntry := GetViewport(layerAlias, viewportAlias)
@@ -583,12 +505,8 @@ func (shared *viewportType) getMaxHorizontalTextValue(layerAlias string, viewpor
 setViewportMaxScrollBarValues is a method which allows you to calculate and set the maximum scroll values for the
 viewport's scrollbars.
 
-:param layerAlias: The alias of the layer the viewport belongs to.
-:param viewportAlias: The alias of the viewport to update.
-
 Example:
-
-	viewport.setViewportMaxScrollBarValues("main", "myVP")
+    viewport.setViewportMaxScrollBarValues("main", "myVP")
 */
 func (shared *viewportType) setViewportMaxScrollBarValues(layerAlias string, viewportAlias string) {
 	viewportEntry := GetViewport(layerAlias, viewportAlias)
@@ -699,22 +617,8 @@ func (shared *viewportType) setViewportMaxScrollBarValues(layerAlias string, vie
 /*
 Add is a method which allows you to add a new viewport to the specified layer.
 
-:param layerAlias: The alias of the layer to add the viewport to.
-:param viewportAlias: The unique alias for the new viewport.
-:param styleEntry: The TUI style entry defining the viewport's appearance.
-:param xLocation: The X coordinate for the top-left corner of the viewport.
-:param yLocation: The Y coordinate for the top-left corner of the viewport.
-:param width: The width of the viewport.
-:param height: The height of the viewport.
-:param isLinesWrapped: Specifies if text lines should be automatically wrapped.
-:param isBorderDrawn: Specifies if a border should be drawn around the viewport.
-:param maxHistoryLines: The maximum number of lines to keep in the viewport's history.
-
-:return: A ViewportInstanceType representing the newly created viewport.
-
 Example:
-
-	vp := viewport.Add("main", "myVP", style, 0, 0, 40, 10, true, true, 100)
+    vp := viewport.Add("main", "myVP", style, 0, 0, 40, 10, true, true, 100)
 */
 func (shared *viewportType) Add(layerAlias string, viewportAlias string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, height int, isLinesWrapped bool, isBorderDrawn bool, maxHistoryLines int) ViewportInstanceType {
 	var viewportInstance ViewportInstanceType
@@ -801,12 +705,8 @@ func (shared *viewportType) Add(layerAlias string, viewportAlias string, styleEn
 /*
 Delete is a method which allows you to remove a viewport from the specified layer.
 
-:param layerAlias: The alias of the layer the viewport belongs to.
-:param viewportAlias: The alias of the viewport to delete.
-
 Example:
-
-	viewport.Delete("main", "myVP")
+    viewport.Delete("main", "myVP")
 */
 func (shared *viewportType) Delete(layerAlias string, viewportAlias string) {
 	viewportEntry := GetViewport(layerAlias, viewportAlias)
@@ -836,11 +736,8 @@ func (shared *viewportType) Delete(layerAlias string, viewportAlias string) {
 /*
 DeleteAll is a method which allows you to remove all viewports from the specified layer.
 
-:param layerAlias: The alias of the layer to clear viewports from.
-
 Example:
-
-	viewport.DeleteAll("main")
+    viewport.DeleteAll("main")
 */
 func (shared *viewportType) DeleteAll(layerAlias string) {
 	// Get all entries for the layer
@@ -854,11 +751,8 @@ func (shared *viewportType) DeleteAll(layerAlias string) {
 /*
 drawOnLayer is a method which allows you to draw all viewports on the specified layer.
 
-:param layerEntry: The text layer to draw viewports on.
-
 Example:
-
-	viewport.drawOnLayer(layer)
+    viewport.drawOnLayer(layer)
 */
 func (shared *viewportType) drawOnLayer(layerEntry types.LayerEntryType) {
 	// Get all entries for the layer
@@ -872,12 +766,8 @@ func (shared *viewportType) drawOnLayer(layerEntry types.LayerEntryType) {
 /*
 draw is a method which allows you to draw a single viewport on the specified layer.
 
-:param layerEntry: The text layer to draw the viewport on.
-:param viewportAlias: The alias of the viewport to draw.
-
 Example:
-
-	viewport.drawViewport(layer, "myVP")
+    viewport.drawViewport(layer, "myVP")
 */
 func (shared *viewportType) draw(layerEntry *types.LayerEntryType, viewportAlias string) {
 	viewportEntry := GetViewport(layerEntry.LayerAlias, viewportAlias)
@@ -905,18 +795,8 @@ func (shared *viewportType) draw(layerEntry *types.LayerEntryType, viewportAlias
 /*
 drawBorder is a method which allows you to draw a border around the viewport.
 
-:param layerEntry: The text layer to draw the border on.
-:param styleEntry: The TUI style entry used for the border's appearance.
-:param attributeEntry: The attribute entry defining color and style.
-:param xLocation: The X coordinate for the top-left corner of the border.
-:param yLocation: The Y coordinate for the top-left corner of the border.
-:param width: The width of the border area.
-:param height: The height of the border area.
-:param isDoubleLine: Specifies if the border should use double lines.
-
 Example:
-
-	viewport.drawBorder(layer, style, attr, 0, 0, 40, 10, false)
+    viewport.drawBorder(layer, style, attr, 0, 0, 40, 10, false)
 */
 func (shared *viewportType) drawBorder(layerEntry *types.LayerEntryType, styleEntry types.TuiStyleEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, width int, height int, isDoubleLine bool) {
 	// Create a temporary layer instance to call DrawBorder on
@@ -928,18 +808,8 @@ func (shared *viewportType) drawBorder(layerEntry *types.LayerEntryType, styleEn
 /*
 drawContent is a method which allows you to draw the content of the viewport.
 
-:param layerEntry: The text layer to draw the content on.
-:param viewportAlias: The alias of the viewport whose content is being drawn.
-:param styleEntry: The TUI style entry defining the content's appearance.
-:param attributeEntry: The attribute entry defining color and style.
-:param xLocation: The X coordinate for the top-left corner of the content area.
-:param yLocation: The Y coordinate for the top-left corner of the content area.
-:param width: The width of the content area.
-:param height: The height of the content area.
-
 Example:
-
-	viewport.drawContent(layer, "myVP", style, attr, 1, 1, 38, 8)
+    viewport.drawContent(layer, "myVP", style, attr, 1, 1, 38, 8)
 */
 func (shared *viewportType) drawContent(layerEntry *types.LayerEntryType, viewportAlias string, styleEntry types.TuiStyleEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, width int, height int) {
 	viewportEntry := GetViewport(layerEntry.LayerAlias, viewportAlias)
@@ -1046,18 +916,8 @@ func (shared *viewportType) drawContent(layerEntry *types.LayerEntryType, viewpo
 /*
 updateScrollbars is a method which allows you to update and draw scrollbars for the viewport.
 
-:param layerEntry: The text layer to draw scrollbars on.
-:param viewportAlias: The alias of the viewport to update scrollbars for.
-:param styleEntry: The TUI style entry defining the scrollbars' appearance.
-:param attributeEntry: The attribute entry defining color and style.
-:param xLocation: The X coordinate for the top-left corner of the viewport area.
-:param yLocation: The Y coordinate for the top-left corner of the viewport area.
-:param width: The width of the viewport area.
-:param height: The height of the viewport area.
-
 Example:
-
-	viewport.updateScrollbars(layer, "myVP", style, attr, 0, 0, 40, 10)
+    viewport.updateScrollbars(layer, "myVP", style, attr, 0, 0, 40, 10)
 */
 func (shared *viewportType) updateScrollbars(layerEntry *types.LayerEntryType, viewportAlias string, styleEntry types.TuiStyleEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, width int, height int) {
 	viewportEntry := GetViewport(layerEntry.LayerAlias, viewportAlias)
@@ -1135,13 +995,8 @@ func (shared *viewportType) updateScrollbars(layerEntry *types.LayerEntryType, v
 /*
 updateViewport is a method which allows you to update the viewport scroll position based on current scrollbar values.
 
-:param viewportEntry: The viewport entry to update.
-:param layerAlias: The alias of the layer the viewport belongs to.
-:param viewportAlias: The alias of the viewport to update.
-
 Example:
-
-	viewport.updateViewport(entry, "main", "myVP")
+    viewport.updateViewport(entry, "main", "myVP")
 */
 func (shared *viewportType) updateViewport(viewportEntry *types.ViewportEntryType, layerAlias string, viewportAlias string) {
 	// This method is called when scrollbars are moved
@@ -1162,11 +1017,8 @@ func (shared *viewportType) updateViewport(viewportEntry *types.ViewportEntryTyp
 /*
 updateMouseEvent is a method which allows you to handle mouse events for viewports, including wheel scrolling.
 
-:return: True if a screen update is required due to a mouse event, false otherwise.
-
 Example:
-
-	updateRequired := viewport.updateMouseEvent()
+    updateRequired := viewport.updateMouseEvent()
 */
 func (shared *viewportType) updateMouseEvent() bool {
 	// Handle mouse wheel events for scrolling
@@ -1234,11 +1086,8 @@ func (shared *viewportType) updateMouseEvent() bool {
 /*
 checkScrollbarEvents is a method which allows you to check for scrollbar events and update all viewports accordingly.
 
-:return: True if any viewport position changed and a screen update is required, false otherwise.
-
 Example:
-
-	updateRequired := viewport.checkScrollbarEvents()
+    updateRequired := viewport.checkScrollbarEvents()
 */
 func (shared *viewportType) checkScrollbarEvents() bool {
 	isScreenUpdateRequired := false
@@ -1271,8 +1120,3 @@ func (shared *viewportType) checkScrollbarEvents() bool {
 
 	return isScreenUpdateRequired
 }
-
-// Note: To fully integrate this viewport control into the system,
-// you would need to add the drawViewportsOnLayer function to the renderControls
-// function in terminal.go. However, since we can't modify existing files,
-// this control will need to be manually added to the rendering pipeline.

@@ -5,6 +5,12 @@ import (
 	"time"
 )
 
+/*
+ImageStyleEntryType is a structure which represents the styling configuration for an image.
+
+Example:
+    var imageStyle types.ImageStyleEntryType
+*/
 type ImageStyleEntryType struct {
 	DrawingStyle                 constants.ImageStyle
 	IsHistogramEqualized         bool
@@ -21,15 +27,10 @@ type ImageStyleEntryType struct {
 }
 
 /*
-NewImageStyleEntry is a constructor which allows you to newimagestyleentry.
-
-:param existingImageStyleEntry: The existingImageStyleEntry parameter.
-
-:return: ImageStyleEntryType
+NewImageStyleEntry is a constructor which creates a new image style entry.
 
 Example:
-
-	NewImageStyleEntry(existingImageStyleEntry)
+    NewImageStyleEntry(existingImageStyleEntry)
 */
 func NewImageStyleEntry(existingImageStyleEntry ...*ImageStyleEntryType) ImageStyleEntryType {
 	var imageStyleEntry ImageStyleEntryType

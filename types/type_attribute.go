@@ -6,6 +6,15 @@ import (
 	"github.com/supercom32/consolizer/constants"
 )
 
+/*
+AttributeEntryType is a structure which contains the visual and metadata properties for a single terminal cell.
+
+Example:
+    attributeEntry := AttributeEntryType{
+        ForegroundColor: constants.ColorType{R: 255, G: 255, B: 255},
+        BackgroundColor: constants.ColorType{R: 0, G: 0, B: 0},
+    }
+*/
 type AttributeEntryType struct {
 	ForegroundColor         constants.ColorType
 	BackgroundColor         constants.ColorType
@@ -27,8 +36,7 @@ type AttributeEntryType struct {
 }
 
 /*
-MarshalJSON is a method which allows you to serialize an attribute entry to JSON. In addition, the following information
-should be noted:
+MarshalJSON is a method which serializes an attribute entry to JSON. In addition, the following should be noted:
 
 - Converts the attribute entry's state to a JSON representation.
 
@@ -37,8 +45,7 @@ should be noted:
 - Used for saving and loading attribute configurations.
 
 Example:
-
-	instance.MarshalJSON()
+    jsonData, err := attributeEntry.MarshalJSON()
 */
 func (shared AttributeEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
@@ -87,8 +94,7 @@ func (shared AttributeEntryType) MarshalJSON() ([]byte, error) {
 }
 
 /*
-GetEntryAsJsonDump is a method which allows you to get a JSON string representation of an attribute entry. In addition,
-the following information should be noted:
+GetEntryAsJsonDump is a method which returns a JSON string representation of an attribute entry. In addition, the following should be noted:
 
 - Returns a formatted JSON string of the attribute entry's state.
 
@@ -96,11 +102,8 @@ the following information should be noted:
 
 - Panics if JSON marshaling fails.
 
-:return: string
-
 Example:
-
-	instance.GetEntryAsJsonDump()
+    jsonString := attributeEntry.GetEntryAsJsonDump()
 */
 func (shared AttributeEntryType) GetEntryAsJsonDump() string {
 	j, err := json.Marshal(shared)
@@ -111,8 +114,7 @@ func (shared AttributeEntryType) GetEntryAsJsonDump() string {
 }
 
 /*
-NewAttributeEntry is a constructor which allows you to create a new attribute entry. In addition, the following
-information should be noted:
+NewAttributeEntry is a constructor which creates a new attribute entry. In addition, the following should be noted:
 
 - Initializes an attribute entry with default values.
 
@@ -120,13 +122,8 @@ information should be noted:
 
 - Sets up all visual and control-specific attributes.
 
-:param existingAttributeEntry: The existingAttributeEntry parameter.
-
-:return: AttributeEntryType
-
 Example:
-
-	NewAttributeEntry(existingAttributeEntry)
+    attributeEntry := NewAttributeEntry(&existingAttributeEntry)
 */
 func NewAttributeEntry(existingAttributeEntry ...*AttributeEntryType) AttributeEntryType {
 	var attributeEntry AttributeEntryType

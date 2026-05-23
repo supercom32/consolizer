@@ -5,17 +5,22 @@ import (
 	"image"
 )
 
+/*
+ImageEntryType is a structure which represents an image and its associated layer entry.
+
+Example:
+    var imageEntry ImageEntryType
+*/
 type ImageEntryType struct {
 	ImageData  image.Image
 	LayerEntry LayerEntryType
 }
 
 /*
-MarshalJSON is a method which allows you to marshaljson.
+MarshalJSON is a method which marshals the image entry into a JSON byte array.
 
 Example:
-
-	instance.MarshalJSON()
+    MarshalJSON()
 */
 func (shared ImageEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
@@ -32,13 +37,10 @@ func (shared ImageEntryType) MarshalJSON() ([]byte, error) {
 }
 
 /*
-GetEntryAsJsonDump is a method which allows you to getentryasjsondump.
-
-:return: string
+GetEntryAsJsonDump is a method which returns a JSON string representation of the image entry.
 
 Example:
-
-	instance.GetEntryAsJsonDump()
+    GetEntryAsJsonDump()
 */
 func (shared ImageEntryType) GetEntryAsJsonDump() string {
 	j, err := json.Marshal(shared)
@@ -49,15 +51,12 @@ func (shared ImageEntryType) GetEntryAsJsonDump() string {
 }
 
 /*
-NewImageEntry is a constructor which allows you to newimageentry.
+NewImageEntry is a constructor which creates a new image entry. In addition, the following should be noted:
 
-:param existingImageEntry: The existingImageEntry parameter.
-
-:return: ImageEntryType
+- If an existing image entry is provided, the new image entry will be a clone of it.
 
 Example:
-
-	NewImageEntry(existingImageEntry)
+    NewImageEntry()
 */
 func NewImageEntry(existingImageEntry ...*ImageEntryType) ImageEntryType {
 	var imageEntry ImageEntryType

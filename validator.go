@@ -9,11 +9,8 @@ import (
 /*
 validateTextFieldWidth is a method which allows you to validate that a specified text field width is greater than zero.
 
-:param width: The width value to be validated.
-
 Example:
-
-	validateTextFieldWidth(20)
+    validateTextFieldWidth(20)
 */
 func validateTextFieldWidth(width int) {
 	if width <= 0 {
@@ -25,13 +22,8 @@ func validateTextFieldWidth(width int) {
 validateLayerLocationByLayerAlias is a method which allows you to validate that a specific coordinate location is within
 the bounds of a layer, identified by its alias.
 
-:param layerAlias: The alias of the layer to check the location against.
-:param xLocation: The X coordinate to validate.
-:param yLocation: The Y coordinate to validate.
-
 Example:
-
-	validateLayerLocationByLayerAlias("mainLayer", 10, 5)
+    validateLayerLocationByLayerAlias("mainLayer", 10, 5)
 */
 func validateLayerLocationByLayerAlias(layerAlias string, xLocation int, yLocation int) {
 	validateLayer(layerAlias)
@@ -42,11 +34,8 @@ func validateLayerLocationByLayerAlias(layerAlias string, xLocation int, yLocati
 /*
 validateSelectionEntry is a method which allows you to validate that a selection entry is not empty.
 
-:param selectionEntry: The selection entry to be validated.
-
 Example:
-
-	validateSelectionEntry(mySelection)
+    validateSelectionEntry(mySelection)
 */
 func validateSelectionEntry(selectionEntry types.SelectionEntryType) {
 	if len(selectionEntry.SelectionValue) == 0 {
@@ -58,13 +47,8 @@ func validateSelectionEntry(selectionEntry types.SelectionEntryType) {
 validateLayerLocationByLayerEntry is a method which allows you to validate that a specific coordinate location is within
 the bounds of a provided layer entry.
 
-:param layerEntry: The layer entry to check the location against.
-:param xLocation: The X coordinate to validate.
-:param yLocation: The Y coordinate to validate.
-
 Example:
-
-	validateLayerLocationByLayerEntry(myLayer, 10, 5)
+    validateLayerLocationByLayerEntry(myLayer, 10, 5)
 */
 func validateLayerLocationByLayerEntry(layerEntry *types.LayerEntryType, xLocation int, yLocation int) {
 	if xLocation < 0 || yLocation < 0 ||
@@ -77,13 +61,8 @@ func validateLayerLocationByLayerEntry(layerEntry *types.LayerEntryType, xLocati
 validateRGBColorIndex is a method which allows you to validate that the provided RGB color components are within the
 valid range of 0 to 255.
 
-:param redColorIndex: The red component value.
-:param greenColorIndex: The green component value.
-:param blueColorIndex: The blue component value.
-
 Example:
-
-	validateRGBColorIndex(255, 128, 0)
+    validateRGBColorIndex(255, 128, 0)
 */
 func validateRGBColorIndex(redColorIndex int32, greenColorIndex int32, blueColorIndex int32) {
 	if redColorIndex < 0 || redColorIndex > 255 || greenColorIndex < 0 || greenColorIndex > 255 ||
@@ -96,11 +75,8 @@ func validateRGBColorIndex(redColorIndex int32, greenColorIndex int32, blueColor
 validateColorIndex is a method which allows you to validate that a color index is within the range of defined ANSI
 colors.
 
-:param colorIndex: The color index to be validated.
-
 Example:
-
-	validateColorIndex(7)
+    validateColorIndex(7)
 */
 func validateColorIndex(colorIndex int) {
 	if colorIndex < 0 || colorIndex > len(constants.AnsiColorByIndex) {
@@ -111,11 +87,8 @@ func validateColorIndex(colorIndex int) {
 /*
 validateTextStyleExists is a method which allows you to validate that a text style with the specified alias exists.
 
-:param textStyleAlias: The alias of the text style to check for.
-
 Example:
-
-	validateTextStyleExists("boldStyle")
+    validateTextStyleExists("boldStyle")
 */
 func validateTextStyleExists(textStyleAlias string) {
 	if !IsTextStyleExists(textStyleAlias) {
@@ -127,12 +100,8 @@ func validateTextStyleExists(textStyleAlias string) {
 validateTerminalWidthAndHeight is a method which allows you to validate that the specified terminal width and height are
 greater than zero.
 
-:param width: The terminal width to validate.
-:param height: The terminal height to validate.
-
 Example:
-
-	validateTerminalWidthAndHeight(80, 24)
+    validateTerminalWidthAndHeight(80, 24)
 */
 func validateTerminalWidthAndHeight(width int, height int) {
 	if width <= 0 || height <= 0 {
@@ -143,11 +112,8 @@ func validateTerminalWidthAndHeight(width int, height int) {
 /*
 validateLayer is a method which allows you to validate that a layer with the specified alias exists.
 
-:param layerAlias: The alias of the layer to check for.
-
 Example:
-
-	validateLayer("backgroundLayer")
+    validateLayer("backgroundLayer")
 */
 func validateLayer(layerAlias string) {
 	if !Layers.IsExists(layerAlias) {
@@ -159,12 +125,8 @@ func validateLayer(layerAlias string) {
 validatorTextField is a method which allows you to validate that a text field with the specified alias exists under the
 given layer alias.
 
-:param layerAlias: The alias of the layer the text field belongs to.
-:param textFieldAlias: The alias of the text field to check for.
-
 Example:
-
-	validatorTextField("loginLayer", "usernameField")
+    validatorTextField("loginLayer", "usernameField")
 */
 func validatorTextField(layerAlias string, textFieldAlias string) {
 	if !(TextFields.IsExists(layerAlias, textFieldAlias)) {
@@ -176,12 +138,8 @@ func validatorTextField(layerAlias string, textFieldAlias string) {
 validatorMenu is a method which allows you to validate that a menu selector with the specified alias exists under the
 given layer alias.
 
-:param layerAlias: The alias of the layer the menu belongs to.
-:param menuAlias: The alias of the menu to check for.
-
 Example:
-
-	validatorMenu("mainLayer", "fileMenu")
+    validatorMenu("mainLayer", "fileMenu")
 */
 func validatorMenu(layerAlias string, menuAlias string) {
 	if !(Selectors.IsExists(layerAlias, menuAlias)) {
@@ -195,11 +153,8 @@ provided message. In addition, the following should be noted:
 
 - This is used to ensure the terminal is left in a usable state when a fatal error occurs.
 
-:param panicMessage: The message to be included in the panic.
-
 Example:
-
-	safeSttyPanic("A fatal error has occurred.")
+    safeSttyPanic("A fatal error has occurred.")
 */
 func safeSttyPanic(panicMessage interface{}) {
 	RestoreTerminalSettings()

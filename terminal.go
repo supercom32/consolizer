@@ -22,8 +22,8 @@ const (
 )
 
 /*
-defaultValueType is a class which allows you to This class is a structure that holds common information about the
-current terminal session that needs to be shared.
+defaultValueType is a structure which holds common information about the current terminal session that needs to be
+shared.
 */
 type defaultValueType struct {
 	screen               tcell.Screen
@@ -37,18 +37,18 @@ type defaultValueType struct {
 }
 
 /*
-commonResource is a variable used to hold shared data that is accessed by this package.
+commonResource is a variable which holds shared data that is accessed by this package.
+
+Example:
+    commonResource
 */
 var commonResource defaultValueType
 
 /*
 GetVersion is a method which allows you to obtain the current version of the consolizer library.
 
-:return: A string representing the version number.
-
 Example:
-
-	version := GetVersion()
+    version := GetVersion()
 */
 func GetVersion() string {
 	return "1"
@@ -59,14 +59,11 @@ InitializeTerminal is a method which allows you to initialize consolizer for the
 first before any operations take place. The parameters width and height represent the display size of the terminal
 instance you wish to create. In addition, the following should be noted:
 
-- If you pass in a zero or negative value for either width or height a panic will be generated to fail as fast as.
-
-:param width: The desired width of the terminal.
-:param height: The desired height of the terminal.
+- If you pass in a zero or negative value for either width or height a panic will be generated to fail as fast as
+  possible.
 
 Example:
-
-	InitializeTerminal(80, 25)
+    InitializeTerminal(80, 25)
 */
 func InitializeTerminal(width int, height int) {
 	InitializeTimerMemory()
@@ -108,12 +105,10 @@ func InitializeTerminal(width int, height int) {
 }
 
 /*
-setupPeriodicEventUpdater is a method which allows you to This method is a background method that updates periodic
-events.
+setupPeriodicEventUpdater is a method which is a background method that updates periodic events.
 
 Example:
-
-	go setupPeriodicEventUpdater()
+    go setupPeriodicEventUpdater()
 */
 func setupPeriodicEventUpdater() {
 	for {
@@ -123,12 +118,11 @@ func setupPeriodicEventUpdater() {
 }
 
 /*
-setupEventUpdater is a method which allows you to This method is a background method that monitors all events coming
-into the terminal session. When an event is detected, it is recorded and monitoring continues.
+setupEventUpdater is a method which is a background method that monitors all events coming into the terminal session.
+When an event is detected, it is recorded and monitoring continues.
 
 Example:
-
-	go setupEventUpdater()
+    go setupEventUpdater()
 */
 func setupEventUpdater() {
 	for {
@@ -142,13 +136,12 @@ func setupEventUpdater() {
 }
 
 /*
-setupCloseHandler is a method which allows you to This method enables the trapping of all unexpected system calls and
-shuts down the terminal gracefully. This means all terminal settings should be reset back to normal if anything
-unexpected happens to the user or if the process is killed.
+setupCloseHandler is a method which enables the trapping of all unexpected system calls and shuts down the terminal
+gracefully. This means all terminal settings should be reset back to normal if anything unexpected happens to the user
+or if the process is killed.
 
 Example:
-
-	setupCloseHandler()
+    setupCloseHandler()
 */
 func setupCloseHandler() {
 	channel := make(chan os.Signal)
@@ -162,13 +155,12 @@ func setupCloseHandler() {
 }
 
 /*
-RestoreTerminalSettings is a method which allows you to This method allows the user to gracefully return the terminal
-back to its normal settings. This should be called once your application is finished using consolizer so that the users
-terminal environment is not left in a bad state.
+RestoreTerminalSettings is a method which allows the user to gracefully return the terminal back to its normal settings.
+This should be called once your application is finished using consolizer so that the users terminal environment is not
+left in a bad state.
 
 Example:
-
-	RestoreTerminalSettings()
+    RestoreTerminalSettings()
 */
 func RestoreTerminalSettings() {
 	commonResource.updateDisplayChannel <- true
@@ -189,11 +181,8 @@ func RestoreTerminalSettings() {
 /*
 getOsType is a method which allows you to obtain the type of operating system currently running.
 
-:return: An integer representing the OS type.
-
 Example:
-
-	osType := getOsType()
+    osType := getOsType()
 */
 func getOsType() int {
 	os := runtime.GOOS
@@ -213,11 +202,8 @@ func getOsType() int {
 /*
 GetTerminalSize is a method which allows you to obtain width and height of the current terminal characters.
 
-:return: The width and height of the terminal.
-
 Example:
-
-	width, height := GetTerminalSize()
+    width, height := GetTerminalSize()
 */
 func GetTerminalSize() (int, int) {
 	return commonResource.screen.Size()
@@ -228,14 +214,11 @@ Inkey is a method which allows you to read keyboard input from the user's termin
 pressed or a keyword representing the special key pressed (for example: 'a', 'A', 'escape', 'f10', etc.). In addition,
 the following should be noted:
 
-  - If more than one keystroke is recorded, it is stored sequentially in the input buffer and this method needs to be
-    called repeatedly in order to read them.
-
-:return: A slice of runes representing the keystroke.
+- If more than one keystroke is recorded, it is stored sequentially in the input buffer and this method needs to be
+called repeatedly in order to read them.
 
 Example:
-
-	keystroke := Inkey()
+    keystroke := Inkey()
 */
 func Inkey() []rune {
 	return KeyboardMemory.GetFromBuffer()
@@ -248,12 +231,8 @@ text attributes on the fly (color, bold, etc). In addition, the following should
 
 - This method expects you to pass in a textStyleEntry type obtained by calling consolizer.NewTextStyle.
 
-:param textStyleAlias: The alias to assign to the text style.
-:param textStyleEntry: The text style entry to add.
-
 Example:
-
-	AddTextStyle("MyStyle", myStyleEntry)
+    AddTextStyle("MyStyle", myStyleEntry)
 */
 func AddTextStyle(textStyleAlias string, textStyleEntry types.TextCellStyleEntryType) {
 	TextStyles.Add(textStyleAlias, &textStyleEntry)
@@ -265,11 +244,8 @@ following should be noted:
 
 - If you attempt to delete an entry that does not exist, then no operation will be performed.
 
-:param textStyleAlias: The alias of the text style to delete.
-
 Example:
-
-	DeleteTextStyle("MyStyle")
+    DeleteTextStyle("MyStyle")
 */
 func DeleteTextStyle(textStyleAlias string) {
 	validateTextStyleExists(textStyleAlias)
@@ -281,11 +257,8 @@ NewTextStyle is a constructor which allows you to obtain a new text style entry 
 text. By configuring attributes for your text style entry and adding your entry to consolizer, simple markup commands
 can be used to switch between dialog printing styles automatically.
 
-:return: A new text cell style entry.
-
 Example:
-
-	myTextStyleEntry := consolizer.NewTextStyle()
+    myTextStyleEntry := consolizer.NewTextStyle()
 */
 func NewTextStyle() types.TextCellStyleEntryType {
 	return types.NewTextCellStyleEntry()
@@ -294,11 +267,8 @@ func NewTextStyle() types.TextCellStyleEntryType {
 /*
 NewImageStyle is a constructor which allows you to obtain a new image style entry.
 
-:return: A new image style entry.
-
 Example:
-
-	myImageStyle := NewImageStyle()
+    myImageStyle := NewImageStyle()
 */
 func NewImageStyle() types.ImageStyleEntryType {
 	return types.NewImageStyleEntry()
@@ -308,11 +278,8 @@ func NewImageStyle() types.ImageStyleEntryType {
 NewTuiStyleEntry is a constructor which allows you to obtain a new style entry which can be used for specifying how TUI
 controls and other TUI drawing operations should occur.
 
-:return: A new TUI style entry.
-
 Example:
-
-	myTuiStyleEntry := consolizer.NewTuiStyleEntry()
+    myTuiStyleEntry := consolizer.NewTuiStyleEntry()
 */
 func NewTuiStyleEntry() types.TuiStyleEntryType {
 	return types.NewTuiStyleEntry()
@@ -322,11 +289,8 @@ func NewTuiStyleEntry() types.TuiStyleEntryType {
 NewSelectionEntry is a constructor which allows you to obtain an entry used for specifying what options you want to make
 available for a given menu prompt.
 
-:return: A new selection entry.
-
 Example:
-
-	selectionEntry := consolizer.NewSelectionEntry()
+    selectionEntry := consolizer.NewSelectionEntry()
 */
 func NewSelectionEntry() types.SelectionEntryType {
 	return types.NewSelectionEntry()
@@ -339,11 +303,8 @@ addition, the following should be noted:
 
 - An asset list can contain multiple asset types.
 
-:return: A new asset list type.
-
 Example:
-
-	assetList := consolizer.NewAssetList()
+    assetList := consolizer.NewAssetList()
 */
 func NewAssetList() types.AssetListType {
 	return types.NewAssetList()
@@ -359,12 +320,8 @@ should be noted:
 
 - In the event that two layers have the same priority, they will be drawn in random order.
 
-:param layerInstance: A pointer to the layer instance.
-:param zOrder: The z-order value to set.
-
 Example:
-
-	setLayerZOrderInstance(myLayer, 10)
+    setLayerZOrderInstance(myLayer, 10)
 */
 func setLayerZOrderInstance(layerInstance *LayerInstanceType, zOrder int) {
 	layerEntry := Layers.Get(layerInstance.layerAlias)
@@ -380,12 +337,8 @@ specified. In addition, the following should be noted:
 
 - If the percent change specified is outside of the RGB color range, then the color will simply bottom or max out.
 
-:param layerInstance: A pointer to the layer instance.
-:param alphaValue: The alpha value to set.
-
 Example:
-
-	setLayerAlphaInstance(myLayer, 0.5)
+    setLayerAlphaInstance(myLayer, 0.5)
 */
 func setLayerAlphaInstance(layerInstance *LayerInstanceType, alphaValue float32) {
 	layerEntry := Layers.Get(layerInstance.layerAlias)
@@ -400,13 +353,8 @@ noted:
 
 - If you specify a color index less than 0 or greater than 15 a panic will be generated to fail as fast as possible.
 
-:param colorIndex: The index of the color in the ANSI palette.
-
-:return: The color type corresponding to the index.
-
 Example:
-
-	color := GetColor(1)
+    color := GetColor(1)
 */
 func GetColor(colorIndex int) constants.ColorType {
 	validateColorIndex(colorIndex)
@@ -417,18 +365,11 @@ func GetColor(colorIndex int) constants.ColorType {
 GetRGBColor is a method which allows you to obtain a specific RGB color based on the red, green, and blue index values
 provided. In addition, the following should be noted:
 
-  - If you specify a color channel index less than 0 or greater than 255 a panic will be generated to fail as fast as
-    possible.
-
-:param redColorIndex: The red channel value (0-255).
-:param greenColorIndex: The green channel value (0-255).
-:param blueColorIndex: The blue channel value (0-255).
-
-:return: The resulting color type.
+- If you specify a color channel index less than 0 or greater than 255 a panic will be generated to fail as fast as
+possible.
 
 Example:
-
-	color := GetRGBColor(255, 128, 0)
+    color := GetRGBColor(255, 128, 0)
 */
 func GetRGBColor(redColorIndex int32, greenColorIndex int32, blueColorIndex int32) constants.ColorType {
 	validateRGBColorIndex(redColorIndex, greenColorIndex, blueColorIndex)
@@ -439,13 +380,8 @@ func GetRGBColor(redColorIndex int32, greenColorIndex int32, blueColorIndex int3
 colorLayerInstance is a method which allows you to set default colors on your specified text layer for printing with. The color
 index specified corresponds to the 16 color ANSI standard, where color 0 is Black and 15 is Bright White.
 
-:param layerInstance: A pointer to the layer instance.
-:param foregroundColorIndex: The ANSI index for the foreground color.
-:param backgroundColorIndex: The ANSI index for the background color.
-
 Example:
-
-	colorLayerInstance(myLayer, 15, 0)
+    colorLayerInstance(myLayer, 15, 0)
 */
 func colorLayerInstance(layerInstance *LayerInstanceType, foregroundColorIndex int, backgroundColorIndex int) {
 	validateColorIndex(foregroundColorIndex)
@@ -459,17 +395,8 @@ func colorLayerInstance(layerInstance *LayerInstanceType, foregroundColorIndex i
 colorLayerRGBInstance is a method which allows you to set default colors on your specified text layer for printing with using
 RGB values. This method allows you to specify colors using RGB color index values within the range of 0 to 255.
 
-:param layerInstance: A pointer to the layer instance.
-:param foregroundRed: Red channel for foreground.
-:param foregroundGreen: Green channel for foreground.
-:param foregroundBlue: Blue channel for foreground.
-:param backgroundRed: Red channel for background.
-:param backgroundGreen: Green channel for background.
-:param backgroundBlue: Blue channel for background.
-
 Example:
-
-	colorLayerRGBInstance(myLayer, 255, 255, 255, 0, 0, 0)
+    colorLayerRGBInstance(myLayer, 255, 255, 255, 0, 0, 0)
 */
 func colorLayerRGBInstance(layerInstance *LayerInstanceType, foregroundRed int32, foregroundGreen int32, foregroundBlue int32, backgroundRed int32, backgroundGreen int32, backgroundBlue int32) {
 	foregroundColor := GetRGBColor(foregroundRed, foregroundGreen, foregroundBlue)
@@ -480,13 +407,8 @@ func colorLayerRGBInstance(layerInstance *LayerInstanceType, foregroundRed int32
 /*
 colorLayer24BitInstance is a method which allows you to color a specified layer using a 24-bit color expressed as an int32.
 
-:param layerInstance: A pointer to the layer instance.
-:param foregroundColor: The 24-bit foreground color.
-:param backgroundColor: The 24-bit background color.
-
 Example:
-
-	colorLayer24BitInstance(myLayer, fgColor, bgColor)
+    colorLayer24BitInstance(myLayer, fgColor, bgColor)
 */
 func colorLayer24BitInstance(layerInstance *LayerInstanceType, foregroundColor constants.ColorType, backgroundColor constants.ColorType) {
 	layerEntry := Layers.Get(layerInstance.layerAlias)
@@ -498,16 +420,11 @@ func colorLayer24BitInstance(layerInstance *LayerInstanceType, foregroundColor c
 locateLayerInstance is a method which allows you to set the default cursor location on your specified text layer for printing
 with. In addition, the following should be noted:
 
-  - If you pass in a location value that falls outside the dimensions of the specified text layer, a panic will be
-    generated.
-
-:param layerInstance: A pointer to the layer instance.
-:param xLocation: The x-axis location for the cursor.
-:param yLocation: The y-axis location for the cursor.
+- If you pass in a location value that falls outside the dimensions of the specified text layer, a panic will be
+generated.
 
 Example:
-
-	locateLayerInstance(myLayer, 10, 5)
+    locateLayerInstance(myLayer, 10, 5)
 */
 func locateLayerInstance(layerInstance *LayerInstanceType, xLocation int, yLocation int) {
 	validateLayer(layerInstance.layerAlias)
@@ -523,14 +440,11 @@ noted:
 
 - When text is written to the text layer, the cursor position is also updated to reflect its new location.
 
-- If the string to print ends up being too long to fit at its current location, then only the visible portion of your.
-
-:param layerInstance: A pointer to the layer instance.
-:param textToPrint: The string of text to print.
+- If the string to print ends up being too long to fit at its current location, then only the visible portion of your
+  text will be printed.
 
 Example:
-
-	printLayerInstance(myLayer, "Hello World")
+    printLayerInstance(myLayer, "Hello World")
 */
 func printLayerInstance(layerInstance *LayerInstanceType, textToPrint string) {
 	layerEntry := Layers.Get(layerInstance.layerAlias)
@@ -549,19 +463,11 @@ printLayer is a method which allows you to write text to a text layer directly. 
 want to write text to a text layer directly, without affecting user settings. In addition, the following should be
 noted:
 
-- If the location to print falls outside the range of the text layer, then only the visible portion of your text will.
-
-:param layerEntry: A pointer to the layer entry.
-:param attributeEntry: The attribute entry for the text.
-:param xLocation: The x-axis location.
-:param yLocation: The y-axis location.
-:param textToPrint: A slice of runes to print.
-
-:return: The final x-axis location after printing.
+- If the location to print falls outside the range of the text layer, then only the visible portion of your text will
+  be rendered.
 
 Example:
-
-	printLayer(layerEntry, attr, 0, 0, runes)
+    printLayer(layerEntry, attr, 0, 0, runes)
 */
 func printLayer(layerEntry *types.LayerEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, textToPrint []rune) int {
 	layerWidth := layerEntry.Width
@@ -597,11 +503,8 @@ func printLayer(layerEntry *types.LayerEntryType, attributeEntry types.Attribute
 /*
 clearLayer is a method which allows you to empty the specified text layer of all its contents.
 
-:param layerEntry: A pointer to the layer entry to clear.
-
 Example:
-
-	clearLayer(layerEntry)
+    clearLayer(layerEntry)
 */
 func clearLayer(layerEntry *types.LayerEntryType) {
 	types.InitializeCharacterMemory(layerEntry)
@@ -611,14 +514,8 @@ func clearLayer(layerEntry *types.LayerEntryType) {
 GetCharacterOnScreen is a method which allows you to obtain the character currently being displayed on the screen at a
 specific location.
 
-:param xLocation: The x-axis location.
-:param yLocation: The y-axis location.
-
-:return: The rune at the specified location.
-
 Example:
-
-	char := GetCharacterOnScreen(10, 5)
+    char := GetCharacterOnScreen(10, 5)
 */
 func GetCharacterOnScreen(xLocation int, yLocation int) rune {
 	layerEntry := commonResource.screenLayer
@@ -634,13 +531,8 @@ following should be noted:
 
 - The new row created at the bottom of the text layer will be filled with spaces.
 
-:param layerEntry: A pointer to the layer entry to scroll.
-
-:return: The updated character memory.
-
 Example:
-
-	scrollCharacterMemory(layerEntry)
+    scrollCharacterMemory(layerEntry)
 */
 func scrollCharacterMemory(layerEntry *types.LayerEntryType) [][]types.CharacterEntryType {
 	layerWidth := layerEntry.Width
@@ -664,15 +556,8 @@ In addition, the following should be noted:
 
 - If the location specified is outside the valid range, 0 is returned.
 
-:param layerEntry: A pointer to the layer entry.
-:param xLocation: The x-axis location.
-:param yLocation: The y-axis location.
-
-:return: The rune at the specified location.
-
 Example:
-
-	char := getRuneOnLayer(layerEntry, 10, 5)
+    char := getRuneOnLayer(layerEntry, 10, 5)
 */
 func getRuneOnLayer(layerEntry *types.LayerEntryType, xLocation int, yLocation int) rune {
 	// validateLayerLocationByLayerEntry(layerEntry, xLocation, yLocation)
@@ -694,11 +579,8 @@ cursor. In addition, the following should be noted:
 
 - The cell ID returned will only reflect what is currently being displayed on the terminal display.
 
-:return: The cell ID under the mouse cursor.
-
 Example:
-
-	cellId := GetCellIdUnderMouseLocation()
+    cellId := GetCellIdUnderMouseLocation()
 */
 func GetCellIdUnderMouseLocation() int {
 	mouseXLocation, mouseYLocation, _, _ := GetMouseStatus()
@@ -708,15 +590,8 @@ func GetCellIdUnderMouseLocation() int {
 /*
 getCellIdByLayerAlias is a method which allows you to obtain a cell ID from a given text layer by layer alias.
 
-:param layerAlias: The alias of the layer.
-:param mouseXLocation: The x-axis location.
-:param mouseYLocation: The y-axis location.
-
-:return: The cell ID at the specified location.
-
 Example:
-
-	cellId := getCellIdByLayerAlias("MyLayer", 10, 5)
+    cellId := getCellIdByLayerAlias("MyLayer", 10, 5)
 */
 func getCellIdByLayerAlias(layerAlias string, mouseXLocation int, mouseYLocation int) int {
 	validateLayer(layerAlias)
@@ -730,15 +605,8 @@ addition, the following should be noted:
 
 - If the location specified is outside the valid range of the text layer, then a value of -1 is returned.
 
-:param layerEntry: A pointer to the layer entry.
-:param xLocation: The x-axis location.
-:param yLocation: The y-axis location.
-
-:return: The cell ID at the specified location.
-
 Example:
-
-	cellId := getCellIdByLayerEntry(layerEntry, 10, 5)
+    cellId := getCellIdByLayerEntry(layerEntry, 10, 5)
 */
 func getCellIdByLayerEntry(layerEntry *types.LayerEntryType, xLocation int, yLocation int) int {
 	returnValue := -1
@@ -761,11 +629,8 @@ In addition, the following should be noted:
 
 - Layers with the same z-order priority will appear in random display order.
 
-:param isRefreshForced: Whether to force a full refresh of the screen.
-
 Example:
-
-	UpdateDisplay(false)
+    UpdateDisplay(false)
 */
 func UpdateDisplay(isRefreshForced bool) {
 	commonResource.displayUpdate.Lock()
@@ -784,8 +649,7 @@ func UpdateDisplay(isRefreshForced bool) {
 RefreshDisplay is a method which allows you to sync the terminal screen.
 
 Example:
-
-	RefreshDisplay()
+    RefreshDisplay()
 */
 func RefreshDisplay() {
 	commonResource.screen.Sync()
@@ -799,14 +663,8 @@ the following should be noted:
 
 - Any text layer which is marked as not visible will be ignored.
 
-:param rootLayerEntry: A pointer to the root layer entry.
-:param sortedLayerAliasSlice: A list of layer aliases sorted by z-order.
-
-:return: The rendered root layer entry.
-
 Example:
-
-	renderLayers(&rootLayer, aliases)
+    renderLayers(&rootLayer, aliases)
 */
 func renderLayers(rootLayerEntry *types.LayerEntryType, sortedLayerAliasSlice LayerAliasZOrderPairList) types.LayerEntryType {
 	baseLayerEntry := types.NewLayerEntry("", "", 0, 0, rootLayerEntry)
@@ -841,11 +699,8 @@ drawing matters, as complex controls are drawn first above basic controls. In ad
 
 - Tooltip hotspot zones must be drawn before FileMenu to prevent them from capturing clicks intended for file menu.
 
-:param currentLayerEntry: The layer entry to render controls for.
-
 Example:
-
-	renderControls(layerEntry)
+    renderControls(layerEntry)
 */
 func renderControls(currentLayerEntry types.LayerEntryType) {
 	Button.drawOnLayer(currentLayerEntry)
@@ -871,12 +726,8 @@ following should be noted:
 
 - This is useful when you do not have actual layer data and only know the alias.
 
-:param sourceLayerAlias: The alias of the source layer.
-:param targetLayerEntry: A pointer to the target layer entry.
-
 Example:
-
-	overlayLayersByLayerAlias("SrcLayer", &targetLayer)
+    overlayLayersByLayerAlias("SrcLayer", &targetLayer)
 */
 func overlayLayersByLayerAlias(sourceLayerAlias string, targetLayerEntry *types.LayerEntryType) {
 	validateLayer(sourceLayerAlias)
@@ -890,16 +741,8 @@ memory. In addition, the following should be noted:
 
 - If the source character memory to be drawn is outside the target, then only the visible portion will be rendered.
 
-:param sourceCharacterMemory: The source memory to copy from.
-:param targetCharacterMemory: The target memory to copy to.
-:param xLocation: The x-axis location in the target.
-:param yLocation: The y-axis location in the target.
-:param width: The width to copy.
-:param height: The height to copy.
-
 Example:
-
-	copyCharacterMemory(srcMem, targetMem, 0, 0, 10, 10)
+    copyCharacterMemory(srcMem, targetMem, 0, 0, 10, 10)
 */
 func copyCharacterMemory(sourceCharacterMemory [][]types.CharacterEntryType, targetCharacterMemory [][]types.CharacterEntryType, xLocation, yLocation, width, height int) {
 	sourceHeight := len(sourceCharacterMemory)
@@ -937,13 +780,8 @@ following should be noted:
 
 - If a transparent rune has a foreground or background alpha value set, then it will be drawn as a shadow.
 
-:param sourceLayerEntry: A pointer to the source layer entry.
-:param targetLayerEntry: A pointer to the target layer entry.
-:param isOpaque: Whether the source layer should be treated as opaque.
-
 Example:
-
-	overlayLayers(&srcLayer, &targetLayer, false)
+    overlayLayers(&srcLayer, &targetLayer, false)
 */
 func overlayLayers(sourceLayerEntry *types.LayerEntryType, targetLayerEntry *types.LayerEntryType, isOpaque bool) {
 	// 1. Simplified Clipping Logic (Integer Math)
@@ -1012,12 +850,11 @@ func overlayLayers(sourceLayerEntry *types.LayerEntryType, targetLayerEntry *typ
 				// Handle NullRune (transparent) cells
 				if sourceCharacterEntry.Character == constants.NullRune {
 					if sourceAttributeEntry.CellType == constants.CellTypeShadow && sourceAttributeEntry.ForegroundAlphaValue < 1 {
-						targetAttributeEntry.ForegroundColor = GetTransitionedColor(targetAttributeEntry.ForegroundColor, GetRGBColor(0, 0, 0), sourceAttributeEntry.ForegroundAlphaValue)
+						targetCharacterEntry.AttributeEntry.ForegroundColor = GetTransitionedColor(targetAttributeEntry.ForegroundColor, GetRGBColor(0, 0, 0), sourceAttributeEntry.ForegroundAlphaValue)
 					}
 					if sourceAttributeEntry.CellType == constants.CellTypeShadow && sourceAttributeEntry.BackgroundAlphaValue < 1 {
-						targetAttributeEntry.BackgroundColor = GetTransitionedColor(targetAttributeEntry.BackgroundColor, GetRGBColor(0, 0, 0), sourceAttributeEntry.BackgroundAlphaValue)
+						targetCharacterEntry.AttributeEntry.BackgroundColor = GetTransitionedColor(targetAttributeEntry.BackgroundColor, GetRGBColor(0, 0, 0), sourceAttributeEntry.BackgroundAlphaValue)
 					}
-					targetCharacterEntry.AttributeEntry = targetAttributeEntry
 
 					if sourceAttributeEntry.CellType == constants.CellTypeTooltip {
 						targetCharacterEntry.AttributeEntry.CellType = constants.CellTypeTooltip
@@ -1081,12 +918,8 @@ following should be noted:
 
 - If debug is enabled, this method does nothing since the terminal is virtual.
 
-:param layerEntry: A pointer to the layer entry to draw.
-:param isForcedRefreshRequired: Whether to force a full refresh of the screen.
-
 Example:
-
-	DrawLayerToScreen(layerEntry, false)
+    DrawLayerToScreen(layerEntry, false)
 */
 func DrawLayerToScreen(layerEntry *types.LayerEntryType, isForcedRefreshRequired bool) {
 	if !commonResource.isDebugEnabled {
@@ -1117,11 +950,8 @@ func DrawLayerToScreen(layerEntry *types.LayerEntryType, isForcedRefreshRequired
 /*
 GetOs is a method which allows you to obtain the name of the operating system currently running.
 
-:return: A string representing the OS.
-
 Example:
-
-	osName := GetOs()
+    osName := GetOs()
 */
 func GetOs() string {
 	switch runtime.GOOS {

@@ -11,11 +11,14 @@ import (
 )
 
 /*
-TestMainStub is a test which allows you to run manual tests for various TUI elements.
+TestMainStub is a test which runs manual tests for various TUI elements.
 
 Example:
+    Expected Inputs:
+        test *testing.T
 
-	TestMainStub(t)
+    Expected Outputs:
+        None.
 */
 func TestMainStub(test *testing.T) {
 	// testRadioButtons()
@@ -32,7 +35,14 @@ func TestMainStub(test *testing.T) {
 }
 
 /*
-testProgressBar is a method which allows you to manually test the progress bar control.
+testProgressBar is a method which manually tests the progress bar control.
+
+Example:
+    Expected Inputs:
+        None.
+
+    Expected Outputs:
+        None.
 */
 func testProgressBar() {
 	commonResource.isDebugEnabled = false
@@ -95,7 +105,14 @@ func testProgressBar() {
 }
 
 /*
-testRadioButtons is a method which allows you to manually test the radio button control.
+testRadioButtons is a method which manually tests the radio button control.
+
+Example:
+    Expected Inputs:
+        None.
+
+    Expected Outputs:
+        None.
 */
 func testRadioButtons() {
 	commonResource.isDebugEnabled = false
@@ -138,7 +155,14 @@ func testRadioButtons() {
 }
 
 /*
-testTextboxes is a method which allows you to manually test the textbox control.
+testTextboxes is a method which manually tests the textbox control.
+
+Example:
+    Expected Inputs:
+        None.
+
+    Expected Outputs:
+        None.
 */
 func testTextboxes() {
 	commonResource.isDebugEnabled = false
@@ -153,7 +177,7 @@ func testTextboxes() {
 	styleEntry := types.NewTuiStyleEntry()
 	styleEntry.Selector.TextAlignment = 2
 	textBox := layer1.AddTextbox(styleEntry, 2, 2, 20, 5, true)
-	textBox.SetText("This is a test 1\nthis is ☑ second line which is very long and big 1\n李克强宣布中国今年经济增长的目标为 third line. 1")
+	textBox.SetText("This is a test 1\nthis is ☑ second line which is very long and big 1\n李克强宣布中国今年 economic 增长的目标为 third line. 1")
 
 	textBox2 := layer1.AddTextbox(styleEntry, 40, 2, 20, 5, false)
 	textBox2.SetText("This is a test\nthis is ☑ second line which is very long and big\nthis is 文字 third line.")
@@ -186,7 +210,14 @@ func testTextboxes() {
 }
 
 /*
-testCheckboxes is a method which allows you to manually test the checkbox control.
+testCheckboxes is a method which manually tests the checkbox control.
+
+Example:
+    Expected Inputs:
+        None.
+
+    Expected Outputs:
+        None.
 */
 func testCheckboxes() {
 	commonResource.isDebugEnabled = false
@@ -217,7 +248,14 @@ func testCheckboxes() {
 }
 
 /*
-testDropdown is a method which allows you to manually test the dropdown and selector controls.
+testDropdown is a method which manually tests the dropdown and selector controls.
+
+Example:
+    Expected Inputs:
+        None.
+
+    Expected Outputs:
+        None.
 */
 func testDropdown() {
 	commonResource.isDebugEnabled = false
@@ -274,7 +312,14 @@ func testDropdown() {
 }
 
 /*
-testScrollBars is a method which allows you to manually test the scroll bar control.
+testScrollBars is a method which manually tests the scroll bar control.
+
+Example:
+    Expected Inputs:
+        None.
+
+    Expected Outputs:
+        None.
 */
 func testScrollBars() {
 	commonResource.isDebugEnabled = false
@@ -320,7 +365,14 @@ func testScrollBars() {
 }
 
 /*
-testSelector is a method which allows you to manually test the selector control.
+testSelector is a method which manually tests the selector control.
+
+Example:
+    Expected Inputs:
+        None.
+
+    Expected Outputs:
+        None.
 */
 func testSelector() {
 	commonResource.isDebugEnabled = false
@@ -363,7 +415,14 @@ func testSelector() {
 }
 
 /*
-testTextField is a method which allows you to manually test the text field control.
+testTextField is a method which manually tests the text field control.
+
+Example:
+    Expected Inputs:
+        None.
+
+    Expected Outputs:
+        None.
 */
 func testTextField() {
 	commonResource.isDebugEnabled = false
@@ -380,7 +439,7 @@ func testTextField() {
 
 	layer1.Locate(3, 20)
 	layer1.Print(textFieldInstance.GetValue())
-	layer1.AddTextField(styleEntry, 0, 5, 15, 30, false, "Test 李克强宣布中国今年经济增长的目 acbc1", true)
+	layer1.AddTextField(styleEntry, 0, 5, 15, 30, false, "Test acbc1", true)
 	layer1.AddScrollbar(styleEntry, 0, 8, 10, 10, 0, 1, false)
 	for {
 		mouseXLocation, mouseYLocation, _, _ := GetMouseStatus()
@@ -399,7 +458,14 @@ func testTextField() {
 }
 
 /*
-testWindowMovement is a method which allows you to manually test window movement and Z-order.
+testWindowMovement is a method which manually tests window movement and Z-order.
+
+Example:
+    Expected Inputs:
+        None.
+
+    Expected Outputs:
+        None.
 */
 func testWindowMovement() {
 	commonResource.isDebugEnabled = false
@@ -428,7 +494,14 @@ func testWindowMovement() {
 }
 
 /*
-testButtonPressAction is a method which allows you to manually test button press actions and mouse status.
+testButtonPressAction is a method which manually tests button press actions and mouse status.
+
+Example:
+    Expected Inputs:
+        None.
+
+    Expected Outputs:
+        None.
 */
 func testButtonPressAction() {
 	commonResource.isDebugEnabled = false
@@ -458,3 +531,4 @@ func testButtonPressAction() {
 	DeleteAllLayers()
 	RestoreTerminalSettings()
 }
+

@@ -7,25 +7,20 @@ import (
 )
 
 /*
-GetTransitionedColor is a method which allows you to obtain a color that has been transitioned to another color by a
+GetTransitionedColor is a method which obtains a color that has been transitioned to another color by a
 specific percent. For example, if your source color is red (255, 0, 0) and your target color is green (0, 255, 0),
 transitioning by 0.5 (fifty percent) will yield the color (128, 128, 0). In addition, the following should be noted:
 
 - If your percent change yields color indexes which are not evenly divisible, then the color index will be rounded up.
 
-- If you pass in a percent change of less than 0.0 or greater than 1.0, you are simply specifying that you want to.
+- If you pass in a percent change of less than 0.0 or greater than 1.0, then the calculation will proceed as normal,
+  resulting in a color that may exceed the range of the source or target colors.
 
-- If the resultant transitioned color falls outside of the RGB range of Black (0, 0, 0) or White (255, 255, 255), it.
-
-:param sourceColor: The color you wish to transition from.
-:param targetColor: The color you wish to transition to.
-:param percentChange: The percentage of the transition to apply (0.0 to 1.0).
-
-:return: The transitioned color as a ColorType.
+- If the resultant transitioned color falls outside of the RGB range of Black (0, 0, 0) or White (255, 255, 255), then
+  the value will be clamped to its nearest valid index.
 
 Example:
-
-	transitionedColor := GetTransitionedColor(GetRGBColor(255, 0, 0), GetRGBColor(0, 255, 0), 0.5)
+    transitionedColor := GetTransitionedColor(GetRGBColor(255, 0, 0), GetRGBColor(0, 255, 0), 0.5)
 */
 func GetTransitionedColor(sourceColor constants.ColorType, targetColor constants.ColorType, percentChange float32) constants.ColorType {
 	var sourceColorIndex [3]int32
@@ -53,16 +48,11 @@ func GetTransitionedColor(sourceColor constants.ColorType, targetColor constants
 }
 
 /*
-GetRGBColorComponents is a method which allows you to obtain RGB color component indexes for red, green, an blue color
+GetRGBColorComponents is a method which obtains RGB color component indexes for red, green, and blue color
 channels.
 
-:param color: The color for which you want to retrieve the RGB components.
-
-:return: The red, green, and blue color component indexes (0-255).
-
 Example:
-
-	red, green, blue := GetRGBColorComponents(constants.ColorRed)
+    red, green, blue := GetRGBColorComponents(constants.ColorRed)
 */
 func GetRGBColorComponents(color constants.ColorType) (int32, int32, int32) {
 	var redColorIndex int32

@@ -5,6 +5,16 @@ import (
 	"sync"
 )
 
+/*
+BaseControlType is a structure which represents the base properties for all UI controls. In addition, the following should be noted:
+
+- It includes common attributes like position, size, visibility, and styling.
+
+- It uses a mutex to ensure thread-safe access to its properties.
+
+Example:
+    baseControl := BaseControlType{}
+*/
 type BaseControlType struct {
 	Mutex            *sync.Mutex
 	StyleEntry       TuiStyleEntryType
@@ -22,24 +32,20 @@ type BaseControlType struct {
 }
 
 /*
-NewBaseControl is a constructor which allows you to create a new base control with default values. In addition, the
-following information should be noted:
+NewBaseControl is a constructor which creates a new base control with default values. In addition, the following should be noted:
 
-- Initializes all fields with sensible defaults.
+- It initializes all fields with sensible defaults.
 
-- Creates a new mutex for thread safety.
+- It creates a new mutex for thread safety.
 
-- Sets up a default style entry.
+- It sets up a default style entry.
 
 - All numeric fields are initialized to 0.
 
 - Boolean fields are initialized to true where appropriate.
 
-:return: BaseControlType
-
 Example:
-
-	NewBaseControl()
+    baseControl := NewBaseControl()
 */
 func NewBaseControl() BaseControlType {
 	var baseControl BaseControlType
@@ -60,39 +66,32 @@ func NewBaseControl() BaseControlType {
 }
 
 /*
-GetBounds is a method which allows you to retrieve the position and size of a control. In addition, the following
-information should be noted:
+GetBounds is a method which retrieves the position and size of a control. In addition, the following should be noted:
 
-- Returns the X and Y location coordinates.
+- It returns the X and Y location coordinates.
 
-- Returns the width and height of the control.
+- It returns the width and height of the control.
 
 - These values can be used for collision detection and layout calculations.
 
 Example:
-
-	instance.GetBounds()
+    x, y, w, h := baseControl.GetBounds()
 */
 func (shared *BaseControlType) GetBounds() (int, int, int, int) {
 	return shared.XLocation, shared.YLocation, shared.Width, shared.Height
 }
 
 /*
-SetPosition is a method which allows you to set the position of a control. In addition, the following information should
-be noted:
+SetPosition is a method which sets the position of a control. In addition, the following should be noted:
 
-- Updates the X and Y location coordinates.
+- It updates the X and Y location coordinates.
 
 - These values determine where the control is drawn on the screen.
 
 - The position is relative to the parent layer's origin.
 
-:param x: The x parameter.
-:param y: The y parameter.
-
 Example:
-
-	instance.SetPosition(x, y)
+    baseControl.SetPosition(10, 20)
 */
 func (shared *BaseControlType) SetPosition(x, y int) {
 	shared.XLocation = x
@@ -100,21 +99,16 @@ func (shared *BaseControlType) SetPosition(x, y int) {
 }
 
 /*
-SetSize is a method which allows you to set the dimensions of a control. In addition, the following information should
-be noted:
+SetSize is a method which sets the dimensions of a control. In addition, the following should be noted:
 
-- Updates the width and height of the control.
+- It updates the width and height of the control.
 
 - These values determine the control's visible area.
 
 - The size affects how the control is drawn and how it responds to input.
 
-:param width: The width parameter.
-:param height: The height parameter.
-
 Example:
-
-	instance.SetSize(width, height)
+    baseControl.SetSize(80, 24)
 */
 func (shared *BaseControlType) SetSize(width, height int) {
 	shared.Width = width
@@ -122,8 +116,7 @@ func (shared *BaseControlType) SetSize(width, height int) {
 }
 
 /*
-SetEnabled is a method which allows you to enable or disable a control. In addition, the following information should be
-noted:
+SetEnabled is a method which enables or disables a control. In addition, the following should be noted:
 
 - When disabled, the control will not respond to user input.
 
@@ -131,19 +124,15 @@ noted:
 
 - This state can be used to implement control dependencies.
 
-:param enabled: The enabled parameter.
-
 Example:
-
-	instance.SetEnabled(enabled)
+    baseControl.SetEnabled(false)
 */
 func (shared *BaseControlType) SetEnabled(enabled bool) {
 	shared.IsEnabled = enabled
 }
 
 /*
-SetVisible is a method which allows you to show or hide a control. In addition, the following information should be
-noted:
+SetVisible is a method which shows or hides a control. In addition, the following should be noted:
 
 - When hidden, the control is not drawn and does not respond to input.
 
@@ -151,69 +140,56 @@ noted:
 
 - This can be used to implement dynamic interfaces.
 
-:param visible: The visible parameter.
-
 Example:
-
-	instance.SetVisible(visible)
+    baseControl.SetVisible(false)
 */
 func (shared *BaseControlType) SetVisible(visible bool) {
 	shared.IsVisible = visible
 }
 
 /*
-SetStyle is a method which allows you to change the visual appearance of a control. In addition, the following
-information should be noted:
+SetStyle is a method which changes the visual appearance of a control. In addition, the following should be noted:
 
-- Updates the control's style entry with new visual properties.
+- It updates the control's style entry with new visual properties.
 
-- Affects colors, borders, and other visual attributes.
+- It affects colors, borders, and other visual attributes.
 
 - The style can be changed dynamically at runtime.
 
-:param style: The style parameter.
-
 Example:
-
-	instance.SetStyle(style)
+    baseControl.SetStyle(style)
 */
 func (shared *BaseControlType) SetStyle(style TuiStyleEntryType) {
 	shared.StyleEntry = style
 }
 
 /*
-GetAlias is a method which allows you to retrieve the alias of a control. In addition, the following information should
-be noted:
+GetAlias is a method which retrieves the alias of a control. In addition, the following should be noted:
 
-- Returns the unique identifier for the control.
+- It returns the unique identifier for the control.
 
 - This alias is used to reference the control in other operations.
 
 - The alias is set when the control is created.
 
-:return: string
-
 Example:
-
-	instance.GetAlias()
+    alias := baseControl.GetAlias()
 */
 func (shared *BaseControlType) GetAlias() string {
 	return shared.Alias
 }
 
 /*
-MarshalJSON is a method which allows you to serialize a control to JSON. In addition, the following information should
-be noted:
+MarshalJSON is a method which serializes a control to JSON. In addition, the following should be noted:
 
-- Converts the control's state to a JSON representation.
+- It converts the control's state to a JSON representation.
 
-- Includes all base control properties.
+- It includes all base control properties.
 
-- Used for saving and loading control configurations.
+- It is used for saving and loading control configurations.
 
 Example:
-
-	instance.MarshalJSON()
+    jsonData, err := baseControl.MarshalJSON()
 */
 func (shared BaseControlType) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
@@ -246,20 +222,16 @@ func (shared BaseControlType) MarshalJSON() ([]byte, error) {
 }
 
 /*
-GetEntryAsJsonDump is a method which allows you to get a JSON string representation of a control. In addition, the
-following information should be noted:
+GetEntryAsJsonDump is a method which returns a JSON string representation of a control. In addition, the following should be noted:
 
-- Returns a formatted JSON string of the control's state.
+- It returns a formatted JSON string of the control's state.
 
-- Useful for debugging and logging purposes.
+- It is useful for debugging and logging purposes.
 
-- Panics if JSON marshaling fails.
-
-:return: string
+- It panics if JSON marshaling fails.
 
 Example:
-
-	instance.GetEntryAsJsonDump()
+    jsonString := baseControl.GetEntryAsJsonDump()
 */
 func (shared BaseControlType) GetEntryAsJsonDump() string {
 	j, err := json.Marshal(shared)
@@ -270,22 +242,16 @@ func (shared BaseControlType) GetEntryAsJsonDump() string {
 }
 
 /*
-IsEqual is a method which allows you to compare two controls for equality. In addition, the following information should
-be noted:
+IsEqual is a method which compares two controls for equality. In addition, the following should be noted:
 
-- Compares all base control properties.
+- It compares all base control properties.
 
-- Returns true if all properties match, false otherwise.
+- It returns true if all properties match, false otherwise.
 
-- Used for change detection and state synchronization.
-
-:param other: The other parameter.
-
-:return: bool
+- It is used for change detection and state synchronization.
 
 Example:
-
-	instance.IsEqual(other)
+    isEqual := baseControl.IsEqual(otherControl)
 */
 func (shared *BaseControlType) IsEqual(other *BaseControlType) bool {
 	// Compare all fields except the mutex

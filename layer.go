@@ -12,39 +12,70 @@ import (
 	"github.com/supercom32/consolizer/types"
 )
 
+/*
+layerType is a structure which provides the internal namespace for layer management operations.
+*/
 type layerType struct{}
 
+/*
+layer is a variable which is the global instance for managing layer operations.
+*/
 var layer layerType
+
+/*
+Layers is a variable which is the global instance for managing the memory of all layer entries.
+*/
 var Layers *memory.MemoryManager[types.LayerEntryType]
 
+/*
+LayerInstanceType is a structure which represents a handle to a layer instance.
+*/
 type LayerInstanceType struct {
 	layerAlias  string
 	parentAlias string
 }
+
+/*
+layerAliasZOrderPair is a structure which represents a pairing between a layer alias and its z-order.
+*/
 type layerAliasZOrderPair struct {
 	Key   string
 	Value int
 }
+
+/*
+LayerAliasZOrderPairList is a structure which represents a list of layer alias and z-order pairings.
+*/
 type LayerAliasZOrderPairList []layerAliasZOrderPair
 
+/*
+init is a method which initializes the layer management system by re-initializing the screen memory.
+
+Example:
+    init()
+*/
 func init() {
 	layer.ReInitializeScreenMemory()
 }
 
+/*
+clearLayerInstance is a method which allows you to clear the contents of a layer instance.
+
+Example:
+    clearLayerInstance(instance)
+*/
 func clearLayerInstance(layerInstance *LayerInstanceType) {
 	layerEntry := Layers.Get(layerInstance.layerAlias)
 	layer.clear(layerEntry)
 }
 
 /*
-clear is a method which allows you to empty the specified text layer of all its contents. This is useful for
-internal methods that want to clear a text layer directly.
+clear is a method which allows you to empty the specified text layer of all its contents. In addition, the following should be noted:
 
-:param layerEntry: A pointer to the layer entry structure that you wish to clear.
+- This is useful for internal methods that want to clear a text layer directly.
 
 Example:
-
-	layer.clear(layerEntry)
+    layer.clear(layerEntry)
 */
 func (shared *layerType) clear(layerEntry *types.LayerEntryType) {
 	types.InitializeCharacterMemory(layerEntry)
@@ -52,23 +83,16 @@ func (shared *layerType) clear(layerEntry *types.LayerEntryType) {
 
 /*
 processMarkupTag is a method which allows you to process a markup tag in the text and update the attribute entry
-accordingly. It returns the updated attribute entry and the new character index after the tag. In addition, the
-following should be noted:
+accordingly. In addition, the following should be noted:
+
+- It returns the updated attribute entry and the new character index after the tag.
 
 - If no valid closing tag is found, the opening tag is treated as regular text.
 
 - Special tag "/" resets to the default attribute entry.
 
-:param textToPrint: A slice of runes representing the text being processed.
-:param currentIndex: The current index in the rune slice where the tag starts.
-:param textString: The string representation of the text being processed.
-:param defaultAttributeEntry: The default attribute entry to use as a fallback.
-
-:return: The updated attribute entry and the new character index.
-
 Example:
-
-	attr, nextIndex := layer.processMarkupTag(runes, 5, "Hello {{red}}World", defaultAttr)
+    attr, nextIndex := layer.processMarkupTag(runes, 5, "Hello {{red}}World", defaultAttr)
 */
 func (shared *layerType) processMarkupTag(textToPrint []rune, currentIndex int, textString string, defaultAttributeEntry types.AttributeEntryType) (types.AttributeEntryType, int) {
 	tagStartIndex := currentIndex + 2
@@ -82,26 +106,16 @@ func (shared *layerType) processMarkupTag(textToPrint []rune, currentIndex int, 
 }
 
 /*
-handleWordWrap is a method which allows you to manage word wrapping logic when a space character is encountered. It
-returns the updated cursor positions after applying word wrap if needed. In addition, the following should be noted:
+handleWordWrap is a method which allows you to manage word wrapping logic when a space character is encountered. In addition, the following should be noted:
+
+- It returns the updated cursor positions after applying word wrap if needed.
 
 - Returns early if word wrapping is disabled (wordWrapWidth <= 0).
 
 - Wraps to the next line if the word would exceed the word wrap width or layer width.
 
-:param cursorX: The current X position of the cursor.
-:param cursorY: The current Y position of the cursor.
-:param xLocation: The starting X coordinate for the text.
-:param wordWidth: The width of the word being processed.
-:param wordWrapWidth: The width at which word wrapping should occur.
-:param layerWidth: The total width of the layer.
-:param layerHeight: The total height of the layer.
-
-:return: The updated X and Y cursor positions.
-
 Example:
-
-	newX, newY := layer.handleWordWrap(10, 5, 0, 5, 20, 80, 25)
+    newX, newY := layer.handleWordWrap(10, 5, 0, 5, 20, 80, 25)
 */
 func (shared *layerType) handleWordWrap(cursorX, cursorY, xLocation, wordWidth, wordWrapWidth, layerWidth, layerHeight int) (int, int) {
 	if wordWrapWidth <= 0 {
@@ -118,21 +132,14 @@ func (shared *layerType) handleWordWrap(cursorX, cursorY, xLocation, wordWidth, 
 
 /*
 shouldSkipLeadingSpace is a method which allows you to determine if a space character at the start of a line should be
-skipped. This is typically used with word wrapping to avoid leading spaces after a wrap. In addition, the following
-should be noted:
+skipped. In addition, the following should be noted:
+
+- This is typically used with word wrapping to avoid leading spaces after a wrap.
 
 - Only applies when word wrapping is enabled and the character is a space at the start of a line.
 
-:param wordWrapWidth: The width at which word wrapping is occurring.
-:param character: The rune representing the character to check.
-:param cursorX: The current X position of the cursor.
-:param xLocation: The starting X coordinate for the text.
-
-:return: A boolean indicating whether the leading space should be skipped.
-
 Example:
-
-	skip := layer.shouldSkipLeadingSpace(20, ' ', 0, 0)
+    skip := layer.shouldSkipLeadingSpace(20, ' ', 0, 0)
 */
 func (shared *layerType) shouldSkipLeadingSpace(wordWrapWidth int, character rune, cursorX, xLocation int) bool {
 	return wordWrapWidth > 0 && character == ' ' && cursorX == xLocation
@@ -144,14 +151,8 @@ height bounds. In addition, the following should be noted:
 
 - A position is valid if it's greater than or equal to 0 and less than the layer height.
 
-:param y: The Y coordinate to check.
-:param height: The height of the layer.
-
-:return: A boolean indicating whether the position is within vertical bounds.
-
 Example:
-
-	isValid := layer.isWithinVerticalBounds(10, 25)
+    isValid := layer.isWithinVerticalBounds(10, 25)
 */
 func (shared *layerType) isWithinVerticalBounds(y, height int) bool {
 	return y >= 0 && y < height
@@ -163,36 +164,24 @@ width bounds. In addition, the following should be noted:
 
 - A position is valid if it's greater than or equal to 0 and less than the layer width.
 
-:param x: The X coordinate to check.
-:param width: The width of the layer.
-
-:return: A boolean indicating whether the position is within horizontal bounds.
-
 Example:
-
-	isValid := layer.isWithinHorizontalBounds(10, 80)
+    isValid := layer.isWithinHorizontalBounds(10, 80)
 */
 func (shared *layerType) isWithinHorizontalBounds(x, width int) bool {
 	return x >= 0 && x < width
 }
 
 /*
-renderCharacter is a method which allows you to render a character at the specified position with the given attributes.
-It handles wide characters and background transparency. In addition, the following should be noted:
+renderCharacter is a method which allows you to render a character at the specified position with the given attributes. In addition, the following should be noted:
+
+- It handles wide characters and background transparency.
 
 - For wide characters, it occupies two character cells.
 
 - Preserves the original background color when transparency is enabled.
 
-:param characterMemory: The character memory structure of the layer.
-:param cursorX: The X position to render the character at.
-:param cursorY: The Y position to render the character at.
-:param character: The rune representing the character to render.
-:param attributeEntry: The attribute entry containing styling information.
-
 Example:
-
-	layer.renderCharacter(memory, 10, 5, 'A', attr)
+    layer.renderCharacter(memory, 10, 5, 'A', attr)
 */
 func (shared *layerType) renderCharacter(characterMemory [][]types.CharacterEntryType, cursorX, cursorY int, character rune, attributeEntry types.AttributeEntryType) {
 	originalBackgroundColor := characterMemory[cursorY][cursorX].AttributeEntry.BackgroundColor
@@ -215,24 +204,18 @@ func (shared *layerType) renderCharacter(characterMemory [][]types.CharacterEntr
 }
 
 /*
-advanceCursor is a method which allows you to move the cursor position after rendering a character. It handles line
-wrapping when the cursor reaches the end of a line. In addition, the following should be noted:
+advanceCursor is a method which allows you to move the cursor position after rendering a character.
+
+In addition, the following should be noted:
+
+- It handles line wrapping when the cursor reaches the end of a line.
 
 - When word wrapping is enabled, wraps to the next line when reaching the layer width.
 
 - When word wrapping is disabled, stops at the layer width.
 
-:param cursorX: The current X position of the cursor.
-:param cursorY: The current Y position of the cursor.
-:param xLocation: The starting X coordinate for the text.
-:param layerWidth: The total width of the layer.
-:param wordWrapWidth: The width at which word wrapping should occur.
-
-:return: The updated X and Y cursor positions.
-
 Example:
-
-	newX, newY := layer.advanceCursor(10, 5, 0, 80, 20)
+    newX, newY := layer.advanceCursor(10, 5, 0, 80, 20)
 */
 func (shared *layerType) advanceCursor(cursorX, cursorY, xLocation, layerWidth, wordWrapWidth int) (int, int) {
 	cursorX++
@@ -248,8 +231,11 @@ func (shared *layerType) advanceCursor(cursorX, cursorY, xLocation, layerWidth, 
 }
 
 /*
-print is a method which allows you to handle all types of printing with configurable options. It supports word wrapping
-and markup/styling based on the provided options. In addition, the following should be noted:
+print is a method which allows you to handle all types of printing with configurable options.
+
+In addition, the following should be noted:
+
+- It supports word wrapping and markup/styling based on the provided options.
 
 - Handles boundary checking to ensure text stays within the layer.
 
@@ -257,19 +243,8 @@ and markup/styling based on the provided options. In addition, the following sho
 
 - Supports word wrapping when wordWrapWidth > 0.
 
-:param layerEntry: A pointer to the layer entry structure where text will be printed.
-:param attributeEntry: The attribute entry containing styling information.
-:param xLocation: The starting X coordinate for the text.
-:param yLocation: The starting Y coordinate for the text.
-:param textToPrint: A slice of runes representing the text to print.
-:param wordWrapWidth: The width at which word wrapping should occur. Set to 0 to disable.
-:param useMarkup: A boolean indicating whether to process markup tags.
-
-:return: The final cursor X position relative to the starting position.
-
 Example:
-
-	finalX := layer.print(layerEntry, attr, 0, 0, rune("Hello"), 20, true)
+    finalX := layer.print(layerEntry, attr, 0, 0, rune("Hello"), 20, true)
 */
 func (shared *layerType) print(layerEntry *types.LayerEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, textToPrint []rune, wordWrapWidth int, useMarkup bool) int {
 	layerWidth := layerEntry.Width
@@ -343,26 +318,17 @@ func (shared *layerType) print(layerEntry *types.LayerEntryType, attributeEntry 
 /*
 printWithWordWrap is a method which allows you to write text to a text layer with word wrapping enabled.
 
-:param layerEntry: A pointer to the layer entry structure where text will be printed.
-:param attributeEntry: The attribute entry containing styling information.
-:param xLocation: The starting X coordinate for the text.
-:param yLocation: The starting Y coordinate for the text.
-:param width: The width at which word wrapping should occur.
-:param textToPrint: A slice of runes representing the text to print.
-
-:return: The final cursor X position relative to the starting position.
-
 Example:
-
-	finalX := layer.printWithWordWrap(layerEntry, attr, 0, 0, 20, rune("Hello"))
+    finalX := layer.printWithWordWrap(layerEntry, attr, 0, 0, 20, rune("Hello"))
 */
 func (shared *layerType) printWithWordWrap(layerEntry *types.LayerEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, width int, textToPrint []rune) int {
 	return shared.print(layerEntry, attributeEntry, xLocation, yLocation, textToPrint, width, false)
 }
 
 /*
-calculateWordWidth is a method which allows you to calculate the width of a word from a given position. In addition, the
-following should be noted:
+calculateWordWidth is a method which allows you to calculate the width of a word from a given position.
+
+In addition, the following should be noted:
 
 - The first position is always assumed to be ' ' and is skipped.
 
@@ -370,15 +336,8 @@ following should be noted:
 
 - Returns the number of characters until the next space or end of text.
 
-:param textToPrint: A slice of runes representing the text being processed.
-:param start: The starting index in the rune slice.
-:param useMarkup: A boolean indicating whether to account for markup tags.
-
-:return: The calculated width of the word.
-
 Example:
-
-	width := calculateWordWidth(rune(" Hello"), 0, false)
+    width := calculateWordWidth(rune(" Hello"), 0, false)
 */
 func calculateWordWidth(textToPrint []rune, start int, useMarkup bool) int {
 	// Calculate the width of a word from the given position. The first position is
@@ -414,22 +373,16 @@ func calculateWordWidth(textToPrint []rune, start int, useMarkup bool) int {
 }
 
 /*
-printLayer is a method which allows you to write text to a text layer. This is useful for internal methods that want to
-write text to a text layer directly, without affecting user settings. In addition, the following should be noted:
+printLayer is a method which allows you to write text to a text layer.
+
+In addition, the following should be noted:
+
+- This is useful for internal methods that want to write text to a text layer directly, without affecting user settings.
 
 - If the location to print falls outside the range of the text layer, then only the visible portion of your text will.
 
-:param layerEntry: A pointer to the layer entry structure where text will be printed.
-:param attributeEntry: The attribute entry containing styling information.
-:param xLocation: The starting X coordinate for the text.
-:param yLocation: The starting Y coordinate for the text.
-:param textToPrint: A slice of runes representing the text to print.
-
-:return: The final cursor X position relative to the starting position.
-
 Example:
-
-	finalX := layer.printLayer(layerEntry, attr, 0, 0, rune("Hello"))
+    finalX := layer.printLayer(layerEntry, attr, 0, 0, rune("Hello"))
 */
 func (shared *layerType) printLayer(layerEntry *types.LayerEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, textToPrint []rune) int {
 	return shared.print(layerEntry, attributeEntry, xLocation, yLocation, textToPrint, 0, false)
@@ -437,18 +390,13 @@ func (shared *layerType) printLayer(layerEntry *types.LayerEntryType, attributeE
 
 /*
 printMarkup is a method which allows you to write text to the terminal screen with word wrapping and attribute tags.
-This is similar to printDialog but without the typewriter effect and printing delay.
 
-:param layerEntry: A pointer to the layer entry structure where text will be printed.
-:param attributeEntry: The attribute entry containing styling information.
-:param xLocation: The starting X coordinate for the text.
-:param yLocation: The starting Y coordinate for the text.
-:param widthOfLineInCharacters: The width at which word wrapping should occur.
-:param stringToPrint: The string content to print, potentially containing markup tags.
+In addition, the following should be noted:
+
+- This is similar to printDialog but without the typewriter effect and printing delay.
 
 Example:
-
-	layer.printMarkup(layerEntry, attr, 0, 0, 20, "Hello {{red}}World")
+    layer.printMarkup(layerEntry, attr, 0, 0, 20, "Hello {{red}}World")
 */
 func (shared *layerType) printMarkup(layerEntry *types.LayerEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, widthOfLineInCharacters int, stringToPrint string) {
 	arrayOfRunes := stringformat.GetRunesFromString(stringToPrint)
@@ -460,8 +408,7 @@ ReInitializeScreenMemory is a method which allows you to reset and reinitialize 
 all managed layers.
 
 Example:
-
-	layer.ReInitializeScreenMemory()
+    layer.ReInitializeScreenMemory()
 */
 func (shared *layerType) ReInitializeScreenMemory() {
 	Layers = memory.NewMemoryManager[types.LayerEntryType]() // Initialize MemoryManager
@@ -470,17 +417,8 @@ func (shared *layerType) ReInitializeScreenMemory() {
 /*
 Add is a method which allows you to create and add a new text layer to the layer management system.
 
-:param layerAlias: A unique alias for the new layer.
-:param xLocation: The starting X coordinate for the layer's screen position.
-:param yLocation: The starting Y coordinate for the layer's screen position.
-:param width: The width of the layer in characters.
-:param height: The height of the layer in characters.
-:param zOrderPriority: The rendering priority. Higher values are rendered on top.
-:param parentAlias: The alias of the parent layer, or an empty string if it has no parent.
-
 Example:
-
-	layer.Add("main", 0, 0, 80, 25, 1, "")
+    layer.Add("main", 0, 0, 80, 25, 1, "")
 */
 func (shared *layerType) Add(layerAlias string, xLocation int, yLocation int, width int, height int, zOrderPriority int, parentAlias string) {
 	if width <= 0 {
@@ -515,11 +453,12 @@ func (shared *layerType) Add(layerAlias string, xLocation int, yLocation int, wi
 /*
 GetNextAlias is a method which allows you to retrieve the alias of the first available layer in the system.
 
-:return: The alias of the next available layer, or an empty string if no layers exist.
+In addition, the following should be noted:
+
+- Returns an empty string if no layers exist.
 
 Example:
-
-	nextAlias := layer.GetNextAlias()
+    nextAlias := layer.GetNextAlias()
 */
 func (shared *layerType) GetNextAlias() string {
 	for _, currentEntry := range Layers.GetAllEntries() {
@@ -531,11 +470,8 @@ func (shared *layerType) GetNextAlias() string {
 /*
 Delete is a method which allows you to remove a layer and all its associated child layers and controls from the system.
 
-:param layerAlias: The alias of the layer to be deleted.
-
 Example:
-
-	layer.Delete("myLayer")
+    layer.Delete("myLayer")
 */
 func (shared *layerType) Delete(layerAlias string) {
 	screenEntry := Layers.Get(layerAlias)
@@ -583,11 +519,8 @@ func (shared *layerType) Delete(layerAlias string) {
 deleteAllChildrenOfParent is a method which allows you to recursively delete all child layers associated with a given
 parent layer.
 
-:param parentAlias: The alias of the parent layer whose children will be deleted.
-
 Example:
-
-	layer.deleteAllChildrenOfParent("parentLayer")
+    layer.deleteAllChildrenOfParent("parentLayer")
 */
 func (shared *layerType) deleteAllChildrenOfParent(parentAlias string) {
 	// Get all entries first to avoid modification during iteration
@@ -607,13 +540,8 @@ func (shared *layerType) deleteAllChildrenOfParent(parentAlias string) {
 /*
 IsAParent is a method which allows you to determine if a given layer acts as a parent to any other layers.
 
-:param parentAlias: The alias of the layer to check.
-
-:return: A boolean indicating whether the layer is a parent.
-
 Example:
-
-	isParent := layer.IsAParent("myLayer")
+    isParent := layer.IsAParent("myLayer")
 */
 func (shared *layerType) IsAParent(parentAlias string) bool {
 	isParent := false
@@ -629,11 +557,12 @@ func (shared *layerType) IsAParent(parentAlias string) bool {
 GetSortedLayerMemoryAliasSlice is a method which allows you to retrieve a sorted list of layer aliases based on their
 z-order.
 
-:return: A list of layer-alias and z-order pairs, sorted by z-order.
+In addition, the following should be noted:
+
+- Returns a list of layer-alias and z-order pairs, sorted by z-order.
 
 Example:
-
-	sortedLayers := layer.GetSortedLayerMemoryAliasSlice()
+    sortedLayers := layer.GetSortedLayerMemoryAliasSlice()
 */
 func (shared *layerType) GetSortedLayerMemoryAliasSlice() LayerAliasZOrderPairList {
 	pairList := make(LayerAliasZOrderPairList, len(Layers.GetAllEntries()))
@@ -653,12 +582,8 @@ func (shared *layerType) GetSortedLayerMemoryAliasSlice() LayerAliasZOrderPairLi
 SetHighestZOrderNumber is a method which allows you to set the highest z-order number for a specific layer among its
 siblings.
 
-:param layerAlias: The alias of the layer to update.
-:param parentAlias: The alias of the parent layer to scope the z-order update.
-
 Example:
-
-	layer.SetHighestZOrderNumber("topLayer", "parentLayer")
+    layer.SetHighestZOrderNumber("topLayer", "parentLayer")
 */
 func (shared *layerType) SetHighestZOrderNumber(layerAlias string, parentAlias string) {
 	if Layers.IsExists(layerAlias) {
@@ -678,13 +603,8 @@ func (shared *layerType) SetHighestZOrderNumber(layerAlias string, parentAlias s
 getHighestZOrderNumber is a method which allows you to retrieve the highest z-order value currently used among siblings
 under a given parent.
 
-:param parentAlias: The alias of the parent layer.
-
-:return: The highest z-order value found.
-
 Example:
-
-	highest := layer.getHighestZOrderNumber("parentLayer")
+    highest := layer.getHighestZOrderNumber("parentLayer")
 */
 func (shared *layerType) getHighestZOrderNumber(parentAlias string) int {
 	highestZOrderNumber := 0
@@ -699,11 +619,8 @@ func (shared *layerType) getHighestZOrderNumber(parentAlias string) int {
 /*
 SetTopmostLayer is a method which allows you to set the specified layer to be the topmost layer among its siblings.
 
-:param layerAlias: The alias of the layer to be set as topmost.
-
 Example:
-
-	layer.SetTopmostLayer("myLayer")
+    layer.SetTopmostLayer("myLayer")
 */
 func (shared *layerType) SetTopmostLayer(layerAlias string) {
 	if !Layers.IsExists(layerAlias) {
@@ -734,14 +651,12 @@ func (shared *layerType) SetTopmostLayer(layerAlias string) {
 /*
 GetRootParentAlias is a method which allows you to recursively find the root parent layer alias for a given layer.
 
-:param layerAlias: The alias of the layer to start the search from.
-:param previousChildAlias: The alias of the previous child in the hierarchy.
+In addition, the following should be noted:
 
-:return: The alias of the root parent layer and the alias of its immediate child in the path.
+- It returns the alias of the root parent layer and the alias of its immediate child in the path.
 
 Example:
-
-	root, child := layer.GetRootParentAlias("grandchild", "")
+    root, child := layer.GetRootParentAlias("grandchild", "")
 */
 func (shared *layerType) GetRootParentAlias(layerAlias string, previousChildAlias string) (string, string) {
 	layerEntry := Layers.Get(layerAlias)
@@ -759,6 +674,12 @@ func (shared *layerType) GetRootParentAlias(layerAlias string, previousChildAlia
 // REGULAR ENTRY
 // ============================================================================
 
+/*
+getUUID is a method which allows you to generate a unique version 4 UUID string.
+
+Example:
+    id := getUUID()
+*/
 func getUUID() string {
 	id := uuid.New()
 	return id.String()
@@ -768,8 +689,7 @@ func getUUID() string {
 Clear is a method which allows you to empty the current text layer of all its contents.
 
 Example:
-
-	layerInstance.Clear()
+    layerInstance.Clear()
 */
 func (shared *LayerInstanceType) Clear() {
 	layerEntry := Layers.Get(shared.layerAlias)
@@ -780,11 +700,12 @@ func (shared *LayerInstanceType) Clear() {
 /*
 GetAlias is a method which allows you to retrieve the unique alias associated with the current layer instance.
 
-:return: The string alias of the layer.
+In addition, the following should be noted:
+
+- Returns the string alias of the layer.
 
 Example:
-
-	alias := layerInstance.GetAlias()
+    alias := layerInstance.GetAlias()
 */
 func (shared *LayerInstanceType) GetAlias() string {
 	return shared.layerAlias
@@ -792,26 +713,16 @@ func (shared *LayerInstanceType) GetAlias() string {
 
 /*
 DrawImage is a method which allows you to draw an image on a given text layer. This method supports various image
-formats and drawing styles, allowing for flexible rendering of images as text-based art. In addition, the following
-should be noted:
+formats and drawing styles, allowing for flexible rendering of images as text-based art.
+
+In addition, the following should be noted:
 
 - If the image to be drawn is not already loaded in memory, it will be loaded automatically and then unloaded after the.
 
 - When drawing images with transparencies, the transparent edges are only computed once against the layer. Moving the.
 
-:param fileName: The path or filename of the image to draw.
-:param drawingStyle: The style entry defining how the image should be rendered.
-:param xLocation: The X-coordinate where the image should be drawn.
-:param yLocation: The Y-coordinate where the image should be drawn.
-:param widthInCharacters: The target width of the rendered image in characters.
-:param heightInCharacters: The target height of the rendered image in characters.
-:param blurSigma: The sigma value for Gaussian blur preprocessing.
-
-:return: An error if the image could not be loaded or drawn.
-
 Example:
-
-	err := layerInstance.DrawImage("photo.png", style, 0, 0, 40, 20, 0.5)
+    err := layerInstance.DrawImage("photo.png", style, 0, 0, 40, 20, 0.5)
 */
 func (shared *LayerInstanceType) DrawImage(fileName string, drawingStyle types.ImageStyleEntryType, xLocation int, yLocation int, widthInCharacters int, heightInCharacters int, blurSigma float64) error {
 	var err error
@@ -840,18 +751,8 @@ func (shared *LayerInstanceType) DrawImage(fileName string, drawingStyle types.I
 /*
 DrawComposedImage is a method which allows you to draw a composed image on a text layer using a specific drawing style.
 
-:param imageComposeEntry: The composed image entry containing the image data to render.
-:param drawingStyle: The visual style to apply during rendering.
-:param xLocation: The X-coordinate for drawing.
-:param yLocation: The Y-coordinate for drawing.
-:param widthInCharacters: The target width in characters.
-:param heightInCharacters: The target height in characters.
-
-:return: An error if the rendering fails.
-
 Example:
-
-	err := layerInstance.DrawComposedImage(composedImage, style, 10, 5, 20, 10)
+    err := layerInstance.DrawComposedImage(composedImage, style, 10, 5, 20, 10)
 */
 func (shared *LayerInstanceType) DrawComposedImage(imageComposeEntry ImageComposerEntryType, drawingStyle types.ImageStyleEntryType, xLocation int, yLocation int, widthInCharacters int, heightInCharacters int) error {
 	var err error
@@ -884,19 +785,8 @@ func (shared *LayerInstanceType) DrawComposedImage(imageComposeEntry ImageCompos
 /*
 AddButton is a method which allows you to add a new button control to the current layer.
 
-:param buttonLabel: The text label to display on the button.
-:param styleEntry: The visual style to apply to the button.
-:param xLocation: The X-coordinate for the button's position.
-:param yLocation: The Y-coordinate for the button's position.
-:param width: The width of the button in characters.
-:param height: The height of the button in characters.
-:param isEnabled: A boolean indicating whether the button starts enabled.
-
-:return: A ButtonInstanceType representing the new button.
-
 Example:
-
-	btn := layerInstance.AddButton("Click Me", style, 10, 5, 12, 1, true)
+    btn := layerInstance.AddButton("Click Me", style, 10, 5, 12, 1, true)
 */
 func (shared *LayerInstanceType) AddButton(buttonLabel string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, height int, isEnabled bool) ButtonInstanceType {
 	buttonAlias := getUUID()
@@ -907,18 +797,8 @@ func (shared *LayerInstanceType) AddButton(buttonLabel string, styleEntry types.
 /*
 AddCheckbox is a method which allows you to add a new checkbox control to the current layer.
 
-:param checkboxLabel: The text label to display next to the checkbox.
-:param styleEntry: The visual style to apply to the checkbox.
-:param xLocation: The X-coordinate for the checkbox's position.
-:param yLocation: The Y-coordinate for the checkbox's position.
-:param isSelected: A boolean indicating whether the checkbox starts selected.
-:param isEnabled: A boolean indicating whether the checkbox starts enabled.
-
-:return: A CheckboxInstanceType representing the new checkbox.
-
 Example:
-
-	cb := layerInstance.AddCheckbox("Option A", style, 10, 5, false, true)
+    cb := layerInstance.AddCheckbox("Option A", style, 10, 5, false, true)
 */
 func (shared *LayerInstanceType) AddCheckbox(checkboxLabel string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, isSelected bool, isEnabled bool) CheckboxInstanceType {
 	checkboxAlias := getUUID()
@@ -929,19 +809,8 @@ func (shared *LayerInstanceType) AddCheckbox(checkboxLabel string, styleEntry ty
 /*
 AddDropdown is a method which allows you to add a new dropdown control to the current layer.
 
-:param styleEntry: The visual style to apply to the dropdown.
-:param selectionEntry: The selection options for the dropdown.
-:param xLocation: The X-coordinate for the dropdown's position.
-:param yLocation: The Y-coordinate for the dropdown's position.
-:param selectorHeight: The height of the expanded dropdown selector.
-:param itemWidth: The width of each item in the dropdown.
-:param defaultItemSelected: The index of the item selected by default.
-
-:return: A DropdownInstanceType representing the new dropdown.
-
 Example:
-
-	dd := layerInstance.AddDropdown(style, selections, 10, 5, 5, 15, 0)
+    dd := layerInstance.AddDropdown(style, selections, 10, 5, 5, 15, 0)
 */
 func (shared *LayerInstanceType) AddDropdown(styleEntry types.TuiStyleEntryType, selectionEntry types.SelectionEntryType, xLocation int, yLocation int, selectorHeight int, itemWidth int, defaultItemSelected int) DropdownInstanceType {
 	dropdownAlias := getUUID()
@@ -952,17 +821,8 @@ func (shared *LayerInstanceType) AddDropdown(styleEntry types.TuiStyleEntryType,
 /*
 AddLabel is a method which allows you to add a new label control to the current layer.
 
-:param labelValue: The text content of the label.
-:param styleEntry: The visual style to apply to the label.
-:param xLocation: The X-coordinate for the label's position.
-:param yLocation: The Y-coordinate for the label's position.
-:param width: The width allocated for the label.
-
-:return: A LabelInstanceType representing the new label.
-
 Example:
-
-	lbl := layerInstance.AddLabel("Username:", style, 5, 5, 10)
+    lbl := layerInstance.AddLabel("Username:", style, 5, 5, 10)
 */
 func (shared *LayerInstanceType) AddLabel(labelValue string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int) LabelInstanceType {
 	labelAlias := getUUID()
@@ -973,22 +833,8 @@ func (shared *LayerInstanceType) AddLabel(labelValue string, styleEntry types.Tu
 /*
 AddProgressBar is a method which allows you to add a new progress bar control to the current layer.
 
-:param progressBarLabel: The text label to display on or near the progress bar.
-:param styleEntry: The visual style to apply to the progress bar.
-:param xLocation: The X-coordinate for position.
-:param yLocation: The Y-coordinate for position.
-:param width: The width of the progress bar in characters.
-:param height: The height of the progress bar in characters.
-:param isVertical: A boolean indicating if the progress bar should be vertical.
-:param value: The current value of the progress bar.
-:param maxValue: The maximum possible value for the progress bar.
-:param isBackgroundTransparent: A boolean indicating if the background should be transparent.
-
-:return: A ProgressBarInstanceType representing the new progress bar.
-
 Example:
-
-	pb := layerInstance.AddProgressBar("Loading", style, 10, 5, 20, 1, false, 50, 100, false)
+    pb := layerInstance.AddProgressBar("Loading", style, 10, 5, 20, 1, false, 50, 100, false)
 */
 func (shared *LayerInstanceType) AddProgressBar(progressBarLabel string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, height int, isVertical bool, value int, maxValue int, isBackgroundTransparent bool) ProgressBarInstanceType {
 	progressBarAlias := getUUID()
@@ -999,18 +845,8 @@ func (shared *LayerInstanceType) AddProgressBar(progressBarLabel string, styleEn
 /*
 AddRadioButton is a method which allows you to add a new radio button control to the current layer.
 
-:param radioButtonLabel: The text label for the radio button.
-:param styleEntry: The visual style to apply.
-:param xLocation: The X-coordinate for position.
-:param yLocation: The Y-coordinate for position.
-:param groupId: The ID of the group this radio button belongs to.
-:param isSelected: A boolean indicating if the button starts selected.
-
-:return: A RadioButtonInstanceType representing the new radio button.
-
 Example:
-
-	rb := layerInstance.AddRadioButton("Option 1", style, 10, 5, 1, false)
+    rb := layerInstance.AddRadioButton("Option 1", style, 10, 5, 1, false)
 */
 func (shared *LayerInstanceType) AddRadioButton(radioButtonLabel string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, groupId int, isSelected bool) RadioButtonInstanceType {
 	radioButtonAlias := getUUID()
@@ -1021,20 +857,8 @@ func (shared *LayerInstanceType) AddRadioButton(radioButtonLabel string, styleEn
 /*
 AddScrollbar is a method which allows you to add a new scrollbar control to the current layer.
 
-:param styleEntry: The visual style to apply to the scrollbar.
-:param xLocation: The X-coordinate for position.
-:param yLocation: The Y-coordinate for position.
-:param length: The length of the scrollbar in characters.
-:param maxScrollValue: The maximum scrollable value.
-:param scrollValue: The initial scroll value.
-:param scrollIncrement: The amount to scroll per step.
-:param isHorizontal: A boolean indicating if the scrollbar should be horizontal.
-
-:return: A ScrollbarInstanceType representing the new scrollbar.
-
 Example:
-
-	sb := layerInstance.AddScrollbar(style, 10, 5, 20, 100, 0, 1, false)
+    sb := layerInstance.AddScrollbar(style, 10, 5, 20, 100, 0, 1, false)
 */
 func (shared *LayerInstanceType) AddScrollbar(styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, length int, maxScrollValue int, scrollValue int, scrollIncrement int, isHorizontal bool) ScrollbarInstanceType {
 	scrollbarAlias := getUUID()
@@ -1045,23 +869,8 @@ func (shared *LayerInstanceType) AddScrollbar(styleEntry types.TuiStyleEntryType
 /*
 AddSelector is a method which allows you to add a new selector control to the current layer.
 
-:param styleEntry: The visual style to apply to the selector.
-:param selectionEntry: The selection options for the selector.
-:param xLocation: The X-coordinate for position.
-:param yLocation: The Y-coordinate for position.
-:param selectorHeight: The height of the selector control.
-:param itemWidth: The width of each selectable item.
-:param numberOfColumns: The number of columns in the selector.
-:param viewportPosition: The initial viewport offset.
-:param selectedItem: The index of the initially selected item.
-:param highlightOnClickOnly: A boolean for highlighting behavior.
-:param isBorderDrawn: A boolean indicating if a border should be drawn.
-
-:return: A SelectorInstanceType representing the new selector.
-
 Example:
-
-	sel := layerInstance.AddSelector(style, selections, 10, 5, 10, 20, 1, 0, 0, false, true)
+    sel := layerInstance.AddSelector(style, selections, 10, 5, 10, 20, 1, 0, 0, false, true)
 */
 func (shared *LayerInstanceType) AddSelector(styleEntry types.TuiStyleEntryType, selectionEntry types.SelectionEntryType, xLocation int, yLocation int, selectorHeight int, itemWidth int, numberOfColumns int, viewportPosition int, selectedItem int, highlightOnClickOnly bool, isBorderDrawn bool) SelectorInstanceType {
 	selectorAlias := getUUID()
@@ -1072,20 +881,8 @@ func (shared *LayerInstanceType) AddSelector(styleEntry types.TuiStyleEntryType,
 /*
 AddTextField is a method which allows you to add a new text field control to the current layer.
 
-:param styleEntry: The visual style to apply to the text field.
-:param xLocation: The X-coordinate for position.
-:param yLocation: The Y-coordinate for position.
-:param width: The width of the text field in characters.
-:param maxLengthAllowed: The maximum character length allowed in the field.
-:param isPasswordProtected: A boolean indicating if characters should be masked.
-:param defaultValue: The initial text value of the field.
-:param isEnabled: A boolean indicating if the field starts enabled.
-
-:return: A TextFieldInstanceType representing the new text field.
-
 Example:
-
-	tf := layerInstance.AddTextField(style, 10, 5, 20, 50, false, "", true)
+    tf := layerInstance.AddTextField(style, 10, 5, 20, 50, false, "", true)
 */
 func (shared *LayerInstanceType) AddTextField(styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, maxLengthAllowed int, isPasswordProtected bool, defaultValue string, isEnabled bool) TextFieldInstanceType {
 	textFieldAlias := getUUID()
@@ -1094,20 +891,10 @@ func (shared *LayerInstanceType) AddTextField(styleEntry types.TuiStyleEntryType
 }
 
 /*
-Add is a method which allows you to add a new multi-line textbox control to the current layer.
-
-:param styleEntry: The visual style to apply to the textbox.
-:param xLocation: The X-coordinate for position.
-:param yLocation: The Y-coordinate for position.
-:param width: The width of the textbox.
-:param height: The height of the textbox.
-:param isBorderDrawn: A boolean indicating if a border should be drawn.
-
-:return: A TextboxInstanceType representing the new textbox.
+AddTextbox is a method which allows you to add a new multi-line textbox control to the current layer.
 
 Example:
-
-	tb := layerInstance.AddTextbox(style, 10, 5, 30, 10, true)
+    tb := layerInstance.AddTextbox(style, 10, 5, 30, 10, true)
 */
 func (shared *LayerInstanceType) AddTextbox(styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, height int, isBorderDrawn bool) TextboxInstanceType {
 	textBoxAlias := getUUID()
@@ -1118,25 +905,8 @@ func (shared *LayerInstanceType) AddTextbox(styleEntry types.TuiStyleEntryType, 
 /*
 AddTooltip is a method which allows you to add a new tooltip control to the current layer.
 
-:param tooltipValue: The text content of the tooltip.
-:param styleEntry: The visual style to apply.
-:param hotspotXLocation: The X-coordinate of the interactive hotspot.
-:param hotspotYLocation: The Y-coordinate of the interactive hotspot.
-:param hotspotWidth: The width of the hotspot area.
-:param hotspotHeight: The height of the hotspot area.
-:param tooltipXLocation: The X-coordinate where the tooltip appears.
-:param tooltipYLocation: The Y-coordinate where the tooltip appears.
-:param tooltipWidth: The width of the tooltip display.
-:param tooltipHeight: The height of the tooltip display.
-:param isLocationAbsolute: A boolean for coordinate mode.
-:param isBorderDrawn: A boolean indicating if a border should be drawn.
-:param hoverTime: The time in milliseconds the user must hover to show the tooltip.
-
-:return: A TooltipInstanceType representing the new tooltip.
-
 Example:
-
-	tt := layerInstance.AddTooltip("Help text", style, 10, 5, 5, 1, 10, 6, 20, 3, false, true, 500)
+    tt := layerInstance.AddTooltip("Help text", style, 10, 5, 5, 1, 10, 6, 20, 3, false, true, 500)
 */
 func (shared *LayerInstanceType) AddTooltip(tooltipValue string, styleEntry types.TuiStyleEntryType, hotspotXLocation int, hotspotYLocation int, hotspotWidth int, hotspotHeight int, tooltipXLocation int, tooltipYLocation int, tooltipWidth int, tooltipHeight int, isLocationAbsolute bool, isBorderDrawn bool, hoverTime int) TooltipInstanceType {
 	tooltipAlias := getUUID()
@@ -1145,36 +915,25 @@ func (shared *LayerInstanceType) AddTooltip(tooltipValue string, styleEntry type
 }
 
 /*
-Add is a method which allows you to add a viewport to a given text layer. A viewport is a read-only text display
-control that can show text with markup codes for colorization. It supports scrollback history and text wrapping. In
-addition, the following should be noted:
+AddViewport is a method which allows you to add a viewport to a given text layer. A viewport is a read-only text display
+control that can show text with markup codes for colorization. It supports scrollback history and text wrapping.
+
+In addition, the following should be noted:
 
 - If vertical scrollbars are enabled, the viewport will maintain scrollback history up to the specified maxHistoryLines.
 
 - If vertical scrollbars are not enabled, then no history is needed and only memory for the visible display is required.
 
-  - If isLinesWrapped is enabled, text printed to screen will wrap text cleanly like dialog.go's printMarkup method and no
-    horizontal scrollbars will be shown.
+- If isLinesWrapped is enabled, text printed to screen will wrap text cleanly like dialog.go's printMarkup method and no
+  horizontal scrollbars will be shown.
 
-  - If isLinesWrapped is disabled, lines will remain on the same line and horizontal scrollbars will be rendered if
-    needed.
+- If isLinesWrapped is disabled, lines will remain on the same line and horizontal scrollbars will be rendered if
+  needed.
 
 - Text can be added to the viewport using the Print method.
 
-:param styleEntry: The visual style to apply to the viewport.
-:param xLocation: The X-coordinate for position.
-:param yLocation: The Y-coordinate for position.
-:param width: The width of the viewport.
-:param height: The height of the viewport.
-:param isLinesWrapped: A boolean indicating if lines should wrap.
-:param isBorderDrawn: A boolean indicating if a border should be drawn.
-:param maxHistoryLines: The maximum number of history lines to maintain.
-
-:return: A ViewportInstanceType representing the new viewport.
-
 Example:
-
-	vp := layerInstance.AddViewport(style, 0, 0, 40, 10, true, true, 100)
+    vp := layerInstance.AddViewport(style, 0, 0, 40, 10, true, true, 100)
 */
 func (shared *LayerInstanceType) AddViewport(styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, height int, isLinesWrapped bool, isBorderDrawn bool, maxHistoryLines int) ViewportInstanceType {
 	viewportAlias := getUUID()
@@ -1183,7 +942,9 @@ func (shared *LayerInstanceType) AddViewport(styleEntry types.TuiStyleEntryType,
 }
 
 /*
-AddFileMenu is a method which allows you to add a file menu to a layer. In addition, the following should be noted:
+AddFileMenu is a method which allows you to add a file menu to a layer.
+
+In addition, the following should be noted:
 
 - The file menu will be drawn at the specified location with the given style.
 
@@ -1193,18 +954,8 @@ AddFileMenu is a method which allows you to add a file menu to a layer. In addit
 
 - The file menu reuses existing selectors for dropdown functionality.
 
-:param styleEntry: The visual style to apply to the file menu.
-:param menuHeadings: A list of string headings for the top-level menu.
-:param menuSelections: A list of selection entries for each menu heading's dropdown.
-:param xLocation: The X-coordinate for position.
-:param yLocation: The Y-coordinate for position.
-:param isEnabled: A boolean indicating if the menu starts enabled.
-
-:return: A FileMenuInstanceType representing the new file menu.
-
 Example:
-
-	fm := layerInstance.AddFileMenu(style, string{"File", "Edit"}, selections, 0, 0, true)
+    fm := layerInstance.AddFileMenu(style, string{"File", "Edit"}, selections, 0, 0, true)
 */
 func (shared *LayerInstanceType) AddFileMenu(styleEntry types.TuiStyleEntryType, menuHeadings []string, menuSelections []types.SelectionEntryType, xLocation int, yLocation int, isEnabled bool) FileMenuInstanceType {
 	menuAlias := getUUID()
@@ -1216,8 +967,7 @@ func (shared *LayerInstanceType) AddFileMenu(styleEntry types.TuiStyleEntryType,
 DeleteAllButtons is a method which allows you to remove all buttons from the current layer.
 
 Example:
-
-	layerInstance.DeleteAllButtons()
+    layerInstance.DeleteAllButtons()
 */
 func (shared *LayerInstanceType) DeleteAllButtons() {
 	Buttons.RemoveAll(shared.layerAlias)
@@ -1227,8 +977,7 @@ func (shared *LayerInstanceType) DeleteAllButtons() {
 DeleteAllCheckboxes is a method which allows you to remove all checkboxes from the current layer.
 
 Example:
-
-	layerInstance.DeleteAllCheckboxes()
+    layerInstance.DeleteAllCheckboxes()
 */
 func (shared *LayerInstanceType) DeleteAllCheckboxes() {
 	Checkboxes.RemoveAll(shared.layerAlias)
@@ -1238,8 +987,7 @@ func (shared *LayerInstanceType) DeleteAllCheckboxes() {
 DeleteAllDropdowns is a method which allows you to remove all dropdowns from the current layer.
 
 Example:
-
-	layerInstance.DeleteAllDropdowns()
+    layerInstance.DeleteAllDropdowns()
 */
 func (shared *LayerInstanceType) DeleteAllDropdowns() {
 	Dropdowns.RemoveAll(shared.layerAlias)
@@ -1249,8 +997,7 @@ func (shared *LayerInstanceType) DeleteAllDropdowns() {
 DeleteAllLabels is a method which allows you to remove all labels from the current layer.
 
 Example:
-
-	layerInstance.DeleteAllLabels()
+    layerInstance.DeleteAllLabels()
 */
 func (shared *LayerInstanceType) DeleteAllLabels() {
 	Labels.RemoveAll(shared.layerAlias)
@@ -1260,8 +1007,7 @@ func (shared *LayerInstanceType) DeleteAllLabels() {
 DeleteAllProgressBars is a method which allows you to remove all progress bars from the current layer.
 
 Example:
-
-	layerInstance.DeleteAllProgressBars()
+    layerInstance.DeleteAllProgressBars()
 */
 func (shared *LayerInstanceType) DeleteAllProgressBars() {
 	ProgressBars.RemoveAll(shared.layerAlias)
@@ -1271,8 +1017,7 @@ func (shared *LayerInstanceType) DeleteAllProgressBars() {
 DeleteAllRadioButtons is a method which allows you to remove all radio buttons from the current layer.
 
 Example:
-
-	layerInstance.DeleteAllRadioButtons()
+    layerInstance.DeleteAllRadioButtons()
 */
 func (shared *LayerInstanceType) DeleteAllRadioButtons() {
 	RadioButtons.RemoveAll(shared.layerAlias)
@@ -1282,8 +1027,7 @@ func (shared *LayerInstanceType) DeleteAllRadioButtons() {
 DeleteAllScrollbars is a method which allows you to remove all scroll bars from the current layer.
 
 Example:
-
-	layerInstance.DeleteAllScrollbars()
+    layerInstance.DeleteAllScrollbars()
 */
 func (shared *LayerInstanceType) DeleteAllScrollbars() {
 	ScrollBars.RemoveAll(shared.layerAlias)
@@ -1293,8 +1037,7 @@ func (shared *LayerInstanceType) DeleteAllScrollbars() {
 DeleteAllSelectors is a method which allows you to remove all selectors from the current layer.
 
 Example:
-
-	layerInstance.DeleteAllSelectors()
+    layerInstance.DeleteAllSelectors()
 */
 func (shared *LayerInstanceType) DeleteAllSelectors() {
 	Selectors.RemoveAll(shared.layerAlias)
@@ -1304,8 +1047,7 @@ func (shared *LayerInstanceType) DeleteAllSelectors() {
 DeleteAllTextFields is a method which allows you to remove all text fields from the current layer.
 
 Example:
-
-	layerInstance.DeleteAllTextFields()
+    layerInstance.DeleteAllTextFields()
 */
 func (shared *LayerInstanceType) DeleteAllTextFields() {
 	TextFields.RemoveAll(shared.layerAlias)
@@ -1315,8 +1057,7 @@ func (shared *LayerInstanceType) DeleteAllTextFields() {
 DeleteAllTextboxes is a method which allows you to remove all textboxes from the current layer.
 
 Example:
-
-	layerInstance.DeleteAllTextboxes()
+    layerInstance.DeleteAllTextboxes()
 */
 func (shared *LayerInstanceType) DeleteAllTextboxes() {
 	Textboxes.RemoveAll(shared.layerAlias)
@@ -1326,8 +1067,7 @@ func (shared *LayerInstanceType) DeleteAllTextboxes() {
 DeleteAllTooltips is a method which allows you to remove all tooltips from the current layer.
 
 Example:
-
-	layerInstance.DeleteAllTooltips()
+    layerInstance.DeleteAllTooltips()
 */
 func (shared *LayerInstanceType) DeleteAllTooltips() {
 	Tooltips.RemoveAll(shared.layerAlias)
@@ -1337,8 +1077,7 @@ func (shared *LayerInstanceType) DeleteAllTooltips() {
 DeleteAllViewports is a method which allows you to remove all viewports from the current layer.
 
 Example:
-
-	layerInstance.DeleteAllViewports()
+    layerInstance.DeleteAllViewports()
 */
 func (shared *LayerInstanceType) DeleteAllViewports() {
 	Viewports.RemoveAll(shared.layerAlias)
@@ -1348,79 +1087,67 @@ func (shared *LayerInstanceType) DeleteAllViewports() {
 DeleteAllFileMenus is a method which allows you to remove all file menus from the current layer.
 
 Example:
-
-	layerInstance.DeleteAllFileMenus()
+    layerInstance.DeleteAllFileMenus()
 */
 func (shared *LayerInstanceType) DeleteAllFileMenus() {
 	FileMenus.RemoveAll(shared.layerAlias)
 }
 
 /*
-Print is a method which allows you to write text to the current layer. In addition, the following should be noted:
+Print is a method which allows you to write text to the current layer.
+
+In addition, the following should be noted:
 
 - When text is written to the text layer, the cursor position is also updated to reflect its new location.
 
-- If the string to print ends up being too long to fit at its current location, then only the visible portion of your.
-
-:param textToPrint: The string of text to print.
+- If the string to print ends up being too long to fit at its current location, then only the visible portion of your text will be printed.
 
 Example:
-
-	layerInstance.Print("Hello World")
+    layerInstance.Print("Hello World")
 */
 func (shared *LayerInstanceType) Print(textToPrint string) {
 	printLayerInstance(shared, textToPrint)
 }
 
 /*
-Locate is a method which allows you to set the default cursor location on your text layer for printing with. In
-addition, the following should be noted:
+Locate is a method which allows you to set the default cursor location on your text layer for printing with.
 
-  - If you pass in a location value that falls outside the dimensions of the default text layer, a panic will be
-    generated.
+In addition, the following should be noted:
+
+- If you pass in a location value that falls outside the dimensions of the default text layer, a panic will be generated.
 
 - Valid text layer locations start at position (0,0) for the upper left corner.
 
-:param xLocation: The x-axis location for the cursor.
-:param yLocation: The y-axis location for the cursor.
-
 Example:
-
-	layerInstance.Locate(10, 5)
+    layerInstance.Locate(10, 5)
 */
 func (shared *LayerInstanceType) Locate(xLocation int, yLocation int) {
 	locateLayerInstance(shared, xLocation, yLocation)
 }
 
 /*
-Color is a method which allows you to set default colors on your text layer for printing with. The color index specified
-corresponds to the 16 color ANSI standard, where color 0 is Black and 15 is Bright White.
+Color is a method which allows you to set default colors on your text layer for printing with.
 
-:param foregroundColorIndex: The ANSI index for the foreground color.
-:param backgroundColorIndex: The ANSI index for the background color.
+In addition, the following should be noted:
+
+- The color index specified corresponds to the 16 color ANSI standard, where color 0 is Black and 15 is Bright White.
 
 Example:
-
-	layerInstance.Color(15, 0)
+    layerInstance.Color(15, 0)
 */
 func (shared *LayerInstanceType) Color(foregroundColorIndex int, backgroundColorIndex int) {
 	colorLayerInstance(shared, foregroundColorIndex, backgroundColorIndex)
 }
 
 /*
-ColorRGB is a method which allows you to set default colors on your text layer for printing with using RGB values. This
-method allows you to specify colors using RGB color index values within the range of 0 to 255.
+ColorRGB is a method which allows you to set default colors on your text layer for printing with using RGB values.
 
-:param foregroundRedIndex: Red channel for foreground.
-:param foregroundGreenIndex: Green channel for foreground.
-:param foregroundBlueIndex: Blue channel for foreground.
-:param backgroundRedIndex: Red channel for background.
-:param backgroundGreenIndex: Green channel for background.
-:param backgroundBlueIndex: Blue channel for background.
+In addition, the following should be noted:
+
+- This method allows you to specify colors using RGB color index values within the range of 0 to 255.
 
 Example:
-
-	layerInstance.ColorRGB(255, 255, 255, 0, 0, 0)
+    layerInstance.ColorRGB(255, 255, 255, 0, 0, 0)
 */
 func (shared *LayerInstanceType) ColorRGB(foregroundRedIndex int32, foregroundGreenIndex int32, foregroundBlueIndex int32, backgroundRedIndex int32, backgroundGreenIndex int32, backgroundBlueIndex int32) {
 	colorLayerRGBInstance(shared, foregroundRedIndex, foregroundGreenIndex, foregroundBlueIndex, backgroundRedIndex, backgroundGreenIndex, backgroundBlueIndex)
@@ -1429,12 +1156,8 @@ func (shared *LayerInstanceType) ColorRGB(foregroundRedIndex int32, foregroundGr
 /*
 Color24Bit is a method which allows you to color the current layer using a 24-bit color expressed as an int32.
 
-:param foregroundColor: The 24-bit foreground color.
-:param backgroundColor: The 24-bit background color.
-
 Example:
-
-	layerInstance.Color24Bit(fgColor, bgColor)
+    layerInstance.Color24Bit(fgColor, bgColor)
 */
 func (shared *LayerInstanceType) Color24Bit(foregroundColor constants.ColorType, backgroundColor constants.ColorType) {
 	colorLayer24BitInstance(shared, foregroundColor, backgroundColor)
@@ -1443,17 +1166,16 @@ func (shared *LayerInstanceType) Color24Bit(foregroundColor constants.ColorType,
 /*
 SetAlpha is a method which allows you to set the alpha value for the current layer. This lets you perform pseudo
 transparencies by making the layer foreground and background colors blend with the layers underneath it to the degree
-specified. In addition, the following should be noted:
+specified.
+
+In addition, the following should be noted:
 
 - An alpha value of 1.0 is equal to 100% visible, while an alpha value of 0.0 is 0% visible.
 
 - If the percent change specified is outside of the RGB color range, then the color will simply bottom or max out.
 
-:param alphaValue: The alpha value to set.
-
 Example:
-
-	layerInstance.SetAlpha(0.5)
+    layerInstance.SetAlpha(0.5)
 */
 func (shared *LayerInstanceType) SetAlpha(alphaValue float32) {
 	setLayerAlphaInstance(shared, alphaValue)
@@ -1462,33 +1184,24 @@ func (shared *LayerInstanceType) SetAlpha(alphaValue float32) {
 /*
 SetZOrder is a method which allows you to set the z-order priority for the current layer.
 
-:param zOrder: The z-order value to set.
-
 Example:
-
-	layerInstance.SetZOrder(10)
+    layerInstance.SetZOrder(10)
 */
 func (shared *LayerInstanceType) SetZOrder(zOrder int) {
 	setLayerZOrderInstance(shared, zOrder)
 }
 
 /*
-DrawVerticalLine is a method which allows you to draw a vertical line on a text layer. This method also has the ability
-to draw connectors in case the line intersects with other lines that have already been drawn. In addition, the following
-should be noted:
+DrawVerticalLine is a method which allows you to draw a vertical line on a text layer.
 
-  - If the line to be drawn falls outside the area of the text layer specified, then only the visible portion of the line
-    will be drawn.
+In addition, the following should be noted:
 
-:param styleEntry: The visual style to apply to the line.
-:param xLocation: The X-coordinate where the line starts.
-:param yLocation: The Y-coordinate where the line starts.
-:param height: The height of the vertical line.
-:param isConnectorsDrawn: A boolean indicating if intersection connectors should be drawn.
+- This method also has the ability to draw connectors in case the line intersects with other lines that have already been drawn.
+
+- If the line to be drawn falls outside the area of the text layer specified, then only the visible portion of the line will be drawn.
 
 Example:
-
-	layerInstance.DrawVerticalLine(style, 10, 5, 10, true)
+    layerInstance.DrawVerticalLine(style, 10, 5, 10, true)
 */
 func (shared *LayerInstanceType) DrawVerticalLine(styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, height int, isConnectorsDrawn bool) {
 	layerEntry := Layers.Get(shared.layerAlias)
@@ -1497,22 +1210,16 @@ func (shared *LayerInstanceType) DrawVerticalLine(styleEntry types.TuiStyleEntry
 }
 
 /*
-DrawHorizontalLine is a method which allows you to draw a horizontal line on a text layer. This method also has the
-ability to draw connectors in case the line intersects with other lines that have already been drawn. In addition, the
-following should be noted:
+DrawHorizontalLine is a method which allows you to draw a horizontal line on a text layer.
 
-  - If the line to be drawn falls outside the area of the text layer specified, then only the visible portion of the line
-    will be drawn.
+In addition, the following should be noted:
 
-:param styleEntry: The visual style to apply to the line.
-:param xLocation: The X-coordinate where the line starts.
-:param yLocation: The Y-coordinate where the line starts.
-:param width: The width of the horizontal line.
-:param isConnectorsDrawn: A boolean indicating if intersection connectors should be drawn.
+- This method also has the ability to draw connectors in case the line intersects with other lines that have already been drawn.
+
+- If the line to be drawn falls outside the area of the text layer specified, then only the visible portion of the line will be drawn.
 
 Example:
-
-	layerInstance.DrawHorizontalLine(style, 10, 5, 20, true)
+    layerInstance.DrawHorizontalLine(style, 10, 5, 20, true)
 */
 func (shared *LayerInstanceType) DrawHorizontalLine(styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, isConnectorsDrawn bool) {
 	layerEntry := Layers.Get(shared.layerAlias)
@@ -1521,23 +1228,18 @@ func (shared *LayerInstanceType) DrawHorizontalLine(styleEntry types.TuiStyleEnt
 }
 
 /*
-DrawBorder is a method which allows you to draw a border on a given text layer. Borders differ from frames since they
-are flat shaded and do not have a raised or sunken look to them. In addition, the following should be noted:
+DrawBorder is a method which allows you to draw a border on a given text layer.
 
-- If the border to be drawn falls outside the range of the specified layer, then only the visible portion of the border.
+In addition, the following should be noted:
 
-- The 'isInteractive' option allows you to specify if the window should interact with the layer being drawn on. For.
+- Borders differ from frames since they are flat shaded and do not have a raised or sunken look to them.
 
-:param styleEntry: The visual style to apply to the border.
-:param xLocation: The X-coordinate for position.
-:param yLocation: The Y-coordinate for position.
-:param width: The width of the bordered area.
-:param height: The height of the bordered area.
-:param isInteractive: A boolean indicating if the border is interactive.
+- If the border to be drawn falls outside the range of the specified layer, then only the visible portion of the border will be drawn.
+
+- The 'isInteractive' option allows you to specify if the window should interact with the layer being drawn on.
 
 Example:
-
-	layerInstance.DrawBorder(style, 5, 5, 40, 10, true)
+    layerInstance.DrawBorder(style, 5, 5, 40, 10, true)
 */
 func (shared *LayerInstanceType) DrawBorder(styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, height int, isInteractive bool) {
 	layerEntry := Layers.Get(shared.layerAlias)
@@ -1546,19 +1248,16 @@ func (shared *LayerInstanceType) DrawBorder(styleEntry types.TuiStyleEntryType, 
 }
 
 /*
-DrawFrameLabel is a method which allows you to draw a label for a frame. The label will be automatically enclosed by the
-characters "" and "" to blend in with a border of a frame. In addition, the following should be noted:
+DrawFrameLabel is a method which allows you to draw a label for a frame.
 
-- If the frame label to be drawn falls outside the range of the specified layer, then only the visible portion of the.
+In addition, the following should be noted:
 
-:param styleEntry: The visual style to apply to the label.
-:param label: The text content of the label.
-:param xLocation: The X-coordinate for position.
-:param yLocation: The Y-coordinate for position.
+- The label will be automatically enclosed by characters to blend in with a border of a frame.
+
+- If the frame label to be drawn falls outside the range of the specified layer, then only the visible portion of the label will be drawn.
 
 Example:
-
-	layerInstance.DrawFrameLabel(style, "Settings", 7, 5)
+    layerInstance.DrawFrameLabel(style, "Settings", 7, 5)
 */
 func (shared *LayerInstanceType) DrawFrameLabel(styleEntry types.TuiStyleEntryType, label string, xLocation int, yLocation int) {
 	layerEntry := Layers.Get(shared.layerAlias)
@@ -1566,24 +1265,18 @@ func (shared *LayerInstanceType) DrawFrameLabel(styleEntry types.TuiStyleEntryTy
 }
 
 /*
-DrawFrame is a method which allows you to draw a frame on a given text layer. Frames differ from borders since borders
-are flat shaded and do not have a raised or sunken look to them. In addition, the following should be noted:
+DrawFrame is a method which allows you to draw a frame on a given text layer.
 
-- If the frame to be drawn falls outside the range of the specified layer, then only the visible portion of the frame.
+In addition, the following should be noted:
 
-- The 'isInteractive' option allows you to specify if the window should interact with the layer being drawn on. For.
+- Frames differ from borders since borders are flat shaded and do not have a raised or sunken look to them.
 
-:param styleEntry: The visual style to apply to the frame.
-:param isRaised: A boolean indicating if the frame should look raised (true) or sunken (false).
-:param xLocation: The X-coordinate for position.
-:param yLocation: The Y-coordinate for position.
-:param width: The width of the framed area.
-:param height: The height of the framed area.
-:param isInteractive: A boolean indicating if the frame is interactive.
+- If the frame to be drawn falls outside the range of the specified layer, then only the visible portion of the frame will be drawn.
+
+- The 'isInteractive' option allows you to specify if the window should interact with the layer being drawn on.
 
 Example:
-
-	layerInstance.DrawFrame(style, true, 5, 5, 40, 10, true)
+    layerInstance.DrawFrame(style, true, 5, 5, 40, 10, true)
 */
 func (shared *LayerInstanceType) DrawFrame(styleEntry types.TuiStyleEntryType, isRaised bool, xLocation int, yLocation int, width int, height int, isInteractive bool) {
 	layerEntry := Layers.Get(shared.layerAlias)
@@ -1596,23 +1289,18 @@ func (shared *LayerInstanceType) DrawFrame(styleEntry types.TuiStyleEntryType, i
 }
 
 /*
-DrawWindow is a method which allows you to draw a window on a given text layer. Windows differ from borders since the
-entire area the window surrounds gets filled with a solid background color. In addition, the following should be noted:
+DrawWindow is a method which allows you to draw a window on a given text layer.
 
-- If the window to be drawn falls outside the range of the specified layer, then only the visible portion of the window.
+In addition, the following should be noted:
 
-- The 'isInteractive' option allows you to specify if the window should interact with the layer being drawn on. For.
+- Windows differ from borders since the entire area the window surrounds gets filled with a solid background color.
 
-:param styleEntry: The visual style to apply to the window.
-:param xLocation: The X-coordinate for position.
-:param yLocation: The Y-coordinate for position.
-:param width: The width of the window.
-:param height: The height of the window.
-:param isInteractive: A boolean indicating if the window is interactive.
+- If the window to be drawn falls outside the range of the specified layer, then only the visible portion of the window will be drawn.
+
+- The 'isInteractive' option allows you to specify if the window should interact with the layer being drawn on.
 
 Example:
-
-	layerInstance.DrawWindow(style, 5, 5, 40, 10, true)
+    layerInstance.DrawWindow(style, 5, 5, 40, 10, true)
 */
 func (shared *LayerInstanceType) DrawWindow(styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, height int, isInteractive bool) {
 	layerEntry := Layers.Get(shared.layerAlias)
@@ -1621,20 +1309,16 @@ func (shared *LayerInstanceType) DrawWindow(styleEntry types.TuiStyleEntryType, 
 }
 
 /*
-DrawShadow is a method which allows you to draw shadows on a given text layer. Shadows are simply transparent areas
-which darken whatever text layers are underneath it by a specified degree. In addition, the following should be noted:
+DrawShadow is a method which allows you to draw shadows on a given text layer.
+
+In addition, the following should be noted:
+
+- Shadows are simply transparent areas which darken whatever text layers are underneath it by a specified degree.
 
 - The alpha value can range from 0.0 (no shadow) to 1.0 (totally black).
 
-:param xLocation: The X-coordinate for position.
-:param yLocation: The Y-coordinate for position.
-:param width: The width of the shadow area.
-:param height: The height of the shadow area.
-:param alphaValue: The transparency level of the shadow.
-
 Example:
-
-	layerInstance.DrawShadow(7, 7, 40, 10, 0.5)
+    layerInstance.DrawShadow(7, 7, 40, 10, 0.5)
 */
 func (shared *LayerInstanceType) DrawShadow(xLocation int, yLocation int, width int, height int, alphaValue float32) {
 	layerEntry := Layers.Get(shared.layerAlias)
@@ -1643,21 +1327,16 @@ func (shared *LayerInstanceType) DrawShadow(xLocation int, yLocation int, width 
 }
 
 /*
-FillArea is a method which allows you to fill an area of a given text layer with characters of your choice. If you wish
-to fill the area with repeating text, simply provide the string you wish to repeat. In addition, the following should be
-noted:
+FillArea is a method which allows you to fill an area of a given text layer with characters of your choice.
 
-- If the area to fill falls outside the range of the specified layer, then only the visible portion of the fill will be.
+In addition, the following should be noted:
 
-:param fillCharacters: The string of characters to use for filling.
-:param xLocation: The starting X-coordinate.
-:param yLocation: The starting Y-coordinate.
-:param width: The width of the area to fill.
-:param height: The height of the area to fill.
+- If you wish to fill the area with repeating text, simply provide the string you wish to repeat.
+
+- If the area to fill falls outside the range of the specified layer, then only the visible portion of the fill will be drawn.
 
 Example:
-
-	layerInstance.FillArea("*", 0, 0, 80, 25)
+    layerInstance.FillArea("*", 0, 0, 80, 25)
 */
 func (shared *LayerInstanceType) FillArea(fillCharacters string, xLocation int, yLocation int, width int, height int) {
 	layerEntry := Layers.Get(shared.layerAlias)
@@ -1666,14 +1345,14 @@ func (shared *LayerInstanceType) FillArea(fillCharacters string, xLocation int, 
 }
 
 /*
-FillLayer is a method which allows you to fill an entire layer with characters of your choice. If you wish to fill the
-layer with repeating text, simply provide the string you wish to repeat.
+FillLayer is a method which allows you to fill an entire layer with characters of your choice.
 
-:param fillCharacters: The string of characters to use for filling.
+In addition, the following should be noted:
+
+- If you wish to fill the layer with repeating text, simply provide the string you wish to repeat.
 
 Example:
-
-	layerInstance.FillLayer(".")
+    layerInstance.FillLayer(".")
 */
 func (shared *LayerInstanceType) FillLayer(fillCharacters string) {
 	layerEntry := Layers.Get(shared.layerAlias)
@@ -1682,18 +1361,14 @@ func (shared *LayerInstanceType) FillLayer(fillCharacters string) {
 }
 
 /*
-DrawBar is a method which allows you to draw a horizontal bar on a given text layer row. This is useful for drawing
-application headers or status bar footers.
+DrawBar is a method which allows you to draw a horizontal bar on a given text layer row.
 
-:param styleEntry: The visual style to apply to the bar.
-:param xLocation: The starting X-coordinate.
-:param yLocation: The starting Y-coordinate.
-:param barLength: The length of the bar in characters.
-:param fillCharacters: The characters to use for filling the bar.
+In addition, the following should be noted:
+
+- This is useful for drawing application headers or status bar footers.
 
 Example:
-
-	layerInstance.DrawBar(style, 0, 0, 80, "=")
+    layerInstance.DrawBar(style, 0, 0, 80, "=")
 */
 func (shared *LayerInstanceType) DrawBar(styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, barLength int, fillCharacters string) {
 	layerEntry := Layers.Get(shared.layerAlias)
@@ -1704,58 +1379,56 @@ func (shared *LayerInstanceType) DrawBar(styleEntry types.TuiStyleEntryType, xLo
 }
 
 /*
-MoveLayerByAbsoluteValue is a method which allows you to move a text layer by an absolute value. This is useful if you
-know exactly what position you wish to move your text layer to. In addition, the following should be noted:
+MoveLayerByAbsoluteValue is a method which allows you to move a text layer by an absolute value.
 
-  - If you move your layer outside the visible terminal display, only the visible display area will be rendered.
-    Likewise,.
+In addition, the following should be noted:
 
-:param xLocation: The new absolute X-coordinate for the layer.
-:param yLocation: The new absolute Y-coordinate for the layer.
+- This is useful if you know exactly what position you wish to move your text layer to.
+
+- If you move your layer outside the visible terminal display, only the visible display area will be rendered.
 
 Example:
-
-	layerInstance.MoveLayerByAbsoluteValue(10, 5)
+    layerInstance.MoveLayerByAbsoluteValue(10, 5)
 */
 func (shared *LayerInstanceType) MoveLayerByAbsoluteValue(xLocation int, yLocation int) {
 	moveLayerByAbsoluteValue(shared.layerAlias, xLocation, yLocation)
 }
 
 /*
-MoveLayerByRelativeValue is a method which allows you to move a text layer by a relative value. This is useful for
-windows, foregrounds, backgrounds, or any kind of animations or movement you may wish to do in increments. In addition,
-the following should be noted:
+MoveLayerByRelativeValue is a method which allows you to move a text layer by a relative value.
 
-  - If you move your layer outside the visible terminal display, only the visible display area will be rendered. Likewise,
-    if your text layer is a child of a parent layer, then only the visible display area will be rendered on the parent.
+In addition, the following should be noted:
 
-:param xLocation: The relative X-coordinate offset.
-:param yLocation: The relative Y-coordinate offset.
+- This is useful for windows, foregrounds, backgrounds, or any kind of animations or movement you may wish to do in increments.
+
+- If you move your layer outside the visible terminal display, only the visible display area will be rendered.
+
+- If your text layer is a child of a parent layer, then only the visible display area will be rendered on the parent.
 
 Example:
-
-	layerInstance.MoveLayerByRelativeValue(-1, 2)
+    layerInstance.MoveLayerByRelativeValue(-1, 2)
 */
 func (shared *LayerInstanceType) MoveLayerByRelativeValue(xLocation int, yLocation int) {
 	moveLayerByRelativeValue(shared.layerAlias, xLocation, yLocation)
 }
 
 /*
-Delete is a method which allows you to remove a text layer. If you wish to reuse a text layer for a future purpose,
-you may also consider making the layer invisible instead of deleting it. In addition, the following should be noted:
+Delete is a method which allows you to remove a text layer.
+
+In addition, the following should be noted:
+
+- If you wish to reuse a text layer for a future purpose, you may also consider making the layer invisible instead of deleting it.
 
 - When a text layer is deleted, all child text layers are recursively deleted as well.
 
-- If any dynamically drawn TUI controls reference the deleted layer, they will still be present. However, because the.
+- If any dynamically drawn TUI controls reference the deleted layer, they will still be present.
 
-  - If you attempt to delete a text layer which is currently set as your default text layer, then a panic will be
-    generated.
+- If you attempt to delete a text layer which is currently set as your default text layer, then a panic will be generated.
 
 - If you attempt to delete a text layer that does not exist, then the operation will be ignored.
 
 Example:
-
-	layerInstance.Delete()
+    layerInstance.Delete()
 */
 func (shared *LayerInstanceType) Delete() {
 	deleteLayer(shared.layerAlias)
@@ -1766,11 +1439,8 @@ func (shared *LayerInstanceType) Delete() {
 IsExists is a method which allows you to check if the current layer instance still exists in the layer management
 system.
 
-:return: A boolean indicating whether the layer exists.
-
 Example:
-
-	exists := layerInstance.IsExists()
+    exists := layerInstance.IsExists()
 */
 func (shared *LayerInstanceType) IsExists() bool {
 	if shared.layerAlias != "" {
@@ -1782,11 +1452,8 @@ func (shared *LayerInstanceType) IsExists() bool {
 /*
 SetIsVisible is a method which allows you to set the visibility of the current layer.
 
-:param isVisible: A boolean indicating whether the layer should be visible.
-
 Example:
-
-	layerInstance.SetIsVisible(false)
+    layerInstance.SetIsVisible(false)
 */
 func (shared *LayerInstanceType) SetIsVisible(isVisible bool) {
 	validateLayer(shared.layerAlias)
@@ -1797,8 +1464,7 @@ func (shared *LayerInstanceType) SetIsVisible(isVisible bool) {
 SetTopmost is a method which allows you to set the current layer to be the topmost layer within its parent hierarchy.
 
 Example:
-
-	layerInstance.SetTopmost()
+    layerInstance.SetTopmost()
 */
 func (shared *LayerInstanceType) SetTopmost() {
 	validateLayer(shared.layerAlias)
@@ -1808,11 +1474,8 @@ func (shared *LayerInstanceType) SetTopmost() {
 /*
 GetLocation is a method which allows you to retrieve the current screen X and Y coordinates of the layer.
 
-:return: The current X and Y coordinates of the layer.
-
 Example:
-
-	x, y := layerInstance.GetLocation()
+    x, y := layerInstance.GetLocation()
 */
 func (shared *LayerInstanceType) GetLocation() (int, int) {
 	validateLayer(shared.layerAlias)
@@ -1823,12 +1486,20 @@ func (shared *LayerInstanceType) GetLocation() (int, int) {
 /*
 GetSize is a method which allows you to retrieve the current width and height of the layer in characters.
 
-:return: The width and height of the layer.
+Example:
+    w, h := layerInstance.GetSize()
+*/
+func (shared *LayerInstanceType) GetSize() (int, int) {
+	validateLayer(shared.layerAlias)
+	layerEntry := Layers.Get(shared.layerAlias)
+	return layerEntry.Width, layerEntry.Height
+}
+
+/*
+GetAlpha is a method which allows you to retrieve the current alpha transparency level of the layer.
 
 Example:
-Example:
-
-	alpha := layerInstance.GetAlpha()
+    alpha := layerInstance.GetAlpha()
 */
 func (shared *LayerInstanceType) GetAlpha() float32 {
 	validateLayer(shared.layerAlias)
@@ -1837,9 +1508,13 @@ func (shared *LayerInstanceType) GetAlpha() float32 {
 }
 
 /*
-LoadLayer is a method which allows you to load a pre-rendered layer from disk and add it to the layer system. This is
-useful for quickly loading complex layers that were previously saved, such as image layers. The layer is loaded from a
-compressed format that was created by SaveLayer. In addition, the following should be noted:
+LoadLayer is a method which allows you to load a pre-rendered layer from disk and add it to the layer system.
+
+In addition, the following should be noted:
+
+- This is useful for quickly loading complex layers that were previously saved, such as image layers.
+
+- The layer is loaded from a compressed format that was created by SaveLayer.
 
 - The file extension ".clayer" is automatically appended to the filename if not provided.
 
@@ -1849,16 +1524,8 @@ compressed format that was created by SaveLayer. In addition, the following shou
 
 - The function returns a LayerInstanceType that can be used to manipulate the loaded layer.
 
-:param xLocation: The X-coordinate for the layer's position.
-:param yLocation: The Y-coordinate for the layer's position.
-:param zOrderPriority: The rendering priority.
-:param filePath: The path to the layer file.
-
-:return: An error if the layer could not be loaded.
-
 Example:
-
-	err := layerInstance.LoadLayer(0, 0, 1, "image.clayer")
+    err := layerInstance.LoadLayer(0, 0, 1, "image.clayer")
 */
 func (shared *LayerInstanceType) LoadLayer(xLocation int, yLocation int, zOrderPriority int, filePath string) error {
 	// Get the file data using the virtual file system
@@ -1873,8 +1540,10 @@ func (shared *LayerInstanceType) LoadLayer(xLocation int, yLocation int, zOrderP
 
 /*
 LoadPreRenderedLayerImage is a method which allows you to load a pre-rendered layer image directly into image memory.
-This is different from loading an image and pre-rendering it afterwards, as it directly loads a layer that has already
-been rendered. In addition, the following should be noted:
+
+In addition, the following should be noted:
+
+- This is different from loading an image and pre-rendering it afterwards, as it directly loads a layer that has already been rendered.
 
 - The file extension ".clayer" is automatically appended to the filename if not provided.
 
@@ -1882,14 +1551,8 @@ been rendered. In addition, the following should be noted:
 
 - The loaded layer is added to the image system with the specified alias.
 
-:param filePath: The path to the layer file.
-:param imageAlias: The alias to assign to the loaded image.
-
-:return: An error if the image could not be loaded.
-
 Example:
-
-	err := layerInstance.LoadPreRenderedLayerImage("pre.clayer", "myImage")
+    err := layerInstance.LoadPreRenderedLayerImage("pre.clayer", "myImage")
 */
 func (shared *LayerInstanceType) LoadPreRenderedLayerImage(filePath string, imageAlias string) error {
 	// Load the pre-rendered layer image using the image.go function
@@ -1897,8 +1560,11 @@ func (shared *LayerInstanceType) LoadPreRenderedLayerImage(filePath string, imag
 }
 
 /*
-SaveLayer is a method which allows you to save the current layer to disk. This is useful for caching complex layers that
-take time to render, such as image layers. In addition, the following should be noted:
+SaveLayer is a method which allows you to save the current layer to disk.
+
+In addition, the following should be noted:
+
+- This is useful for caching complex layers that take time to render, such as image layers.
 
 - The file extension ".clayer" is automatically appended to the filename if not provided.
 
@@ -1906,13 +1572,8 @@ take time to render, such as image layers. In addition, the following should be 
 
 - If the file cannot be written, an error is returned.
 
-:param filePath: The path where the layer should be saved.
-
-:return: An error if the layer could not be saved.
-
 Example:
-
-	err := layerInstance.SaveLayer("saved.clayer")
+    err := layerInstance.SaveLayer("saved.clayer")
 */
 func (shared *LayerInstanceType) SaveLayer(filePath string) error {
 	validateLayer(shared.layerAlias)
@@ -1924,28 +1585,22 @@ func (shared *LayerInstanceType) SaveLayer(filePath string) error {
 ColorStyle is a method which allows you to apply a TUI style entry to the current layer, setting its default foreground
 and background colors.
 
-:param styleEntry: The visual style to apply.
-
 Example:
-
-	layerInstance.ColorStyle(myStyle)
+    layerInstance.ColorStyle(myStyle)
 */
 func (shared *LayerInstanceType) ColorStyle(styleEntry types.TuiStyleEntryType) {
 	colorLayerInstance(shared, int(styleEntry.Text.ForegroundColor), int(styleEntry.Text.BackgroundColor))
 }
 
 /*
-Resize is a method which allows you to change the width and height of a layer. In addition, the following should be
-noted:
+Resize is a method which allows you to change the width and height of a layer.
 
-- If you pass in a zero or negative value for either width or height a panic will be generated to fail as fast as.
+In addition, the following should be noted:
 
-:param width: The new width for the layer.
-:param height: The new height for the layer.
+- If you pass in a zero or negative value for either width or height a panic will be generated to fail as fast as possible.
 
 Example:
-
-	layerInstance.Resize(100, 50)
+    layerInstance.Resize(100, 50)
 */
 func (shared *LayerInstanceType) Resize(width int, height int) {
 	validateLayer(shared.layerAlias)
@@ -1973,39 +1628,28 @@ func (shared *LayerInstanceType) Resize(width int, height int) {
 }
 
 /*
-PrintDialog is a method which allows you to write text immediately to the terminal screen via a typewriter effect. This
-is useful for video games or other applications that may require printing text in a dialog box. In addition, the
-following should be noted:
+PrintDialog is a method which allows you to write text immediately to the terminal screen via a typewriter effect.
 
-  - If you specify a print location outside the range of your specified text layer, a panic will be generated to fail as
-    fast as possible.
+In addition, the following should be noted:
 
-  - If printing has reached the last line of your text layer, printing will not advance to the next line. Instead, it will
-    resume and overwrite what was already printed on the same line.
+- This is useful for video games or other applications that may require printing text in a dialog box.
+
+- If you specify a print location outside the range of your specified text layer, a panic will be generated to fail as fast as possible.
+
+- If printing has reached the last line of your text layer, printing will not advance to the next line. Instead, it will resume and overwrite what was already printed on the same line.
 
 - Specifying the width of your text line allows you to control when text wrapping occurs.
 
-  - When a word is too long to be printed on a text layer line, or the width of your line has already exceed its allowed
-    maximum, the word will be pushed to the line directly under it.
+- When a word is too long to be printed on a text layer line, or the width of your line has already exceed its allowed maximum, the word will be pushed to the line directly under it.
 
 - When specifying a printing delay, the amount of time to wait is inserted between each character printed.
 
-  - If the dialog being printed is flagged as skipable, the user can speed up printing by pressing the 'enter' key or
-    right mouse button.
+- If the dialog being printed is flagged as skipable, the user can speed up printing by pressing the 'enter' key or right mouse button.
 
-  - This method supports the use of text styles during printing to add color or styles to specific words in your string.
-    All text styles must be enclosed around the "{" and "}" characters.
-
-:param xLocation: The starting X-coordinate for the dialog.
-:param yLocation: The starting Y-coordinate for the dialog.
-:param widthOfLineInCharacters: The width at which word wrapping should occur.
-:param printDelayInMilliseconds: The delay in milliseconds between each character.
-:param isSkipable: A boolean indicating if the animation can be skipped.
-:param stringToPrint: The text content to print, potentially containing style tags.
+- This method supports the use of text styles during printing to add color or styles to specific words in your string. All text styles must be enclosed around the "{" and "}" characters.
 
 Example:
-
-	layerInstance.PrintDialog(0, 0, 30, 50, true, "Hello {red}World{}")
+    layerInstance.PrintDialog(0, 0, 30, 50, true, "Hello {red}World{}")
 */
 func (shared *LayerInstanceType) PrintDialog(xLocation int, yLocation int, widthOfLineInCharacters int, printDelayInMilliseconds int, isSkipable bool, stringToPrint string) {
 	formattedTextToPrint := fmt.Sprint(stringToPrint)
@@ -2018,31 +1662,24 @@ func (shared *LayerInstanceType) PrintDialog(xLocation int, yLocation int, width
 
 /*
 PrintMarkup is a method which allows you to write text immediately to the terminal screen with word wrapping and
-attribute tags. This is similar to PrintDialog but without the typewriter effect and printing delay. In addition, the
-following should be noted:
+attribute tags.
 
-  - If you specify a print location outside the range of your specified text layer, a panic will be generated to fail as
-    fast as possible.
+In addition, the following should be noted:
 
-  - If printing has reached the last line of your text layer, printing will not advance to the next line. Instead, it will
-    resume and overwrite what was already printed on the same line.
+- This is similar to PrintDialog but without the typewriter effect and printing delay.
+
+- If you specify a print location outside the range of your specified text layer, a panic will be generated to fail as fast as possible.
+
+- If printing has reached the last line of your text layer, printing will not advance to the next line. Instead, it will resume and overwrite what was already printed on the same line.
 
 - Specifying the width of your text line allows you to control when text wrapping occurs.
 
-  - When a word is too long to be printed on a text layer line, or the width of your line has already exceeded its allowed
-    maximum, the word will be pushed to the line directly under it.
+- When a word is too long to be printed on a text layer line, or the width of your line has already exceeded its allowed maximum, the word will be pushed to the line directly under it.
 
-  - This method supports the use of text styles during printing to add color or styles to specific words in your string.
-    All text styles must be enclosed around the "{" and "}" characters.
-
-:param xLocation: The starting X-coordinate.
-:param yLocation: The starting Y-coordinate.
-:param widthOfLineInCharacters: The width at which word wrapping should occur.
-:param stringToPrint: The text content to print, potentially containing style tags.
+- This method supports the use of text styles during printing to add color or styles to specific words in your string. All text styles must be enclosed around the "{{" and "}}" characters.
 
 Example:
-
-	layerInstance.PrintMarkup(0, 0, 30, "This is {red}red{} text.")
+    layerInstance.PrintMarkup(0, 0, 30, "This is {red}red{} text.")
 */
 func (shared *LayerInstanceType) PrintMarkup(xLocation int, yLocation int, widthOfLineInCharacters int, stringToPrint string) {
 	formattedTextToPrint := fmt.Sprint(stringToPrint)
@@ -2056,14 +1693,8 @@ func (shared *LayerInstanceType) PrintMarkup(xLocation int, yLocation int, width
 /*
 PrintFont is a method which allows you to render a string onto a layer using the specified font.
 
-:param fontInstance: The font instance to use for rendering.
-:param xLocation: The X-coordinate for position.
-:param yLocation: The Y-coordinate for position.
-:param stringToPrint: The text content to render.
-
 Example:
-
-	layerInstance.PrintFont(myFont, 10, 5, "Big Text")
+    layerInstance.PrintFont(myFont, 10, 5, "Big Text")
 */
 func (shared *LayerInstanceType) PrintFont(fontInstance fontInstanceType, xLocation int, yLocation int, stringToPrint string) {
 	layerEntry := Layers.Get(shared.layerAlias)
@@ -2075,28 +1706,22 @@ func (shared *LayerInstanceType) PrintFont(fontInstance fontInstanceType, xLocat
 
 /*
 PrintFontDialog is a method which allows you to write text to the terminal screen with a typewriter effect using a
-specified font. This is useful for creating animated text sequences with custom fonts. In addition, the following should
-be noted:
+specified font.
+
+In addition, the following should be noted:
+
+- This is useful for creating animated text sequences with custom fonts.
 
 - If you specify a print location outside the range of your specified text layer, a panic will be generated.
 
 - When specifying a printing delay, the amount of time to wait is inserted between each character printed.
 
-- If the dialog being printed is flagged as skippable, the user can speed up printing by pressing the 'enter' key or.
+- If the dialog being printed is flagged as skippable, the user can speed up printing by pressing the 'enter' key or right mouse button.
 
 - Specifying the width of your text line in characters allows you to control when text wrapping occurs.
 
-:param fontInstance: The font instance to use for rendering.
-:param xLocation: The starting X-coordinate.
-:param yLocation: The starting Y-coordinate.
-:param widthOfLineInCharacters: The width at which word wrapping should occur.
-:param printDelayInMilliseconds: The delay in milliseconds between each character.
-:param isSkipable: A boolean indicating if the animation can be skipped.
-:param stringToPrint: The text content to print.
-
 Example:
-
-	layerInstance.PrintFontDialog(myFont, 0, 0, 30, 50, true, "Animated font text")
+    layerInstance.PrintFontDialog(myFont, 0, 0, 30, 50, true, "Animated font text")
 */
 func (shared *LayerInstanceType) PrintFontDialog(fontInstance fontInstanceType, xLocation int, yLocation int, widthOfLineInCharacters int, printDelayInMilliseconds int, isSkipable bool, stringToPrint string) {
 	formattedTextToPrint := fmt.Sprint(stringToPrint)
@@ -2108,34 +1733,26 @@ func (shared *LayerInstanceType) PrintFontDialog(fontInstance fontInstanceType, 
 }
 
 /*
-AddLayer is a method which allows you to add a text layer to the current terminal display. You can add as many layers as
-you wish to suit your applications needs. Text layers are useful for setting up windows, modal dialogs, viewports, game
-foregrounds and backgrounds, and even effects like parallax scrolling. In addition, the following should be noted:
+AddLayer is a method which allows you to add a text layer to the current terminal display.
 
-  - If you specify a location for your layer that is outside the visible terminal display, then only the visible portion
-    of.
+In addition, the following should be noted:
 
-- If you pass in a zero or negative value for either width or height a panic will be generated to fail as fast as.
+- You can add as many layers as you wish to suit your applications needs.
 
-  - The z-order priority controls which text layer should be drawn first and which text layer should be drawn last.
-    Layers.
+- Text layers are useful for setting up windows, modal dialogs, viewports, game foregrounds and backgrounds, and even effects like parallax scrolling.
 
-- The parent layer instance specifies which text layer is the parent of the one being created. Having a parent layer.
+- If you specify a location for your layer that is outside the visible terminal display, then only the visible portion will be rendered.
+
+- If you pass in a zero or negative value for either width or height a panic will be generated to fail as fast as possible.
+
+- The z-order priority controls which text layer should be drawn first and which text layer should be drawn last.
+
+- The parent layer instance specifies which text layer is the parent of the one being created.
 
 - When adding a new text layer, it will become the default working text layer automatically.
 
-:param xLocation: The X-coordinate for the layer's screen position.
-:param yLocation: The Y-coordinate for the layer's screen position.
-:param width: The width of the layer in characters.
-:param height: The height of the layer in characters.
-:param zOrderPriority: The rendering priority. Higher values are rendered on top.
-:param parentLayerInstance: A pointer to the parent layer instance, or nil if it has no parent.
-
-:return: A pointer to the newly created LayerInstanceType.
-
 Example:
-
-	layerInstance := AddLayer(0, 0, 80, 25, 1, nil)
+    layerInstance := AddLayer(0, 0, 80, 25, 1, nil)
 */
 func AddLayer(xLocation int, yLocation int, width int, height int, zOrderPriority int, parentLayerInstance *LayerInstanceType) *LayerInstanceType {
 	layerAlias := getUUID()
@@ -2150,26 +1767,30 @@ func AddLayer(xLocation int, yLocation int, width int, height int, zOrderPriorit
 }
 
 /*
-MoveLayerByAbsoluteValue is a method which allows you to move a text layer by an absolute value. This is useful if you
+deleteLayer is a method which allows you to remove a text layer.
+
+In addition, the following should be noted:
 
 - If any dynamically drawn TUI controls reference the deleted layer, they will still be present but no longer rendered.
 
-  - If you attempt to delete a text layer which is currently set as your default text layer, then a panic will be
-    generated.
+- If you attempt to delete a text layer which is currently set as your default text layer, then a panic will be generated.
 
 - If you attempt to delete a text layer that does not exist, then the operation will be ignored.
 
-:param layerAlias: The alias of the layer to be deleted.
-
 Example:
-
-	deleteLayer("myLayer")
+    deleteLayer("myLayer")
 */
 func deleteLayer(layerAlias string) {
 	validateLayer(layerAlias)
 	layer.Delete(layerAlias)
 }
 
+/*
+moveLayerByAbsoluteValue is a method which allows you to move a layer to an absolute screen position.
+
+Example:
+    moveLayerByAbsoluteValue("myLayer", 10, 5)
+*/
 func moveLayerByAbsoluteValue(layerAlias string, xLocation int, yLocation int) {
 	validateLayer(layerAlias)
 	layerEntry := Layers.Get(layerAlias)
@@ -2177,6 +1798,12 @@ func moveLayerByAbsoluteValue(layerAlias string, xLocation int, yLocation int) {
 	layerEntry.ScreenYLocation = yLocation
 }
 
+/*
+moveLayerByRelativeValue is a method which allows you to move a layer relative to its current screen position.
+
+Example:
+    moveLayerByRelativeValue("myLayer", 1, -1)
+*/
 func moveLayerByRelativeValue(layerAlias string, xLocation int, yLocation int) {
 	validateLayer(layerAlias)
 	layerEntry := Layers.Get(layerAlias)
@@ -2188,8 +1815,7 @@ func moveLayerByRelativeValue(layerAlias string, xLocation int, yLocation int) {
 DeleteAllLayers is a method which allows you to remove all layers from memory and reinitialize screen memory.
 
 Example:
-
-	DeleteAllLayers()
+    DeleteAllLayers()
 */
 func DeleteAllLayers() {
 	for _, entryToRemove := range Layers.GetAllEntries() {
@@ -2204,16 +1830,19 @@ func DeleteAllLayers() {
 /*
 SetTopmostLayer is a method which allows you to set the specified layer to be the topmost layer among its siblings.
 
-:param layerInstance: A pointer to the layer instance to be set as topmost.
-
 Example:
-
-	SetTopmostLayer(layerInstance)
+    SetTopmostLayer(layerInstance)
 */
 func SetTopmostLayer(layerInstance *LayerInstanceType) {
 	layer.SetTopmostLayer(layerInstance.layerAlias)
 }
 
+/*
+isLayerExists is a method which allows you to check if a layer with the given alias exists.
+
+Example:
+    exists := isLayerExists("myLayer")
+*/
 func isLayerExists(layerAlias string) bool {
 	if Layers.IsExists(layerAlias) {
 		return true
@@ -2221,6 +1850,12 @@ func isLayerExists(layerAlias string) bool {
 	return false
 }
 
+/*
+setLayerIsVisible is a method which allows you to set the visibility state of a layer.
+
+Example:
+    setLayerIsVisible("myLayer", true)
+*/
 func setLayerIsVisible(layerAlias string, isVisible bool) {
 	validateLayer(layerAlias)
 	layerEntry := Layers.Get(layerAlias)
@@ -2230,13 +1865,8 @@ func setLayerIsVisible(layerAlias string, isVisible bool) {
 /*
 validateLayerSize is a method which allows you to check if the given width and height are valid for a layer.
 
-:param layerAlias: The alias of the layer being validated.
-:param width: The width value to check.
-:param height: The height value to check.
-
 Example:
-
-	validateLayerSize("myLayer", 80, 25)
+    validateLayerSize("myLayer", 80, 25)
 */
 func validateLayerSize(layerAlias string, width int, height int) {
 	if width <= 0 {

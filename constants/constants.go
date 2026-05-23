@@ -4,6 +4,9 @@ import (
 	"github.com/gdamore/tcell/v2"
 )
 
+/*
+ImageStyle is a type which represents the style used for rendering images in the terminal.
+*/
 type ImageStyle int
 
 const (
@@ -22,6 +25,9 @@ const (
 	ImageStyleFullBlock
 )
 
+/*
+DitheringStyle is a type which represents the dithering method used for image processing.
+*/
 type DitheringStyle int
 
 const (
@@ -32,6 +38,9 @@ const (
 	DitheringStyleErrorDiffusion
 )
 
+/*
+EffectStyle is a type which represents various visual effects and transitions.
+*/
 type EffectStyle int
 
 const (
@@ -51,6 +60,9 @@ const (
 	EffectHorizontalCurtainTransition
 )
 
+/*
+TransparencyMode is a type which represents how transparency is handled when rendering.
+*/
 type TransparencyMode int
 
 const (
@@ -59,6 +71,9 @@ const (
 	TransparencyModeBlended
 )
 
+/*
+ColorType is a type which represents a 64-bit color value.
+*/
 type ColorType uint64
 
 var CP437ToUnicode = [256]rune{

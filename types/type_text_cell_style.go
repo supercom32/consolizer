@@ -5,6 +5,14 @@ import (
 	"github.com/supercom32/consolizer/constants"
 )
 
+/*
+TextCellStyleEntryType is a structure which represents the visual style of a single text cell. In addition, the following should be noted:
+
+- Contains color and formatting information like bold, italic, and underline.
+
+Example:
+    var textCellStyle types.TextCellStyleEntryType
+*/
 type TextCellStyleEntryType struct {
 	ForegroundColor          constants.ColorType
 	BackgroundColor          constants.ColorType
@@ -18,11 +26,12 @@ type TextCellStyleEntryType struct {
 }
 
 /*
-MarshalJSON is a method which allows you to marshaljson.
+MarshalJSON is a method which allows you to serialize a text cell style to JSON. In addition, the following should be noted:
+
+- Converts the style properties into a JSON format for persistence or transmission.
 
 Example:
-
-	instance.MarshalJSON()
+    instance.MarshalJSON()
 */
 func (shared TextCellStyleEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
@@ -53,13 +62,12 @@ func (shared TextCellStyleEntryType) MarshalJSON() ([]byte, error) {
 }
 
 /*
-GetEntryAsJsonDump is a method which allows you to getentryasjsondump.
+GetEntryAsJsonDump is a method which allows you to get a JSON string representation of a text cell style. In addition, the following should be noted:
 
-:return: string
+- Panics if the marshaling process fails.
 
 Example:
-
-	instance.GetEntryAsJsonDump()
+    instance.GetEntryAsJsonDump()
 */
 func (shared TextCellStyleEntryType) GetEntryAsJsonDump() string {
 	j, err := json.Marshal(shared)
@@ -70,15 +78,12 @@ func (shared TextCellStyleEntryType) GetEntryAsJsonDump() string {
 }
 
 /*
-NewTextCellStyleEntry is a constructor which allows you to newtextcellstyleentry.
+NewTextCellStyleEntry is a constructor which allows you to create a new text cell style entry. In addition, the following should be noted:
 
-:param existingAttributeEntry: The existingAttributeEntry parameter.
-
-:return: TextCellStyleEntryType
+- Can optionally initialize properties from an existing style entry.
 
 Example:
-
-	NewTextCellStyleEntry(existingAttributeEntry)
+    NewTextCellStyleEntry(existingAttributeEntry)
 */
 func NewTextCellStyleEntry(existingAttributeEntry ...*TextCellStyleEntryType) TextCellStyleEntryType {
 	var attributeEntry TextCellStyleEntryType

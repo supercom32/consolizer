@@ -37,14 +37,8 @@ following should be noted:
 
 - The length and randomness of your password will directly influence the usefulness of your chosen scrambleKey.
 
-:param password: The plaintext password to be scrambled.
-:param scrambleKey: The key used to scramble the password.
-
-:return: The resulting base64 encoded scrambled password string.
-
 Example:
-
-	scrambled := GetScrambledPassword("mySecret", "myKey")
+    scrambled := GetScrambledPassword("mySecret", "myKey")
 */
 func GetScrambledPassword(password string, scrambleKey string) string {
 	scrambledPassword := xorString(password, scrambleKey)
@@ -59,14 +53,8 @@ by the user in order to avoid storing passwords in plaintext. In addition, the f
 
 - Password scrambling is not designed for cryptographic security. It is simply a method of transposing a password so.
 
-:param password: The base64 encoded scrambled password string.
-:param scrambleKey: The key used to unscramble the password.
-
-:return: The resulting plaintext unscrambled password string.
-
 Example:
-
-	plaintext := getUnscrambledPassword(scrambled, "myKey")
+    plaintext := getUnscrambledPassword(scrambled, "myKey")
 */
 func getUnscrambledPassword(password string, scrambleKey string) string {
 	decodedString, _ := base64.StdEncoding.DecodeString(password)
@@ -84,14 +72,8 @@ useful for when you don't want to store something in plaintext. In addition, the
 
 - The scrambleKey will be MD5 hashed before being used. This ensures that if any part of the scramble key has been.
 
-:param stringToXor: The source string to be XORed.
-:param scrambleKey: The key used for the XOR operation.
-
-:return: The resulting XORed string.
-
 Example:
-
-	xored := xorString("Secret Data", "myKey")
+    xored := xorString("Secret Data", "myKey")
 */
 func xorString(stringToXor string, scrambleKey string) string {
 	var xoredString string
@@ -105,13 +87,8 @@ func xorString(stringToXor string, scrambleKey string) string {
 /*
 getMD5Hash is a method which allows you to obtain an MD5 hash from a provided text string.
 
-:param text: The input string to be hashed.
-
-:return: The resulting MD5 hash as a hexadecimal string.
-
 Example:
-
-	hash := getMD5Hash("input string")
+    hash := getMD5Hash("input string")
 */
 func getMD5Hash(text string) string {
 	hash := md5.Sum([]byte(text))
@@ -132,15 +109,8 @@ just include that instead. In addition, the following should be noted:
 
 - If for some reason the virtual file system was unable to be mounted, an error will be returned so that your.
 
-:param archivePath: The file system path to the ZIP or RAR archive.
-:param password: The password for the archive (plaintext or scrambled).
-:param scrambleKey: The key used to unscramble the password, or "" if not scrambled.
-
-:return: An error if the mounting process failed, otherwise nil.
-
 Example:
-
-	err := mountVirtualFileSystem("assets.zip", "pwd", "")
+    err := mountVirtualFileSystem("assets.zip", "pwd", "")
 */
 func mountVirtualFileSystem(archivePath string, password string, scrambleKey string) error {
 	err := isArchiveFormatZip(archivePath)
@@ -166,11 +136,8 @@ func mountVirtualFileSystem(archivePath string, password string, scrambleKey str
 /*
 MountEmbeddedFileSystem is a method which allows you to mount an embedded file system as the virtual file system.
 
-:param fs: The embedded file system to be mounted.
-
 Example:
-
-	MountEmbeddedFileSystem(myEmbeddedFS)
+    MountEmbeddedFileSystem(myEmbeddedFS)
 */
 func MountEmbeddedFileSystem(fs embed.FS) {
 	virtualFileSystemArchiveType = constants.VirtualFileSystemEmbedded
@@ -182,8 +149,7 @@ UnmountVirtualFileSystem is a method which allows you to reset the virtual file 
 useful for when you want to access the physical file system directly.
 
 Example:
-
-	UnmountVirtualFileSystem()
+    UnmountVirtualFileSystem()
 */
 func UnmountVirtualFileSystem() {
 	virtualFileSystemArchiveType = 0
@@ -196,13 +162,8 @@ func UnmountVirtualFileSystem() {
 /*
 isArchiveFormatZip is a method which allows you to detect if the provided archive is in ZIP format or not.
 
-:param archivePath: The file system path to the archive.
-
-:return: An error if the archive is not a valid ZIP file, otherwise nil.
-
 Example:
-
-	err := isArchiveFormatZip("assets.zip")
+    err := isArchiveFormatZip("assets.zip")
 */
 func isArchiveFormatZip(archivePath string) error {
 	readCloser, err := zip.OpenReader(archivePath)
@@ -215,14 +176,8 @@ func isArchiveFormatZip(archivePath string) error {
 /*
 isArchiveFormatRar is a method which allows you to detect if the provided archive is in RAR format or not.
 
-:param archivePath: The file system path to the archive.
-:param password: The password for the RAR archive.
-
-:return: An error if the archive is not a valid RAR file, otherwise nil.
-
 Example:
-
-	err := isArchiveFormatRar("assets.rar", "pwd")
+    err := isArchiveFormatRar("assets.rar", "pwd")
 */
 func isArchiveFormatRar(archivePath string, password string) error {
 	readCloser, err := rardecode.OpenReader(archivePath, password)
@@ -236,16 +191,11 @@ func isArchiveFormatRar(archivePath string, password string) error {
 getImageFromFileSystem is a method which allows you to obtain image data from a file from the default file system. In
 addition, the following should be noted:
 
-  - If for some reason the requested image could not be obtained, an error will be returned so that your application can
-    handle this case appropriately.
-
-:param imageFile: The name of the image file to retrieve.
-
-:return: The decoded image.Image, and an error if the retrieval or decoding failed.
+- If for some reason the requested image could not be obtained, an error will be returned so that your application can
+handle this case appropriately.
 
 Example:
-
-	img, err := getImageFromFileSystem("logo.png")
+    img, err := getImageFromFileSystem("logo.png")
 */
 func getImageFromFileSystem(imageFile string) (image.Image, error) {
 	var imageData image.Image
@@ -271,16 +221,11 @@ func getImageFromFileSystem(imageFile string) (image.Image, error) {
 getTextFromFileSystem is a method which allows you to obtain text data from a file from the default file system. In
 addition, the following should be noted:
 
-  - If for some reason the requested text data could not be obtained, an error will be returned so that your application
-    can handle this case appropriately.
-
-:param textFile: The name of the text file to retrieve.
-
-:return: The content of the text file as a string, and an error if the retrieval failed.
+- If for some reason the requested text data could not be obtained, an error will be returned so that your application
+can handle this case appropriately.
 
 Example:
-
-	content, err := getTextFromFileSystem("readme.txt")
+    content, err := getTextFromFileSystem("readme.txt")
 */
 func getTextFromFileSystem(textFile string) (string, error) {
 	fileData, err := getFileDataFromFileSystem(textFile)
@@ -293,16 +238,11 @@ getFileDataFromFileSystem is a method which allows you to get the contents of a 
 you have a virtual file system mounted, then the file will be retrieved from it instead of your local file system. In
 addition, the following should be noted:
 
-  - If a file is being accessed from a password protected virtual file system, then the password provided at mount time
-    will be used to decrypt the file automatically.
-
-:param fileName: The name of the file to retrieve.
-
-:return: The content of the file as a byte slice, and an error if the retrieval failed.
+- If a file is being accessed from a password protected virtual file system, then the password provided at mount time
+will be used to decrypt the file automatically.
 
 Example:
-
-	data, err := getFileDataFromFileSystem("config.json")
+    data, err := getFileDataFromFileSystem("config.json")
 */
 func getFileDataFromFileSystem(fileName string) ([]byte, error) {
 	var fileData []byte
@@ -328,13 +268,8 @@ func getFileDataFromFileSystem(fileName string) ([]byte, error) {
 getFileDataFromLocalFileSystem is a method which allows you to get the contents of a file from the local file system. If
 the contents of the file cannot be retrieved, then an error is returned instead.
 
-:param fileName: The name of the file to retrieve from the local disk.
-
-:return: The content of the file as a byte slice, and an error if the retrieval failed.
-
 Example:
-
-	data, err := getFileDataFromLocalFileSystem("local.txt")
+    data, err := getFileDataFromLocalFileSystem("local.txt")
 */
 func getFileDataFromLocalFileSystem(fileName string) ([]byte, error) {
 	var fileData []byte
@@ -358,13 +293,8 @@ of the file cannot be retrieved, then an error is returned instead. In addition,
 
 - If a file is being accessed from a password protected virtual file system, then the password provided at mount time.
 
-:param fileName: The name of the file to retrieve from the ZIP archive.
-
-:return: The content of the file as a byte slice, and an error if the retrieval failed.
-
 Example:
-
-	data, err := getFileDataFromZipArchive("archive_file.txt")
+    data, err := getFileDataFromZipArchive("archive_file.txt")
 */
 func getFileDataFromZipArchive(fileName string) ([]byte, error) {
 	var err error
@@ -411,13 +341,8 @@ of the file cannot be retrieved, then an error is returned instead. In addition,
 
 - If a file is being accessed from a password protected virtual file system, then the password provided at mount time.
 
-:param fileName: The name of the file to retrieve from the RAR archive.
-
-:return: The content of the file as a byte slice, and an error if the retrieval failed.
-
 Example:
-
-	data, err := getFileDataFromRarArchive("archive_file.txt")
+    data, err := getFileDataFromRarArchive("archive_file.txt")
 */
 func getFileDataFromRarArchive(fileName string) ([]byte, error) {
 	var fileData []byte
@@ -467,15 +392,8 @@ addition, the following should be noted:
 
 - If the permissions parameter is 0, the default value of 0644 will be used.
 
-:param fileName: The name of the file to write to.
-:param data: The byte slice containing the data to write.
-:param permissions: The file permissions to use if creating a new file.
-
-:return: An error if the writing process failed, otherwise nil.
-
 Example:
-
-	err := writeFileDataToFileSystem("output.txt", byte("Hello"), 0644)
+    err := writeFileDataToFileSystem("output.txt", byte("Hello"), 0644)
 */
 func writeFileDataToFileSystem(fileName string, data []byte, permissions int) error {
 	// Virtual file systems are read-only, so always write to the local file system
@@ -494,13 +412,8 @@ func writeFileDataToFileSystem(fileName string, data []byte, permissions int) er
 getFileReaderFromFileSystem is a method which allows you to obtain a file reader for a file in the file system. If a
 virtual file system is mounted, the reader will be obtained from it.
 
-:param fileName: The name of the file to obtain a reader for.
-
-:return: An io.ReadCloser for the file, and an error if it could not be obtained.
-
 Example:
-
-	reader, err := getFileReaderFromFileSystem("data.txt")
+    reader, err := getFileReaderFromFileSystem("data.txt")
 */
 func getFileReaderFromFileSystem(fileName string) (io.ReadCloser, error) {
 	if virtualFileSystemArchiveType == constants.VirtualFileSystemEmbedded {

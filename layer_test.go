@@ -9,10 +9,6 @@ import (
 /*
 TestLayerInitialization is a test which allows you to verify that the layer memory is correctly reinitialized and that
 the Layers manager is not nil after initialization.
-
-Example:
-
-	TestLayerInitialization(t)
 */
 func TestLayerInitialization(t *testing.T) {
 	commonResource.isDebugEnabled = true
@@ -28,10 +24,6 @@ func TestLayerInitialization(t *testing.T) {
 /*
 TestLayerAdd is a test which allows you to verify that layers can be correctly added to the system and that invalid
 dimensions correctly trigger a panic.
-
-Example:
-
-	TestLayerAdd(t)
 */
 func TestLayerAdd(t *testing.T) {
 	commonResource.isDebugEnabled = true
@@ -57,10 +49,6 @@ func TestLayerAdd(t *testing.T) {
 /*
 TestLayerDelete is a test which allows you to verify that layers can be correctly deleted and that deleting a child does
 not affect the parent.
-
-Example:
-
-	TestLayerDelete(t)
 */
 func TestLayerDelete(t *testing.T) {
 	commonResource.isDebugEnabled = true
@@ -94,10 +82,6 @@ func TestLayerDelete(t *testing.T) {
 
 /*
 TestLayerParentChild is a test which allows you to verify the hierarchical relationship between parent and child layers.
-
-Example:
-
-	TestLayerParentChild(t)
 */
 func TestLayerParentChild(t *testing.T) {
 	commonResource.isDebugEnabled = true
@@ -127,10 +111,6 @@ func TestLayerParentChild(t *testing.T) {
 /*
 TestLayerZOrder is a test which allows you to verify that layers are correctly sorted by their z-order rendering
 priority.
-
-Example:
-
-	TestLayerZOrder(t)
 */
 func TestLayerZOrder(t *testing.T) {
 	commonResource.isDebugEnabled = true
@@ -167,10 +147,6 @@ func TestLayerZOrder(t *testing.T) {
 /*
 TestLayerInstanceMethods is a test which allows you to verify the behavior of various methods on a layer instance, such
 as visibility, movement, and deletion.
-
-Example:
-
-	TestLayerInstanceMethods(t)
 */
 func TestLayerInstanceMethods(t *testing.T) {
 	commonResource.isDebugEnabled = true
@@ -214,10 +190,6 @@ func TestLayerInstanceMethods(t *testing.T) {
 /*
 TestLayerDrawingMethods is a test which allows you to verify that various drawing methods (borders, lines, frames,
 windows, etc.) on a layer instance can be called without errors.
-
-Example:
-
-	TestLayerDrawingMethods(t)
 */
 func TestLayerDrawingMethods(t *testing.T) {
 	commonResource.isDebugEnabled = true
@@ -254,10 +226,6 @@ func TestLayerDrawingMethods(t *testing.T) {
 /*
 TestPrintMethod is a test which allows you to verify that text printing, space preservation, markup handling, and word
 wrapping are all functioning correctly.
-
-Example:
-
-	TestPrintMethod(t)
 */
 func TestPrintMethod(t *testing.T) {
 	commonResource.isDebugEnabled = true
@@ -361,10 +329,6 @@ func TestPrintMethod(t *testing.T) {
 /*
 TestLayerControlMethods is a test which allows you to verify that various controls (buttons, checkboxes, labels, etc.)
 can be correctly added to a layer and assigned the correct layer alias.
-
-Example:
-
-	TestLayerControlMethods(t)
 */
 func TestLayerControlMethods(t *testing.T) {
 	commonResource.isDebugEnabled = true
@@ -416,10 +380,6 @@ func TestLayerControlMethods(t *testing.T) {
 /*
 TestLayerGlobalMethods is a test which allows you to verify the behavior of global layer management functions like
 AddLayer, MoveLayerByAbsoluteValue, MoveLayerByRelativeValue, and DeleteAllLayers.
-
-Example:
-
-	TestLayerGlobalMethods(t)
 */
 func TestLayerGlobalMethods(t *testing.T) {
 	commonResource.isDebugEnabled = true
@@ -473,10 +433,6 @@ func TestLayerGlobalMethods(t *testing.T) {
 /*
 TestComplexLayerHierarchy is a test which allows you to verify that complex parent-child relationships between layers
 are correctly managed, especially during deletion of intermediate layers.
-
-Example:
-
-	TestComplexLayerHierarchy(t)
 */
 func TestComplexLayerHierarchy(t *testing.T) {
 	commonResource.isDebugEnabled = true
@@ -583,10 +539,6 @@ func TestComplexLayerHierarchy(t *testing.T) {
 /*
 TestComplexControlManagement is a test which allows you to verify that controls on different layers are correctly
 isolated and that deleting a layer correctly removes only its associated controls.
-
-Example:
-
-	TestComplexControlManagement(t)
 */
 func TestComplexControlManagement(t *testing.T) {
 	commonResource.isDebugEnabled = true
@@ -690,10 +642,6 @@ func TestComplexControlManagement(t *testing.T) {
 /*
 TestLayerAndControlPropertyStability is a test which allows you to verify that layer and control properties (enabled
 status, position, z-order) remain stable across various operations.
-
-Example:
-
-	TestLayerAndControlPropertyStability(t)
 */
 func TestLayerAndControlPropertyStability(t *testing.T) {
 	commonResource.isDebugEnabled = true
@@ -770,10 +718,6 @@ func TestLayerAndControlPropertyStability(t *testing.T) {
 /*
 TestLayerAndControlMemoryLeaks is a test which allows you to verify that layers and controls are properly cleaned up
 from memory after deletion, preventing memory leaks.
-
-Example:
-
-	TestLayerAndControlMemoryLeaks(t)
 */
 func TestLayerAndControlMemoryLeaks(t *testing.T) {
 	commonResource.isDebugEnabled = true
@@ -847,10 +791,6 @@ func TestLayerAndControlMemoryLeaks(t *testing.T) {
 /*
 TestComplexInterleavedOperations is a test which allows you to verify that multiple layers with unique styles and
 controls can be interleaved, moved, and deleted without affecting each other's state.
-
-Example:
-
-	TestComplexInterleavedOperations(t)
 */
 func TestComplexInterleavedOperations(t *testing.T) {
 	commonResource.isDebugEnabled = true

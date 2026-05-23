@@ -4,6 +4,12 @@ import (
 	"encoding/json"
 )
 
+/*
+RadioButtonEntryType is a structure which represents a radio button control entry.
+
+Example:
+    var radioButton types.RadioButtonEntryType
+*/
 type RadioButtonEntryType struct {
 	BaseControlType
 	IsSelected bool
@@ -11,11 +17,10 @@ type RadioButtonEntryType struct {
 }
 
 /*
-MarshalJSON is a method which allows you to marshaljson.
+MarshalJSON is a method which serializes the radio button entry to JSON and returns the resulting byte array.
 
 Example:
-
-	instance.MarshalJSON()
+    instance.MarshalJSON()
 */
 func (shared RadioButtonEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
@@ -34,13 +39,10 @@ func (shared RadioButtonEntryType) MarshalJSON() ([]byte, error) {
 }
 
 /*
-GetEntryAsJsonDump is a method which allows you to getentryasjsondump.
-
-:return: string
+GetEntryAsJsonDump is a method which returns a JSON string representation of the radio button entry.
 
 Example:
-
-	instance.GetEntryAsJsonDump()
+    instance.GetEntryAsJsonDump()
 */
 func (shared RadioButtonEntryType) GetEntryAsJsonDump() string {
 	j, err := json.Marshal(shared)
@@ -51,15 +53,10 @@ func (shared RadioButtonEntryType) GetEntryAsJsonDump() string {
 }
 
 /*
-NewRadioButtonEntry is a constructor which allows you to ○ ● U+25CB, U+25CF.
-
-:param existingRadioButtonEntry: The existingRadioButtonEntry parameter.
-
-:return: RadioButtonEntryType
+NewRadioButtonEntry is a constructor which creates and returns a new radio button entry instance.
 
 Example:
-
-	NewRadioButtonEntry(existingRadioButtonEntry)
+    NewRadioButtonEntry(existingRadioButtonEntry)
 */
 func NewRadioButtonEntry(existingRadioButtonEntry ...*RadioButtonEntryType) RadioButtonEntryType {
 	var radioButtonEntry RadioButtonEntryType
@@ -76,16 +73,10 @@ func NewRadioButtonEntry(existingRadioButtonEntry ...*RadioButtonEntryType) Radi
 }
 
 /*
-IsRadioButtonEqual is a method which allows you to isradiobuttonequal.
-
-:param sourceRadioButtonEntry: The sourceRadioButtonEntry parameter.
-:param targetRadioButtonEntry: The targetRadioButtonEntry parameter.
-
-:return: bool
+IsRadioButtonEqual is a method which compares two radio button entries for equality and returns true if they are equal.
 
 Example:
-
-	IsRadioButtonEqual(sourceRadioButtonEntry, targetRadioButtonEntry)
+    IsRadioButtonEqual(sourceRadioButtonEntry, targetRadioButtonEntry)
 */
 func IsRadioButtonEqual(sourceRadioButtonEntry *RadioButtonEntryType, targetRadioButtonEntry *RadioButtonEntryType) bool {
 	return sourceRadioButtonEntry.BaseControlType.IsEqual(&targetRadioButtonEntry.BaseControlType) &&

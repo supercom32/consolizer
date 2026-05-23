@@ -1,13 +1,20 @@
 package types
 
+/*
+SelectionEntryType is a structure which represents a list of selectable items. In addition, the following should be noted:
+
+- Used by controls like dropdowns and selectors to manage their options.
+
+Example:
+    var selectionEntry types.SelectionEntryType
+*/
 type SelectionEntryType struct {
 	SelectionAlias []string
 	SelectionValue []string
 }
 
 /*
-NewSelectionEntry is a constructor which allows you to create a new selection entry. In addition, the following
-information should be noted:
+NewSelectionEntry is a constructor which allows you to create a new selection entry. In addition, the following should be noted:
 
 - Initializes a selection entry with empty arrays for aliases and values.
 
@@ -15,11 +22,8 @@ information should be noted:
 
 - The entry can be populated using the Add method.
 
-:return: SelectionEntryType
-
 Example:
-
-	NewSelectionEntry()
+    NewSelectionEntry()
 */
 func NewSelectionEntry() SelectionEntryType {
 	var selectionEntry SelectionEntryType
@@ -27,8 +31,7 @@ func NewSelectionEntry() SelectionEntryType {
 }
 
 /*
-Add is a method which allows you to add a new selection item to the entry. In addition, the following information should
-be noted:
+Add is a method which allows you to add a new selection item to the entry. In addition, the following should be noted:
 
 - Appends a new alias and value pair to the selection entry.
 
@@ -36,12 +39,8 @@ be noted:
 
 - Both arrays (SelectionAlias and SelectionValue) are kept in sync.
 
-:param selectionAlias: The selectionAlias parameter.
-:param selectionValue: The selectionValue parameter.
-
 Example:
-
-	instance.Add(selectionAlias, selectionValue)
+    instance.Add(selectionAlias, selectionValue)
 */
 func (shared *SelectionEntryType) Add(selectionAlias string, selectionValue string) {
 	shared.SelectionAlias = append(shared.SelectionAlias, selectionAlias)
@@ -49,8 +48,7 @@ func (shared *SelectionEntryType) Add(selectionAlias string, selectionValue stri
 }
 
 /*
-Clear is a method which allows you to remove all items from the selection entry. In addition, the following information
-should be noted:
+Clear is a method which allows you to remove all items from the selection entry. In addition, the following should be noted:
 
 - Sets both SelectionAlias and SelectionValue arrays to nil.
 
@@ -59,8 +57,7 @@ should be noted:
 - The entry can be repopulated using the Add method.
 
 Example:
-
-	instance.Clear()
+    instance.Clear()
 */
 func (shared *SelectionEntryType) Clear() {
 	shared.SelectionAlias = nil
@@ -70,11 +67,8 @@ func (shared *SelectionEntryType) Clear() {
 /*
 GetSelectionCount is a method which allows you to get the number of selections currently added.
 
-:return: int
-
 Example:
-
-	instance.GetSelectionCount()
+    instance.GetSelectionCount()
 */
 func (shared *SelectionEntryType) GetSelectionCount() int {
 	return len(shared.SelectionAlias)

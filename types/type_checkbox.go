@@ -4,17 +4,26 @@ import (
 	"encoding/json"
 )
 
+/*
+CheckboxEntryType is a structure which represents a checkbox control. In addition, the following should be noted:
+
+- It includes base control properties and the selection state of the checkbox.
+
+Example:
+    var checkbox types.CheckboxEntryType
+*/
 type CheckboxEntryType struct {
 	BaseControlType
 	IsSelected bool
 }
 
 /*
-MarshalJSON is a method which allows you to marshaljson.
+MarshalJSON is a method which serializes a checkbox control to JSON. In addition, the following should be noted:
+
+- It converts the checkbox's state to a JSON representation.
 
 Example:
-
-	instance.MarshalJSON()
+    instance.MarshalJSON()
 */
 func (shared CheckboxEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
@@ -31,13 +40,12 @@ func (shared CheckboxEntryType) MarshalJSON() ([]byte, error) {
 }
 
 /*
-GetEntryAsJsonDump is a method which allows you to getentryasjsondump.
+GetEntryAsJsonDump is a method which retrieves a JSON string representation of a checkbox control. In addition, the following should be noted:
 
-:return: string
+- It returns a formatted JSON string of the checkbox's state.
 
 Example:
-
-	instance.GetEntryAsJsonDump()
+    instance.GetEntryAsJsonDump()
 */
 func (shared CheckboxEntryType) GetEntryAsJsonDump() string {
 	j, err := json.Marshal(shared)
@@ -48,15 +56,16 @@ func (shared CheckboxEntryType) GetEntryAsJsonDump() string {
 }
 
 /*
-NewCheckboxEntry is a constructor which allows you to ☐ ☑ U+2610, U+2611.
+NewCheckboxEntry is a constructor which creates a new checkbox control. In addition, the following should be noted:
 
-:param existingCheckboxEntry: The existingCheckboxEntry parameter.
+- It initializes a checkbox with default values.
 
-:return: CheckboxEntryType
+- It can optionally copy properties from an existing checkbox.
+
+- It uses Unicode characters U+2610 and U+2611 for rendering states.
 
 Example:
-
-	NewCheckboxEntry(existingCheckboxEntry)
+    NewCheckboxEntry(existingCheckboxEntry)
 */
 func NewCheckboxEntry(existingCheckboxEntry ...*CheckboxEntryType) CheckboxEntryType {
 	var checkboxEntry CheckboxEntryType
@@ -71,16 +80,12 @@ func NewCheckboxEntry(existingCheckboxEntry ...*CheckboxEntryType) CheckboxEntry
 }
 
 /*
-IsCheckboxEqual is a method which allows you to ischeckboxequal.
+IsCheckboxEqual is a method which compares two checkbox controls for equality. In addition, the following should be noted:
 
-:param sourceCheckboxEntry: The sourceCheckboxEntry parameter.
-:param targetCheckboxEntry: The targetCheckboxEntry parameter.
-
-:return: bool
+- It compares both the base control properties and the selection state.
 
 Example:
-
-	IsCheckboxEqual(sourceCheckboxEntry, targetCheckboxEntry)
+    IsCheckboxEqual(sourceCheckboxEntry, targetCheckboxEntry)
 */
 func IsCheckboxEqual(sourceCheckboxEntry *CheckboxEntryType, targetCheckboxEntry *CheckboxEntryType) bool {
 	return sourceCheckboxEntry.BaseControlType.IsEqual(&targetCheckboxEntry.BaseControlType) &&

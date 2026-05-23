@@ -4,6 +4,14 @@ import (
 	"encoding/json"
 )
 
+/*
+CharacterEntryType is a structure which represents a single character cell in the terminal. In addition, the following should be noted:
+
+- It contains the character rune, its visual attributes, and its layer and parent relationships.
+
+Example:
+    var character types.CharacterEntryType
+*/
 type CharacterEntryType struct {
 	Character      rune
 	AttributeEntry AttributeEntryType
@@ -12,18 +20,16 @@ type CharacterEntryType struct {
 }
 
 /*
-MarshalJSON is a method which allows you to convert a character entry to JSON format. In addition, the following
-information should be noted:
+MarshalJSON is a method which serializes a character entry to JSON. In addition, the following should be noted:
 
-- Implements the json.Marshaler interface for CharacterEntryType.
+- It implements the json.Marshaler interface for CharacterEntryType.
 
-- Converts the character entry to a JSON string representation.
+- It converts the character entry to a JSON string representation.
 
-- Used for serializing character entries when saving state or transmitting data.
+- It is used for serializing character entries when saving state or transmitting data.
 
 Example:
-
-	instance.MarshalJSON()
+    instance.MarshalJSON()
 */
 func (shared CharacterEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
@@ -44,20 +50,16 @@ func (shared CharacterEntryType) MarshalJSON() ([]byte, error) {
 }
 
 /*
-GetEntryAsJsonDump is a method which allows you to get a JSON string representation of the character entry. In addition,
-the following information should be noted:
+GetEntryAsJsonDump is a method which retrieves a JSON string representation of the character entry. In addition, the following should be noted:
 
-- Returns a formatted JSON string of the character entry.
+- It returns a formatted JSON string of the character entry.
 
-- Used for debugging and logging purposes.
+- It is used for debugging and logging purposes.
 
 - The output is human-readable and includes all character properties.
 
-:return: string
-
 Example:
-
-	instance.GetEntryAsJsonDump()
+    instance.GetEntryAsJsonDump()
 */
 func (shared CharacterEntryType) GetEntryAsJsonDump() string {
 	j, err := json.Marshal(shared)
@@ -68,22 +70,16 @@ func (shared CharacterEntryType) GetEntryAsJsonDump() string {
 }
 
 /*
-NewCharacterEntry is a constructor which allows you to create a new character entry. In addition, the following
-information should be noted:
+NewCharacterEntry is a constructor which creates a new character entry. In addition, the following should be noted:
 
-- Initializes a character entry with default values.
+- It initializes a character entry with default values.
 
-- Sets up a character with specified properties like foreground color, background color, and character value.
+- It sets up a character with specified properties like foreground color, background color, and character value.
 
 - The character can be used to render text in the terminal interface.
 
-:param existingCharacterEntry: The existingCharacterEntry parameter.
-
-:return: CharacterEntryType
-
 Example:
-
-	NewCharacterEntry(existingCharacterEntry)
+    NewCharacterEntry(existingCharacterEntry)
 */
 func NewCharacterEntry(existingCharacterEntry ...*CharacterEntryType) CharacterEntryType {
 	var characterEntry CharacterEntryType

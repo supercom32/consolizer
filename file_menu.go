@@ -7,17 +7,26 @@ import (
 	"github.com/supercom32/consolizer/types"
 )
 
-// FileMenuInstanceType represents an instance of a file menu.
+/*
+FileMenuInstanceType is a structure which represents an instance of a file menu.
+*/
 type FileMenuInstanceType struct {
 	BaseControlInstanceType
 }
 
-// fileMenuType is the main struct for managing file menus.
+/*
+fileMenuType is a structure which is the main struct for managing file menus.
+*/
 type fileMenuType struct {
 	previousButtonState uint
 }
 
-// FileMenu is a singleton instance of fileMenuType.
+/*
+FileMenu is a structure which represents a singleton instance of fileMenuType.
+
+Example:
+    FileMenu
+*/
 var FileMenu fileMenuType
 var FileMenus = memory.NewControlMemoryManager[types.FileMenuEntryType]()
 
@@ -29,7 +38,8 @@ noted:
 
 - After deletion, the file menu instance should not be used anymore.
 
-:return: A pointer to the deleted file menu instance.
+Example:
+    fileMenu.Delete()
 */
 func (shared *FileMenuInstanceType) Delete() *FileMenuInstanceType {
 	shared.BaseControlInstanceType.Delete()
@@ -41,6 +51,9 @@ AddToTabIndex is a method which allows you to add a file menu to the tab index. 
 noted:
 
 - This method is used to make the file menu focusable via tab navigation.
+
+Example:
+    fileMenu.AddToTabIndex()
 */
 func (shared *FileMenuInstanceType) AddToTabIndex() {
 	addTabIndex(shared.layerAlias, shared.controlAlias, constants.CellTypeFileMenuHeading)
@@ -63,16 +76,8 @@ Add is a method which allows you to add a new file menu to a layer. In addition,
 
 - The file menu reuses existing selectors for dropdown functionality.
 
-:param layerAlias: The alias of the layer to add the file menu to.
-:param menuAlias: The alias of the file menu.
-:param styleEntry: The style to use for the file menu.
-:param menuHeadings: The headings for the file menu.
-:param menuSelections: The selections for each heading in the file menu.
-:param xLocation: The x location to draw the file menu at.
-:param yLocation: The y location to draw the file menu at.
-:param isEnabled: Whether the file menu is enabled.
-
-:return: An instance of the added file menu.
+Example:
+    FileMenu.Add("main", "fileMenu", style, headings, selections, 0, 0, true)
 */
 func (shared *fileMenuType) Add(layerAlias string, menuAlias string, styleEntry types.TuiStyleEntryType,
 	menuHeadings []string, menuSelections []types.SelectionEntryType, xLocation int, yLocation int,
@@ -140,8 +145,8 @@ noted:
 
 - After deletion, the file menu should not be used anymore.
 
-:param layerAlias: The alias of the layer the file menu belongs to.
-:param menuAlias: The alias of the file menu to delete.
+Example:
+    FileMenu.Delete("main", "fileMenu")
 */
 func (shared *fileMenuType) Delete(layerAlias string, menuAlias string) {
 	if FileMenus.IsExists(layerAlias, menuAlias) {
@@ -168,7 +173,8 @@ be noted:
 
 - After deletion, the file menus should not be used anymore.
 
-:param layerAlias: The alias of the layer to delete all file menus from.
+Example:
+    FileMenu.DeleteAll("main")
 */
 func (shared *fileMenuType) DeleteAll(layerAlias string) {
 	fileMenuEntries := FileMenus.GetAllEntries(layerAlias)
@@ -185,7 +191,8 @@ be noted:
 
 - It iterates through all file menus and draws them on the specified layer.
 
-:param layerEntry: The layer entry to draw the file menus on.
+Example:
+    FileMenu.drawOnLayer(layer)
 */
 func (shared *fileMenuType) drawOnLayer(layerEntry types.LayerEntryType) {
 	layerAlias := layerEntry.LayerAlias
@@ -202,8 +209,8 @@ draw is a method which allows you to draw a file menu on a layer. In addition, t
 
 - It draws the menu bar and manages the visibility of associated selectors.
 
-:param layerEntry: The layer entry to draw the file menu on.
-:param fileMenuEntry: The file menu entry to draw.
+Example:
+    FileMenu.draw(layer, entry)
 */
 func (shared *fileMenuType) draw(layerEntry *types.LayerEntryType, fileMenuEntry *types.FileMenuEntryType) {
 	if !fileMenuEntry.IsEnabled {
@@ -266,9 +273,8 @@ addition, the following should be noted:
 
 - It handles keyboard navigation for file menus.
 
-:param keystroke: The keyboard event to process.
-
-:return: Whether the keyboard event was consumed.
+Example:
+    updateRequired, consumed := FileMenu.updateKeyboardEvent(keystroke)
 */
 func (shared *fileMenuType) updateKeyboardEvent(keystroke []rune) (bool, bool) {
 	keystrokeAsString := string(keystroke)
@@ -303,7 +309,8 @@ addition, the following should be noted:
 
 - It handles mouse clicks on menu headings and delegates to selectors for menu items.
 
-:return: Whether a screen update is required.
+Example:
+    updateRequired := FileMenu.updateStateMouse()
 */
 func (shared *fileMenuType) updateStateMouse() bool {
 	isUpdateRequired := false
@@ -365,7 +372,8 @@ be noted:
 
 - Returns true if any menu was closed, false otherwise.
 
-:return: Whether any menu was closed.
+Example:
+    FileMenu.closeAllOpenMenus()
 */
 func (shared *fileMenuType) closeAllOpenMenus() bool {
 	menuClosed := false
@@ -387,7 +395,8 @@ func (shared *fileMenuType) closeAllOpenMenus() bool {
 /*
 GetSelectedItem is a method which allows you to retrieve the currently selected item from the file menu.
 
-:return: The value of the selected item.
+Example:
+    heading, item, alias, value := fileMenu.GetSelectedItem()
 */
 func (shared *FileMenuInstanceType) GetSelectedItem() (int, int, string, string) {
 	if !FileMenus.IsExists(shared.layerAlias, shared.controlAlias) {
@@ -418,7 +427,10 @@ be noted:
 
 - If the file menu instance does not exist, it will return false.
 
-:return: Whether the file menu is open.
+Example:
+    if fileMenu.IsOpen() {
+        fmt.Println("Menu is open")
+    }
 */
 func (shared *FileMenuInstanceType) IsOpen() bool {
 	if !FileMenus.IsExists(shared.layerAlias, shared.controlAlias) {
@@ -435,6 +447,9 @@ be noted:
 - This method iterates through all submenus (selectors) of the file menu and unselects any selected item.
 
 - If the file menu does not exist, no operation occurs.
+
+Example:
+    fileMenu.Unselect()
 */
 func (shared *FileMenuInstanceType) Unselect() {
 	if !FileMenus.IsExists(shared.layerAlias, shared.controlAlias) {

@@ -5,6 +5,14 @@ import (
 	"reflect"
 )
 
+/*
+SelectorEntryType is a structure which contains the properties for a selector control. In addition, the following should be noted:
+
+- This type is used to represent the state of a selector in the TUI.
+
+Example:
+    var selector types.SelectorEntryType
+*/
 type SelectorEntryType struct {
 	BaseControlType
 	ScrollbarAlias       string
@@ -22,8 +30,7 @@ type SelectorEntryType struct {
 }
 
 /*
-GetAlias is a method which allows you to retrieve the alias of a selector control. In addition, the following
-information should be noted:
+GetAlias is a method which allows you to retrieve the alias of a selector control. In addition, the following should be noted:
 
 - Returns the unique identifier for the selector.
 
@@ -31,19 +38,15 @@ information should be noted:
 
 - The alias is set when the selector is created.
 
-:return: string
-
 Example:
-
-	instance.GetAlias()
+    instance.GetAlias()
 */
 func (shared SelectorEntryType) GetAlias() string {
 	return shared.Alias
 }
 
 /*
-MarshalJSON is a method which allows you to serialize a selector control to JSON. In addition, the following information
-should be noted:
+MarshalJSON is a method which allows you to serialize a selector control to JSON. In addition, the following should be noted:
 
 - Converts the selector's state to a JSON representation.
 
@@ -52,8 +55,7 @@ should be noted:
 - Used for saving and loading selector configurations.
 
 Example:
-
-	instance.MarshalJSON()
+    instance.MarshalJSON()
 */
 func (shared SelectorEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
@@ -92,8 +94,7 @@ func (shared SelectorEntryType) MarshalJSON() ([]byte, error) {
 }
 
 /*
-GetEntryAsJsonDump is a method which allows you to get a JSON string representation of a selector control. In addition,
-the following information should be noted:
+GetEntryAsJsonDump is a method which allows you to get a JSON string representation of a selector control. In addition, the following should be noted:
 
 - Returns a formatted JSON string of the selector's state.
 
@@ -101,11 +102,8 @@ the following information should be noted:
 
 - Panics if JSON marshaling fails.
 
-:return: string
-
 Example:
-
-	instance.GetEntryAsJsonDump()
+    instance.GetEntryAsJsonDump()
 */
 func (shared SelectorEntryType) GetEntryAsJsonDump() string {
 	j, err := json.Marshal(shared)
@@ -116,8 +114,7 @@ func (shared SelectorEntryType) GetEntryAsJsonDump() string {
 }
 
 /*
-NewSelectorEntry is a constructor which allows you to create a new selector control. In addition, the following
-information should be noted:
+NewSelectorEntry is a constructor which allows you to create a new selector control. In addition, the following should be noted:
 
 - Initializes a selector with default values.
 
@@ -125,13 +122,8 @@ information should be noted:
 
 - Sets up the base control properties and selector-specific fields.
 
-:param existingSelectorEntry: The existingSelectorEntry parameter.
-
-:return: SelectorEntryType
-
 Example:
-
-	NewSelectorEntry(existingSelectorEntry)
+    NewSelectorEntry(existingSelectorEntry)
 */
 func NewSelectorEntry(existingSelectorEntry ...*SelectorEntryType) SelectorEntryType {
 	var selectorEntry SelectorEntryType
@@ -157,16 +149,12 @@ func NewSelectorEntry(existingSelectorEntry ...*SelectorEntryType) SelectorEntry
 }
 
 /*
-IsSelectorEntryEqual is a method which allows you to isselectorentryequal.
+IsSelectorEntryEqual is a method which allows you to compare two selector controls for equality. In addition, the following should be noted:
 
-:param sourceSelectorEntry: The sourceSelectorEntry parameter.
-:param targetSelectorEntry: The targetSelectorEntry parameter.
-
-:return: bool
+- Compares all properties of both selectors.
 
 Example:
-
-	IsSelectorEntryEqual(sourceSelectorEntry, targetSelectorEntry)
+    IsSelectorEntryEqual(sourceSelectorEntry, targetSelectorEntry)
 */
 func IsSelectorEntryEqual(sourceSelectorEntry *SelectorEntryType, targetSelectorEntry *SelectorEntryType) bool {
 	if sourceSelectorEntry.BaseControlType == targetSelectorEntry.BaseControlType &&
@@ -188,15 +176,12 @@ func IsSelectorEntryEqual(sourceSelectorEntry *SelectorEntryType, targetSelector
 }
 
 /*
-GetSelectorAlias is a method which allows you to getselectoralias.
+GetSelectorAlias is a method which allows you to retrieve the alias of a selector control. In addition, the following should be noted:
 
-:param entry: The entry parameter.
-
-:return: string
+- Returns the unique identifier for the selector.
 
 Example:
-
-	GetSelectorAlias(entry)
+    GetSelectorAlias(entry)
 */
 func GetSelectorAlias(entry *SelectorEntryType) string {
 	return entry.Alias

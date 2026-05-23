@@ -4,25 +4,22 @@ import (
 	"encoding/json"
 )
 
-// func DrawButton(LayerAlias string, Text string, StyleEntry TuiStyleEntryType, IsPressed bool, IsSelected bool, XLocation int, YLocation int, Width int, Height int) {
+/*
+LabelEntryType is a structure which represents a label control entry.
+
+Example:
+    var labelEntry LabelEntryType
+*/
 type LabelEntryType struct {
 	BaseControlType
 	IsBackgroundTransparent bool
 }
 
 /*
-MarshalJSON is a method which allows you to serialize a label control to JSON. In addition, the following information
-should be noted:
-
-- Converts the label's state to a JSON representation.
-
-- Includes the base control properties and label-specific fields.
-
-- Used for saving and loading label configurations.
+MarshalJSON is a method which serializes a label control to JSON.
 
 Example:
-
-	instance.MarshalJSON()
+    MarshalJSON()
 */
 func (shared LabelEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
@@ -39,20 +36,12 @@ func (shared LabelEntryType) MarshalJSON() ([]byte, error) {
 }
 
 /*
-GetEntryAsJsonDump is a method which allows you to get a JSON string representation of a label control. In addition, the
-following information should be noted:
-
-- Returns a formatted JSON string of the label's state.
-
-- Useful for debugging and logging purposes.
+GetEntryAsJsonDump is a method which returns a JSON string representation of a label control. In addition, the following should be noted:
 
 - Panics if JSON marshaling fails.
 
-:return: string
-
 Example:
-
-	instance.GetEntryAsJsonDump()
+    GetEntryAsJsonDump()
 */
 func (shared LabelEntryType) GetEntryAsJsonDump() string {
 	j, err := json.Marshal(shared)
@@ -63,22 +52,12 @@ func (shared LabelEntryType) GetEntryAsJsonDump() string {
 }
 
 /*
-NewLabelEntry is a constructor which allows you to create a new label control. In addition, the following information
-should be noted:
+NewLabelEntry is a constructor which creates a new label control. In addition, the following should be noted:
 
-- Initializes a label with default values.
-
-- Can optionally copy properties from an existing label.
-
-- Sets up the base control properties and label-specific fields.
-
-:param existingLabelEntry: The existingLabelEntry parameter.
-
-:return: LabelEntryType
+- If an existing label entry is provided, the new label entry will be a clone of it.
 
 Example:
-
-	NewLabelEntry(existingLabelEntry)
+    NewLabelEntry()
 */
 func NewLabelEntry(existingLabelEntry ...*LabelEntryType) LabelEntryType {
 	var labelEntry LabelEntryType
@@ -98,23 +77,10 @@ func NewLabelEntry(existingLabelEntry ...*LabelEntryType) LabelEntryType {
 }
 
 /*
-IsLabelEntryEqual is a method which allows you to compare two label controls for equality. In addition, the following
-information should be noted:
-
-- Compares all properties of both labels.
-
-- Returns true if all properties match, false otherwise.
-
-- Used for change detection and state synchronization.
-
-:param sourceLabelEntry: The sourceLabelEntry parameter.
-:param targetLabelEntry: The targetLabelEntry parameter.
-
-:return: bool
+IsLabelEntryEqual is a method which compares two label controls for equality.
 
 Example:
-
-	IsLabelEntryEqual(sourceLabelEntry, targetLabelEntry)
+    IsLabelEntryEqual(&sourceLabelEntry, &targetLabelEntry)
 */
 func IsLabelEntryEqual(sourceLabelEntry *LabelEntryType, targetLabelEntry *LabelEntryType) bool {
 	return sourceLabelEntry.BaseControlType.IsEqual(&targetLabelEntry.BaseControlType) &&

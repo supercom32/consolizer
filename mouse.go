@@ -5,8 +5,11 @@ import (
 )
 
 /*
-mouseMemoryType is a class which allows you to mouseMemoryType is a structure that holds information about the current
-mouse state including position, button status, and wheel state.
+mouseMemoryType is a structure which holds information about the current mouse state including position, button status,
+and wheel state.
+
+Example:
+    var mouseMemory mouseMemoryType
 */
 type mouseMemoryType struct {
 	sync.Mutex
@@ -16,18 +19,29 @@ type mouseMemoryType struct {
 	wheelState    string
 }
 
+// MouseMemory is the global instance for managing the current mouse state.
+/*
+MouseMemory is a variable which acts as the global instance for managing the current mouse state.
+*/
 var MouseMemory mouseMemoryType
+
+// PreviousMouseMemory is the global instance for managing the previous mouse state.
+/*
+PreviousMouseMemory is a variable which acts as the global instance for managing the previous mouse state.
+*/
 var PreviousMouseMemory mouseMemoryType
 
 /*
-ClearMouseMemory is a method which allows you to reset both the current and previous mouse memory states to their
-default values. In addition, the following information should be noted:
+ClearMouseMemory is a method which resets both the current and previous mouse memory states to their default values. In addition, the following should be noted:
 
 - The default x and y locations are set to -1 (off-screen).
 
 - The default button pressed state is 0 (no buttons pressed).
 
 - The default wheel state is an empty string (no wheel movement).
+
+Example:
+    ClearMouseMemory()
 */
 func ClearMouseMemory() {
 	MouseMemory.Lock()
@@ -49,8 +63,7 @@ func ClearMouseMemory() {
 }
 
 /*
-SetMouseStatus is a method which allows you to update the current mouse status while preserving the previous state. In
-addition, the following information should be noted:
+SetMouseStatus is a method which updates the current mouse status while preserving the previous state. In addition, the following should be noted:
 
 - The previous mouse state is updated with the current state before changing.
 
@@ -58,10 +71,8 @@ addition, the following information should be noted:
 
 - This method is thread-safe as it uses mutex locks to prevent race conditions.
 
-:param xLocation: The x coordinate of the mouse position.
-:param yLocation: The y coordinate of the mouse position.
-:param buttonPressed: The bitmask of currently pressed mouse buttons.
-:param wheelState: The current state of the mouse wheel.
+Example:
+    SetMouseStatus(10, 5, 1, "Up")
 */
 func SetMouseStatus(xLocation int, yLocation int, buttonPressed uint, wheelState string) {
 	PreviousMouseMemory.Lock()
@@ -83,12 +94,12 @@ func SetMouseStatus(xLocation int, yLocation int, buttonPressed uint, wheelState
 }
 
 /*
-GetMouseStatus is a method which allows you to retrieve the current mouse status including position, button state, and
-wheel state. In addition, the following information should be noted:
+GetMouseStatus is a method which retrieves the current mouse status including position, button state, and wheel state. In addition, the following should be noted:
 
 - This method is thread-safe as it uses mutex locks to prevent race conditions.
 
-:return: The x location, y location, button pressed state, and wheel state of the mouse.
+Example:
+    mouseX, mouseY, button, wheel := GetMouseStatus()
 */
 func GetMouseStatus() (int, int, uint, string) {
 	MouseMemory.Lock()
@@ -100,12 +111,12 @@ func GetMouseStatus() (int, int, uint, string) {
 }
 
 /*
-GetPreviousMouseStatus is a method which allows you to retrieve the previous mouse status before the most recent update.
-In addition, the following information should be noted:
+GetPreviousMouseStatus is a method which retrieves the previous mouse status before the most recent update. In addition, the following should be noted:
 
 - This method is thread-safe as it uses mutex locks to prevent race conditions.
 
-:return: The previous x location, y location, button pressed state, and wheel state of the mouse.
+Example:
+    oldX, oldY, oldButton, oldWheel := GetPreviousMouseStatus()
 */
 func GetPreviousMouseStatus() (int, int, uint, string) {
 	MouseMemory.Lock()
@@ -117,12 +128,14 @@ func GetPreviousMouseStatus() (int, int, uint, string) {
 }
 
 /*
-WaitForClickRelease is a method which allows you to pause execution until the user releases any currently pressed mouse
-buttons. In addition, the following information should be noted:
+WaitForClickRelease is a method which pauses execution until the user releases any currently pressed mouse buttons. In addition, the following should be noted:
 
 - This method will block until the button pressed state becomes 0 (no buttons pressed).
 
 - This is useful for implementing drag and drop operations or waiting for user input.
+
+Example:
+    WaitForClickRelease()
 */
 func WaitForClickRelease() {
 	for MouseMemory.buttonPressed != 0 {
@@ -130,19 +143,16 @@ func WaitForClickRelease() {
 }
 
 /*
-IsMouseInBoundingBox is a method which allows you to check if the current mouse position is within a specified
-rectangular area. In addition, the following information should be noted:
+IsMouseInBoundingBox is a method which checks if the current mouse position is within a specified rectangular area. In addition, the following should be noted:
 
 - The bounding box is defined by its top-left corner (xLocation, yLocation) and its dimensions (width, height).
 
 - This is useful for detecting mouse hover or click events on UI elements.
 
-:param xLocation: The x coordinate of the top-left corner of the bounding box.
-:param yLocation: The y coordinate of the top-left corner of the bounding box.
-:param width: The width of the bounding box.
-:param height: The height of the bounding box.
-
-:return: A boolean indicating whether the mouse is within the specified bounding box.
+Example:
+    if IsMouseInBoundingBox(0, 0, 10, 10) {
+        fmt.Println("Mouse is in box")
+    }
 */
 func IsMouseInBoundingBox(xLocation int, yLocation int, width int, height int) bool {
 	mouseXLocation, mouseYLocation, _, _ := GetMouseStatus()
@@ -155,8 +165,7 @@ func IsMouseInBoundingBox(xLocation int, yLocation int, width int, height int) b
 }
 
 /*
-GetLayerUnderMouseCursor is a method which allows you to retrieve the instance of the layer under the current mouse
-cursor position. In addition, the following information should be noted:
+GetLayerUnderMouseCursor is a method which retrieves the instance of the layer under the current mouse cursor position. In addition, the following should be noted:
 
 - We create a new instance of the layer so the user can interact with it.
 
@@ -164,7 +173,8 @@ cursor position. In addition, the following information should be noted:
 
 - Methods called on this instance will affect the original layer.
 
-:return: An instance of the layer under the mouse cursor, or nil if no layer is found.
+Example:
+    layer := GetLayerUnderMouseCursor()
 */
 func GetLayerUnderMouseCursor() *LayerInstanceType {
 	mouseX, mouseY, _, _ := GetMouseStatus()

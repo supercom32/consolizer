@@ -9,21 +9,11 @@ import (
 )
 
 /*
-printDialog is a method which allows you to write text to the terminal screen via a typewriter effect. This is useful
+printDialog is a method which writes text to the terminal screen via a typewriter effect. This is useful
 for video games or other applications that may require printing text in a dialog box.
 
-:param layerEntry: The layer to print the dialog on.
-:param attributeEntry: The default attribute entry to use for printing.
-:param xLocation: The X coordinate to start printing at.
-:param yLocation: The Y coordinate to start printing at.
-:param widthOfLineInCharacters: The width of the line before wrapping occurs.
-:param printDelayInMilliseconds: The delay between printing each character.
-:param isSkipable: Whether the typewriter effect can be skipped by the user.
-:param textToPrint: The text string to print (supports markup).
-
 Example:
-
-	printDialog(layer, attr, 0, 0, 20, 50, true, "Hello {{red}}World{{/}}")
+    printDialog(layer, attr, 0, 0, 20, 50, true, "Hello {{red}}World{{/}}")
 */
 func printDialog(layerEntry *types.LayerEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, widthOfLineInCharacters int, printDelayInMilliseconds int, isSkipable bool, textToPrint string) {
 	// If no delay is requested, just print the text normally and return
@@ -142,18 +132,12 @@ func printDialog(layerEntry *types.LayerEntryType, attributeEntry types.Attribut
 }
 
 /*
-getAttributeTag is a method which allows you to obtain an attribute tag from a given text string. Attributes are always
+getAttributeTag is a method which obtains an attribute tag from a given text string. Attributes are always
 surrounded by "{{" and "}}" characters. In addition, the following should be noted:
 
 - If no attribute tag could be detected at the given string location, then an empty string will be returned instead.
 
-:param stringToParse: The text string to parse for an attribute tag.
-:param startingCharacterIndex: The index in the string where the search should begin.
-
-:return: The detected attribute tag, or an empty string if none is found.
-
 Example:
-
 	tag := getAttributeTag("Hello {{red}}World", 6)
 */
 func getAttributeTag(stringToParse string, startingCharacterIndex int) string {
@@ -170,18 +154,13 @@ func getAttributeTag(stringToParse string, startingCharacterIndex int) string {
 }
 
 /*
-getDialogAttributeEntry is a method which allows you to obtain an attribute entry based on the text style detected in
+getDialogAttributeEntry is a method which obtains an attribute entry based on the text style detected in
 your attribute tag. In addition, the following should be noted:
 
-- If no text style could be found that matches the attribute tag provided, then the default attribute entry will be.
-
-:param attributeTag: The attribute tag string to evaluate.
-:param defaultAttributeEntry: The attribute entry to return if no match is found.
-
-:return: The matching attribute entry or the default attribute entry.
+- If no text style could be found that matches the attribute tag provided, then the default attribute entry will be
+  returned instead.
 
 Example:
-
 	attr := getDialogAttributeEntry("red", defaultAttr)
 */
 func getDialogAttributeEntry(attributeTag string, defaultAttributeEntry types.AttributeEntryType) types.AttributeEntryType {
@@ -201,16 +180,10 @@ func getDialogAttributeEntry(attributeTag string, defaultAttributeEntry types.At
 }
 
 /*
-getLengthOfNextWord is a method which allows you to get the length of the next word at a given position of a text
+getLengthOfNextWord is a method which gets the length of the next word at a given position of a text
 string. It ignores markup tags when calculating the length.
 
-:param stringToParse: The text string to analyze.
-:param startingCharacterIndex: The index in the string where the next word begins.
-
-:return: The length of the next word in characters.
-
 Example:
-
 	length := getLengthOfNextWord("Hello {{red}}World", 0)
 */
 func getLengthOfNextWord(stringToParse string, startingCharacterIndex int) int {
@@ -232,7 +205,7 @@ func getLengthOfNextWord(stringToParse string, startingCharacterIndex int) int {
 }
 
 /*
-GetNonMarkupText is a method which allows you to get a string without {{...}} markup control characters in it. This is
+GetNonMarkupText is a method which gets a string without {{...}} markup control characters in it. This is
 useful for calculating words and word wrapping without control characters messing it up. If no terminating }} can be
 found, then the {{someTagText is printed out as regular text. In addition, the following should be noted:
 
@@ -240,12 +213,7 @@ found, then the {{someTagText is printed out as regular text. In addition, the f
 
 - Handles nested tags and unclosed tags appropriately.
 
-:param textString: The text string containing markup to be stripped.
-
-:return: The text string without any markup tags.
-
 Example:
-
 	plainText := GetNonMarkupText("Hello {{red}}World{{/}}")
 */
 func GetNonMarkupText(textString string) string {
@@ -285,18 +253,10 @@ func GetNonMarkupText(textString string) string {
 }
 
 /*
-printMarkup is a method which allows you to write text to the terminal screen with word wrapping and attribute tags.
+printMarkup is a method which writes text to the terminal screen with word wrapping and attribute tags.
 This is similar to printDialog but without the typewriter effect and printing delay.
 
-:param layerEntry: The layer to print the markup on.
-:param attributeEntry: The default attribute entry to use for printing.
-:param xLocation: The X coordinate to start printing at.
-:param yLocation: The Y coordinate to start printing at.
-:param widthOfLineInCharacters: The width of the line before wrapping occurs.
-:param stringToPrint: The text string to print (supports markup).
-
 Example:
-
 	printMarkup(layer, attr, 0, 0, 20, "Hello {{red}}World{{/}}")
 */
 func printMarkup(layerEntry *types.LayerEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, widthOfLineInCharacters int, stringToPrint string) {

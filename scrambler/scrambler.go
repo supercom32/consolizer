@@ -7,15 +7,10 @@ import (
 )
 
 /*
-This method allows you to encrypt data using AES-GCM.
-
-:param dataToEncrypt: The data to be encrypted.
-:param key: The encryption key (must be 32 bytes for AES-256).
-:return: The encrypted data including the nonce, and an error if encryption fails.
+Encrypt is a method which encrypts data using AES-GCM.
 
 Example:
-
-	encrypted, err := Encrypt([]byte("secret"), key)
+    encrypted, err := Encrypt([]byte("secret"), key)
 */
 func Encrypt(dataToEncrypt, key []byte) ([]byte, error) {
 	blockCipher, err := aes.NewCipher(key)
@@ -35,15 +30,10 @@ func Encrypt(dataToEncrypt, key []byte) ([]byte, error) {
 }
 
 /*
-This method allows you to decrypt data that was encrypted using AES-GCM.
-
-:param dataToDecrypt: The encrypted data (including the nonce).
-:param key: The decryption key.
-:return: The decrypted data, and an error if decryption fails.
+Decrypt is a method which decrypts data that was encrypted using AES-GCM.
 
 Example:
-
-	decrypted, err := Decrypt(encryptedData, key)
+    decrypted, err := Decrypt(encryptedData, key)
 */
 func Decrypt(dataToDecrypt, key []byte) ([]byte, error) {
 	blockCipher, err := aes.NewCipher(key)
@@ -63,13 +53,10 @@ func Decrypt(dataToDecrypt, key []byte) ([]byte, error) {
 }
 
 /*
-This method allows you to generate a random 32-byte key suitable for AES-256 encryption.
-
-:return: A random 32-byte key, and an error if generation fails.
+GenerateKey is a method which generates a random 32-byte key suitable for AES-256 encryption.
 
 Example:
-
-	key, err := GenerateKey()
+    key, err := GenerateKey()
 */
 func GenerateKey() ([]byte, error) {
 	key := make([]byte, 32)

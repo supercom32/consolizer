@@ -4,7 +4,14 @@ import (
 	"encoding/json"
 )
 
-// func DrawButton(LayerAlias string, ButtonLabel string, StyleEntry TuiStyleEntryType, IsPressed bool, IsSelected bool, XLocation int, YLocation int, Width int, Height int) {
+/*
+ButtonEntryType is a structure which represents a button control. In addition, the following should be noted:
+
+- It includes base control properties and the pressed and selected states of the button.
+
+Example:
+    buttonEntry := ButtonEntryType{}
+*/
 type ButtonEntryType struct {
 	BaseControlType
 	IsPressed  bool
@@ -12,18 +19,16 @@ type ButtonEntryType struct {
 }
 
 /*
-MarshalJSON is a method which allows you to serialize a button control to JSON. In addition, the following information
-should be noted:
+MarshalJSON is a method which serializes a button control to JSON. In addition, the following should be noted:
 
-- Converts the button's state to a JSON representation.
+- It converts the button's state to a JSON representation.
 
-- Includes the base control properties and button-specific fields.
+- It includes the base control properties and button-specific fields.
 
-- Used for saving and loading button configurations.
+- It is used for saving and loading button configurations.
 
 Example:
-
-	instance.MarshalJSON()
+    jsonData, err := buttonEntry.MarshalJSON()
 */
 func (shared ButtonEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
@@ -42,22 +47,16 @@ func (shared ButtonEntryType) MarshalJSON() ([]byte, error) {
 }
 
 /*
-NewButtonEntry is a constructor which allows you to create a new button control. In addition, the following information
-should be noted:
+NewButtonEntry is a constructor which creates a new button control. In addition, the following should be noted:
 
-- Initializes a button with default values.
+- It initializes a button with default values.
 
-- Can optionally copy properties from an existing button.
+- It can optionally copy properties from an existing button.
 
-- Sets up the base control properties and button-specific fields.
-
-:param existingButtonEntry: The existingButtonEntry parameter.
-
-:return: ButtonEntryType
+- It sets up the base control properties and button-specific fields.
 
 Example:
-
-	NewButtonEntry(existingButtonEntry)
+    buttonEntry := NewButtonEntry(&existingButtonEntry)
 */
 func NewButtonEntry(existingButtonEntry ...*ButtonEntryType) ButtonEntryType {
 	var buttonEntry ButtonEntryType
@@ -72,23 +71,16 @@ func NewButtonEntry(existingButtonEntry ...*ButtonEntryType) ButtonEntryType {
 }
 
 /*
-IsButtonEntryEqual is a method which allows you to compare two button controls for equality. In addition, the following
-information should be noted:
+IsButtonEntryEqual is a method which compares two button controls for equality. In addition, the following should be noted:
 
-- Compares all properties of both buttons.
+- It compares all properties of both buttons.
 
-- Returns true if all properties match, false otherwise.
+- It returns true if all properties match, false otherwise.
 
-- Used for change detection and state synchronization.
-
-:param sourceButtonEntry: The sourceButtonEntry parameter.
-:param targetButtonEntry: The targetButtonEntry parameter.
-
-:return: bool
+- It is used for change detection and state synchronization.
 
 Example:
-
-	IsButtonEntryEqual(sourceButtonEntry, targetButtonEntry)
+    isEqual := IsButtonEntryEqual(&sourceButton, &targetButton)
 */
 func IsButtonEntryEqual(sourceButtonEntry *ButtonEntryType, targetButtonEntry *ButtonEntryType) bool {
 	return sourceButtonEntry.BaseControlType.IsEqual(&targetButtonEntry.BaseControlType) &&
