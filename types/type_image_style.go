@@ -6,7 +6,21 @@ import (
 )
 
 /*
-ImageStyleEntryType is a structure which represents the styling configuration for an image.
+ImageStyleEntryType is a structure which represents the styling configuration for an image. In addition, the following
+should be noted:
+
+- `DitheringIntensity`: This is a multiplier for the dithering effect. A value of 1.0 means no change.
+
+- `BlurSigmaIntensity`: This is the sigma value used for blurring after resizing. A value of 0.0 means no blurring.
+
+- `TransparentForegroundPenalty`: This is a penalty value used when selecting the best block element. A higher value
+  makes it less likely that a transparent foreground will be chosen if it would result in a loss of detail.
+
+- `AggressiveCoverageThreshold`: This is the minimum percentage of opaque pixels (0.0 to 1.0) required within a cell to
+  consider it for rendering. Cells with coverage below this threshold may be culled unless they are a very good fit.
+
+- `AggressiveErrorThreshold`: This is the maximum allowed error for a low-coverage cell to survive culling. Lower
+  values make culling more aggressive.
 
 Example:
     var imageStyle types.ImageStyleEntryType

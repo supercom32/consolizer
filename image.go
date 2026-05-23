@@ -408,10 +408,13 @@ func resizeImage(imageData image.Image, targetWidth, targetHeight uint, isWidthA
 
 /*
 getImageLayerAsFullBlock is a method which allows you to convert an image into a text layer using full block characters.
-
 In addition, the following should be noted:
 
 - This method is used when you want to represent each pixel of the image as a single character cell in the terminal.
+
+- The blur sigma controls how much blurring occurs after your image has been resized. This allows you to soften your
+  image before it is rendered in ansi so that hard edges are removed. A value of 0.0 means no blurring will occur, with
+  higher values increasing the blur factor.
 
 Example:
     layer := getImageLayerAsFullBlock(img, style, 80, 24, 0.5)
@@ -721,7 +724,11 @@ func mapBrightnessToCharacter(brightness float64, random *rand.Rand) rune {
 
 /*
 GetImageLayerAsAsciiColorArt is a method which allows you to convert an image into a text layer using ASCII characters
-to represent brightness levels.
+to represent brightness levels. In addition, the following should be noted:
+
+- The blur sigma controls how much blurring occurs after your image has been resized. This allows you to soften your
+  image before it is rendered in ansi so that hard edges are removed. A value of 0.0 means no blurring will occur, with
+  higher values increasing the blur factor.
 
 Example:
     layer := GetImageLayerAsAsciiColorArt(img, style, 80, 24, 0.5)
@@ -1227,13 +1234,16 @@ func resizeFast(processedImageData image.Image, targetPixelWidth, targetPixelHei
 }
 
 /*
-getImageLayerAsBlockElements is a method which allows you to render an image using block elements.
-
-In addition, the following should be noted:
+getImageLayerAsBlockElements is a method which allows you to render an image using block elements. In addition, the
+following should be noted:
 
 - This is the shared core logic for rendering an image using block elements.
 
 - It accepts a resizer function to handle the specific image scaling method.
+
+- The blur sigma controls how much blurring occurs after your image has been resized. This allows you to soften your
+  image before it is rendered in ansi so that hard edges are removed. A value of 0.0 means no blurring will occur, with
+  higher values increasing the blur factor.
 
 Example:
     layer := getImageLayerAsBlockElements(img, style, 80, 24, 0.5, resizeAccurate)
@@ -1297,11 +1307,13 @@ func getImageLayerAsBlockElements(sourceImageData image.Image, imageStyle types.
 
 /*
 getImageLayerAsBlockElementsAccurate is a method which allows you to render an image using block elements with high
-precision.
-
-In addition, the following should be noted:
+precision. In addition, the following should be noted:
 
 - It divides each character cell into an 8x8 grid and finds the best block element to represent the image in that cell.
+
+- The blur sigma controls how much blurring occurs after your image has been resized. This allows you to soften your
+  image before it is rendered in ansi so that hard edges are removed. A value of 0.0 means no blurring will occur, with
+  higher values increasing the blur factor.
 
 Example:
     layer := getImageLayerAsBlockElementsAccurate(img, style, 80, 24, 0.5)
@@ -1312,7 +1324,11 @@ func getImageLayerAsBlockElementsAccurate(sourceImageData image.Image, imageStyl
 
 /*
 getImageLayerAsBlockElementsFast is a method which allows you to render an image using block elements with a faster
-algorithm.
+algorithm. In addition, the following should be noted:
+
+- The blur sigma controls how much blurring occurs after your image has been resized. This allows you to soften your
+  image before it is rendered in ansi so that hard edges are removed. A value of 0.0 means no blurring will occur, with
+  higher values increasing the blur factor.
 
 Example:
     layer := getImageLayerAsBlockElementsFast(img, style, 80, 24, 0.5)
@@ -1345,7 +1361,12 @@ func convertImageToPixelData(img image.Image) [][4]float64 {
 }
 
 /*
-getImageLayer is a method which allows you to retrieve a text layer for an image based on the specified style.
+getImageLayer is a method which allows you to retrieve a text layer for an image based on the specified style. In
+addition, the following should be noted:
+
+- The blur sigma controls how much blurring occurs after your image has been resized. This allows you to soften your
+  image before it is rendered in ansi so that hard edges are removed. A value of 0.0 means no blurring will occur, with
+  higher values increasing the blur factor.
 
 Example:
     layer := getImageLayer(img, style, 80, 24, 0.5)

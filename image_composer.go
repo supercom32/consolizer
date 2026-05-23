@@ -227,7 +227,11 @@ func BrailleFromDots(dot0, dot1, dot2, dot3, dot4, dot5, dot6, dot7 bool) rune {
 
 /*
 getImageLayerAsBraille is a method which allows you to convert an image into a layer of Braille characters based on the
-specified dimensions and style.
+specified dimensions and style. In addition, the following should be noted:
+
+- The blur sigma controls how much blurring occurs after your image has been resized. This allows you to soften your
+  image before it is rendered in ansi so that hard edges are removed. A value of 0.0 means no blurring will occur, with
+  higher values increasing the blur factor.
 
 Example:
     layer := getImageLayerAsBraille(img, style, 80, 24, 0.5)
@@ -397,7 +401,11 @@ func getBrailleImageData(inputImage image.Image, imageStyle types.ImageStyleEntr
 }
 
 /*
-adjustContrast is a method which allows you to modify the contrast of an image by a specified factor.
+adjustContrast is a method which allows you to modify the contrast of an image by a specified factor. In addition, the
+following should be noted:
+
+- The contrast factor is a scaling value where 1.0 results in no change, values greater than 1.0 increase contrast, and
+  values less than 1.0 decrease it.
 
 Example:
     brighter := adjustContrast(img, 1.2)
@@ -527,7 +535,9 @@ func getSubImageFromImage(sourceImage image.Image, xLocation, yLocation, width, 
 
 /*
 OverlayImageWithAlpha is a method which allows you to overlay one image onto another with a specified alpha transparency
-level.
+level. In addition, the following should be noted:
+
+- The alpha value can range from 0.0 (fully transparent) to 1.0 (fully opaque).
 
 Example:
     result := OverlayImageWithAlpha(fg, 0, 0, 10, 10, bg, 5, 5, 0.5)
@@ -604,7 +614,10 @@ func min(a, b float64) float64 {
 }
 
 /*
-blendColors is a method which allows you to blend two colors based on an alpha value.
+blendColors is a method which allows you to blend two colors based on an alpha value. In addition, the following should
+be noted:
+
+- The alpha value should range from 0 (fully transparent) to 255 (fully opaque).
 
 Example:
     c := blendColors(color.Black, color.White, 128)
@@ -622,7 +635,10 @@ func blendColors(bg color.Color, fg color.Color, alpha uint8) color.Color {
 }
 
 /*
-applyWaveEffect is a method which allows you to apply a sine wave distortion effect to an image.
+applyWaveEffect is a method which allows you to apply a sine wave distortion effect to an image. In addition, the
+following should be noted:
+
+- The amplitude determines the maximum displacement of the wave effect in pixels.
 
 Example:
     wavy := applyWaveEffect(img, 5.0, true)
@@ -669,7 +685,10 @@ func applyWaveEffect(inputImage image.Image, amplitude float64, isHorizontal boo
 }
 
 /*
-applyRippleEffect is a method which allows you to apply a concentric ripple effect to an image.
+applyRippleEffect is a method which allows you to apply a concentric ripple effect to an image. In addition, the
+following should be noted:
+
+- The amplitude determines the maximum displacement of the ripple effect in pixels.
 
 Example:
     rippled := applyRippleEffect(img, 10.0)
@@ -711,7 +730,12 @@ func applyRippleEffect(inputImage image.Image, amplitude float64) image.Image {
 }
 
 /*
-applyFlagWavingEffect is a method which allows you to apply a flag waving effect to an image.
+applyFlagWavingEffect is a method which allows you to apply a flag waving effect to an image. In addition, the
+following should be noted:
+
+- The amplitude determines the maximum displacement of the flag waving effect in pixels.
+
+- The frequency determines the length of each wave cycle in pixels.
 
 Example:
     flag := applyFlagWavingEffect(img, 5.0, 100.0)

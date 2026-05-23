@@ -232,6 +232,9 @@ func (shared *progressBarType) drawOnLayer(layerEntry types.LayerEntryType) {
 
 /*
 getHorizontalPartialFillChar is a method which retrieves the appropriate block character for a partial horizontal fill.
+In addition, the following should be noted:
+
+- The partial fill value should range from 0.0 (empty) to 1.0 (full).
 
 Example:
     char := getHorizontalPartialFillChar(0.5)
@@ -260,6 +263,9 @@ func getHorizontalPartialFillChar(partialFill float64) rune {
 
 /*
 getVerticalPartialFillChar is a method which retrieves the appropriate block character for a partial vertical fill.
+In addition, the following should be noted:
+
+- The partial fill value should range from 0.0 (empty) to 1.0 (full).
 
 Example:
     char := getVerticalPartialFillChar(0.5)

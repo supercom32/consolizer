@@ -750,6 +750,10 @@ func (shared *LayerInstanceType) DrawImage(fileName string, drawingStyle types.I
 
 /*
 DrawComposedImage is a method which allows you to draw a composed image on a text layer using a specific drawing style.
+In addition, the following should be noted:
+
+- The image will be rendered according to the settings in the provided `drawingStyle`, including any blurring or
+  dithering effects.
 
 Example:
     err := layerInstance.DrawComposedImage(composedImage, style, 10, 5, 20, 10)

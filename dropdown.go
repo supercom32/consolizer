@@ -208,7 +208,12 @@ func (shared *DropdownInstanceType) GetSelectedItemIndex() int {
 }
 
 /*
-SetSelectedItemIndex is a method which sets the currently selected item in the dropdown by its index.
+SetSelectedItemIndex is a method which sets the currently selected item in the dropdown by its index. In addition, the
+following should be noted:
+
+- The item index is zero-based.
+
+- If the item index specified is invalid or out of range, the request will be ignored.
 
 Example:
 	dropdown.SetSelectedItemIndex(2)

@@ -539,7 +539,8 @@ which darken whatever text layers are underneath it by a specified degree. In ad
 
 - The alpha value can range from 0.0 (no shadow) to 1.0 (totally black).
 
-- If the shadow is drawn over a non-null (non-empty) character, it applies an in-layer shadow effect (i.e., darkens the.
+- If the shadow is drawn over a non-null (non-empty) character, it applies an in-layer shadow effect (i.e., darkens the
+  existing character).
 
 - If the shadow is drawn over an empty area, it keeps the current behavior (drawing the solid shadow color).
 
@@ -651,8 +652,11 @@ func fillLayer(layerEntry *types.LayerEntryType, attributeEntry types.AttributeE
 }
 
 /*
-GetDarkenedCharacterEntry is a method which obtains a character entry that has been darkened by a specific
-alpha value. This is useful for applying shadow effects to existing character data.
+GetDarkenedCharacterEntry is a method which obtains a character entry that has been darkened uniformly by a specific
+alpha value. This is useful for applying shadow effects to existing character data. In addition, the following should be
+noted:
+
+- The alpha value can range from 0.0 (totally dark) to 1.0 (no difference).
 
 Example:
 	darkEntry := GetDarkenedCharacterEntry(entry, 0.5)
