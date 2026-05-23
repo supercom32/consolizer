@@ -8,12 +8,14 @@ import (
 )
 
 /*
-TestButtonDefaultState is a test which allows you to verify that a button is rendered correctly in its default state.
+TestButtonDefaultState is a test which verifies that a button is rendered correctly in its default state.
 
 Example:
+    Expected Inputs:
+        None
 
-	TestButtonDefaultState(t)
-	// Expects button to be rendered at (2,2) with label "Test" and width 10.
+    Expected Outputs:
+        Button is rendered at (2,2) with label "Test" and width 10.
 */
 func TestButtonDefaultState(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
@@ -31,13 +33,14 @@ func TestButtonDefaultState(test *testing.T) {
 }
 
 /*
-TestButtonDisabledState is a test which allows you to verify that a button is rendered correctly when it is in a
-disabled state.
+TestButtonDisabledState is a test which verifies that a button is rendered correctly when it is in a disabled state.
 
 Example:
+    Expected Inputs:
+        None
 
-	TestButtonDisabledState(t)
-	// Expects button to be rendered with a disabled label color.
+    Expected Outputs:
+        Button is rendered with a disabled label color.
 */
 func TestButtonDisabledState(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
@@ -55,13 +58,14 @@ func TestButtonDisabledState(test *testing.T) {
 }
 
 /*
-TestButtonPressedState is a test which allows you to verify that a button is rendered correctly when it is in a pressed
-state.
+TestButtonPressedState is a test which verifies that a button is rendered correctly when it is in a pressed state.
 
 Example:
+    Expected Inputs:
+        None
 
-	TestButtonPressedState(t)
-	// Expects button to be rendered with a sunken frame style.
+    Expected Outputs:
+        Button is rendered with a sunken frame style.
 */
 func TestButtonPressedState(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
@@ -84,13 +88,14 @@ func TestButtonPressedState(test *testing.T) {
 }
 
 /*
-TestButtonSelectedState is a test which allows you to verify that a button is rendered correctly when it is in a
-selected state.
+TestButtonSelectedState is a test which verifies that a button is rendered correctly when it is in a selected state.
 
 Example:
+    Expected Inputs:
+        None
 
-	TestButtonSelectedState(t)
-	// Expects button label to be underlined.
+    Expected Outputs:
+        Button label is underlined.
 */
 func TestButtonSelectedState(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
@@ -113,13 +118,14 @@ func TestButtonSelectedState(test *testing.T) {
 }
 
 /*
-TestButtonCustomDimensions is a test which allows you to verify that a button is rendered correctly with custom width
-and height.
+TestButtonCustomDimensions is a test which verifies that a button is rendered correctly with custom width and height.
 
 Example:
+    Expected Inputs:
+        None
 
-	TestButtonCustomDimensions(t)
-	// Expects button to be rendered with width 15 and height 5.
+    Expected Outputs:
+        Button is rendered with width 15 and height 5.
 */
 func TestButtonCustomDimensions(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
@@ -137,13 +143,14 @@ func TestButtonCustomDimensions(test *testing.T) {
 }
 
 /*
-TestButtonLongLabel is a test which allows you to verify that a button is rendered correctly when it has a label longer
-than its width.
+TestButtonLongLabel is a test which verifies that a button is rendered correctly when it has a label longer than its width.
 
 Example:
+    Expected Inputs:
+        None
 
-	TestButtonLongLabel(t)
-	// Expects button width to expand to fit the long label.
+    Expected Outputs:
+        Button width expands to fit the long label.
 */
 func TestButtonLongLabel(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
@@ -161,13 +168,14 @@ func TestButtonLongLabel(test *testing.T) {
 }
 
 /*
-TestButtonDelete is a test which allows you to verify that a button is successfully removed when its Delete method is
-called.
+TestButtonDelete is a test which verifies that a button is successfully removed when its Delete method is called.
 
 Example:
+    Expected Inputs:
+        None
 
-	TestButtonDelete(t)
-	// Expects button to be absent from the rendered output after deletion.
+    Expected Outputs:
+        Button is absent from the rendered output after deletion.
 */
 func TestButtonDelete(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
@@ -190,12 +198,14 @@ func TestButtonDelete(test *testing.T) {
 }
 
 /*
-TestButtonDeleteAll is a test which allows you to verify that all buttons are successfully removed from a layer.
+TestButtonDeleteAll is a test which verifies that all buttons are successfully removed from a layer.
 
 Example:
+    Expected Inputs:
+        None
 
-	TestButtonDeleteAll(t)
-	// Expects all buttons to be absent from the rendered output after calling DeleteAllButtons.
+    Expected Outputs:
+        All buttons are absent from the rendered output after calling DeleteAllButtons.
 */
 func TestButtonDeleteAll(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
@@ -219,12 +229,14 @@ func TestButtonDeleteAll(test *testing.T) {
 }
 
 /*
-TestButtonFocus is a test which allows you to verify that a button correctly handles focus state.
+TestButtonFocus is a test which verifies that a button correctly handles focus state.
 
 Example:
+    Expected Inputs:
+        None
 
-	TestButtonFocus(t)
-	// Expects button focus state to be reflected in the system.
+    Expected Outputs:
+        Button focus state is reflected in the system.
 */
 func TestButtonFocus(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()

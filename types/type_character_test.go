@@ -5,6 +5,16 @@ import (
 	"testing"
 )
 
+/*
+TestCharacterTypeCreation is a test which verifies the creation and cloning of character entries.
+
+Example:
+    Expected Inputs:
+        None
+
+    Expected Outputs:
+        None
+*/
 func TestCharacterTypeCreation(test *testing.T) {
 	firstCharacterObject := NewCharacterEntry()
 	firstColorObject := NewAttributeEntry()

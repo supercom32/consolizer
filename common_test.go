@@ -3,7 +3,7 @@ package consolizer
 import "github.com/supercom32/consolizer/types"
 
 /*
-CommonTestSetup is a method which allows you to initialize a standard testing environment with multiple layers and a
+CommonTestSetup is a test which initializes a standard testing environment with multiple layers and a
 default TUI style.
 
 Example:
@@ -28,7 +28,7 @@ func CommonTestSetup() (*LayerInstanceType, *LayerInstanceType, *LayerInstanceTy
 }
 
 /*
-CommonTestSetupImages is a method which allows you to initialize a standard testing environment for image-related tests.
+CommonTestSetupImages is a test which initializes a standard testing environment for image-related tests.
 
 Example:
     layer1, layer2, layer3, styleEntry := CommonTestSetupImages()

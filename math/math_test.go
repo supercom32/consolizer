@@ -8,12 +8,15 @@ import (
 )
 
 /*
-TestGetAbsoluteValue is a test which allows you to test that the absolute value of various number types is correctly
+TestGetAbsoluteValue is a test which tests that the absolute value of various number types is correctly
 calculated.
 
 Example:
+    Expected Inputs:
+        None
 
-	TestGetAbsoluteValue(t)
+    Expected Outputs:
+        None
 */
 func TestGetAbsoluteValue(test *testing.T) {
 	var intValues = recast.GetArrayOfInterfaces(int(-3), int8(-3), int16(-3), int32(-3), int64(-3))
@@ -40,12 +43,15 @@ func TestGetAbsoluteValue(test *testing.T) {
 }
 
 /*
-TestIsNumberEven is a test which allows you to test that the IsNumberEven method correctly identifies even and odd
+TestIsNumberEven is a test which tests that the IsNumberEven method correctly identifies even and odd
 numbers.
 
 Example:
+    Expected Inputs:
+        None
 
-	TestIsNumberEven(t)
+    Expected Outputs:
+        None
 */
 func TestIsNumberEven(test *testing.T) {
 	var intValues = recast.GetArrayOfInterfaces(int(12), int8(12), int16(12), int32(12), int64(12))
@@ -72,12 +78,15 @@ func TestIsNumberEven(test *testing.T) {
 }
 
 /*
-TestRoundToWholeNumber is a test which allows you to test that various number types are correctly rounded to the nearest
+TestRoundToWholeNumber is a test which tests that various number types are correctly rounded to the nearest
 whole number.
 
 Example:
+    Expected Inputs:
+        None
 
-	TestRoundToWholeNumber(t)
+    Expected Outputs:
+        None
 */
 func TestRoundToWholeNumber(test *testing.T) {
 	var intValues = recast.GetArrayOfInterfaces(int(5), int8(5), int16(5), int32(5), int64(5))
@@ -104,12 +113,15 @@ func TestRoundToWholeNumber(test *testing.T) {
 }
 
 /*
-TestRoundToDecimal is a test which allows you to test that various number types are correctly rounded to a specific
+TestRoundToDecimal is a test which tests that various number types are correctly rounded to a specific
 number of decimal places.
 
 Example:
+    Expected Inputs:
+        None
 
-	TestRoundToDecimal(t)
+    Expected Outputs:
+        None
 */
 func TestRoundToDecimal(test *testing.T) {
 	var intValues = recast.GetArrayOfInterfaces(int(3), int8(3), int16(3), int32(3), int64(3))
@@ -134,3 +146,4 @@ func TestRoundToDecimal(test *testing.T) {
 		}
 	}
 }
+

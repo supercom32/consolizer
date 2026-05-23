@@ -6,6 +6,16 @@ import (
 	"testing"
 )
 
+/*
+TestAddImage is a test which verifies that images can be added to an asset list.
+
+Example:
+    Expected Inputs:
+        None
+
+    Expected Outputs:
+        None
+*/
 func TestAddImage(test *testing.T) {
 	assetList := NewAssetList()
 	assetList.AddImage("fileName1")
@@ -18,6 +28,16 @@ func TestAddImage(test *testing.T) {
 	assert.Equalf(test, expectedValue, obtainedValue, "The number of file entries does not what was expected!")
 }
 
+/*
+TestAddPreloadedImage is a test which verifies that preloaded images can be added to an asset list.
+
+Example:
+    Expected Inputs:
+        None
+
+    Expected Outputs:
+        None
+*/
 func TestAddPreloadedImage(test *testing.T) {
 	imageStyle := NewImageStyleEntry()
 	assetList := NewAssetList()

@@ -10,6 +10,16 @@ import (
 	"testing"
 )
 
+/*
+TestGetDarkenedCharacterEntry is a test which verifies the darkening of a character entry's colors.
+
+Example:
+    Expected Inputs:
+        None
+
+    Expected Outputs:
+        None
+*/
 func TestGetDarkenedCharacterEntry(test *testing.T) {
 	characterEntry := types.NewCharacterEntry()
 	characterEntry.AttributeEntry.ForegroundColor = constants.ColorType(tcell.NewRGBColor(int32(255), int32(255), int32(255)))
@@ -27,6 +37,16 @@ func TestGetDarkenedCharacterEntry(test *testing.T) {
 	assert.Equalf(test, obtainedResult, expectedResult, "Darkening Frame entry background color to 50 percent failed!")
 }
 
+/*
+TestColorDarkening is a test which verifies the darkening of individual colors.
+
+Example:
+    Expected Inputs:
+        None
+
+    Expected Outputs:
+        None
+*/
 func TestColorDarkening(test *testing.T) {
 	testColor := GetDarkenedColor(constants.ColorType(tcell.NewRGBColor(255, 255, 255)), 0.5)
 	redIndex, greenIndex, blueIndex := GetRGBColorComponents(testColor)
@@ -53,6 +73,16 @@ func TestColorDarkening(test *testing.T) {
 	assert.Equalf(test, obtainedResult, expectedResult, "Darkening color to 100 percent failed!")
 }
 
+/*
+TestColorTransitions is a test which verifies color transitions between source and target colors.
+
+Example:
+    Expected Inputs:
+        None
+
+    Expected Outputs:
+        None
+*/
 func TestColorTransitions(test *testing.T) {
 	sourceColor := constants.ColorType(tcell.NewRGBColor(255, 0, 0))
 	targetColor := constants.ColorType(tcell.NewRGBColor(0, 255, 255))
@@ -103,6 +133,16 @@ func TestColorTransitions(test *testing.T) {
 	assert.Equalf(test, expectedResult, obtainedResult, "Transitioning color by -20% failed!")
 }
 
+/*
+TestDrawButton is a test which verifies the correct rendering of buttons on a layer.
+
+Example:
+    Expected Inputs:
+        None
+
+    Expected Outputs:
+        None
+*/
 func TestDrawButton(test *testing.T) {
 	commonResource.isDebugEnabled = true
 	layerWidth := 40
@@ -130,6 +170,16 @@ func TestDrawButton(test *testing.T) {
 	}
 }
 
+/*
+TestDrawFrameLabel is a test which verifies the correct rendering of frame labels on a layer.
+
+Example:
+    Expected Inputs:
+        None
+
+    Expected Outputs:
+        None
+*/
 func TestDrawFrameLabel(test *testing.T) {
 	commonResource.isDebugEnabled = true
 	layerWidth := 40
@@ -159,6 +209,16 @@ func TestDrawFrameLabel(test *testing.T) {
 	}
 }
 
+/*
+TestDrawFrame is a test which verifies the correct rendering of frames on a layer.
+
+Example:
+    Expected Inputs:
+        None
+
+    Expected Outputs:
+        None
+*/
 func TestDrawFrame(test *testing.T) {
 	commonResource.isDebugEnabled = true
 	layerWidth := 40
@@ -186,6 +246,16 @@ func TestDrawFrame(test *testing.T) {
 	}
 }
 
+/*
+TestDrawBorder is a test which verifies the correct rendering of borders on a layer.
+
+Example:
+    Expected Inputs:
+        None
+
+    Expected Outputs:
+        None
+*/
 func TestDrawBorder(test *testing.T) {
 	commonResource.isDebugEnabled = true
 	layerWidth := 40
@@ -210,6 +280,16 @@ func TestDrawBorder(test *testing.T) {
 	}
 }
 
+/*
+TestDrawWindow is a test which verifies the correct rendering of windows on multiple layers.
+
+Example:
+    Expected Inputs:
+        None
+
+    Expected Outputs:
+        None
+*/
 func TestDrawWindow(test *testing.T) {
 	commonResource.isDebugEnabled = true
 	layerWidth := 40
@@ -242,6 +322,16 @@ func TestDrawWindow(test *testing.T) {
 	}
 }
 
+/*
+TestDrawShadow is a test which verifies the correct rendering of shadows on a layer.
+
+Example:
+    Expected Inputs:
+        None
+
+    Expected Outputs:
+        None
+*/
 func TestDrawShadow(test *testing.T) {
 	commonResource.isDebugEnabled = true
 	layerWidth := 40
@@ -274,6 +364,16 @@ func TestDrawShadow(test *testing.T) {
 	}
 }
 
+/*
+TestDrawLines is a test which verifies the correct rendering of horizontal and vertical lines on a layer.
+
+Example:
+    Expected Inputs:
+        None
+
+    Expected Outputs:
+        None
+*/
 func TestDrawLines(test *testing.T) {
 	commonResource.isDebugEnabled = true
 	layerWidth := 40

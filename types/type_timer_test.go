@@ -6,6 +6,16 @@ import (
 	"testing"
 )
 
+/*
+TestGetTimerEntry is a test which verifies the creation and cloning of timer entries.
+
+Example:
+    Expected Inputs:
+        None
+
+    Expected Outputs:
+        None
+*/
 func TestGetTimerEntry(test *testing.T) {
 	firstTimerEntry := NewTimerEntry()
 	secondTimerEntry := NewTimerEntry()

@@ -7,6 +7,16 @@ import (
 	"time"
 )
 
+/*
+TestTooltipThinLine is a test which verifies that a tooltip with a thin line border is rendered correctly.
+
+Example:
+    Expected Inputs:
+        A tooltip with a thin line border.
+
+    Expected Outputs:
+        A rendered tooltip with a thin line border.
+*/
 func TestTooltipThinLine(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	layer1.AddTooltip("This is a tooltip!", styleEntry, 0, 0, 20, 5, 3, 3, 25, 1, false, false, 0)
@@ -28,6 +38,16 @@ func TestTooltipThinLine(test *testing.T) {
 	}
 }
 
+/*
+TestTooltipNoBorder is a test which verifies that a tooltip with no border is rendered correctly.
+
+Example:
+    Expected Inputs:
+        A tooltip with no border.
+
+    Expected Outputs:
+        A rendered tooltip with no border.
+*/
 func TestTooltipNoBorder(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	layer1.AddTooltip("This is a tooltip and this works great!", styleEntry, 0, 0, 20, 5, 3, 3, 15, 10, false, false, 0)
@@ -49,6 +69,16 @@ func TestTooltipNoBorder(test *testing.T) {
 	}
 }
 
+/*
+TestTooltipNoDelay is a test which verifies that a tooltip with no delay is rendered correctly.
+
+Example:
+    Expected Inputs:
+        A tooltip with no delay.
+
+    Expected Outputs:
+        A rendered tooltip with no delay.
+*/
 func TestTooltipNoDelay(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	layer1.AddTooltip("This is a tooltip and this works great!", styleEntry, 0, 0, 20, 5, 3, 3, 15, 10, false, true, 0)
@@ -70,6 +100,16 @@ func TestTooltipNoDelay(test *testing.T) {
 	}
 }
 
+/*
+TestTooltipWithDelay is a test which verifies that a tooltip with a delay is rendered correctly.
+
+Example:
+    Expected Inputs:
+        A tooltip with a delay.
+
+    Expected Outputs:
+        A rendered tooltip with a delay.
+*/
 func TestTooltipWithDelay(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	layer1.AddTooltip("This is a tooltip and this works great!", styleEntry, 0, 0, 20, 5, 3, 3, 15, 10, false, true, 2000)

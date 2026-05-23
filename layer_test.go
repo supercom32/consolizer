@@ -7,7 +7,7 @@ import (
 )
 
 /*
-TestLayerInitialization is a test which allows you to verify that the layer memory is correctly reinitialized and that
+TestLayerInitialization is a test which verifies that the layer memory is correctly reinitialized and that
 the Layers manager is not nil after initialization.
 */
 func TestLayerInitialization(t *testing.T) {
@@ -22,7 +22,7 @@ func TestLayerInitialization(t *testing.T) {
 }
 
 /*
-TestLayerAdd is a test which allows you to verify that layers can be correctly added to the system and that invalid
+TestLayerAdd is a test which verifies that layers can be correctly added to the system and that invalid
 dimensions correctly trigger a panic.
 */
 func TestLayerAdd(t *testing.T) {
@@ -47,7 +47,7 @@ func TestLayerAdd(t *testing.T) {
 }
 
 /*
-TestLayerDelete is a test which allows you to verify that layers can be correctly deleted and that deleting a child does
+TestLayerDelete is a test which verifies that layers can be correctly deleted and that deleting a child does
 not affect the parent.
 */
 func TestLayerDelete(t *testing.T) {
@@ -81,7 +81,7 @@ func TestLayerDelete(t *testing.T) {
 }
 
 /*
-TestLayerParentChild is a test which allows you to verify the hierarchical relationship between parent and child layers.
+TestLayerParentChild is a test which verifies the hierarchical relationship between parent and child layers.
 */
 func TestLayerParentChild(t *testing.T) {
 	commonResource.isDebugEnabled = true
@@ -109,7 +109,7 @@ func TestLayerParentChild(t *testing.T) {
 }
 
 /*
-TestLayerZOrder is a test which allows you to verify that layers are correctly sorted by their z-order rendering
+TestLayerZOrder is a test which verifies that layers are correctly sorted by their z-order rendering
 priority.
 */
 func TestLayerZOrder(t *testing.T) {
@@ -145,7 +145,7 @@ func TestLayerZOrder(t *testing.T) {
 }
 
 /*
-TestLayerInstanceMethods is a test which allows you to verify the behavior of various methods on a layer instance, such
+TestLayerInstanceMethods is a test which verifies the behavior of various methods on a layer instance, such
 as visibility, movement, and deletion.
 */
 func TestLayerInstanceMethods(t *testing.T) {
@@ -188,7 +188,7 @@ func TestLayerInstanceMethods(t *testing.T) {
 }
 
 /*
-TestLayerDrawingMethods is a test which allows you to verify that various drawing methods (borders, lines, frames,
+TestLayerDrawingMethods is a test which verifies that various drawing methods (borders, lines, frames,
 windows, etc.) on a layer instance can be called without errors.
 */
 func TestLayerDrawingMethods(t *testing.T) {
@@ -224,7 +224,7 @@ func TestLayerDrawingMethods(t *testing.T) {
 }
 
 /*
-TestPrintMethod is a test which allows you to verify that text printing, space preservation, markup handling, and word
+TestPrintMethod is a test which verifies that text printing, space preservation, markup handling, and word
 wrapping are all functioning correctly.
 */
 func TestPrintMethod(t *testing.T) {
@@ -327,7 +327,7 @@ func TestPrintMethod(t *testing.T) {
 }
 
 /*
-TestLayerControlMethods is a test which allows you to verify that various controls (buttons, checkboxes, labels, etc.)
+TestLayerControlMethods is a test which verifies that various controls (buttons, checkboxes, labels, etc.)
 can be correctly added to a layer and assigned the correct layer alias.
 */
 func TestLayerControlMethods(t *testing.T) {
@@ -378,7 +378,7 @@ func TestLayerControlMethods(t *testing.T) {
 }
 
 /*
-TestLayerGlobalMethods is a test which allows you to verify the behavior of global layer management functions like
+TestLayerGlobalMethods is a test which verifies the behavior of global layer management functions like
 AddLayer, MoveLayerByAbsoluteValue, MoveLayerByRelativeValue, and DeleteAllLayers.
 */
 func TestLayerGlobalMethods(t *testing.T) {
@@ -431,7 +431,7 @@ func TestLayerGlobalMethods(t *testing.T) {
 }
 
 /*
-TestComplexLayerHierarchy is a test which allows you to verify that complex parent-child relationships between layers
+TestComplexLayerHierarchy is a test which verifies that complex parent-child relationships between layers
 are correctly managed, especially during deletion of intermediate layers.
 */
 func TestComplexLayerHierarchy(t *testing.T) {
@@ -537,7 +537,7 @@ func TestComplexLayerHierarchy(t *testing.T) {
 }
 
 /*
-TestComplexControlManagement is a test which allows you to verify that controls on different layers are correctly
+TestComplexControlManagement is a test which verifies that controls on different layers are correctly
 isolated and that deleting a layer correctly removes only its associated controls.
 */
 func TestComplexControlManagement(t *testing.T) {
@@ -640,7 +640,7 @@ func TestComplexControlManagement(t *testing.T) {
 }
 
 /*
-TestLayerAndControlPropertyStability is a test which allows you to verify that layer and control properties (enabled
+TestLayerAndControlPropertyStability is a test which verifies that layer and control properties (enabled
 status, position, z-order) remain stable across various operations.
 */
 func TestLayerAndControlPropertyStability(t *testing.T) {
@@ -716,7 +716,7 @@ func TestLayerAndControlPropertyStability(t *testing.T) {
 }
 
 /*
-TestLayerAndControlMemoryLeaks is a test which allows you to verify that layers and controls are properly cleaned up
+TestLayerAndControlMemoryLeaks is a test which verifies that layers and controls are properly cleaned up
 from memory after deletion, preventing memory leaks.
 */
 func TestLayerAndControlMemoryLeaks(t *testing.T) {
@@ -789,7 +789,7 @@ func TestLayerAndControlMemoryLeaks(t *testing.T) {
 }
 
 /*
-TestComplexInterleavedOperations is a test which allows you to verify that multiple layers with unique styles and
+TestComplexInterleavedOperations is a test which verifies that multiple layers with unique styles and
 controls can be interleaved, moved, and deleted without affecting each other's state.
 */
 func TestComplexInterleavedOperations(t *testing.T) {

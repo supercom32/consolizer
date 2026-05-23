@@ -5,6 +5,16 @@ import (
 	"testing"
 )
 
+/*
+TestGetImageEntry is a test which verifies the creation and cloning of image entries.
+
+Example:
+    Expected Inputs:
+        None
+
+    Expected Outputs:
+        None
+*/
 func TestGetImageEntry(test *testing.T) {
 	firstImageEntry := NewImageEntry()
 	secondImageEntry := NewImageEntry()
@@ -23,3 +33,4 @@ func TestGetImageEntry(test *testing.T) {
 	assert.Equalf(test, secondImageEntry, firstImageEntry, "The first image entry is not the same as the second, even though it should be an identical clone.")
 
 }
+

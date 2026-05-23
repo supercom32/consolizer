@@ -7,14 +7,15 @@ import (
 )
 
 /*
-TestIsRuneCharacterWide is a test which allows you to verify that various rune characters are correctly identified as
+TestIsRuneCharacterWide is a test which verifies that various rune characters are correctly identified as
 wide or not.
 
 Example:
+    Expected Inputs:
+        '读', 'ひ', '밥', 'W', '\u25B2', '\u25B3', '\u25B6', '\u25B7', '\u25BC', '\u25BD', '\u25C0', '\u25C1'
 
-	TestIsRuneCharacterWide(t)
-	Inputs: '读', 'ひ', '밥', 'W', '\u25B2', '\u25B3', '\u25B6', '\u25B7', '\u25BC', '\u25BD', '\u25C0', '\u25C1'
-	Outputs: true, true, true, false, false, false, false, false, false, false, false, false
+    Expected Outputs:
+        true, true, true, false, false, false, false, false, false, false, false, false
 */
 func TestIsRuneCharacterWide(test *testing.T) {
 	wideChineseCharacter := '读'
@@ -59,13 +60,14 @@ func TestIsRuneCharacterWide(test *testing.T) {
 }
 
 /*
-TestGetRunesFromString is a test which allows you to verify that a string is correctly converted into an array of runes.
+TestGetRunesFromString is a test which verifies that a string is correctly converted into an array of runes.
 
 Example:
+    Expected Inputs:
+        "This is a test string to be converted into a rune array!"
 
-	TestGetRunesFromString(t)
-	Inputs: "This is a test string to be converted into a rune array!"
-	Outputs: 56 runes
+    Expected Outputs:
+        56 runes
 */
 func TestGetRunesFromString(test *testing.T) {
 	arrayOfRunes := GetRunesFromString("This is a test string to be converted into a rune array!")
@@ -75,14 +77,15 @@ func TestGetRunesFromString(test *testing.T) {
 }
 
 /*
-TestGetIntAsString is a test which allows you to verify that a numeric value is correctly converted to a string
+TestGetIntAsString is a test which verifies that a numeric value is correctly converted to a string
 representing an integer.
 
 Example:
+    Expected Inputs:
+        123.456
 
-	TestGetIntAsString(t)
-	Inputs: 123.456
-	Outputs: "123"
+    Expected Outputs:
+        "123"
 */
 func TestGetIntAsString(test *testing.T) {
 	obtainedResult := GetIntAsString(123.456)
@@ -91,14 +94,15 @@ func TestGetIntAsString(test *testing.T) {
 }
 
 /*
-TestGetFloatAsString is a test which allows you to verify that a numeric value is correctly converted to its string
+TestGetFloatAsString is a test which verifies that a numeric value is correctly converted to its string
 representation as a float.
 
 Example:
+    Expected Inputs:
+        123.456
 
-	TestGetFloatAsString(t)
-	Inputs: 123.456
-	Outputs: "123.456"
+    Expected Outputs:
+        "123.456"
 */
 func TestGetFloatAsString(test *testing.T) {
 	obtainedResult := GetFloatAsString(123.456)
@@ -107,13 +111,14 @@ func TestGetFloatAsString(test *testing.T) {
 }
 
 /*
-TestGetSubString is a test which allows you to verify that a substring is correctly extracted from a given string.
+TestGetSubString is a test which verifies that a substring is correctly extracted from a given string.
 
 Example:
+    Expected Inputs:
+        "This is a long string", start=5, length=2
 
-	TestGetSubString(t)
-	Inputs: "This is a long string", start=5, length=2
-	Outputs: "is"
+    Expected Outputs:
+        "is"
 */
 func TestGetSubString(test *testing.T) {
 	obtainedResult := GetSubString("This is a long string", 5, 2)
@@ -122,13 +127,14 @@ func TestGetSubString(test *testing.T) {
 }
 
 /*
-TestGetStringAsBase64 is a test which allows you to verify that a string is correctly encoded to base64.
+TestGetStringAsBase64 is a test which verifies that a string is correctly encoded to base64.
 
 Example:
+    Expected Inputs:
+        "This is base64 encoded string"
 
-	TestGetStringAsBase64(t)
-	Inputs: "This is base64 encoded string"
-	Outputs: "VGhpcyBpcyBiYXNlNjQgZW5jb2RlZCBzdHJpbmc="
+    Expected Outputs:
+        "VGhpcyBpcyBiYXNlNjQgZW5jb2RlZCBzdHJpbmc="
 */
 func TestGetStringAsBase64(test *testing.T) {
 	obtainedResult := GetStringAsBase64("This is base64 encoded string")
@@ -137,13 +143,14 @@ func TestGetStringAsBase64(test *testing.T) {
 }
 
 /*
-TestGetStringFromBase64 is a test which allows you to verify that a base64 encoded string is correctly decoded.
+TestGetStringFromBase64 is a test which verifies that a base64 encoded string is correctly decoded.
 
 Example:
+    Expected Inputs:
+        "VGhpcyBpcyBiYXNlNjQgZW5jb2RlZCBzdHJpbmc="
 
-	TestGetStringFromBase64(t)
-	Inputs: "VGhpcyBpcyBiYXNlNjQgZW5jb2RlZCBzdHJpbmc="
-	Outputs: "This is base64 encoded string"
+    Expected Outputs:
+        "This is base64 encoded string"
 */
 func TestGetStringFromBase64(test *testing.T) {
 	obtainedResult := GetStringFromBase64("VGhpcyBpcyBiYXNlNjQgZW5jb2RlZCBzdHJpbmc=")
@@ -152,13 +159,14 @@ func TestGetStringFromBase64(test *testing.T) {
 }
 
 /*
-TestGetNumberOfWideCharacters is a test which allows you to verify the counting of wide characters in a rune array.
+TestGetNumberOfWideCharacters is a test which verifies the counting of wide characters in a rune array.
 
 Example:
+    Expected Inputs:
+        "AL 读写汉字 ひらがな コンピュー타ワンワンローソク 보리밥보리밥☑  EX"
 
-	TestGetNumberOfWideCharacters(t)
-	Inputs: "AL 读写汉字 ひらがな コンピュータワンワンローソク 보리밥보리밥☑  EX"
-	Outputs: 29
+    Expected Outputs:
+        29
 */
 func TestGetNumberOfWideCharacters(test *testing.T) {
 	arrayOfRunes := GetRunesFromString("AL 读写汉字 ひらがな コンピュータワンワンローソク 보리밥보리밥☑  EX")
@@ -168,14 +176,15 @@ func TestGetNumberOfWideCharacters(test *testing.T) {
 }
 
 /*
-TestGetFormattedString is a test which allows you to verify that a string is correctly formatted based on specified
+TestGetFormattedString is a test which verifies that a string is correctly formatted based on specified
 length and alignment.
 
 Example:
+    Expected Inputs:
+        "Formatted 밥☑ String", 40, constants.AlignmentLeft
 
-	TestGetFormattedString(t)
-	Inputs: "Formatted 밥☑ String", 40, constants.AlignmentLeft
-	Outputs: "Formatted 밥☑ String                   "
+    Expected Outputs:
+        "Formatted 밥☑ String                   "
 */
 func TestGetFormattedString(test *testing.T) {
 	obtainedResult := GetFormattedString("Formatted 밥☑ String", 40, constants.AlignmentLeft)

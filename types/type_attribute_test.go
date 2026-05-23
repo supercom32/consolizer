@@ -5,6 +5,16 @@ import (
 	"testing"
 )
 
+/*
+TestAttributeTypeCreation is a test which verifies the creation and cloning of attribute entries.
+
+Example:
+    Expected Inputs:
+        None
+
+    Expected Outputs:
+        None
+*/
 func TestAttributeTypeCreation(test *testing.T) {
 	firstAttributeEntry := NewAttributeEntry()
 	firstAttributeEntry.ForegroundColor = 1234

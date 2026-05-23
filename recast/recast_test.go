@@ -7,14 +7,15 @@ import (
 )
 
 /*
-TestGetNumberAsInt is a test which allows you to verify that numeric values of various types are correctly converted to
+TestGetNumberAsInt is a test which verifies that numeric values of various types are correctly converted to
 an integer.
 
 Example:
+    Expected Inputs:
+        float32(-3.312), float64(-3.312), int(-3), int8(-3), int16(-3), int32(-3), int64(-3), uint(3), uint8(3), uint16(3), uint32(3), uint64(3)
 
-	TestGetNumberAsInt(t)
-	Inputs: float32(-3.312), float64(-3.312), int(-3), int8(-3), int16(-3), int32(-3), int64(-3), uint(3), uint8(3), uint16(3), uint32(3), uint64(3)
-	Outputs: int(-3), int(-3), int(-3), int(-3), int(-3), int(-3), int(-3), int(3), int(3), int(3), int(3), int(3)
+    Expected Outputs:
+        int(-3), int(-3), int(-3), int(-3), int(-3), int(-3), int(-3), int(3), int(3), int(3), int(3), int(3)
 */
 func TestGetNumberAsInt(test *testing.T) {
 	var floatValues = GetArrayOfInterfaces(float32(-3.312), float64(-3.312))
@@ -39,14 +40,15 @@ func TestGetNumberAsInt(test *testing.T) {
 }
 
 /*
-TestGetNumberAsInt64 is a test which allows you to verify that numeric values of various types are correctly converted
+TestGetNumberAsInt64 is a test which verifies that numeric values of various types are correctly converted
 to an int64.
 
 Example:
+    Expected Inputs:
+        float32(-3.312), float64(-3.312), int(-3), int8(-3), int16(-3), int32(-3), int64(-3), uint(3), uint8(3), uint16(3), uint32(3), uint64(3)
 
-	TestGetNumberAsInt64(t)
-	Inputs: float32(-3.312), float64(-3.312), int(-3), int8(-3), int16(-3), int32(-3), int64(-3), uint(3), uint8(3), uint16(3), uint32(3), uint64(3)
-	Outputs: int64(-3), int64(-3), int64(-3), int64(-3), int64(-3), int64(-3), int64(-3), int64(3), int64(3), int64(3), int64(3), int64(3)
+    Expected Outputs:
+        int64(-3), int64(-3), int64(-3), int64(-3), int64(-3), int64(-3), int64(-3), int64(3), int64(3), int64(3), int64(3), int64(3)
 */
 func TestGetNumberAsInt64(test *testing.T) {
 	var floatValues = GetArrayOfInterfaces(float32(-3.312), float64(-3.312))
@@ -71,14 +73,15 @@ func TestGetNumberAsInt64(test *testing.T) {
 }
 
 /*
-TestGetNumberAsFloat64 is a test which allows you to verify that numeric values of various types are correctly converted
+TestGetNumberAsFloat64 is a test which verifies that numeric values of various types are correctly converted
 to a float64.
 
 Example:
+    Expected Inputs:
+        float32(-3.3), float64(-3.3)
 
-	TestGetNumberAsFloat64(t)
-	Inputs: float32(-3.3), float64(-3.3)
-	Outputs: float64(-3.3), float64(-3.3)
+    Expected Outputs:
+        float64(-3.3), float64(-3.3)
 */
 func TestGetNumberAsFloat64(test *testing.T) {
 	var floatValues = GetArrayOfInterfaces(float32(-3.3), float64(-3.3))
@@ -88,3 +91,4 @@ func TestGetNumberAsFloat64(test *testing.T) {
 		assert.InDelta(test, expectedResult, obtainedResult, 0.0000001, "The variable of type '"+reflect.TypeOf(currentValue).String()+"' did not equal the expected amount.")
 	}
 }
+

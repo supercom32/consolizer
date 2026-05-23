@@ -7,6 +7,17 @@ import (
 	"testing"
 )
 
+/*
+TestTextFieldDefaultText is a test which verifies that a text field with default text is rendered correctly.
+
+Example:
+
+	Expected Inputs:
+	    A text field with default text.
+
+	Expected Outputs:
+	    A rendered text field with the default text.
+*/
 func TestTextFieldDefaultText(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 20, 10, false, "default", true)
@@ -23,6 +34,17 @@ func TestTextFieldDefaultText(test *testing.T) {
 	}
 }
 
+/*
+TestTextFieldPasswordText is a test which verifies that a text field in password mode masks its text.
+
+Example:
+
+	Expected Inputs:
+	    A text field in password mode with some text.
+
+	Expected Outputs:
+	    A rendered text field where the text is replaced by masks.
+*/
 func TestTextFieldPasswordText(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 20, 10, true, "default", true)
@@ -39,6 +61,17 @@ func TestTextFieldPasswordText(test *testing.T) {
 	}
 }
 
+/*
+TestTextFieldLongText is a test which verifies that a text field handles scrolling for long text correctly.
+
+Example:
+
+	Expected Inputs:
+	    A text field with text longer than its display width.
+
+	Expected Outputs:
+	    A rendered text field showing the scrolled portion of the text.
+*/
 func TestTextFieldLongText(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 20, 10, false, "this is a long string of text which i know is long.", true)
@@ -56,6 +89,17 @@ func TestTextFieldLongText(test *testing.T) {
 	}
 }
 
+/*
+TestTextFieldLongTypedText is a test which verifies that a text field correctly displays text typed by the user.
+
+Example:
+
+	Expected Inputs:
+	    A text field where a long string is typed.
+
+	Expected Outputs:
+	    A rendered text field showing the end portion of the typed text.
+*/
 func TestTextFieldLongTypedText(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 20, 30, false, "", true)
@@ -73,6 +117,17 @@ func TestTextFieldLongTypedText(test *testing.T) {
 	}
 }
 
+/*
+TestTextFieldHomeKey is a test which verifies that the Home key correctly moves the cursor to the beginning of the text field.
+
+Example:
+
+	Expected Inputs:
+	    A text field with typed text, followed by a Home key press.
+
+	Expected Outputs:
+	    A rendered text field with the cursor at the first character.
+*/
 func TestTextFieldHomeKey(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 20, 30, false, "", true)
@@ -91,6 +146,17 @@ func TestTextFieldHomeKey(test *testing.T) {
 	}
 }
 
+/*
+TestTextFieldInsert is a test which verifies that text can be correctly inserted into an existing string.
+
+Example:
+
+	Expected Inputs:
+	    A text field with text, followed by inserting a new string at a specific position.
+
+	Expected Outputs:
+	    A rendered text field containing both the original and inserted text.
+*/
 func TestTextFieldInsert(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 20, 50, false, "", true)
@@ -111,6 +177,17 @@ func TestTextFieldInsert(test *testing.T) {
 	}
 }
 
+/*
+TestTextFieldBackspace is a test which verifies that the Backspace key correctly removes characters from the text field.
+
+Example:
+
+	Expected Inputs:
+	    A text field with text, followed by multiple Backspace key presses.
+
+	Expected Outputs:
+	    A rendered text field with the corresponding characters removed.
+*/
 func TestTextFieldBackspace(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 20, 90, false, "", true)
@@ -130,6 +207,17 @@ func TestTextFieldBackspace(test *testing.T) {
 	}
 }
 
+/*
+TestTextFieldDelete is a test which verifies that the Delete key correctly removes characters following the cursor.
+
+Example:
+
+	Expected Inputs:
+	    A text field with text, followed by cursor movement and multiple Delete key presses.
+
+	Expected Outputs:
+	    A rendered text field with the corresponding characters removed.
+*/
 func TestTextFieldDelete(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 20, 90, false, "", true)
@@ -149,6 +237,17 @@ func TestTextFieldDelete(test *testing.T) {
 	}
 }
 
+/*
+TestTextFieldDeleteAtEnd is a test which verifies that the Delete key behaves correctly at the end of the text.
+
+Example:
+
+	Expected Inputs:
+	    A text field with text, followed by cursor movement to the end and multiple Delete key presses.
+
+	Expected Outputs:
+	    A rendered text field where Delete key presses at the end have no effect.
+*/
 func TestTextFieldDeleteAtEnd(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 20, 90, false, "", true)
@@ -168,6 +267,17 @@ func TestTextFieldDeleteAtEnd(test *testing.T) {
 	}
 }
 
+/*
+TestTextFieldMaxFieldLimit is a test which verifies that the text field respects the maximum character limit.
+
+Example:
+
+	Expected Inputs:
+	    A text field with a set maximum character limit, followed by typing text exceeding that limit.
+
+	Expected Outputs:
+	    A rendered text field containing only the text up to the maximum limit.
+*/
 func TestTextFieldMaxFieldLimit(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 20, 10, false, "", true)
@@ -185,6 +295,17 @@ func TestTextFieldMaxFieldLimit(test *testing.T) {
 	}
 }
 
+/*
+TestTextFieldBackspaceStop is a test which verifies that the Backspace key correctly stops at the beginning of the text field.
+
+Example:
+
+	Expected Inputs:
+	    A text field with text, followed by cursor movement and more Backspace key presses than characters.
+
+	Expected Outputs:
+	    A rendered text field where excess Backspace key presses have no effect.
+*/
 func TestTextFieldBackspaceStop(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 20, 70, false, "", true)

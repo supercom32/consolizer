@@ -5,6 +5,16 @@ import (
 	"testing"
 )
 
+/*
+TestTimerFunctionality is a test which verifies the basic functionality of a timer, including expiration after a set duration.
+
+Example:
+    Expected Inputs:
+        None
+
+    Expected Outputs:
+        None
+*/
 func TestTimerFunctionality(test *testing.T) {
 	InitializeTimerMemory()
 	timerEntry := AddTimer(3000, true)
@@ -14,6 +24,16 @@ func TestTimerFunctionality(test *testing.T) {
 	assert.Equalf(test, timerEntry.IsExpired(), true, "The timer was not flagged as expired when more time has elapsed.")
 }
 
+/*
+TestSetTimerFunctionality is a test which verifies that a timer can be correctly set with new values.
+
+Example:
+    Expected Inputs:
+        None
+
+    Expected Outputs:
+        None
+*/
 func TestSetTimerFunctionality(test *testing.T) {
 	InitializeTimerMemory()
 	timerEntry := AddTimer(9000, false)
@@ -25,6 +45,16 @@ func TestSetTimerFunctionality(test *testing.T) {
 	assert.Equalf(test, timerEntry.IsExpired(), true, "The timer was not flagged as expired when more time has elapsed.")
 }
 
+/*
+TestResetTimerFunctionality is a test which verifies that a timer can be correctly reset and restarted.
+
+Example:
+    Expected Inputs:
+        None
+
+    Expected Outputs:
+        None
+*/
 func TestResetTimerFunctionality(test *testing.T) {
 	InitializeTimerMemory()
 	timerEntry := AddTimer(1000, true)
@@ -36,3 +66,4 @@ func TestResetTimerFunctionality(test *testing.T) {
 	SleepInMilliseconds(1000)
 	assert.Equalf(test, true, timerEntry.IsExpired(), "The reset timer was not flagged as expired when more time has elapsed.")
 }
+

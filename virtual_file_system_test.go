@@ -9,18 +9,48 @@ const (
 	BASE_DIRECTORY = "./test_data/virtual_file_systems/"
 )
 
+/*
+TestGetScrambledPassword is a test which verifies that passwords can be correctly scrambled.
+
+Example:
+    Expected Inputs:
+        None
+
+    Expected Outputs:
+        None
+*/
 func TestGetScrambledPassword(test *testing.T) {
 	obtainedResult := GetScrambledPassword("SamplePassword", "SampleScrambleKey")
 	expectedResult := "awVdQ1tUYVAVR0VXEwE="
 	assert.Equalf(test, obtainedResult, expectedResult, "The scrambled password did not match what was expected!")
 }
 
+/*
+TestGetUnscrambledPassword is a test which verifies that scrambled passwords can be correctly unscrambled.
+
+Example:
+    Expected Inputs:
+        None
+
+    Expected Outputs:
+        None
+*/
 func TestGetUnscrambledPassword(test *testing.T) {
 	obtainedResult := getUnscrambledPassword("awVdQ1tUYVAVR0VXEwE=", "SampleScrambleKey")
 	expectedResult := "SamplePassword"
 	assert.Equalf(test, obtainedResult, expectedResult, "The unscrambled password did not match what was expected!")
 }
 
+/*
+TestMountVirtualFileSystem is a test which verifies the mounting and file retrieval from virtual file systems.
+
+Example:
+    Expected Inputs:
+        None
+
+    Expected Outputs:
+        None
+*/
 func TestMountVirtualFileSystem(test *testing.T) {
 	var expectedResult error
 	scrambledPassword := "TAFDRw=="
@@ -62,11 +92,31 @@ func TestMountVirtualFileSystem(test *testing.T) {
 	UnmountVirtualFileSystem()
 }
 
+/*
+TestGetFileDataFromLocalFileSystem is a test which verifies reading file data from the local file system.
+
+Example:
+    Expected Inputs:
+        None
+
+    Expected Outputs:
+        None
+*/
 func TestGetFileDataFromLocalFileSystem(test *testing.T) {
 	_, err := getFileDataFromLocalFileSystem(BASE_DIRECTORY + "valid.rar")
 	assert.NoErrorf(test, err, "Did not expect an error reading a file that should exist!")
 }
 
+/*
+TestGetTextFromFileSystem is a test which verifies reading text from a file system.
+
+Example:
+    Expected Inputs:
+        None
+
+    Expected Outputs:
+        None
+*/
 func TestGetTextFromFileSystem(test *testing.T) {
 	_, err := getTextFromFileSystem(BASE_DIRECTORY + "text_file.txt")
 	assert.NoErrorf(test, err, "Did not expect an error reading a text file that should exist!")

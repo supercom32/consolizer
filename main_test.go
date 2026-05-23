@@ -15,10 +15,10 @@ TestMainStub is a test which runs manual tests for various TUI elements.
 
 Example:
     Expected Inputs:
-        test *testing.T
+        None
 
     Expected Outputs:
-        None.
+        None
 */
 func TestMainStub(test *testing.T) {
 	// testRadioButtons()
@@ -35,14 +35,14 @@ func TestMainStub(test *testing.T) {
 }
 
 /*
-testProgressBar is a method which manually tests the progress bar control.
+testProgressBar is a test which manually tests the progress bar control.
 
 Example:
     Expected Inputs:
-        None.
+        None
 
     Expected Outputs:
-        None.
+        None
 */
 func testProgressBar() {
 	commonResource.isDebugEnabled = false
@@ -105,14 +105,14 @@ func testProgressBar() {
 }
 
 /*
-testRadioButtons is a method which manually tests the radio button control.
+testRadioButtons is a test which manually tests the radio button control.
 
 Example:
     Expected Inputs:
-        None.
+        None
 
     Expected Outputs:
-        None.
+        None
 */
 func testRadioButtons() {
 	commonResource.isDebugEnabled = false
@@ -155,14 +155,14 @@ func testRadioButtons() {
 }
 
 /*
-testTextboxes is a method which manually tests the textbox control.
+testTextboxes is a test which manually tests the textbox control.
 
 Example:
     Expected Inputs:
-        None.
+        None
 
     Expected Outputs:
-        None.
+        None
 */
 func testTextboxes() {
 	commonResource.isDebugEnabled = false
@@ -210,14 +210,14 @@ func testTextboxes() {
 }
 
 /*
-testCheckboxes is a method which manually tests the checkbox control.
+testCheckboxes is a test which manually tests the checkbox control.
 
 Example:
     Expected Inputs:
-        None.
+        None
 
     Expected Outputs:
-        None.
+        None
 */
 func testCheckboxes() {
 	commonResource.isDebugEnabled = false
@@ -248,14 +248,14 @@ func testCheckboxes() {
 }
 
 /*
-testDropdown is a method which manually tests the dropdown and selector controls.
+testDropdown is a test which manually tests the dropdown and selector controls.
 
 Example:
     Expected Inputs:
-        None.
+        None
 
     Expected Outputs:
-        None.
+        None
 */
 func testDropdown() {
 	commonResource.isDebugEnabled = false
@@ -312,14 +312,14 @@ func testDropdown() {
 }
 
 /*
-testScrollBars is a method which manually tests the scroll bar control.
+testScrollBars is a test which manually tests the scroll bar control.
 
 Example:
     Expected Inputs:
-        None.
+        None
 
     Expected Outputs:
-        None.
+        None
 */
 func testScrollBars() {
 	commonResource.isDebugEnabled = false
@@ -365,14 +365,14 @@ func testScrollBars() {
 }
 
 /*
-testSelector is a method which manually tests the selector control.
+testSelector is a test which manually tests the selector control.
 
 Example:
     Expected Inputs:
-        None.
+        None
 
     Expected Outputs:
-        None.
+        None
 */
 func testSelector() {
 	commonResource.isDebugEnabled = false
@@ -415,14 +415,14 @@ func testSelector() {
 }
 
 /*
-testTextField is a method which manually tests the text field control.
+testTextField is a test which manually tests the text field control.
 
 Example:
     Expected Inputs:
-        None.
+        None
 
     Expected Outputs:
-        None.
+        None
 */
 func testTextField() {
 	commonResource.isDebugEnabled = false
@@ -458,14 +458,14 @@ func testTextField() {
 }
 
 /*
-testWindowMovement is a method which manually tests window movement and Z-order.
+testWindowMovement is a test which manually tests window movement and Z-order.
 
 Example:
     Expected Inputs:
-        None.
+        None
 
     Expected Outputs:
-        None.
+        None
 */
 func testWindowMovement() {
 	commonResource.isDebugEnabled = false
@@ -494,14 +494,14 @@ func testWindowMovement() {
 }
 
 /*
-testButtonPressAction is a method which manually tests button press actions and mouse status.
+testButtonPressAction is a test which manually tests button press actions and mouse status.
 
 Example:
     Expected Inputs:
-        None.
+        None
 
     Expected Outputs:
-        None.
+        None
 */
 func testButtonPressAction() {
 	commonResource.isDebugEnabled = false
