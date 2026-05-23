@@ -183,8 +183,8 @@ const (
 	CharTriangleLeft                                     = '\u25C2' // ◂
 	CharCheckedRadioButton                               = '\u25CB' // ○
 	CharUncheckedRadioButton                             = '\u25C9' // ◉
-	CharCheckedBox                                       = '\u2610' // ☐
-	CharUncheckedBox                                     = '\u2611' // ☑
+	CharUncheckedBox                                     = '\u2610' // ☐
+	CharCheckedBox                                       = '\u2611' // ☑
 	CharFaceWhite                                        = '\u263A' // ☺
 	CharFaceBlack                                        = '\u263B' // ☻
 	CharSpades                                           = '\u2660' // ♠

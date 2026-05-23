@@ -234,8 +234,8 @@ func NewTuiStyleEntry(existingStyleEntry ...*TuiStyleEntryType) TuiStyleEntryTyp
 
 		styleEntry.Checkbox.ForegroundColor = constants.AnsiColorByIndex[15]
 		styleEntry.Checkbox.BackgroundColor = constants.AnsiColorByIndex[0]
-		styleEntry.Checkbox.SelectedCharacter = constants.CharUncheckedBox
-		styleEntry.Checkbox.UnselectedCharacter = constants.CharCheckedBox
+		styleEntry.Checkbox.SelectedCharacter = constants.CharCheckedBox
+		styleEntry.Checkbox.UnselectedCharacter = constants.CharUncheckedBox
 
 		styleEntry.RadioButton.ForegroundColor = constants.AnsiColorByIndex[15]
 		styleEntry.RadioButton.BackgroundColor = constants.AnsiColorByIndex[0]
