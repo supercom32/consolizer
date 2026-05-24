@@ -8,7 +8,8 @@ import (
 RadioButtonEntryType is a structure which represents a radio button control entry.
 
 Example:
-    var radioButton types.RadioButtonEntryType
+
+	var radioButton types.RadioButtonEntryType
 */
 type RadioButtonEntryType struct {
 	BaseControlType
@@ -20,7 +21,8 @@ type RadioButtonEntryType struct {
 MarshalJSON is a method which serializes the radio button entry to JSON and returns the resulting byte array.
 
 Example:
-    instance.MarshalJSON()
+
+	instance.MarshalJSON()
 */
 func (shared RadioButtonEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
@@ -42,7 +44,8 @@ func (shared RadioButtonEntryType) MarshalJSON() ([]byte, error) {
 GetEntryAsJsonDump is a method which returns a JSON string representation of the radio button entry.
 
 Example:
-    instance.GetEntryAsJsonDump()
+
+	instance.GetEntryAsJsonDump()
 */
 func (shared RadioButtonEntryType) GetEntryAsJsonDump() string {
 	j, err := json.Marshal(shared)
@@ -56,7 +59,8 @@ func (shared RadioButtonEntryType) GetEntryAsJsonDump() string {
 NewRadioButtonEntry is a constructor which creates and returns a new radio button entry instance.
 
 Example:
-    NewRadioButtonEntry(existingRadioButtonEntry)
+
+	NewRadioButtonEntry(existingRadioButtonEntry)
 */
 func NewRadioButtonEntry(existingRadioButtonEntry ...*RadioButtonEntryType) RadioButtonEntryType {
 	var radioButtonEntry RadioButtonEntryType
@@ -76,7 +80,8 @@ func NewRadioButtonEntry(existingRadioButtonEntry ...*RadioButtonEntryType) Radi
 IsRadioButtonEqual is a method which compares two radio button entries for equality and returns true if they are equal.
 
 Example:
-    IsRadioButtonEqual(sourceRadioButtonEntry, targetRadioButtonEntry)
+
+	IsRadioButtonEqual(sourceRadioButtonEntry, targetRadioButtonEntry)
 */
 func IsRadioButtonEqual(sourceRadioButtonEntry *RadioButtonEntryType, targetRadioButtonEntry *RadioButtonEntryType) bool {
 	return sourceRadioButtonEntry.BaseControlType.IsEqual(&targetRadioButtonEntry.BaseControlType) &&

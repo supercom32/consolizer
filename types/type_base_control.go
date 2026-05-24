@@ -13,7 +13,8 @@ BaseControlType is a structure which represents the base properties for all UI c
 - It uses a mutex to ensure thread-safe access to its properties.
 
 Example:
-    baseControl := BaseControlType{}
+
+	baseControl := BaseControlType{}
 */
 type BaseControlType struct {
 	Mutex            *sync.Mutex
@@ -45,7 +46,8 @@ NewBaseControl is a constructor which creates a new base control with default va
 - Boolean fields are initialized to true where appropriate.
 
 Example:
-    baseControl := NewBaseControl()
+
+	baseControl := NewBaseControl()
 */
 func NewBaseControl() BaseControlType {
 	var baseControl BaseControlType
@@ -75,7 +77,8 @@ GetBounds is a method which retrieves the position and size of a control. In add
 - These values can be used for collision detection and layout calculations.
 
 Example:
-    x, y, w, h := baseControl.GetBounds()
+
+	x, y, w, h := baseControl.GetBounds()
 */
 func (shared *BaseControlType) GetBounds() (int, int, int, int) {
 	return shared.XLocation, shared.YLocation, shared.Width, shared.Height
@@ -91,7 +94,8 @@ SetPosition is a method which sets the position of a control. In addition, the f
 - The position is relative to the parent layer's origin.
 
 Example:
-    baseControl.SetPosition(10, 20)
+
+	baseControl.SetPosition(10, 20)
 */
 func (shared *BaseControlType) SetPosition(x, y int) {
 	shared.XLocation = x
@@ -108,7 +112,8 @@ SetSize is a method which sets the dimensions of a control. In addition, the fol
 - The size affects how the control is drawn and how it responds to input.
 
 Example:
-    baseControl.SetSize(80, 24)
+
+	baseControl.SetSize(80, 24)
 */
 func (shared *BaseControlType) SetSize(width, height int) {
 	shared.Width = width
@@ -125,7 +130,8 @@ SetEnabled is a method which enables or disables a control. In addition, the fol
 - This state can be used to implement control dependencies.
 
 Example:
-    baseControl.SetEnabled(false)
+
+	baseControl.SetEnabled(false)
 */
 func (shared *BaseControlType) SetEnabled(enabled bool) {
 	shared.IsEnabled = enabled
@@ -141,7 +147,8 @@ SetVisible is a method which shows or hides a control. In addition, the followin
 - This can be used to implement dynamic interfaces.
 
 Example:
-    baseControl.SetVisible(false)
+
+	baseControl.SetVisible(false)
 */
 func (shared *BaseControlType) SetVisible(visible bool) {
 	shared.IsVisible = visible
@@ -157,7 +164,8 @@ SetStyle is a method which changes the visual appearance of a control. In additi
 - The style can be changed dynamically at runtime.
 
 Example:
-    baseControl.SetStyle(style)
+
+	baseControl.SetStyle(style)
 */
 func (shared *BaseControlType) SetStyle(style TuiStyleEntryType) {
 	shared.StyleEntry = style
@@ -173,7 +181,8 @@ GetAlias is a method which retrieves the alias of a control. In addition, the fo
 - The alias is set when the control is created.
 
 Example:
-    alias := baseControl.GetAlias()
+
+	alias := baseControl.GetAlias()
 */
 func (shared *BaseControlType) GetAlias() string {
 	return shared.Alias
@@ -189,7 +198,8 @@ MarshalJSON is a method which serializes a control to JSON. In addition, the fol
 - It is used for saving and loading control configurations.
 
 Example:
-    jsonData, err := baseControl.MarshalJSON()
+
+	jsonData, err := baseControl.MarshalJSON()
 */
 func (shared BaseControlType) MarshalJSON() ([]byte, error) {
 	return json.Marshal(struct {
@@ -231,7 +241,8 @@ GetEntryAsJsonDump is a method which returns a JSON string representation of a c
 - It panics if JSON marshaling fails.
 
 Example:
-    jsonString := baseControl.GetEntryAsJsonDump()
+
+	jsonString := baseControl.GetEntryAsJsonDump()
 */
 func (shared BaseControlType) GetEntryAsJsonDump() string {
 	j, err := json.Marshal(shared)
@@ -251,7 +262,8 @@ IsEqual is a method which compares two controls for equality. In addition, the f
 - It is used for change detection and state synchronization.
 
 Example:
-    isEqual := baseControl.IsEqual(otherControl)
+
+	isEqual := baseControl.IsEqual(otherControl)
 */
 func (shared *BaseControlType) IsEqual(other *BaseControlType) bool {
 	// Compare all fields except the mutex

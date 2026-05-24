@@ -13,17 +13,18 @@ should be noted:
 
 - `BlurSigmaIntensity`: This is the sigma value used for blurring after resizing. A value of 0.0 means no blurring.
 
-- `TransparentForegroundPenalty`: This is a penalty value used when selecting the best block element. A higher value
-  makes it less likely that a transparent foreground will be chosen if it would result in a loss of detail.
+  - `TransparentForegroundPenalty`: This is a penalty value used when selecting the best block element. A higher value
+    makes it less likely that a transparent foreground will be chosen if it would result in a loss of detail.
 
-- `AggressiveCoverageThreshold`: This is the minimum percentage of opaque pixels (0.0 to 1.0) required within a cell to
-  consider it for rendering. Cells with coverage below this threshold may be culled unless they are a very good fit.
+  - `AggressiveCoverageThreshold`: This is the minimum percentage of opaque pixels (0.0 to 1.0) required within a cell to
+    consider it for rendering. Cells with coverage below this threshold may be culled unless they are a very good fit.
 
-- `AggressiveErrorThreshold`: This is the maximum allowed error for a low-coverage cell to survive culling. Lower
-  values make culling more aggressive.
+  - `AggressiveErrorThreshold`: This is the maximum allowed error for a low-coverage cell to survive culling. Lower
+    values make culling more aggressive.
 
 Example:
-    var imageStyle types.ImageStyleEntryType
+
+	var imageStyle types.ImageStyleEntryType
 */
 type ImageStyleEntryType struct {
 	DrawingStyle                 constants.ImageStyle
@@ -44,7 +45,8 @@ type ImageStyleEntryType struct {
 NewImageStyleEntry is a constructor which creates a new image style entry.
 
 Example:
-    NewImageStyleEntry(existingImageStyleEntry)
+
+	NewImageStyleEntry(existingImageStyleEntry)
 */
 func NewImageStyleEntry(existingImageStyleEntry ...*ImageStyleEntryType) ImageStyleEntryType {
 	var imageStyleEntry ImageStyleEntryType

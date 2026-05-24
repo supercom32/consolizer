@@ -10,7 +10,8 @@ CharacterEntryType is a structure which represents a single character cell in th
 - It contains the character rune, its visual attributes, and its layer and parent relationships.
 
 Example:
-    var character types.CharacterEntryType
+
+	var character types.CharacterEntryType
 */
 type CharacterEntryType struct {
 	Character      rune
@@ -29,7 +30,8 @@ MarshalJSON is a method which serializes a character entry to JSON. In addition,
 - It is used for serializing character entries when saving state or transmitting data.
 
 Example:
-    instance.MarshalJSON()
+
+	instance.MarshalJSON()
 */
 func (shared CharacterEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
@@ -59,7 +61,8 @@ GetEntryAsJsonDump is a method which retrieves a JSON string representation of t
 - The output is human-readable and includes all character properties.
 
 Example:
-    instance.GetEntryAsJsonDump()
+
+	instance.GetEntryAsJsonDump()
 */
 func (shared CharacterEntryType) GetEntryAsJsonDump() string {
 	j, err := json.Marshal(shared)
@@ -79,7 +82,8 @@ NewCharacterEntry is a constructor which creates a new character entry. In addit
 - The character can be used to render text in the terminal interface.
 
 Example:
-    NewCharacterEntry(existingCharacterEntry)
+
+	NewCharacterEntry(existingCharacterEntry)
 */
 func NewCharacterEntry(existingCharacterEntry ...*CharacterEntryType) CharacterEntryType {
 	var characterEntry CharacterEntryType

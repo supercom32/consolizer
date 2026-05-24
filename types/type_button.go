@@ -10,7 +10,8 @@ ButtonEntryType is a structure which represents a button control. In addition, t
 - It includes base control properties and the pressed and selected states of the button.
 
 Example:
-    buttonEntry := ButtonEntryType{}
+
+	buttonEntry := ButtonEntryType{}
 */
 type ButtonEntryType struct {
 	BaseControlType
@@ -28,7 +29,8 @@ MarshalJSON is a method which serializes a button control to JSON. In addition, 
 - It is used for saving and loading button configurations.
 
 Example:
-    jsonData, err := buttonEntry.MarshalJSON()
+
+	jsonData, err := buttonEntry.MarshalJSON()
 */
 func (shared ButtonEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
@@ -56,7 +58,8 @@ NewButtonEntry is a constructor which creates a new button control. In addition,
 - It sets up the base control properties and button-specific fields.
 
 Example:
-    buttonEntry := NewButtonEntry(&existingButtonEntry)
+
+	buttonEntry := NewButtonEntry(&existingButtonEntry)
 */
 func NewButtonEntry(existingButtonEntry ...*ButtonEntryType) ButtonEntryType {
 	var buttonEntry ButtonEntryType
@@ -80,7 +83,8 @@ IsButtonEntryEqual is a method which compares two button controls for equality. 
 - It is used for change detection and state synchronization.
 
 Example:
-    isEqual := IsButtonEntryEqual(&sourceButton, &targetButton)
+
+	isEqual := IsButtonEntryEqual(&sourceButton, &targetButton)
 */
 func IsButtonEntryEqual(sourceButtonEntry *ButtonEntryType, targetButtonEntry *ButtonEntryType) bool {
 	return sourceButtonEntry.BaseControlType.IsEqual(&targetButtonEntry.BaseControlType) &&

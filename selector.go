@@ -28,7 +28,8 @@ In addition, the following should be noted:
 - This method is useful for validating selector existence before performing operations on it.
 
 Example:
-    exists := IsSelectorExists("Layer1", "Selector1")
+
+	exists := IsSelectorExists("Layer1", "Selector1")
 */
 func IsSelectorExists(layerAlias string, selectorAlias string) bool {
 	// Use the generic memory manager to check existence
@@ -47,7 +48,8 @@ In addition, the following should be noted:
 - Changes made to the returned entry will be reflected when the selector is next drawn.
 
 Example:
-    selectorEntry := GetSelector("Layer1", "Selector1")
+
+	selectorEntry := GetSelector("Layer1", "Selector1")
 */
 func GetSelector(layerAlias string, selectorAlias string) *types.SelectorEntryType {
 	// Use the generic memory manager to retrieve the selector entry
@@ -70,7 +72,8 @@ AddToTabIndex is a method which adds a selector to the tab index. This enables k
 - The tab index is used to determine which control receives focus when the tab key is pressed.
 
 Example:
-    selector.AddToTabIndex()
+
+	selector.AddToTabIndex()
 */
 func (shared *SelectorInstanceType) AddToTabIndex() {
 	addTabIndex(shared.layerAlias, shared.controlAlias, constants.CellTypeSelectorItem)
@@ -86,7 +89,8 @@ In addition, the following should be noted:
 - All memory associated with the selector will be freed.
 
 Example:
-    selector = selector.Delete()
+
+	selector = selector.Delete()
 */
 func (shared *SelectorInstanceType) Delete() *SelectorInstanceType {
 	shared.BaseControlInstanceType.Delete()
@@ -97,7 +101,8 @@ func (shared *SelectorInstanceType) Delete() *SelectorInstanceType {
 IsNewItemSelected is a method which checks if a new item has been selected in the selector.
 
 Example:
-    if selector.IsNewItemSelected() { ... }
+
+	if selector.IsNewItemSelected() { ... }
 */
 func (shared *SelectorInstanceType) IsNewItemSelected() bool {
 	if Selectors.IsExists(shared.layerAlias, shared.controlAlias) {
@@ -119,7 +124,8 @@ In addition, the following should be noted:
 - The alias is typically used for display purposes, while the index is used for programmatic access to the selection.
 
 Example:
-    alias, index := selector.GetSelected()
+
+	alias, index := selector.GetSelected()
 */
 func (shared *SelectorInstanceType) GetSelected() (string, int) {
 	if Selectors.IsExists(shared.layerAlias, shared.controlAlias) {
@@ -149,7 +155,8 @@ In addition, the following should be noted:
 - The arrays are returned in the order they were added to the selector.
 
 Example:
-    aliases, values := selector.GetAllItems()
+
+	aliases, values := selector.GetAllItems()
 */
 func (shared *SelectorInstanceType) GetAllItems() ([]string, []string) {
 	if Selectors.IsExists(shared.layerAlias, shared.controlAlias) {
@@ -170,7 +177,8 @@ In addition, the following should be noted:
 - If the selector does not exist, no operation occurs.
 
 Example:
-    selector.Unselect()
+
+	selector.Unselect()
 */
 func (shared *SelectorInstanceType) Unselect() {
 	if Selectors.IsExists(shared.layerAlias, shared.controlAlias) {
@@ -190,7 +198,8 @@ In addition, the following should be noted:
 - If the selector or the item does not exist, no operation occurs.
 
 Example:
-    selector.Select("Option1")
+
+	selector.Select("Option1")
 */
 func (shared *SelectorInstanceType) Select(selectionAlias string) {
 	if Selectors.IsExists(shared.layerAlias, shared.controlAlias) {
@@ -231,7 +240,8 @@ In addition, the following should be noted:
 - If the selector or item does not exist, no operation occurs.
 
 Example:
-    selector.FocusSelection("Option5")
+
+	selector.FocusSelection("Option5")
 */
 func (shared *SelectorInstanceType) FocusSelection(selectionAlias string) {
 	if Selectors.IsExists(shared.layerAlias, shared.controlAlias) {
@@ -299,7 +309,8 @@ In addition, the following should be noted:
 - The viewport position is automatically adjusted when navigating through items.
 
 Example:
-    selector.setViewport(10)
+
+	selector.setViewport(10)
 */
 func (shared *SelectorInstanceType) setViewport(viewportPosition int) {
 	if Selectors.IsExists(shared.layerAlias, shared.controlAlias) {
@@ -323,7 +334,8 @@ In addition, the following should be noted:
 - If the selector does not exist, no operation occurs.
 
 Example:
-    selector.SetSelectionEntry(newSelection)
+
+	selector.SetSelectionEntry(newSelection)
 */
 func (shared *SelectorInstanceType) SetSelectionEntry(selectionEntry types.SelectionEntryType) {
 	if Selectors.IsExists(shared.layerAlias, shared.controlAlias) {
@@ -372,7 +384,8 @@ In addition, the following should be noted:
 - Scroll bars are automatically enabled if items overflow the visible area.
 
 Example:
-    selector.AddItem("NewOpt", "New Option")
+
+	selector.AddItem("NewOpt", "New Option")
 */
 func (shared *SelectorInstanceType) AddItem(selectionAlias string, selectionValue string) {
 	if Selectors.IsExists(shared.layerAlias, shared.controlAlias) {
@@ -417,7 +430,8 @@ In addition, the following should be noted:
 - Scroll bars are automatically disabled if items no longer overflow the visible area.
 
 Example:
-    selector.DeleteItem(2)
+
+	selector.DeleteItem(2)
 */
 func (shared *SelectorInstanceType) DeleteItem(index int) {
 	if Selectors.IsExists(shared.layerAlias, shared.controlAlias) {
@@ -572,7 +586,8 @@ In addition, the following should be noted:
 - All memory associated with the selector will be freed.
 
 Example:
-    Selector.Delete("Layer1", "Selector1")
+
+	Selector.Delete("Layer1", "Selector1")
 */
 func (shared *selectorType) Delete(layerAlias string, selectorAlias string) {
 	Selectors.Remove(layerAlias, selectorAlias)
@@ -588,7 +603,8 @@ In addition, the following should be noted:
 - All memory associated with the selectors will be freed.
 
 Example:
-    Selector.DeleteAll("Layer1")
+
+	Selector.DeleteAll("Layer1")
 */
 func (shared *selectorType) DeleteAll(layerAlias string) {
 	Selectors.RemoveAll(layerAlias)
@@ -607,7 +623,8 @@ In addition, the following should be noted:
 - These attributes control the visual appearance of selector items when drawn.
 
 Example:
-    attr, highAttr := Selector.setupSelectorAttributes(style)
+
+	attr, highAttr := Selector.setupSelectorAttributes(style)
 */
 func (shared *selectorType) setupSelectorAttributes(styleEntry types.TuiStyleEntryType) (types.AttributeEntryType, types.AttributeEntryType) {
 	menuAttributeEntry := types.NewAttributeEntry()
@@ -635,7 +652,8 @@ In addition, the following should be noted:
 - If IsShadowDrawn is enabled, a shadow is drawn using drawWindow, otherwise a border is drawn using drawBorder.
 
 Example:
-    Selector.drawSelectorBorder(&layerEntry, style, attr, 0, 0, 20, 10)
+
+	Selector.drawSelectorBorder(&layerEntry, style, attr, 0, 0, 20, 10)
 */
 func (shared *selectorType) drawSelectorBorder(layerEntry *types.LayerEntryType, styleEntry types.TuiStyleEntryType,
 	attributeEntry types.AttributeEntryType, xLocation int, yLocation int, itemWidth int, selectorHeight int) {
@@ -663,7 +681,8 @@ In addition, the following should be noted:
 - Returns a string formatted to the specified width with appropriate padding.
 
 Example:
-    formattedText := Selector.formatSelectorItemText("Option 1", 20, style, false)
+
+	formattedText := Selector.formatSelectorItemText("Option 1", 20, style, false)
 */
 func (shared *selectorType) formatSelectorItemText(menuItemText string, itemWidth int, styleEntry types.TuiStyleEntryType, isHighlighted bool) string {
 	var menuItemName string
@@ -718,7 +737,8 @@ In addition, the following should be noted:
 - Returns the width of the drawn item, which may vary based on the content.
 
 Example:
-    width := Selector.drawSelectorItem(&layerEntry, attr, "Option 1", 0, 0, 0, false)
+
+	width := Selector.drawSelectorItem(&layerEntry, attr, "Option 1", 0, 0, 0, false)
 */
 func (shared *selectorType) drawSelectorItem(layerEntry *types.LayerEntryType, attributeEntry types.AttributeEntryType,
 	menuItemName string, xLocation int, currentXOffset int, currentYLocation int, isHighlighted bool) int {
@@ -741,14 +761,15 @@ determined by the style entry passed in.
 
 In addition, the following should be noted:
 
-- Selectors are not drawn physically to the text layer provided. Instead, they are rendered to the terminal at the
-  same time when the text layer is rendered.
+  - Selectors are not drawn physically to the text layer provided. Instead, they are rendered to the terminal at the
+    same time when the text layer is rendered.
 
-- If the selector to be drawn falls outside the range of the provided layer, then only the visible portion of the
-  selector will be drawn.
+  - If the selector to be drawn falls outside the range of the provided layer, then only the visible portion of the
+    selector will be drawn.
 
 Example:
-    Selector.drawSelector("Sel1", &layerEntry, style, selection, 0, 0, 10, 20, 1, 0, 0)
+
+	Selector.drawSelector("Sel1", &layerEntry, style, selection, 0, 0, 10, 20, 1, 0, 0)
 */
 func (shared *selectorType) drawSelector(selectorAlias string, layerEntry *types.LayerEntryType, styleEntry types.TuiStyleEntryType, selectionEntry types.SelectionEntryType, xLocation int, yLocation int, selectorHeight int, itemWidth int, numberOfColumns int, viewportPosition int, itemHighlighted int) {
 	selectorEntry := Selectors.Get(layerEntry.LayerAlias, selectorAlias)
@@ -803,7 +824,8 @@ In addition, the following should be noted:
 - Internally generated selectors (like those used by dropdowns) are drawn last.
 
 Example:
-    Selector.drawSelectorsOnLayer(layerEntry)
+
+	Selector.drawSelectorsOnLayer(layerEntry)
 */
 func (shared *selectorType) drawSelectorsOnLayer(layerEntry types.LayerEntryType) {
 	layerAlias := layerEntry.LayerAlias
@@ -833,7 +855,8 @@ In addition, the following should be noted:
 - Returns true if the screen needs to be updated due to state changes.
 
 Example:
-    updateRequired, consumed := Selector.updateKeyboardEventForSelector("Layer1", "Sel1", rune("down"))
+
+	updateRequired, consumed := Selector.updateKeyboardEventForSelector("Layer1", "Sel1", rune("down"))
 */
 func (shared *selectorType) updateKeyboardEventForSelector(layerAlias string, selectorAlias string, keystroke []rune) (bool, bool) {
 	keystrokeAsString := string(keystroke)
@@ -921,7 +944,8 @@ In addition, the following should be noted:
 - Returns true if the screen needs to be updated due to state changes.
 
 Example:
-    updateRequired, consumed := Selector.updateKeyboardEvent(rune("up"))
+
+	updateRequired, consumed := Selector.updateKeyboardEvent(rune("up"))
 */
 func (shared *selectorType) updateKeyboardEvent(keystroke []rune) (bool, bool) {
 	isScreenUpdateRequired := false
@@ -945,7 +969,8 @@ In addition, the following should be noted:
 - Returns true if the screen needs to be updated due to state changes.
 
 Example:
-    updateRequired := Selector.updateMouseEvent()
+
+	updateRequired := Selector.updateMouseEvent()
 */
 func (shared *selectorType) updateMouseEvent() bool {
 	isScreenUpdateRequired := false

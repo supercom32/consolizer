@@ -36,7 +36,8 @@ be noted:
 - It initializes the internal image map for tracking multiple image layers.
 
 Example:
-    composer := consolizer.ImageComposer.New()
+
+	composer := consolizer.ImageComposer.New()
 */
 func (shared *ImageComposerEntryType) New() ImageComposerEntryType {
 	var newImageComposer ImageComposerEntryType
@@ -51,7 +52,8 @@ following should be noted:
 - If width or height are set to 0, the native image size will be used.
 
 Example:
-    composer.Add("test.png", 0, 0, 100, 100, style, constants.EffectNone, 0, 1, 1.0)
+
+	composer.Add("test.png", 0, 0, 100, 100, style, constants.EffectNone, 0, 1, 1.0)
 */
 func (shared *ImageComposerEntryType) Add(fileName string, xLocation int, yLocation int, width int, height int, imageStyle types.ImageStyleEntryType, effectStyle constants.EffectStyle, effectStep float64, zOrder int, alphaValue float32) *types.ImageComposerImageEntryType {
 	imageComposerImage := types.NewImageComposerImageEntry()
@@ -78,7 +80,8 @@ func (shared *ImageComposerEntryType) Add(fileName string, xLocation int, yLocat
 Delete is a method which allows you to remove an image from the composer using its alias.
 
 Example:
-    composer.Delete("test.png")
+
+	composer.Delete("test.png")
 */
 func (shared *ImageComposerEntryType) Delete(imageAlias string) {
 	delete(shared.images, imageAlias)
@@ -88,7 +91,8 @@ func (shared *ImageComposerEntryType) Delete(imageAlias string) {
 Clear is a method which allows you to remove all images currently managed by the composer.
 
 Example:
-    composer.Clear()
+
+	composer.Clear()
 */
 func (shared *ImageComposerEntryType) Clear() {
 	shared.images = make(map[string]*types.ImageComposerImageEntryType)
@@ -101,7 +105,8 @@ addition, the following should be noted:
 - The images are processed according to their Z-order, effects, and alpha values.
 
 Example:
-    finalImage := composer.RenderImage()
+
+	finalImage := composer.RenderImage()
 */
 func (shared *ImageComposerEntryType) RenderImage() image.Image {
 	sortedImageList := sortImagesByZOrder(shared.images)
@@ -130,7 +135,8 @@ getTransformedImage is a method which allows you to apply visual effects to a so
 composer entry settings.
 
 Example:
-    transformed := getTransformedImage(img, entry)
+
+	transformed := getTransformedImage(img, entry)
 */
 func getTransformedImage(sourceImageData image.Image, imageComposerImageEntry types.ImageComposerImageEntryType) image.Image {
 	transformedImage := sourceImageData
@@ -170,7 +176,8 @@ func getTransformedImage(sourceImageData image.Image, imageComposerImageEntry ty
 sortImagesByZOrder is a method which allows you to sort a map of image entries into a slice ordered by their Z-order.
 
 Example:
-    sorted := sortImagesByZOrder(composer.images)
+
+	sorted := sortImagesByZOrder(composer.images)
 */
 func sortImagesByZOrder(imageList map[string]*types.ImageComposerImageEntryType) []*types.ImageComposerImageEntryType {
 	// Create a slice to store the image entries
@@ -193,7 +200,8 @@ func sortImagesByZOrder(imageList map[string]*types.ImageComposerImageEntryType)
 BrailleFromDots is a method which allows you to convert a set of eight dots into a corresponding Braille rune.
 
 Example:
-    r := BrailleFromDots(true, false, true, false, true, false, true, false)
+
+	r := BrailleFromDots(true, false, true, false, true, false, true, false)
 */
 func BrailleFromDots(dot0, dot1, dot2, dot3, dot4, dot5, dot6, dot7 bool) rune {
 	blocks := 0
@@ -229,12 +237,13 @@ func BrailleFromDots(dot0, dot1, dot2, dot3, dot4, dot5, dot6, dot7 bool) rune {
 getImageLayerAsBraille is a method which allows you to convert an image into a layer of Braille characters based on the
 specified dimensions and style. In addition, the following should be noted:
 
-- The blur sigma controls how much blurring occurs after your image has been resized. This allows you to soften your
-  image before it is rendered in ansi so that hard edges are removed. A value of 0.0 means no blurring will occur, with
-  higher values increasing the blur factor.
+  - The blur sigma controls how much blurring occurs after your image has been resized. This allows you to soften your
+    image before it is rendered in ansi so that hard edges are removed. A value of 0.0 means no blurring will occur, with
+    higher values increasing the blur factor.
 
 Example:
-    layer := getImageLayerAsBraille(img, style, 80, 24, 0.5)
+
+	layer := getImageLayerAsBraille(img, style, 80, 24, 0.5)
 */
 func getImageLayerAsBraille(sourceImageData image.Image, imageStyle types.ImageStyleEntryType, widthInCharacters int, heightInCharacters int, blurSigma float64) types.LayerEntryType {
 	if widthInCharacters <= 0 && heightInCharacters <= 0 {
@@ -274,7 +283,8 @@ ConvertImageToGrayscale is a method which allows you to convert a color image in
 transparency.
 
 Example:
-    gray := ConvertImageToGrayscale(img)
+
+	gray := ConvertImageToGrayscale(img)
 */
 func ConvertImageToGrayscale(inputImage image.Image) image.Image {
 	bounds := inputImage.Bounds()
@@ -302,7 +312,8 @@ getBrailleImageData is a method which allows you to convert an image into a 2D g
 Braille dots.
 
 Example:
-    data := getBrailleImageData(img, style)
+
+	data := getBrailleImageData(img, style)
 */
 func getBrailleImageData(inputImage image.Image, imageStyle types.ImageStyleEntryType) [][]types.CharacterEntryType {
 	var monochromeImage image.Image
@@ -333,7 +344,7 @@ func getBrailleImageData(inputImage image.Image, imageStyle types.ImageStyleEntr
 		monochromeImage = FloydSteinbergDithering4x4(contrastAdjustedImage)
 	}
 	/*
-	contextForImage := gg.NewContextForImage(monochromeImage) if err := contextForImage.SavePNG("dithered_output.png"); err != nil { safeSttyPanic(err) }
+		contextForImage := gg.NewContextForImage(monochromeImage) if err := contextForImage.SavePNG("dithered_output.png"); err != nil { safeSttyPanic(err) }
 	*/
 	bounds = inputImage.Bounds()
 	width, height := bounds.Dx(), bounds.Dy()
@@ -404,11 +415,12 @@ func getBrailleImageData(inputImage image.Image, imageStyle types.ImageStyleEntr
 adjustContrast is a method which allows you to modify the contrast of an image by a specified factor. In addition, the
 following should be noted:
 
-- The contrast factor is a scaling value where 1.0 results in no change, values greater than 1.0 increase contrast, and
-  values less than 1.0 decrease it.
+  - The contrast factor is a scaling value where 1.0 results in no change, values greater than 1.0 increase contrast, and
+    values less than 1.0 decrease it.
 
 Example:
-    brighter := adjustContrast(img, 1.2)
+
+	brighter := adjustContrast(img, 1.2)
 */
 func adjustContrast(inputImage image.Image, contrastFactor float64) image.Image {
 	bounds := inputImage.Bounds()
@@ -440,7 +452,8 @@ func adjustContrast(inputImage image.Image, contrastFactor float64) image.Image 
 clampColorValue is a method which allows you to ensure a color intensity value remains within the valid 0-255 range.
 
 Example:
-    v := clampColorValue(260.0)
+
+	v := clampColorValue(260.0)
 */
 func clampColorValue(value float64) float64 {
 	if value < 0 {
@@ -460,7 +473,8 @@ func clampColorValue(value float64) float64 {
 ReadImage is a method which allows you to load an image from a file path.
 
 Example:
-    img, err := ReadImage("path/to/image.png")
+
+	img, err := ReadImage("path/to/image.png")
 */
 func ReadImage(filePath string) (image.Image, error) {
 	// Open the image file
@@ -483,7 +497,8 @@ func ReadImage(filePath string) (image.Image, error) {
 SaveImageToFile is a method which allows you to save an image object to a file as a JPEG.
 
 Example:
-    err := SaveImageToFile("output.jpg", img)
+
+	err := SaveImageToFile("output.jpg", img)
 */
 func SaveImageToFile(filePath string, img image.Image) error {
 	// Create a new file for writing
@@ -504,7 +519,8 @@ func SaveImageToFile(filePath string, img image.Image) error {
 getSubImageFromImage is a method which allows you to extract a rectangular sub-region from a source image.
 
 Example:
-    sub := getSubImageFromImage(img, 10, 10, 50, 50)
+
+	sub := getSubImageFromImage(img, 10, 10, 50, 50)
 */
 func getSubImageFromImage(sourceImage image.Image, xLocation, yLocation, width, height int) image.Image {
 	sourceBounds := sourceImage.Bounds()
@@ -540,7 +556,8 @@ level. In addition, the following should be noted:
 - The alpha value can range from 0.0 (fully transparent) to 1.0 (fully opaque).
 
 Example:
-    result := OverlayImageWithAlpha(fg, 0, 0, 10, 10, bg, 5, 5, 0.5)
+
+	result := OverlayImageWithAlpha(fg, 0, 0, 10, 10, bg, 5, 5, 0.5)
 */
 func OverlayImageWithAlpha(sourceImage image.Image, sourceXLocation int, sourceYLocation int, sourceWidth int, sourceHeight int, targetImage image.Image, targetXLocation, targetYLocation int, alphaValue float32) image.Image {
 	sourceImage = getSubImageFromImage(sourceImage, sourceXLocation, sourceYLocation, sourceWidth, sourceHeight)
@@ -591,7 +608,8 @@ func OverlayImageWithAlpha(sourceImage image.Image, sourceXLocation int, sourceY
 max is a method which allows you to determine the maximum of two float64 values.
 
 Example:
-    m := max(10.5, 20.1)
+
+	m := max(10.5, 20.1)
 */
 func max(a, b float64) float64 {
 	if a > b {
@@ -604,7 +622,8 @@ func max(a, b float64) float64 {
 min is a method which allows you to determine the minimum of two float64 values.
 
 Example:
-    m := min(10.5, 20.1)
+
+	m := min(10.5, 20.1)
 */
 func min(a, b float64) float64 {
 	if a < b {
@@ -620,7 +639,8 @@ be noted:
 - The alpha value should range from 0 (fully transparent) to 255 (fully opaque).
 
 Example:
-    c := blendColors(color.Black, color.White, 128)
+
+	c := blendColors(color.Black, color.White, 128)
 */
 func blendColors(bg color.Color, fg color.Color, alpha uint8) color.Color {
 	bgR, bgG, bgB, bgA := bg.RGBA()
@@ -641,7 +661,8 @@ following should be noted:
 - The amplitude determines the maximum displacement of the wave effect in pixels.
 
 Example:
-    wavy := applyWaveEffect(img, 5.0, true)
+
+	wavy := applyWaveEffect(img, 5.0, true)
 */
 func applyWaveEffect(inputImage image.Image, amplitude float64, isHorizontal bool) image.Image {
 	bounds := inputImage.Bounds()
@@ -691,7 +712,8 @@ following should be noted:
 - The amplitude determines the maximum displacement of the ripple effect in pixels.
 
 Example:
-    rippled := applyRippleEffect(img, 10.0)
+
+	rippled := applyRippleEffect(img, 10.0)
 */
 func applyRippleEffect(inputImage image.Image, amplitude float64) image.Image {
 	bounds := inputImage.Bounds()
@@ -738,7 +760,8 @@ following should be noted:
 - The frequency determines the length of each wave cycle in pixels.
 
 Example:
-    flag := applyFlagWavingEffect(img, 5.0, 100.0)
+
+	flag := applyFlagWavingEffect(img, 5.0, 100.0)
 */
 func applyFlagWavingEffect(inputImage image.Image, amplitude float64, frequency float64) image.Image {
 	bounds := inputImage.Bounds()
@@ -785,7 +808,8 @@ func applyFlagWavingEffect(inputImage image.Image, amplitude float64, frequency 
 applyBlindsEffect is a method which allows you to apply a vertical blinds transition effect to an image.
 
 Example:
-    blinds := applyBlindsEffect(img, 10)
+
+	blinds := applyBlindsEffect(img, 10)
 */
 func applyBlindsEffect(inputImage image.Image, step int) image.Image {
 	bounds := inputImage.Bounds()
@@ -837,7 +861,8 @@ func applyBlindsEffect(inputImage image.Image, step int) image.Image {
 applyHorizontalWeavingEffect is a method which allows you to apply a horizontal weaving transition effect to an image.
 
 Example:
-    weaved := applyHorizontalWeavingEffect(img, 5)
+
+	weaved := applyHorizontalWeavingEffect(img, 5)
 */
 func applyHorizontalWeavingEffect(inputImage image.Image, step int) image.Image {
 	bounds := inputImage.Bounds()
@@ -877,7 +902,8 @@ func applyHorizontalWeavingEffect(inputImage image.Image, step int) image.Image 
 applyVerticalWeavingEffect is a method which allows you to apply a vertical weaving transition effect to an image.
 
 Example:
-    weaved := applyVerticalWeavingEffect(img, 5)
+
+	weaved := applyVerticalWeavingEffect(img, 5)
 */
 func applyVerticalWeavingEffect(inputImage image.Image, step int) image.Image {
 	bounds := inputImage.Bounds()
@@ -918,7 +944,8 @@ applyForwardDiagonalWeavingEffect is a method which allows you to apply a forwar
 an image.
 
 Example:
-    weaved := applyForwardDiagonalWeavingEffect(img, 5)
+
+	weaved := applyForwardDiagonalWeavingEffect(img, 5)
 */
 func applyForwardDiagonalWeavingEffect(inputImage image.Image, step int) image.Image {
 	bounds := inputImage.Bounds()
@@ -961,7 +988,8 @@ applyBackwardDiagonalWeavingEffect is a method which allows you to apply a backw
 to an image.
 
 Example:
-    weaved := applyBackwardDiagonalWeavingEffect(img, 5)
+
+	weaved := applyBackwardDiagonalWeavingEffect(img, 5)
 */
 func applyBackwardDiagonalWeavingEffect(inputImage image.Image, step int) image.Image {
 	bounds := inputImage.Bounds()
@@ -1003,7 +1031,8 @@ func applyBackwardDiagonalWeavingEffect(inputImage image.Image, step int) image.
 applyCounterClockwiseSwirlEffect is a method which allows you to apply a counter-clockwise swirl effect to an image.
 
 Example:
-    swirled := applyCounterClockwiseSwirlEffect(img, 5)
+
+	swirled := applyCounterClockwiseSwirlEffect(img, 5)
 */
 func applyCounterClockwiseSwirlEffect(inputImage image.Image, step int) image.Image {
 	bounds := inputImage.Bounds()
@@ -1044,7 +1073,8 @@ func applyCounterClockwiseSwirlEffect(inputImage image.Image, step int) image.Im
 applyClockwiseSwirlEffect is a method which allows you to apply a clockwise swirl effect to an image.
 
 Example:
-    swirled := applyClockwiseSwirlEffect(img, 5)
+
+	swirled := applyClockwiseSwirlEffect(img, 5)
 */
 func applyClockwiseSwirlEffect(inputImage image.Image, step int) image.Image {
 	bounds := inputImage.Bounds()
@@ -1085,7 +1115,8 @@ func applyClockwiseSwirlEffect(inputImage image.Image, step int) image.Image {
 applyGrowingCircleEffect is a method which allows you to apply a growing circle transition effect to an image.
 
 Example:
-    circle := applyGrowingCircleEffect(img, 20)
+
+	circle := applyGrowingCircleEffect(img, 20)
 */
 func applyGrowingCircleEffect(inputImage image.Image, step int) image.Image {
 	bounds := inputImage.Bounds()
@@ -1121,7 +1152,8 @@ func applyGrowingCircleEffect(inputImage image.Image, step int) image.Image {
 applyVerticalCurtainEffect is a method which allows you to apply a vertical curtain transition effect to an image.
 
 Example:
-    curtain := applyVerticalCurtainEffect(img, 30)
+
+	curtain := applyVerticalCurtainEffect(img, 30)
 */
 func applyVerticalCurtainEffect(inputImage image.Image, step int) image.Image {
 	bounds := inputImage.Bounds()
@@ -1156,7 +1188,8 @@ func applyVerticalCurtainEffect(inputImage image.Image, step int) image.Image {
 applyHorizontalCurtainEffect is a method which allows you to apply a horizontal curtain transition effect to an image.
 
 Example:
-    curtain := applyHorizontalCurtainEffect(img, 30)
+
+	curtain := applyHorizontalCurtainEffect(img, 30)
 */
 func applyHorizontalCurtainEffect(inputImage image.Image, step int) image.Image {
 	bounds := inputImage.Bounds()

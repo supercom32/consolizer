@@ -13,7 +13,8 @@ printDialog is a method which writes text to the terminal screen via a typewrite
 for video games or other applications that may require printing text in a dialog box.
 
 Example:
-    printDialog(layer, attr, 0, 0, 20, 50, true, "Hello {{red}}World{{/}}")
+
+	printDialog(layer, attr, 0, 0, 20, 50, true, "Hello {{red}}World{{/}}")
 */
 func printDialog(layerEntry *types.LayerEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, widthOfLineInCharacters int, printDelayInMilliseconds int, isSkipable bool, textToPrint string) {
 	// If no delay is requested, just print the text normally and return
@@ -138,6 +139,7 @@ surrounded by "{{" and "}}" characters. In addition, the following should be not
 - If no attribute tag could be detected at the given string location, then an empty string will be returned instead.
 
 Example:
+
 	tag := getAttributeTag("Hello {{red}}World", 6)
 */
 func getAttributeTag(stringToParse string, startingCharacterIndex int) string {
@@ -157,10 +159,11 @@ func getAttributeTag(stringToParse string, startingCharacterIndex int) string {
 getDialogAttributeEntry is a method which obtains an attribute entry based on the text style detected in
 your attribute tag. In addition, the following should be noted:
 
-- If no text style could be found that matches the attribute tag provided, then the default attribute entry will be
-  returned instead.
+  - If no text style could be found that matches the attribute tag provided, then the default attribute entry will be
+    returned instead.
 
 Example:
+
 	attr := getDialogAttributeEntry("red", defaultAttr)
 */
 func getDialogAttributeEntry(attributeTag string, defaultAttributeEntry types.AttributeEntryType) types.AttributeEntryType {
@@ -184,6 +187,7 @@ getLengthOfNextWord is a method which gets the length of the next word at a give
 string. It ignores markup tags when calculating the length.
 
 Example:
+
 	length := getLengthOfNextWord("Hello {{red}}World", 0)
 */
 func getLengthOfNextWord(stringToParse string, startingCharacterIndex int) int {
@@ -214,6 +218,7 @@ found, then the {{someTagText is printed out as regular text. In addition, the f
 - Handles nested tags and unclosed tags appropriately.
 
 Example:
+
 	plainText := GetNonMarkupText("Hello {{red}}World{{/}}")
 */
 func GetNonMarkupText(textString string) string {
@@ -257,6 +262,7 @@ printMarkup is a method which writes text to the terminal screen with word wrapp
 This is similar to printDialog but without the typewriter effect and printing delay.
 
 Example:
+
 	printMarkup(layer, attr, 0, 0, 20, "Hello {{red}}World{{/}}")
 */
 func printMarkup(layerEntry *types.LayerEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, widthOfLineInCharacters int, stringToPrint string) {

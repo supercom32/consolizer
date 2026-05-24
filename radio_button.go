@@ -24,7 +24,8 @@ var RadioButtons = memory.NewControlMemoryManager[types.RadioButtonEntryType]()
 IsRadioButtonExists is a method which checks if a radio button with the specified alias exists on a given layer.
 
 Example:
-    exists := IsRadioButtonExists("Layer1", "Radio1")
+
+	exists := IsRadioButtonExists("Layer1", "Radio1")
 */
 func IsRadioButtonExists(layerAlias string, radioButtonAlias string) bool {
 	// Use ControlMemoryManager to check if the radio button exists
@@ -35,7 +36,8 @@ func IsRadioButtonExists(layerAlias string, radioButtonAlias string) bool {
 AddToTabIndex is a method which adds the radio button to the tab navigation index.
 
 Example:
-    radioButton.AddToTabIndex()
+
+	radioButton.AddToTabIndex()
 */
 func (shared *RadioButtonInstanceType) AddToTabIndex() {
 	addTabIndex(shared.layerAlias, shared.controlAlias, constants.CellTypeRadioButton)
@@ -45,7 +47,8 @@ func (shared *RadioButtonInstanceType) AddToTabIndex() {
 Delete is a method which removes the radio button instance.
 
 Example:
-    radioButton = radioButton.Delete()
+
+	radioButton = radioButton.Delete()
 */
 func (shared *RadioButtonInstanceType) Delete() *RadioButtonInstanceType {
 	if RadioButtons.IsExists(shared.layerAlias, shared.controlAlias) {
@@ -61,7 +64,8 @@ should be noted:
 - If the radio button instance no longer exists, then a result of false is always returned.
 
 Example:
-    selected := radioButton.IsSelected()
+
+	selected := radioButton.IsSelected()
 */
 func (shared *RadioButtonInstanceType) IsSelected() bool {
 	if RadioButtons.IsExists(shared.layerAlias, shared.controlAlias) {
@@ -80,7 +84,8 @@ addition, the following information should be noted:
 - If the radio button instance no longer exists, then an empty string is returned.
 
 Example:
-    alias := radioButton.GetSelected()
+
+	alias := radioButton.GetSelected()
 */
 func (shared *RadioButtonInstanceType) GetSelected() string {
 	if RadioButtons.IsExists(shared.layerAlias, shared.controlAlias) {
@@ -113,7 +118,8 @@ noted:
 - If the radio button being created is marked as being selected, then any previously selected radio button with the same group ID becomes unselected.
 
 Example:
-    radioButtonInstance := radioButton.Add("Layer1", "Radio1", "Option 1", style, 0, 0, 1, true)
+
+	radioButtonInstance := radioButton.Add("Layer1", "Radio1", "Option 1", style, 0, 0, 1, true)
 */
 func (shared *radioButtonType) Add(layerAlias string, radioButtonAlias string, radioButtonLabel string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, groupId int, isSelected bool) RadioButtonInstanceType {
 	radioButtonEntry := types.NewRadioButtonEntry()
@@ -153,7 +159,8 @@ func (shared *radioButtonType) Add(layerAlias string, radioButtonAlias string, r
 drawOnLayer is a method which draws all radio buttons on a given text layer.
 
 Example:
-    radioButton.drawOnLayer(layerEntry)
+
+	radioButton.drawOnLayer(layerEntry)
 */
 func (shared *radioButtonType) drawOnLayer(layerEntry types.LayerEntryType) {
 	layerAlias := layerEntry.LayerAlias
@@ -178,7 +185,8 @@ noted:
 - If the radio button to be drawn falls outside the range of the provided layer, then only the visible portion of the radio button will be drawn.
 
 Example:
-    radioButton.draw(&layerEntry, "Radio1", "Option 1", style, 0, 0, true, true)
+
+	radioButton.draw(&layerEntry, "Radio1", "Option 1", style, 0, 0, true, true)
 */
 func (shared *radioButtonType) draw(layerEntry *types.LayerEntryType, radioButtonAlias string, radioButtonLabel string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, isSelected bool, isEnabled bool) {
 	localStyleEntry := types.NewTuiStyleEntry(&styleEntry)
@@ -209,7 +217,8 @@ noted:
 - If you attempt to delete a radio button which does not exist, then the request will simply be ignored.
 
 Example:
-    radioButton.Delete("Layer1", "Radio1")
+
+	radioButton.Delete("Layer1", "Radio1")
 */
 func (shared *radioButtonType) Delete(layerAlias string, radioButtonAlias string) {
 	RadioButtons.Remove(layerAlias, radioButtonAlias)
@@ -219,7 +228,8 @@ func (shared *radioButtonType) Delete(layerAlias string, radioButtonAlias string
 DeleteAll is a method which allows you to remove all radio buttons from a specified text layer.
 
 Example:
-    radioButton.DeleteAll("Layer1")
+
+	radioButton.DeleteAll("Layer1")
 */
 func (shared *radioButtonType) DeleteAll(layerAlias string) {
 	RadioButtons.RemoveAll(layerAlias)
@@ -232,7 +242,8 @@ event state. In addition, the following information should be noted:
 - In the event that a screen update is required this method returns true.
 
 Example:
-    updateRequired := radioButton.updateMouseEvent()
+
+	updateRequired := radioButton.updateMouseEvent()
 */
 func (shared *radioButtonType) updateMouseEvent() bool {
 	isUpdateRequired := false
@@ -258,7 +269,8 @@ following information should be noted:
 - Since only one radio button may be selected at a time, any previously selected radio button becomes unselected.
 
 Example:
-    selectRadioButton("Layer1", "Radio1")
+
+	selectRadioButton("Layer1", "Radio1")
 */
 func selectRadioButton(layerAlias string, radioButtonAlias string) {
 	radioButtonSelectedEntry := RadioButtons.Get(layerAlias, radioButtonAlias)
@@ -280,7 +292,8 @@ addition, the following information should be noted:
 - The group ID used is automatically determined based on the radio button alias given.
 
 Example:
-    alias := getSelectedRadioButton("Layer1", "Radio1")
+
+	alias := getSelectedRadioButton("Layer1", "Radio1")
 */
 func getSelectedRadioButton(layerAlias string, radioButtonAlias string) string {
 	selectedItem := ""

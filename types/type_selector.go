@@ -11,7 +11,8 @@ SelectorEntryType is a structure which contains the properties for a selector co
 - This type is used to represent the state of a selector in the TUI.
 
 Example:
-    var selector types.SelectorEntryType
+
+	var selector types.SelectorEntryType
 */
 type SelectorEntryType struct {
 	BaseControlType
@@ -39,7 +40,8 @@ GetAlias is a method which allows you to retrieve the alias of a selector contro
 - The alias is set when the selector is created.
 
 Example:
-    instance.GetAlias()
+
+	instance.GetAlias()
 */
 func (shared SelectorEntryType) GetAlias() string {
 	return shared.Alias
@@ -55,7 +57,8 @@ MarshalJSON is a method which allows you to serialize a selector control to JSON
 - Used for saving and loading selector configurations.
 
 Example:
-    instance.MarshalJSON()
+
+	instance.MarshalJSON()
 */
 func (shared SelectorEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
@@ -103,7 +106,8 @@ GetEntryAsJsonDump is a method which allows you to get a JSON string representat
 - Panics if JSON marshaling fails.
 
 Example:
-    instance.GetEntryAsJsonDump()
+
+	instance.GetEntryAsJsonDump()
 */
 func (shared SelectorEntryType) GetEntryAsJsonDump() string {
 	j, err := json.Marshal(shared)
@@ -123,7 +127,8 @@ NewSelectorEntry is a constructor which allows you to create a new selector cont
 - Sets up the base control properties and selector-specific fields.
 
 Example:
-    NewSelectorEntry(existingSelectorEntry)
+
+	NewSelectorEntry(existingSelectorEntry)
 */
 func NewSelectorEntry(existingSelectorEntry ...*SelectorEntryType) SelectorEntryType {
 	var selectorEntry SelectorEntryType
@@ -154,7 +159,8 @@ IsSelectorEntryEqual is a method which allows you to compare two selector contro
 - Compares all properties of both selectors.
 
 Example:
-    IsSelectorEntryEqual(sourceSelectorEntry, targetSelectorEntry)
+
+	IsSelectorEntryEqual(sourceSelectorEntry, targetSelectorEntry)
 */
 func IsSelectorEntryEqual(sourceSelectorEntry *SelectorEntryType, targetSelectorEntry *SelectorEntryType) bool {
 	if sourceSelectorEntry.BaseControlType == targetSelectorEntry.BaseControlType &&
@@ -181,7 +187,8 @@ GetSelectorAlias is a method which allows you to retrieve the alias of a selecto
 - Returns the unique identifier for the selector.
 
 Example:
-    GetSelectorAlias(entry)
+
+	GetSelectorAlias(entry)
 */
 func GetSelectorAlias(entry *SelectorEntryType) string {
 	return entry.Alias

@@ -11,7 +11,8 @@ TextFieldEntryType is a structure which contains the properties for a text field
 - This type is used to represent the state of a text field in the TUI.
 
 Example:
-    var textField types.TextFieldEntryType
+
+	var textField types.TextFieldEntryType
 */
 type TextFieldEntryType struct {
 	BaseControlType
@@ -38,7 +39,8 @@ GetAlias is a method which allows you to retrieve the alias of a text field cont
 - The alias is set when the text field is created.
 
 Example:
-    instance.GetAlias()
+
+	instance.GetAlias()
 */
 func (shared TextFieldEntryType) GetAlias() string {
 	return shared.Alias
@@ -54,7 +56,8 @@ MarshalJSON is a method which allows you to serialize a text field control to JS
 - Used for saving and loading text field configurations.
 
 Example:
-    instance.MarshalJSON()
+
+	instance.MarshalJSON()
 */
 func (shared TextFieldEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
@@ -98,7 +101,8 @@ GetEntryAsJsonDump is a method which allows you to get a JSON string representat
 - Panics if JSON marshaling fails.
 
 Example:
-    instance.GetEntryAsJsonDump()
+
+	instance.GetEntryAsJsonDump()
 */
 func (shared TextFieldEntryType) GetEntryAsJsonDump() string {
 	j, err := json.Marshal(shared)
@@ -118,7 +122,8 @@ NewTextFieldEntry is a constructor which allows you to create a new text field c
 - Sets up the base control properties and text field-specific fields.
 
 Example:
-    NewTextFieldEntry(existingTextFieldEntry)
+
+	NewTextFieldEntry(existingTextFieldEntry)
 */
 func NewTextFieldEntry(existingTextFieldEntry ...*TextFieldEntryType) TextFieldEntryType {
 	var textFieldEntry TextFieldEntryType
@@ -147,7 +152,8 @@ IsTextFieldEntryEqual is a method which allows you to compare two text field con
 - Used for change detection and state synchronization.
 
 Example:
-    IsTextFieldEntryEqual(sourceTextFieldEntry, targetTextFieldEntry)
+
+	IsTextFieldEntryEqual(sourceTextFieldEntry, targetTextFieldEntry)
 */
 func IsTextFieldEntryEqual(sourceTextFieldEntry *TextFieldEntryType, targetTextFieldEntry *TextFieldEntryType) bool {
 	if sourceTextFieldEntry.BaseControlType == targetTextFieldEntry.BaseControlType &&
@@ -172,7 +178,8 @@ GetTextFieldAlias is a method which allows you to retrieve the alias of a text f
 - The alias is used to reference the text field in other operations.
 
 Example:
-    GetTextFieldAlias(entry)
+
+	GetTextFieldAlias(entry)
 */
 func GetTextFieldAlias(entry *TextFieldEntryType) string {
 	return entry.Alias

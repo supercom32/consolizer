@@ -14,7 +14,8 @@ var Timers *memory.MemoryManager[types.TimerEntryType]
 InitializeTimerMemory is a method which initializes the memory manager for timers.
 
 Example:
-    InitializeTimerMemory()
+
+	InitializeTimerMemory()
 */
 func InitializeTimerMemory() {
 	Timers = memory.NewMemoryManager[types.TimerEntryType]()
@@ -24,7 +25,8 @@ func InitializeTimerMemory() {
 TimerType is a structure which represents a timer instance.
 
 Example:
-    timer := TimerType{timerAlias: "myTimer"}
+
+	timer := TimerType{timerAlias: "myTimer"}
 */
 type TimerType struct {
 	timerAlias string
@@ -34,7 +36,8 @@ type TimerType struct {
 AddTimer is a method which creates and returns a new TimerType instance with a generated UUID.
 
 Example:
-    timer := AddTimer(1000, true)
+
+	timer := AddTimer(1000, true)
 */
 func AddTimer(lengthOfTimerInMilliseconds int64, isTimerEnabled bool) *TimerType {
 	timer := &TimerType{timerAlias: getUUID()}
@@ -54,9 +57,10 @@ IsExpired is a method which checks if a created timer has expired or not. In add
 - In order to activate the timer again, simply call 'Start'.
 
 Example:
-    if timer.IsExpired() {
-        fmt.Println("Timer expired!")
-    }
+
+	if timer.IsExpired() {
+	    fmt.Println("Timer expired!")
+	}
 */
 func (shared *TimerType) IsExpired() bool {
 	timerEntry := Timers.Get(shared.timerAlias)
@@ -79,7 +83,8 @@ Set is a method which configures a timer with a new duration and enabled state. 
 - If the timer is not enabled by default, you must call 'Start' when you wish for it to begin.
 
 Example:
-    timer.Set(2000, true)
+
+	timer.Set(2000, true)
 */
 func (shared *TimerType) Set(durationInMilliseconds int64, isEnabled bool) {
 	timerEntry := Timers.Get(shared.timerAlias)
@@ -97,7 +102,8 @@ Start is a method which starts a timer that has already been previously created.
 - If you attempt to start a timer that does not exist, then a panic will be generated to fail as fast as possible.
 
 Example:
-    timer.Start()
+
+	timer.Start()
 */
 func (shared *TimerType) Start() {
 	timerEntry := Timers.Get(shared.timerAlias)
@@ -114,7 +120,8 @@ Sleep is a method which pauses execution for a given amount of milliseconds. In 
 - This method is simply a convenient wrapper for the method 'SleepInMilliseconds'.
 
 Example:
-    Sleep(1000)
+
+	Sleep(1000)
 */
 func Sleep(timeInMilliseconds uint) {
 	SleepInMilliseconds(timeInMilliseconds)
@@ -124,7 +131,8 @@ func Sleep(timeInMilliseconds uint) {
 SleepInSeconds is a method which pauses execution for a given amount of seconds.
 
 Example:
-    SleepInSeconds(2)
+
+	SleepInSeconds(2)
 */
 func SleepInSeconds(timeInSeconds uint) {
 	SleepInMilliseconds(timeInSeconds * 1000)
@@ -134,7 +142,8 @@ func SleepInSeconds(timeInSeconds uint) {
 SleepInMilliseconds is a method which pauses execution for a given amount of milliseconds.
 
 Example:
-    SleepInMilliseconds(500)
+
+	SleepInMilliseconds(500)
 */
 func SleepInMilliseconds(timeInMilliseconds uint) {
 	timeDuration := time.Duration(timeInMilliseconds)
@@ -145,7 +154,8 @@ func SleepInMilliseconds(timeInMilliseconds uint) {
 GetCurrentTimeInMilliseconds is a method which gets the current epoch time in milliseconds.
 
 Example:
-    now := GetCurrentTimeInMilliseconds()
+
+	now := GetCurrentTimeInMilliseconds()
 */
 func GetCurrentTimeInMilliseconds() int64 {
 	return time.Now().UnixNano() / int64(time.Millisecond)
@@ -155,7 +165,8 @@ func GetCurrentTimeInMilliseconds() int64 {
 IsTimerExists is a method which checks if a timer with a given alias exists.
 
 Example:
-    exists := IsTimerExists("myTimer")
+
+	exists := IsTimerExists("myTimer")
 */
 func IsTimerExists(timerAlias string) bool {
 	return Timers.IsExists(timerAlias)
@@ -165,7 +176,8 @@ func IsTimerExists(timerAlias string) bool {
 GetAllTimers is a method which retrieves all timers currently in memory.
 
 Example:
-    allTimers := GetAllTimers()
+
+	allTimers := GetAllTimers()
 */
 func GetAllTimers() map[string]*types.TimerEntryType {
 	return Timers.GetAllEntriesWithKeys()
@@ -175,7 +187,8 @@ func GetAllTimers() map[string]*types.TimerEntryType {
 RemoveAllTimers is a method which removes all timers from memory.
 
 Example:
-    RemoveAllTimers()
+
+	RemoveAllTimers()
 */
 func RemoveAllTimers() {
 	Timers.RemoveAll()

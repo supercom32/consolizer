@@ -12,7 +12,8 @@ import (
 dumpScreenComparisons is a method which dumps base64 encoded screen data to local files for comparison.
 
 Example:
-    dumpScreenComparisons(originalB64, expectedB64)
+
+	dumpScreenComparisons(originalB64, expectedB64)
 */
 func dumpScreenComparisons(originalScreenAsBase64 string, expectedScreenAsBase64 string) {
 	originalScreen := stringformat.GetStringFromBase64(originalScreenAsBase64)
@@ -25,7 +26,8 @@ func dumpScreenComparisons(originalScreenAsBase64 string, expectedScreenAsBase64
 LogInfo is a method which logs information to a debug file with a timestamp.
 
 Example:
-    LogInfo("Value is %d", 10)
+
+	LogInfo("Value is %d", 10)
 */
 func LogInfo(info string, parameters ...any) {
 	var stringToAppend string

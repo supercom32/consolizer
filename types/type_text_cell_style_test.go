@@ -9,11 +9,12 @@ import (
 TestTextStyleTypeCreation is a test which verifies the creation and cloning of text cell style entries.
 
 Example:
-    Expected Inputs:
-        None
 
-    Expected Outputs:
-        None
+	Expected Inputs:
+	    None
+
+	Expected Outputs:
+	    None
 */
 func TestTextStyleTypeCreation(test *testing.T) {
 	firstAttributeEntry := NewTextCellStyleEntry()

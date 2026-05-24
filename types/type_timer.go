@@ -8,7 +8,8 @@ import (
 TimerEntryType is a structure which represents a timer control.
 
 Example:
-    var timer types.TimerEntryType
+
+	var timer types.TimerEntryType
 */
 type TimerEntryType struct {
 	IsTimerEnabled bool
@@ -26,7 +27,8 @@ MarshalJSON is a method which allows you to convert a timer entry to JSON format
 - Used for serializing timer entries when saving state or transmitting data.
 
 Example:
-    instance.MarshalJSON()
+
+	instance.MarshalJSON()
 */
 func (shared TimerEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
@@ -54,7 +56,8 @@ GetEntryAsJsonDump is a method which allows you to get a JSON string representat
 - The output is human-readable and includes all timer properties.
 
 Example:
-    instance.GetEntryAsJsonDump()
+
+	instance.GetEntryAsJsonDump()
 */
 func (shared TimerEntryType) GetEntryAsJsonDump() string {
 	j, err := json.Marshal(shared)
@@ -74,7 +77,8 @@ NewTimerEntry is a constructor which allows you to create a new timer entry. In 
 - The timer can be started, stopped, and reset using the appropriate methods.
 
 Example:
-    NewTimerEntry(existingTimerEntry)
+
+	NewTimerEntry(existingTimerEntry)
 */
 func NewTimerEntry(existingTimerEntry ...*TimerEntryType) TimerEntryType {
 	var timerEntry TimerEntryType

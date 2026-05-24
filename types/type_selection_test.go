@@ -10,11 +10,12 @@ import (
 TestNewSelectionEntry is a test which verifies the creation, addition, and clearing of selection entries.
 
 Example:
-    Expected Inputs:
-        None
 
-    Expected Outputs:
-        None
+	Expected Inputs:
+	    None
+
+	Expected Outputs:
+	    None
 */
 func TestNewSelectionEntry(test *testing.T) {
 	selectionEntry := NewSelectionEntry()
@@ -27,4 +28,3 @@ func TestNewSelectionEntry(test *testing.T) {
 	expectedValue = recast.GetArrayOfInterfaces(0, 0)
 	assert.Equalf(test, expectedValue, obtainedValue, "The number of selection entries does not what was expected!")
 }
-

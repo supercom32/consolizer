@@ -364,6 +364,8 @@ const TYPE_FILEMENU = "filemenu"
 const DefaultTooltipHoverTime = 1000
 const SELECTED_NONE = -1
 
+const MasterImagesPath = "./test_data/master_images/"
+
 const (
 	ButtonStateUnpressed = iota
 	ButtonStatePressed

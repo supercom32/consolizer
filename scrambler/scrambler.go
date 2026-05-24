@@ -10,7 +10,8 @@ import (
 Encrypt is a method which encrypts data using AES-GCM.
 
 Example:
-    encrypted, err := Encrypt([]byte("secret"), key)
+
+	encrypted, err := Encrypt([]byte("secret"), key)
 */
 func Encrypt(dataToEncrypt, key []byte) ([]byte, error) {
 	blockCipher, err := aes.NewCipher(key)
@@ -33,7 +34,8 @@ func Encrypt(dataToEncrypt, key []byte) ([]byte, error) {
 Decrypt is a method which decrypts data that was encrypted using AES-GCM.
 
 Example:
-    decrypted, err := Decrypt(encryptedData, key)
+
+	decrypted, err := Decrypt(encryptedData, key)
 */
 func Decrypt(dataToDecrypt, key []byte) ([]byte, error) {
 	blockCipher, err := aes.NewCipher(key)
@@ -56,7 +58,8 @@ func Decrypt(dataToDecrypt, key []byte) ([]byte, error) {
 GenerateKey is a method which generates a random 32-byte key suitable for AES-256 encryption.
 
 Example:
-    key, err := GenerateKey()
+
+	key, err := GenerateKey()
 */
 func GenerateKey() ([]byte, error) {
 	key := make([]byte, 32)

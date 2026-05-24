@@ -11,7 +11,8 @@ TextCellStyleEntryType is a structure which represents the visual style of a sin
 - Contains color and formatting information like bold, italic, and underline.
 
 Example:
-    var textCellStyle types.TextCellStyleEntryType
+
+	var textCellStyle types.TextCellStyleEntryType
 */
 type TextCellStyleEntryType struct {
 	ForegroundColor          constants.ColorType
@@ -31,7 +32,8 @@ MarshalJSON is a method which allows you to serialize a text cell style to JSON.
 - Converts the style properties into a JSON format for persistence or transmission.
 
 Example:
-    instance.MarshalJSON()
+
+	instance.MarshalJSON()
 */
 func (shared TextCellStyleEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
@@ -67,7 +69,8 @@ GetEntryAsJsonDump is a method which allows you to get a JSON string representat
 - Panics if the marshaling process fails.
 
 Example:
-    instance.GetEntryAsJsonDump()
+
+	instance.GetEntryAsJsonDump()
 */
 func (shared TextCellStyleEntryType) GetEntryAsJsonDump() string {
 	j, err := json.Marshal(shared)
@@ -83,7 +86,8 @@ NewTextCellStyleEntry is a constructor which allows you to create a new text cel
 - Can optionally initialize properties from an existing style entry.
 
 Example:
-    NewTextCellStyleEntry(existingAttributeEntry)
+
+	NewTextCellStyleEntry(existingAttributeEntry)
 */
 func NewTextCellStyleEntry(existingAttributeEntry ...*TextCellStyleEntryType) TextCellStyleEntryType {
 	var attributeEntry TextCellStyleEntryType

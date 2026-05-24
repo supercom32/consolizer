@@ -9,11 +9,12 @@ import (
 TestLayerTypeCreation is a test which verifies the creation and cloning of layer entries.
 
 Example:
-    Expected Inputs:
-        None
 
-    Expected Outputs:
-        None
+	Expected Inputs:
+	    None
+
+	Expected Outputs:
+	    None
 */
 func TestLayerTypeCreation(test *testing.T) {
 	layerAlias := "MyAlias"

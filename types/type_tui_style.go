@@ -9,7 +9,8 @@ import (
 FrameStyle is a structure which contains character definitions for UI elements.
 
 Example:
-    var frameStyle FrameStyle
+
+	var frameStyle FrameStyle
 */
 type FrameStyle struct {
 	UpperLeftCorner     rune
@@ -33,7 +34,8 @@ type FrameStyle struct {
 LabelStyle is a structure which contains styles for labels.
 
 Example:
-    var labelStyle LabelStyle
+
+	var labelStyle LabelStyle
 */
 type LabelStyle struct {
 	ForegroundColor constants.ColorType
@@ -44,7 +46,8 @@ type LabelStyle struct {
 CheckboxStyle is a structure which contains styles for checkboxes.
 
 Example:
-    var checkboxStyle CheckboxStyle
+
+	var checkboxStyle CheckboxStyle
 */
 type CheckboxStyle struct {
 	ForegroundColor     constants.ColorType
@@ -57,7 +60,8 @@ type CheckboxStyle struct {
 RadioButtonStyle is a structure which contains styles for radio buttons.
 
 Example:
-    var radioButtonStyle RadioButtonStyle
+
+	var radioButtonStyle RadioButtonStyle
 */
 type RadioButtonStyle struct {
 	ForegroundColor     constants.ColorType
@@ -70,7 +74,8 @@ type RadioButtonStyle struct {
 ScrollbarStyle is a structure which contains styles for scrollbars.
 
 Example:
-    var scrollbarStyle ScrollbarStyle
+
+	var scrollbarStyle ScrollbarStyle
 */
 type ScrollbarStyle struct {
 	TrackPattern    rune
@@ -88,7 +93,8 @@ type ScrollbarStyle struct {
 ProgressBarStyle is a structure which contains styles for progress bars.
 
 Example:
-    var progressBarStyle ProgressBarStyle
+
+	var progressBarStyle ProgressBarStyle
 */
 type ProgressBarStyle struct {
 	UnfilledPattern         rune
@@ -106,7 +112,8 @@ type ProgressBarStyle struct {
 TextFieldStyle is a structure which contains styles for text fields.
 
 Example:
-    var textFieldStyle TextFieldStyle
+
+	var textFieldStyle TextFieldStyle
 */
 type TextFieldStyle struct {
 	ForegroundColor          constants.ColorType
@@ -121,7 +128,8 @@ type TextFieldStyle struct {
 TextboxStyle is a structure which contains styles for textboxes.
 
 Example:
-    var textboxStyle TextboxStyle
+
+	var textboxStyle TextboxStyle
 */
 type TextboxStyle struct {
 	ForegroundColor          constants.ColorType
@@ -136,7 +144,8 @@ type TextboxStyle struct {
 SelectorStyle is a structure which contains styles for selectors.
 
 Example:
-    var selectorStyle SelectorStyle
+
+	var selectorStyle SelectorStyle
 */
 type SelectorStyle struct {
 	ForegroundColor          constants.ColorType
@@ -152,7 +161,8 @@ type SelectorStyle struct {
 ButtonStyle is a structure which contains styles for buttons.
 
 Example:
-    var buttonStyle ButtonStyle
+
+	var buttonStyle ButtonStyle
 */
 type ButtonStyle struct {
 	RaisedColor        constants.ColorType
@@ -165,7 +175,8 @@ type ButtonStyle struct {
 TooltipStyle is a structure which contains styles for tooltips.
 
 Example:
-    var tooltipStyle TooltipStyle
+
+	var tooltipStyle TooltipStyle
 */
 type TooltipStyle struct {
 	ForegroundColor     constants.ColorType
@@ -179,7 +190,8 @@ type TooltipStyle struct {
 WindowStyle is a structure which contains styles for windows.
 
 Example:
-    var windowStyle WindowStyle
+
+	var windowStyle WindowStyle
 */
 type WindowStyle struct {
 	IsHeaderDrawn                       bool
@@ -197,7 +209,8 @@ type WindowStyle struct {
 BarStyle is a structure which represents styles for bars.
 
 Example:
-    var barStyle BarStyle
+
+	var barStyle BarStyle
 */
 type BarStyle struct {
 	ForegroundColor constants.ColorType
@@ -208,7 +221,8 @@ type BarStyle struct {
 FileMenuStyle is a structure which contains styles for file menus.
 
 Example:
-    var fileMenuStyle FileMenuStyle
+
+	var fileMenuStyle FileMenuStyle
 */
 type FileMenuStyle struct {
 	ForegroundColor          constants.ColorType
@@ -221,7 +235,8 @@ type FileMenuStyle struct {
 DropdownStyle is a structure which contains styles for dropdowns.
 
 Example:
-    var dropdownStyle DropdownStyle
+
+	var dropdownStyle DropdownStyle
 */
 type DropdownStyle struct {
 	ForegroundColor constants.ColorType
@@ -233,7 +248,8 @@ type DropdownStyle struct {
 TextStyle is a structure which represents styles for text.
 
 Example:
-    var textStyle TextStyle
+
+	var textStyle TextStyle
 */
 type TextStyle struct {
 	ForegroundColor constants.ColorType
@@ -244,7 +260,8 @@ type TextStyle struct {
 TuiStyleEntryType is a structure which contains all UI style definitions.
 
 Example:
-    var tuiStyle TuiStyleEntryType
+
+	var tuiStyle TuiStyleEntryType
 */
 type TuiStyleEntryType struct {
 	Text        TextStyle
@@ -269,7 +286,8 @@ type TuiStyleEntryType struct {
 GetEntryAsJsonDump is a method which allows you to get a JSON string representation of the TUI style entry.
 
 Example:
-    instance.GetEntryAsJsonDump()
+
+	instance.GetEntryAsJsonDump()
 */
 func (shared TuiStyleEntryType) GetEntryAsJsonDump() string {
 	j, err := json.Marshal(shared)
@@ -284,7 +302,8 @@ NewTuiStyleEntry is a constructor which allows you to create a new TuiStyleEntry
 existing one.
 
 Example:
-    NewTuiStyleEntry(existingStyleEntry)
+
+	NewTuiStyleEntry(existingStyleEntry)
 */
 func NewTuiStyleEntry(existingStyleEntry ...*TuiStyleEntryType) TuiStyleEntryType {
 	var styleEntry TuiStyleEntryType

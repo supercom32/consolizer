@@ -12,11 +12,12 @@ TestGetAbsoluteValue is a test which tests that the absolute value of various nu
 calculated.
 
 Example:
-    Expected Inputs:
-        None
 
-    Expected Outputs:
-        None
+	Expected Inputs:
+	    None
+
+	Expected Outputs:
+	    None
 */
 func TestGetAbsoluteValue(test *testing.T) {
 	var intValues = recast.GetArrayOfInterfaces(int(-3), int8(-3), int16(-3), int32(-3), int64(-3))
@@ -47,11 +48,12 @@ TestIsNumberEven is a test which tests that the IsNumberEven method correctly id
 numbers.
 
 Example:
-    Expected Inputs:
-        None
 
-    Expected Outputs:
-        None
+	Expected Inputs:
+	    None
+
+	Expected Outputs:
+	    None
 */
 func TestIsNumberEven(test *testing.T) {
 	var intValues = recast.GetArrayOfInterfaces(int(12), int8(12), int16(12), int32(12), int64(12))
@@ -82,11 +84,12 @@ TestRoundToWholeNumber is a test which tests that various number types are corre
 whole number.
 
 Example:
-    Expected Inputs:
-        None
 
-    Expected Outputs:
-        None
+	Expected Inputs:
+	    None
+
+	Expected Outputs:
+	    None
 */
 func TestRoundToWholeNumber(test *testing.T) {
 	var intValues = recast.GetArrayOfInterfaces(int(5), int8(5), int16(5), int32(5), int64(5))
@@ -117,11 +120,12 @@ TestRoundToDecimal is a test which tests that various number types are correctly
 number of decimal places.
 
 Example:
-    Expected Inputs:
-        None
 
-    Expected Outputs:
-        None
+	Expected Inputs:
+	    None
+
+	Expected Outputs:
+	    None
 */
 func TestRoundToDecimal(test *testing.T) {
 	var intValues = recast.GetArrayOfInterfaces(int(3), int8(3), int16(3), int32(3), int64(3))
@@ -146,4 +150,3 @@ func TestRoundToDecimal(test *testing.T) {
 		}
 	}
 }
-

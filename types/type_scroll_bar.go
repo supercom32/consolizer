@@ -10,7 +10,8 @@ ScrollbarEntryType is a structure which contains the properties for a scroll bar
 - This type is used to represent the state of a scroll bar in the TUI.
 
 Example:
-    var scrollbar types.ScrollbarEntryType
+
+	var scrollbar types.ScrollbarEntryType
 */
 type ScrollbarEntryType struct {
 	BaseControlType
@@ -34,7 +35,8 @@ GetAlias is a method which retrieves the alias of a scroll bar control. In addit
 - The alias is set when the scroll bar is created.
 
 Example:
-    instance.GetAlias()
+
+	instance.GetAlias()
 */
 func (shared ScrollbarEntryType) GetAlias() string {
 	return shared.Alias
@@ -50,7 +52,8 @@ MarshalJSON is a method which serializes a scroll bar control to JSON and return
 - Used for saving and loading scroll bar configurations.
 
 Example:
-    instance.MarshalJSON()
+
+	instance.MarshalJSON()
 */
 func (shared ScrollbarEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
@@ -90,7 +93,8 @@ GetEntryAsJsonDump is a method which returns a JSON string representation of a s
 - Panics if JSON marshaling fails.
 
 Example:
-    instance.GetEntryAsJsonDump()
+
+	instance.GetEntryAsJsonDump()
 */
 func (shared ScrollbarEntryType) GetEntryAsJsonDump() string {
 	j, err := json.Marshal(shared)
@@ -110,7 +114,8 @@ GetScrollBarAlias is a method which retrieves the alias of a scroll bar control.
 - The alias is used to reference the scroll bar in other operations.
 
 Example:
-    GetScrollBarAlias(entry)
+
+	GetScrollBarAlias(entry)
 */
 func GetScrollBarAlias(entry *ScrollbarEntryType) string {
 	return entry.Alias
@@ -126,7 +131,8 @@ NewScrollbarEntry is a constructor which creates and returns a new scroll bar co
 - Sets up the base control properties and scroll bar-specific fields.
 
 Example:
-    NewScrollbarEntry(existingScrollbarEntry)
+
+	NewScrollbarEntry(existingScrollbarEntry)
 */
 func NewScrollbarEntry(existingScrollbarEntry ...*ScrollbarEntryType) ScrollbarEntryType {
 	var scrollbarEntry ScrollbarEntryType
@@ -148,7 +154,8 @@ func NewScrollbarEntry(existingScrollbarEntry ...*ScrollbarEntryType) ScrollbarE
 IsScrollbarEntryEqual is a method which compares two scroll bar entries for equality and returns true if they are equal.
 
 Example:
-    IsScrollbarEntryEqual(sourceScrollbarEntry, targetScrollBarEntry)
+
+	IsScrollbarEntryEqual(sourceScrollbarEntry, targetScrollBarEntry)
 */
 func IsScrollbarEntryEqual(sourceScrollbarEntry *ScrollbarEntryType, targetScrollBarEntry *ScrollbarEntryType) bool {
 	if sourceScrollbarEntry.Length == targetScrollBarEntry.Length &&

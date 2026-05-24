@@ -6,7 +6,8 @@ SelectionEntryType is a structure which represents a list of selectable items. I
 - Used by controls like dropdowns and selectors to manage their options.
 
 Example:
-    var selectionEntry types.SelectionEntryType
+
+	var selectionEntry types.SelectionEntryType
 */
 type SelectionEntryType struct {
 	SelectionAlias []string
@@ -23,7 +24,8 @@ NewSelectionEntry is a constructor which allows you to create a new selection en
 - The entry can be populated using the Add method.
 
 Example:
-    NewSelectionEntry()
+
+	NewSelectionEntry()
 */
 func NewSelectionEntry() SelectionEntryType {
 	var selectionEntry SelectionEntryType
@@ -40,7 +42,8 @@ Add is a method which allows you to add a new selection item to the entry. In ad
 - Both arrays (SelectionAlias and SelectionValue) are kept in sync.
 
 Example:
-    instance.Add(selectionAlias, selectionValue)
+
+	instance.Add(selectionAlias, selectionValue)
 */
 func (shared *SelectionEntryType) Add(selectionAlias string, selectionValue string) {
 	shared.SelectionAlias = append(shared.SelectionAlias, selectionAlias)
@@ -57,7 +60,8 @@ Clear is a method which allows you to remove all items from the selection entry.
 - The entry can be repopulated using the Add method.
 
 Example:
-    instance.Clear()
+
+	instance.Clear()
 */
 func (shared *SelectionEntryType) Clear() {
 	shared.SelectionAlias = nil
@@ -68,7 +72,8 @@ func (shared *SelectionEntryType) Clear() {
 GetSelectionCount is a method which allows you to get the number of selections currently added.
 
 Example:
-    instance.GetSelectionCount()
+
+	instance.GetSelectionCount()
 */
 func (shared *SelectionEntryType) GetSelectionCount() int {
 	return len(shared.SelectionAlias)

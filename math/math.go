@@ -11,7 +11,8 @@ import (
 GetAbsoluteValueAsFloat64 is a method which gets the absolute value of a number as a float64.
 
 Example:
-    absoluteValue := GetAbsoluteValueAsFloat64(-3.3)
+
+	absoluteValue := GetAbsoluteValueAsFloat64(-3.3)
 */
 func GetAbsoluteValueAsFloat64(number interface{}) float64 {
 	numberAsFloat64 := recast.GetNumberAsFloat64(number)
@@ -25,7 +26,8 @@ func GetAbsoluteValueAsFloat64(number interface{}) float64 {
 GetAbsoluteValueAsInt is a method which gets the absolute value of a number as an int.
 
 Example:
-    absoluteValue := GetAbsoluteValueAsInt(-3)
+
+	absoluteValue := GetAbsoluteValueAsInt(-3)
 */
 func GetAbsoluteValueAsInt(number interface{}) int {
 	numberAsInt := recast.GetNumberAsInt(number)
@@ -39,7 +41,8 @@ func GetAbsoluteValueAsInt(number interface{}) int {
 RoundToWholeNumber is a method which rounds a number to the nearest whole number.
 
 Example:
-    roundedNumber := RoundToWholeNumber(5.5)
+
+	roundedNumber := RoundToWholeNumber(5.5)
 */
 func RoundToWholeNumber(number interface{}) float64 {
 	numberAsFloat64 := recast.GetNumberAsFloat64(number)
@@ -50,7 +53,8 @@ func RoundToWholeNumber(number interface{}) float64 {
 RoundToDecimal is a method which rounds a number to a specific number of decimal places.
 
 Example:
-    roundedNumber := RoundToDecimal(5.1234567, 4)
+
+	roundedNumber := RoundToDecimal(5.1234567, 4)
 */
 func RoundToDecimal(number interface{}, numberOfPlaces int) float64 {
 	numberAsFloat64 := recast.GetNumberAsFloat64(number)
@@ -64,7 +68,8 @@ func RoundToDecimal(number interface{}, numberOfPlaces int) float64 {
 IsNumberEven is a method which checks if a number is even.
 
 Example:
-    isEven := IsNumberEven(12)
+
+	isEven := IsNumberEven(12)
 */
 func IsNumberEven(number interface{}) bool {
 	numberAsInt64 := recast.GetNumberAsInt64(number)
@@ -83,7 +88,8 @@ IsFloatEffectivelyEqual is a method which checks if two floating point numbers a
 - By using this method, you can check if your numbers are for most practical purposes, equal or not by automatically rounding numbers down to 7 places.
 
 Example:
-    isEqual := IsFloatEffectivelyEqual(1.00000001, 1.00000002)
+
+	isEqual := IsFloatEffectivelyEqual(1.00000001, 1.00000002)
 */
 func IsFloatEffectivelyEqual(firstNumber, secondNumber float64) bool {
 	firstNumberRounded := RoundToDecimal(firstNumber, 7)

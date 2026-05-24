@@ -8,7 +8,8 @@ import (
 ProgressBarEntryType is a structure which represents a progress bar control entry.
 
 Example:
-    var progressBar types.ProgressBarEntryType
+
+	var progressBar types.ProgressBarEntryType
 */
 type ProgressBarEntryType struct {
 	BaseControlType
@@ -30,7 +31,8 @@ GetAlias is a method which retrieves the alias of a progress bar control. In add
 - The alias is set when the progress bar is created.
 
 Example:
-    instance.GetAlias()
+
+	instance.GetAlias()
 */
 func (shared ProgressBarEntryType) GetAlias() string {
 	return shared.Alias
@@ -46,7 +48,8 @@ MarshalJSON is a method which serializes a progress bar control to JSON. In addi
 - Used for saving and loading progress bar configurations.
 
 Example:
-    instance.MarshalJSON()
+
+	instance.MarshalJSON()
 */
 func (shared ProgressBarEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
@@ -83,7 +86,8 @@ GetEntryAsJsonDump is a method which returns a JSON string representation of a p
 - Panics if JSON marshaling fails.
 
 Example:
-    instance.GetEntryAsJsonDump()
+
+	instance.GetEntryAsJsonDump()
 */
 func (shared ProgressBarEntryType) GetEntryAsJsonDump() string {
 	j, err := json.Marshal(shared)
@@ -103,7 +107,8 @@ NewProgressBarEntry is a constructor which creates a new progress bar control. I
 - Sets up the base control properties and progress bar-specific fields.
 
 Example:
-    NewProgressBarEntry(ExistingProgressBarEntry)
+
+	NewProgressBarEntry(ExistingProgressBarEntry)
 */
 func NewProgressBarEntry(ExistingProgressBarEntry ...*ProgressBarEntryType) ProgressBarEntryType {
 	var progressBarEntry ProgressBarEntryType
@@ -129,7 +134,8 @@ IsProgressBarEntryEqual is a method which compares two progress bar controls for
 - Used for change detection and state synchronization.
 
 Example:
-    IsProgressBarEntryEqual(sourceProgressBarEntry, targetProgressBarEntry)
+
+	IsProgressBarEntryEqual(sourceProgressBarEntry, targetProgressBarEntry)
 */
 func IsProgressBarEntryEqual(sourceProgressBarEntry *ProgressBarEntryType, targetProgressBarEntry *ProgressBarEntryType) bool {
 	return sourceProgressBarEntry.BaseControlType.IsEqual(&targetProgressBarEntry.BaseControlType) &&
@@ -151,7 +157,8 @@ GetProgressBarAlias is a method which retrieves the alias of a progress bar cont
 - The alias is used to reference the progress bar in other operations.
 
 Example:
-    GetProgressBarAlias(entry)
+
+	GetProgressBarAlias(entry)
 */
 func GetProgressBarAlias(entry *ProgressBarEntryType) string {
 	return entry.Alias

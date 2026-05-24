@@ -14,7 +14,8 @@ import (
 Font is a structure which represents a global instance of fontType.
 
 Example:
-    Font
+
+	Font
 */
 var Font fontType
 var fonts = memory.NewMemoryManager[types.FontFamilyType]()
@@ -51,7 +52,8 @@ Unload is a method which allows you to remove a font from memory. In addition, t
 - If the font alias does not exist, the application will panic.
 
 Example:
-    font.Unload()
+
+	font.Unload()
 */
 func (instance *fontInstanceType) Unload() {
 	if !fonts.IsExists(instance.fontAlias) {
@@ -64,7 +66,8 @@ func (instance *fontInstanceType) Unload() {
 SwitchFont is a method which allows you to switch to a different font in the same file.
 
 Example:
-    font.SwitchFont(1)
+
+	font.SwitchFont(1)
 */
 func (instance *fontInstanceType) SwitchFont(fontIndex int) {
 	instance.fontIndex = fontIndex
@@ -74,7 +77,8 @@ func (instance *fontInstanceType) SwitchFont(fontIndex int) {
 SetCharacterSpacing is a method which allows you to set the character spacing for the font instance.
 
 Example:
-    font.SetCharacterSpacing(1)
+
+	font.SetCharacterSpacing(1)
 */
 func (instance *fontInstanceType) SetCharacterSpacing(characterSpacing int) {
 	fontFamily := getFontFamilyFromMemory(instance.fontAlias)
@@ -88,7 +92,8 @@ func (instance *fontInstanceType) SetCharacterSpacing(characterSpacing int) {
 SetBlankSizeInCharacters is a method which allows you to set the blank size for the font instance.
 
 Example:
-    font.SetBlankSizeInCharacters(2)
+
+	font.SetBlankSizeInCharacters(2)
 */
 func (instance *fontInstanceType) SetBlankSizeInCharacters(blankSize int) {
 	fontFamily := getFontFamilyFromMemory(instance.fontAlias)
@@ -112,7 +117,8 @@ noted:
 - Use SwitchFont to select a different font from the same file.
 
 Example:
-    font := Font.Load("myfont.tdf")
+
+	font := Font.Load("myfont.tdf")
 */
 func (manager *fontType) Load(fontFile string) fontInstanceType {
 	// If the font family is already loaded, just return a new instance.
@@ -158,7 +164,8 @@ findFontOffsets is a method which allows you to find all font offsets in the fil
 determine the start of the next font.
 
 Example:
-    offsets := font.findFontOffsets(data)
+
+	offsets := font.findFontOffsets(data)
 */
 func (manager *fontType) findFontOffsets(fileData []byte) []int {
 	var fontOffsets []int
@@ -191,7 +198,8 @@ func (manager *fontType) findFontOffsets(fileData []byte) []int {
 loadFontAtOffset is a method which allows you to load a font from the given offset.
 
 Example:
-    fontEntry := font.loadFontAtOffset(data, offset)
+
+	fontEntry := font.loadFontAtOffset(data, offset)
 */
 func (manager *fontType) loadFontAtOffset(fileData []byte, fontOffset int) *types.FontEntryType {
 	fontEntry := &types.FontEntryType{}
@@ -262,7 +270,8 @@ func (manager *fontType) loadFontAtOffset(fileData []byte, fontOffset int) *type
 GetAvailableFonts is a method which allows you to retrieve a list of all font names in the specified file.
 
 Example:
-    fonts := Font.GetAvailableFonts("myfont.tdf")
+
+	fonts := Font.GetAvailableFonts("myfont.tdf")
 */
 func (manager *fontType) GetAvailableFonts(fontFile string) []string {
 	fileData, err := getFileDataFromFileSystem(fontFile)
@@ -291,7 +300,8 @@ func (manager *fontType) GetAvailableFonts(fontFile string) []string {
 readGlyph is a method which allows you to read a single glyph from the font data.
 
 Example:
-    glyph, err := font.readGlyph(entry, 0)
+
+	glyph, err := font.readGlyph(entry, 0)
 */
 func (manager *fontType) readGlyph(fontEntry *types.FontEntryType, glyphIndex int) (*types.Glyph, error) {
 	if fontEntry.CharList[glyphIndex] == 0xffff {
@@ -360,7 +370,8 @@ func (manager *fontType) readGlyph(fontEntry *types.FontEntryType, glyphIndex in
 lookupChar is a method which allows you to find the index of a character in the character list.
 
 Example:
-    index := font.lookupChar('A')
+
+	index := font.lookupChar('A')
 */
 func (manager *fontType) lookupChar(characterToFind rune) int {
 	for index, character := range characterList {
@@ -375,7 +386,8 @@ func (manager *fontType) lookupChar(characterToFind rune) int {
 renderGlyph is a method which allows you to draw a single character and returns the width it occupied.
 
 Example:
-    width := font.renderGlyph(layer, fontEntry, 'A', 0, 0)
+
+	width := font.renderGlyph(layer, fontEntry, 'A', 0, 0)
 */
 func (manager *fontType) renderGlyph(layerEntry *types.LayerEntryType, font *types.FontEntryType, character rune, xLocation, yLocation int) int {
 	if character == ' ' {
@@ -420,7 +432,8 @@ func (manager *fontType) renderGlyph(layerEntry *types.LayerEntryType, font *typ
 PrintText is a method which allows you to render a string onto a layer using the specified font.
 
 Example:
-    Font.PrintText(layer, fontInstance, 0, 0, "Hello")
+
+	Font.PrintText(layer, fontInstance, 0, 0, "Hello")
 */
 func (manager *fontType) PrintText(layerEntry *types.LayerEntryType, fontInstance fontInstanceType, xLocation, yLocation int, textToPrint string) {
 	fontFamily := getFontFamilyFromMemory(fontInstance.fontAlias)
@@ -442,7 +455,8 @@ specified font. In addition, the following should be noted:
 - If widthOfLineInCharacters is greater than 0, text will wrap after that many characters.
 
 Example:
-    Font.PrintTextDialog(layer, fontInstance, 0, 0, 40, 100, true, "Typewriter text")
+
+	Font.PrintTextDialog(layer, fontInstance, 0, 0, 40, 100, true, "Typewriter text")
 */
 func (manager *fontType) PrintTextDialog(layerEntry *types.LayerEntryType, fontInstance fontInstanceType, xLocation, yLocation, widthOfLineInCharacters, printDelayInMilliseconds int, isSkipable bool, textToPrint string) {
 	fontFamily := getFontFamilyFromMemory(fontInstance.fontAlias)
@@ -520,7 +534,8 @@ func (manager *fontType) PrintTextDialog(layerEntry *types.LayerEntryType, fontI
 convertTdfColorToRgb is a method which allows you to convert a TDF color byte to RGBA ColorType values.
 
 Example:
-    fg, bg := font.convertTdfColorToRgb(0x1F)
+
+	fg, bg := font.convertTdfColorToRgb(0x1F)
 */
 func (manager *fontType) convertTdfColorToRgb(tdfColor byte) (constants.ColorType, constants.ColorType) {
 	foregroundIndex := int(tdfColor & 0x0F)
@@ -543,7 +558,8 @@ noted:
 - This is kept for backward compatibility.
 
 Example:
-    font := LoadFont("myfont.tdf")
+
+	font := LoadFont("myfont.tdf")
 */
 func LoadFont(fontFile string) fontInstanceType {
 	return Font.Load(fontFile)
@@ -553,7 +569,8 @@ func LoadFont(fontFile string) fontInstanceType {
 getFontFamilyFromMemory is a method which allows you to retrieve a font family from memory by its alias.
 
 Example:
-    family := getFontFamilyFromMemory("myfont.tdf")
+
+	family := getFontFamilyFromMemory("myfont.tdf")
 */
 func getFontFamilyFromMemory(fontAlias string) *types.FontFamilyType {
 	fontFamily := fonts.Get(fontAlias)

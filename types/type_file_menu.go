@@ -12,7 +12,8 @@ FileMenuEntryType is a structure which represents a file menu entry in memory. I
 - The file menu reuses existing selectors for dropdown functionality.
 
 Example:
-    var fileMenu types.FileMenuEntryType
+
+	var fileMenu types.FileMenuEntryType
 */
 type FileMenuEntryType struct {
 	LayerAlias         string
@@ -43,7 +44,8 @@ NewFileMenuEntry is a constructor which creates a new file menu entry. In additi
 - Sets up arrays for selector aliases.
 
 Example:
-    NewFileMenuEntry()
+
+	NewFileMenuEntry()
 */
 func NewFileMenuEntry() FileMenuEntryType {
 	var fileMenuEntry FileMenuEntryType

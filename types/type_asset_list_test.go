@@ -10,11 +10,12 @@ import (
 TestAddImage is a test which verifies that images can be added to an asset list.
 
 Example:
-    Expected Inputs:
-        None
 
-    Expected Outputs:
-        None
+	Expected Inputs:
+	    None
+
+	Expected Outputs:
+	    None
 */
 func TestAddImage(test *testing.T) {
 	assetList := NewAssetList()
@@ -32,11 +33,12 @@ func TestAddImage(test *testing.T) {
 TestAddPreloadedImage is a test which verifies that preloaded images can be added to an asset list.
 
 Example:
-    Expected Inputs:
-        None
 
-    Expected Outputs:
-        None
+	Expected Inputs:
+	    None
+
+	Expected Outputs:
+	    None
 */
 func TestAddPreloadedImage(test *testing.T) {
 	imageStyle := NewImageStyleEntry()

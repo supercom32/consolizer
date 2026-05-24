@@ -8,7 +8,8 @@ import (
 LabelEntryType is a structure which represents a label control entry.
 
 Example:
-    var labelEntry LabelEntryType
+
+	var labelEntry LabelEntryType
 */
 type LabelEntryType struct {
 	BaseControlType
@@ -19,7 +20,8 @@ type LabelEntryType struct {
 MarshalJSON is a method which serializes a label control to JSON.
 
 Example:
-    MarshalJSON()
+
+	MarshalJSON()
 */
 func (shared LabelEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
@@ -41,7 +43,8 @@ GetEntryAsJsonDump is a method which returns a JSON string representation of a l
 - Panics if JSON marshaling fails.
 
 Example:
-    GetEntryAsJsonDump()
+
+	GetEntryAsJsonDump()
 */
 func (shared LabelEntryType) GetEntryAsJsonDump() string {
 	j, err := json.Marshal(shared)
@@ -57,7 +60,8 @@ NewLabelEntry is a constructor which creates a new label control. In addition, t
 - If an existing label entry is provided, the new label entry will be a clone of it.
 
 Example:
-    NewLabelEntry()
+
+	NewLabelEntry()
 */
 func NewLabelEntry(existingLabelEntry ...*LabelEntryType) LabelEntryType {
 	var labelEntry LabelEntryType
@@ -80,7 +84,8 @@ func NewLabelEntry(existingLabelEntry ...*LabelEntryType) LabelEntryType {
 IsLabelEntryEqual is a method which compares two label controls for equality.
 
 Example:
-    IsLabelEntryEqual(&sourceLabelEntry, &targetLabelEntry)
+
+	IsLabelEntryEqual(&sourceLabelEntry, &targetLabelEntry)
 */
 func IsLabelEntryEqual(sourceLabelEntry *LabelEntryType, targetLabelEntry *LabelEntryType) bool {
 	return sourceLabelEntry.BaseControlType.IsEqual(&targetLabelEntry.BaseControlType) &&

@@ -12,7 +12,8 @@ DropdownEntryType is a structure which represents a dropdown control. In additio
 - It manages the state of the dropdown tray and viewport position.
 
 Example:
-    var dropdown types.DropdownEntryType
+
+	var dropdown types.DropdownEntryType
 */
 type DropdownEntryType struct {
 	BaseControlType
@@ -35,7 +36,8 @@ GetAlias is a method which retrieves the alias of a dropdown control. In additio
 - The alias is set when the dropdown is created.
 
 Example:
-    instance.GetAlias()
+
+	instance.GetAlias()
 */
 func (shared DropdownEntryType) GetAlias() string {
 	return shared.Alias
@@ -51,7 +53,8 @@ MarshalJSON is a method which serializes a dropdown control to JSON. In addition
 - It is used for saving and loading dropdown configurations.
 
 Example:
-    instance.MarshalJSON()
+
+	instance.MarshalJSON()
 */
 func (shared DropdownEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
@@ -89,7 +92,8 @@ GetEntryAsJsonDump is a method which retrieves a JSON string representation of a
 - It panics if JSON marshaling fails.
 
 Example:
-    instance.GetEntryAsJsonDump()
+
+	instance.GetEntryAsJsonDump()
 */
 func (shared DropdownEntryType) GetEntryAsJsonDump() string {
 	j, err := json.Marshal(shared)
@@ -109,7 +113,8 @@ NewDropdownEntry is a constructor which creates a new dropdown control. In addit
 - It sets up the base control properties and dropdown-specific fields.
 
 Example:
-    NewDropdownEntry(existingSelectorEntry)
+
+	NewDropdownEntry(existingSelectorEntry)
 */
 func NewDropdownEntry(existingSelectorEntry ...*DropdownEntryType) DropdownEntryType {
 	var dropdownEntry DropdownEntryType
@@ -137,7 +142,8 @@ IsDropdownEntryEqual is a method which compares two dropdown controls for equali
 - It is used for change detection and state synchronization.
 
 Example:
-    IsDropdownEntryEqual(sourceDropdownEntry, targetDropdownEntry)
+
+	IsDropdownEntryEqual(sourceDropdownEntry, targetDropdownEntry)
 */
 func IsDropdownEntryEqual(sourceDropdownEntry *DropdownEntryType, targetDropdownEntry *DropdownEntryType) bool {
 	if sourceDropdownEntry.BaseControlType == targetDropdownEntry.BaseControlType &&
@@ -162,7 +168,8 @@ GetDropdownAlias is a method which retrieves the alias of a dropdown control. In
 - The alias is used to reference the dropdown in other operations.
 
 Example:
-    GetDropdownAlias(entry)
+
+	GetDropdownAlias(entry)
 */
 func GetDropdownAlias(entry *DropdownEntryType) string {
 	return entry.Alias

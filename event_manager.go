@@ -34,7 +34,8 @@ var lastMouseMoveTime time.Time
 UpdatePeriodicEvents is a method which triggers periodic events such as tooltip updates and keyboard state clearing.
 
 Example:
-    UpdatePeriodicEvents()
+
+	UpdatePeriodicEvents()
 */
 func UpdatePeriodicEvents() {
 	elapsedTime := time.Since(eventIntervalTime)
@@ -60,7 +61,8 @@ UpdateEventQueues is a method which updates all event queues so that information
 other events are properly registered.
 
 Example:
-    UpdateEventQueues()
+
+	UpdateEventQueues()
 */
 func UpdateEventQueues() {
 	// Skip event processing if screen is not initialized (e.g., in debug mode or tests)
@@ -228,7 +230,8 @@ func UpdateEventQueues() {
 ClearTabIndex is a method which clears all registered tab index entries from memory.
 
 Example:
-    ClearTabIndex()
+
+	ClearTabIndex()
 */
 func ClearTabIndex() {
 	eventStateMemory.tabIndexMemory = nil
@@ -238,7 +241,8 @@ func ClearTabIndex() {
 addTabIndex is a method which registers a new control in the tab index memory for sequential navigation.
 
 Example:
-    addTabIndex("layer1", "button1", constants.CellTypeButton)
+
+	addTabIndex("layer1", "button1", constants.CellTypeButton)
 */
 func addTabIndex(layerAlias string, controlAlias string, controlType int) {
 	controlEntry := controlIdentifierType{layerAlias: layerAlias, controlAlias: controlAlias, controlType: controlType}
@@ -249,7 +253,8 @@ func addTabIndex(layerAlias string, controlAlias string, controlType int) {
 nextTabIndex is a method which advances the focus to the next control in the registered tab index sequence.
 
 Example:
-    nextTabIndex()
+
+	nextTabIndex()
 */
 func nextTabIndex() {
 	eventStateMemory.currentTabIndex++
@@ -265,7 +270,8 @@ func nextTabIndex() {
 setFocusedControl is a method which explicitly sets which control currently has focus.
 
 Example:
-    setFocusedControl("layer1", "textfield1", constants.CellTypeTextField)
+
+	setFocusedControl("layer1", "textfield1", constants.CellTypeTextField)
 */
 func setFocusedControl(layerAlias string, controlAlias string, controlType int) {
 	eventStateMemory.currentlyFocusedControl.layerAlias = layerAlias
@@ -278,7 +284,8 @@ isControlCurrentlyFocused is a method which checks if a specific control is curr
 application.
 
 Example:
-    isControlCurrentlyFocused("layer1", "textfield1", constants.CellTypeTextField)
+
+	isControlCurrentlyFocused("layer1", "textfield1", constants.CellTypeTextField)
 */
 func isControlCurrentlyFocused(layerAlias string, controlAlias string, cellType int) bool {
 	if eventStateMemory.currentlyFocusedControl.layerAlias == layerAlias &&
@@ -293,7 +300,8 @@ func isControlCurrentlyFocused(layerAlias string, controlAlias string, cellType 
 setPreviouslyHighlightedControl is a method which records the control that was previously highlighted by the mouse.
 
 Example:
-    setPreviouslyHighlightedControl("layer1", "item1", constants.CellTypeSelector)
+
+	setPreviouslyHighlightedControl("layer1", "item1", constants.CellTypeSelector)
 */
 func setPreviouslyHighlightedControl(layerAlias string, controlAlias string, controlType int) {
 	eventStateMemory.previouslyHighlightedControl.layerAlias = layerAlias
@@ -306,13 +314,14 @@ moveLayerIfRequired is a method which moves any interactive layer that has been 
 the mouse button is pressed over an interactive part of a layer and not released, this method will move the layer
 according to the mouse's new position. In addition, the following should be noted:
 
-- If the layer being moved causes the top row of characters (the interactive title bar of a layer) to fall outside the
-  visible screen area, the move is cancelled.
+  - If the layer being moved causes the top row of characters (the interactive title bar of a layer) to fall outside the
+    visible screen area, the move is cancelled.
 
 - This is done so that it is impossible to move a window off-screen where it can never be grabbed again.
 
 Example:
-    moveLayerIfRequired()
+
+	moveLayerIfRequired()
 */
 func moveLayerIfRequired() bool {
 	isScreenUpdateRequired := false
@@ -344,7 +353,8 @@ bringLayerToFrontIfRequired is a method which brings a layer to the front of the
 clicked is focusable.
 
 Example:
-    bringLayerToFrontIfRequired()
+
+	bringLayerToFrontIfRequired()
 */
 func bringLayerToFrontIfRequired() {
 	mouseXLocation, mouseYLocation, buttonPressed, _ := GetMouseStatus()
@@ -376,19 +386,20 @@ isInteractiveLayerOffscreen is a method which detects if a layer has been moved 
 when you want to constrain a window from moving off-screen because it would be impossible for the user to drag it back
 to the visible viewing area. In addition, the following should be noted:
 
-- This method only considers a layer off-screen if the top row of characters are not visible (the interactive title
-  bar).
+  - This method only considers a layer off-screen if the top row of characters are not visible (the interactive title
+    bar).
 
 - Layers that are moved to the far left are considered off-screen when only two character spaces remain.
 
-- This constraint is triggered two spaces early to account for window drop shadows that are not part of the interactive
-  area.
+  - This constraint is triggered two spaces early to account for window drop shadows that are not part of the interactive
+    area.
 
-- If a layer has a parent alias, then the constraining area is set to the parent layer dimensions instead of the
-  terminal dimensions.
+  - If a layer has a parent alias, then the constraining area is set to the parent layer dimensions instead of the
+    terminal dimensions.
 
 Example:
-    isInteractiveLayerOffscreen("layer1")
+
+	isInteractiveLayerOffscreen("layer1")
 */
 func isInteractiveLayerOffscreen(layerAlias string) bool {
 	layerEntry := Layers.Get(layerAlias)
@@ -411,7 +422,8 @@ getCellInformationUnderMouseCursor is a method which obtains the layer alias and
 currently under the mouse cursor. This is useful for determining which buttonType the user has clicked (if any).
 
 Example:
-    getCellInformationUnderMouseCursor(10, 20)
+
+	getCellInformationUnderMouseCursor(10, 20)
 */
 func getCellInformationUnderMouseCursor(mouseXLocation int, mouseYLocation int) types.CharacterEntryType {
 	var characterEntry types.CharacterEntryType
@@ -429,7 +441,8 @@ func getCellInformationUnderMouseCursor(mouseXLocation int, mouseYLocation int) 
 IsModifierKeyPressed is a method which checks if a specific modifier key is currently pressed.
 
 Example:
-    IsModifierKeyPressed(tcell.ModShift)
+
+	IsModifierKeyPressed(tcell.ModShift)
 */
 func IsModifierKeyPressed(modifier tcell.ModMask) bool {
 	return (eventStateMemory.modifierKeys & modifier) != 0
@@ -439,7 +452,8 @@ func IsModifierKeyPressed(modifier tcell.ModMask) bool {
 IsShiftPressed is a method which checks if the shift key is currently pressed.
 
 Example:
-    IsShiftPressed()
+
+	IsShiftPressed()
 */
 func IsShiftPressed() bool {
 	return IsModifierKeyPressed(tcell.ModShift)
@@ -449,7 +463,8 @@ func IsShiftPressed() bool {
 IsCtrlPressed is a method which checks if the control key is currently pressed.
 
 Example:
-    IsCtrlPressed()
+
+	IsCtrlPressed()
 */
 func IsCtrlPressed() bool {
 	return IsModifierKeyPressed(tcell.ModCtrl)
@@ -459,7 +474,8 @@ func IsCtrlPressed() bool {
 IsAltPressed is a method which checks if the alt key is currently pressed.
 
 Example:
-    IsAltPressed()
+
+	IsAltPressed()
 */
 func IsAltPressed() bool {
 	return IsModifierKeyPressed(tcell.ModAlt)

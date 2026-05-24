@@ -22,7 +22,8 @@ InitializeUnicodeWidthMemory is a method which initializes the unicode width mem
 overrides.
 
 Example:
-    InitializeUnicodeWidthMemory()
+
+	InitializeUnicodeWidthMemory()
 */
 func InitializeUnicodeWidthMemory() {
 	isUnicodeWide = make(map[int]bool)
@@ -38,7 +39,8 @@ setUnicodeRangeWidth is a method which sets the width property for a range of un
 - This method modifies the global isUnicodeWide map.
 
 Example:
-    setUnicodeRangeWidth(0x2500, 0x257F, false)
+
+	setUnicodeRangeWidth(0x2500, 0x257F, false)
 */
 func setUnicodeRangeWidth(startingIndex int, endingIndex int, isWide bool) {
 	offset := startingIndex
@@ -53,7 +55,8 @@ setUnicodeGeometricShapeWidth is a method which sets the width property for spec
 - This method modifies the global isUnicodeWide map.
 
 Example:
-    setUnicodeGeometricShapeWidth()
+
+	setUnicodeGeometricShapeWidth()
 */
 func setUnicodeGeometricShapeWidth() {
 	setUnicodeRangeWidth(9632, 9727, true) // Symbols
@@ -111,7 +114,8 @@ func setUnicodeGeometricShapeWidth() {
 IsRuneCharacterWide is a method which determines if a rune character is wide.
 
 Example:
-    isWide := IsRuneCharacterWide('读')
+
+	isWide := IsRuneCharacterWide('读')
 */
 func IsRuneCharacterWide(character rune) bool {
 	if isUnicodeWide == nil {
@@ -140,7 +144,8 @@ func IsRuneCharacterWide(character rune) bool {
 GetWidthOfRunesWhenPrinted is a method which calculates the total width of an array of runes when printed.
 
 Example:
-    width := GetWidthOfRunesWhenPrinted(rune("test"))
+
+	width := GetWidthOfRunesWhenPrinted(rune("test"))
 */
 func GetWidthOfRunesWhenPrinted(arrayOfRunes []rune) int {
 	widthOfString := 0
@@ -159,7 +164,8 @@ GetWidthOfRunesWhenPrintedWithoutMarkup is a method which calculates the width o
 markup characters.
 
 Example:
-    width := GetWidthOfRunesWhenPrintedWithoutMarkup(rune("{{red}}test{{/}}"))
+
+	width := GetWidthOfRunesWhenPrintedWithoutMarkup(rune("{{red}}test{{/}}"))
 */
 func GetWidthOfRunesWhenPrintedWithoutMarkup(arrayOfRunes []rune) int {
 	// Convert runes to string for easier markup detection
@@ -176,7 +182,8 @@ func GetWidthOfRunesWhenPrintedWithoutMarkup(arrayOfRunes []rune) int {
 GetTextWithoutMarkup is a method which removes markup tags (enclosed in {{ and }}) from a given string.
 
 Example:
-    plainText := GetTextWithoutMarkup("{{red}}test{{/}}")
+
+	plainText := GetTextWithoutMarkup("{{red}}test{{/}}")
 */
 func GetTextWithoutMarkup(textString string) string {
 	var result []rune
@@ -207,7 +214,8 @@ func GetTextWithoutMarkup(textString string) string {
 GetRunesFromString is a method which converts a string into an array of runes.
 
 Example:
-    runes := GetRunesFromString("test")
+
+	runes := GetRunesFromString("test")
 */
 func GetRunesFromString(stringToConvert string) []rune {
 	var runes []rune
@@ -219,7 +227,8 @@ func GetRunesFromString(stringToConvert string) []rune {
 GetIntAsString is a method which converts a numeric variable to its string representation as an integer.
 
 Example:
-    strValue := GetIntAsString(123.45)
+
+	strValue := GetIntAsString(123.45)
 */
 func GetIntAsString(number interface{}) string {
 	numberAsFloatint64 := recast.GetNumberAsInt64(number)
@@ -230,7 +239,8 @@ func GetIntAsString(number interface{}) string {
 GetFloatAsString is a method which converts a numeric variable to its string representation as a float.
 
 Example:
-    strValue := GetFloatAsString(123.45)
+
+	strValue := GetFloatAsString(123.45)
 */
 func GetFloatAsString(number interface{}) string {
 	numberAsFloat64 := recast.GetNumberAsFloat64(number)
@@ -241,7 +251,8 @@ func GetFloatAsString(number interface{}) string {
 GetSubString is a method which gets a substring from a given string.
 
 Example:
-    sub := GetSubString("hello world", 0, 5)
+
+	sub := GetSubString("hello world", 0, 5)
 */
 func GetSubString(input string, start int, length int) string {
 	asRunes := []rune(input)
@@ -258,7 +269,8 @@ func GetSubString(input string, start int, length int) string {
 GetStringAsBase64 is a method which encodes a string to base64.
 
 Example:
-    b64 := GetStringAsBase64("test")
+
+	b64 := GetStringAsBase64("test")
 */
 func GetStringAsBase64(inputString string) string {
 	base64String := base64.StdEncoding.EncodeToString([]byte(inputString))
@@ -271,7 +283,8 @@ GetStringFromBase64 is a method which decodes a base64 encoded string. In additi
 - This method will panic if the input string is not a valid base64 encoded string.
 
 Example:
-    str := GetStringFromBase64("dGVzdA==")
+
+	str := GetStringFromBase64("dGVzdA==")
 */
 func GetStringFromBase64(inputString string) string {
 	decodedString, err := base64.StdEncoding.DecodeString(inputString)
@@ -285,7 +298,8 @@ func GetStringFromBase64(inputString string) string {
 GetNumberOfWideCharacters is a method which gets the number of wide characters in an array of runes.
 
 Example:
-    count := GetNumberOfWideCharacters(rune("读test"))
+
+	count := GetNumberOfWideCharacters(rune("读test"))
 */
 func GetNumberOfWideCharacters(arrayOfRunes []rune) int {
 	numberOfWideCharacters := 0
@@ -302,7 +316,8 @@ GetMaxCharactersThatFitInStringSize is a method which gets an array of runes tha
 size, accounting for markup.
 
 Example:
-    runes := GetMaxCharactersThatFitInStringSize(rune("{{red}}test{{/}}"), 2)
+
+	runes := GetMaxCharactersThatFitInStringSize(rune("{{red}}test{{/}}"), 2)
 */
 func GetMaxCharactersThatFitInStringSize(arrayOfRunes []rune, maxLengthOfString int) []rune {
 	numberOfCharactersUsed := 0
@@ -365,7 +380,8 @@ GetMaxCharactersThatFitInStringSizeReverse is a method which calculates the numb
 array that fit within a specified length.
 
 Example:
-    count := GetMaxCharactersThatFitInStringSizeReverse(rune("test"), 2)
+
+	count := GetMaxCharactersThatFitInStringSizeReverse(rune("test"), 2)
 */
 func GetMaxCharactersThatFitInStringSizeReverse(arrayOfRunes []rune, maxLengthOfString int) int {
 	// Convert to string for easier markup handling
@@ -405,7 +421,8 @@ func GetMaxCharactersThatFitInStringSizeReverse(arrayOfRunes []rune, maxLengthOf
 GetRuneArrayCopy is a method which creates a copy of a rune array.
 
 Example:
-    copy := GetRuneArrayCopy(original)
+
+	copy := GetRuneArrayCopy(original)
 */
 func GetRuneArrayCopy(sourceRuneArray []rune) []rune {
 	copyOfRuneArray := make([]rune, len(sourceRuneArray))
@@ -417,7 +434,8 @@ func GetRuneArrayCopy(sourceRuneArray []rune) []rune {
 logInfo is a method which logs information to a debug file.
 
 Example:
-    logInfo("debug message")
+
+	logInfo("debug message")
 */
 func logInfo(info string) {
 	filesystem.AppendLineToFile("/tmp/debug.log", info+"\n", 0)
@@ -427,7 +445,8 @@ func logInfo(info string) {
 GetFormattedString is a method which gets a formatted string based on specified length and alignment.
 
 Example:
-    fmtStr := GetFormattedString("test", 10, constants.AlignmentCenter)
+
+	fmtStr := GetFormattedString("test", 10, constants.AlignmentCenter)
 */
 func GetFormattedString(stringToFormat string, lengthOfString int, position int) string {
 	arrayOfRunes := GetRunesFromString(stringToFormat)
@@ -438,7 +457,8 @@ func GetFormattedString(stringToFormat string, lengthOfString int, position int)
 GetFormattedRuneArray is a method which gets a formatted rune array based on desired length and alignment.
 
 Example:
-    fmtRunes := GetFormattedRuneArray(rune("test"), 10, constants.AlignmentLeft)
+
+	fmtRunes := GetFormattedRuneArray(rune("test"), 10, constants.AlignmentLeft)
 */
 func GetFormattedRuneArray(arrayOfRunes []rune, desiredLengthOfArray int, textAlignment int) []rune {
 	if len(arrayOfRunes) == 0 {
@@ -485,7 +505,8 @@ func GetFormattedRuneArray(arrayOfRunes []rune, desiredLengthOfArray int, textAl
 GetFilledRuneArray is a method which creates a rune array of a specified length filled with a given character.
 
 Example:
-    runes := GetFilledRuneArray(5, ' ')
+
+	runes := GetFilledRuneArray(5, ' ')
 */
 func GetFilledRuneArray(lengthOfString int, character rune) []rune {
 	result := GetFilledString(lengthOfString, string(character))
@@ -496,7 +517,8 @@ func GetFilledRuneArray(lengthOfString int, character rune) []rune {
 GetFilledString is a method which creates a string of a specified length filled with a given character.
 
 Example:
-    str := GetFilledString(5, " ")
+
+	str := GetFilledString(5, " ")
 */
 func GetFilledString(lengthOfString int, character string) string {
 	newString := ""
@@ -510,7 +532,8 @@ func GetFilledString(lengthOfString int, character string) string {
 GetLastSortedUUID is a method which generates a UUID that is prefixed to ensure it sorts correctly based on time.
 
 Example:
-    uuid := GetLastSortedUUID()
+
+	uuid := GetLastSortedUUID()
 */
 func GetLastSortedUUID() string {
 	id := uuid.New()

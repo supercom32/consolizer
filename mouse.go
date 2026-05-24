@@ -9,7 +9,8 @@ mouseMemoryType is a structure which holds information about the current mouse s
 and wheel state.
 
 Example:
-    var mouseMemory mouseMemoryType
+
+	var mouseMemory mouseMemoryType
 */
 type mouseMemoryType struct {
 	sync.Mutex
@@ -41,7 +42,8 @@ ClearMouseMemory is a method which resets both the current and previous mouse me
 - The default wheel state is an empty string (no wheel movement).
 
 Example:
-    ClearMouseMemory()
+
+	ClearMouseMemory()
 */
 func ClearMouseMemory() {
 	MouseMemory.Lock()
@@ -72,7 +74,8 @@ SetMouseStatus is a method which updates the current mouse status while preservi
 - This method is thread-safe as it uses mutex locks to prevent race conditions.
 
 Example:
-    SetMouseStatus(10, 5, 1, "Up")
+
+	SetMouseStatus(10, 5, 1, "Up")
 */
 func SetMouseStatus(xLocation int, yLocation int, buttonPressed uint, wheelState string) {
 	PreviousMouseMemory.Lock()
@@ -99,7 +102,8 @@ GetMouseStatus is a method which retrieves the current mouse status including po
 - This method is thread-safe as it uses mutex locks to prevent race conditions.
 
 Example:
-    mouseX, mouseY, button, wheel := GetMouseStatus()
+
+	mouseX, mouseY, button, wheel := GetMouseStatus()
 */
 func GetMouseStatus() (int, int, uint, string) {
 	MouseMemory.Lock()
@@ -116,7 +120,8 @@ GetPreviousMouseStatus is a method which retrieves the previous mouse status bef
 - This method is thread-safe as it uses mutex locks to prevent race conditions.
 
 Example:
-    oldX, oldY, oldButton, oldWheel := GetPreviousMouseStatus()
+
+	oldX, oldY, oldButton, oldWheel := GetPreviousMouseStatus()
 */
 func GetPreviousMouseStatus() (int, int, uint, string) {
 	MouseMemory.Lock()
@@ -135,7 +140,8 @@ WaitForClickRelease is a method which pauses execution until the user releases a
 - This is useful for implementing drag and drop operations or waiting for user input.
 
 Example:
-    WaitForClickRelease()
+
+	WaitForClickRelease()
 */
 func WaitForClickRelease() {
 	for MouseMemory.buttonPressed != 0 {
@@ -150,9 +156,10 @@ IsMouseInBoundingBox is a method which checks if the current mouse position is w
 - This is useful for detecting mouse hover or click events on UI elements.
 
 Example:
-    if IsMouseInBoundingBox(0, 0, 10, 10) {
-        fmt.Println("Mouse is in box")
-    }
+
+	if IsMouseInBoundingBox(0, 0, 10, 10) {
+	    fmt.Println("Mouse is in box")
+	}
 */
 func IsMouseInBoundingBox(xLocation int, yLocation int, width int, height int) bool {
 	mouseXLocation, mouseYLocation, _, _ := GetMouseStatus()
@@ -174,7 +181,8 @@ GetLayerUnderMouseCursor is a method which retrieves the instance of the layer u
 - Methods called on this instance will affect the original layer.
 
 Example:
-    layer := GetLayerUnderMouseCursor()
+
+	layer := GetLayerUnderMouseCursor()
 */
 func GetLayerUnderMouseCursor() *LayerInstanceType {
 	mouseX, mouseY, _, _ := GetMouseStatus()

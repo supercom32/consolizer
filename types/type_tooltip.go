@@ -9,7 +9,8 @@ import (
 TooltipEntryType is a structure which represents a tooltip control.
 
 Example:
-    var tooltip TooltipEntryType
+
+	var tooltip TooltipEntryType
 */
 type TooltipEntryType struct {
 	BaseControlType
@@ -42,7 +43,8 @@ noted:
 - The alias is set when the tooltip is created.
 
 Example:
-    instance.GetAlias()
+
+	instance.GetAlias()
 */
 func (shared TooltipEntryType) GetAlias() string {
 	return shared.Alias
@@ -60,7 +62,8 @@ In addition, the following should be noted:
 - Used for saving and loading tooltip configurations.
 
 Example:
-    instance.MarshalJSON()
+
+	instance.MarshalJSON()
 */
 func (shared TooltipEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
@@ -118,7 +121,8 @@ In addition, the following should be noted:
 - Panics if JSON marshaling fails.
 
 Example:
-    instance.GetEntryAsJsonDump()
+
+	instance.GetEntryAsJsonDump()
 */
 func (shared TooltipEntryType) GetEntryAsJsonDump() string {
 	j, err := json.Marshal(shared)
@@ -140,7 +144,8 @@ In addition, the following should be noted:
 - The alias is used to reference the tooltip in other operations.
 
 Example:
-    GetTooltipAlias(entry)
+
+	GetTooltipAlias(entry)
 */
 func GetTooltipAlias(entry *TooltipEntryType) string {
 	return entry.Alias
@@ -158,7 +163,8 @@ In addition, the following should be noted:
 - Sets up the base control properties and tooltip-specific fields.
 
 Example:
-    NewTooltipEntry(existingButtonEntry)
+
+	NewTooltipEntry(existingButtonEntry)
 */
 func NewTooltipEntry(existingButtonEntry ...*TooltipEntryType) TooltipEntryType {
 	var tooltipEntry TooltipEntryType
@@ -194,7 +200,8 @@ In addition, the following should be noted:
 - Used for change detection and state synchronization.
 
 Example:
-    IsTooltipEntryEqual(sourceTooltipEntry, targetTooltipEntry)
+
+	IsTooltipEntryEqual(sourceTooltipEntry, targetTooltipEntry)
 */
 func IsTooltipEntryEqual(sourceTooltipEntry *TooltipEntryType, targetTooltipEntry *TooltipEntryType) bool {
 	return sourceTooltipEntry.BaseControlType.IsEqual(&targetTooltipEntry.BaseControlType) &&

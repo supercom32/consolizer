@@ -8,7 +8,8 @@ import (
 FontFamilyType is a structure which represents a collection of fonts.
 
 Example:
-    var fontFamily types.FontFamilyType
+
+	var fontFamily types.FontFamilyType
 */
 type FontFamilyType struct {
 	Fonts []*FontEntryType
@@ -18,7 +19,8 @@ type FontFamilyType struct {
 FontEntryType is a structure which represents a single font and its properties.
 
 Example:
-    var fontEntry types.FontEntryType
+
+	var fontEntry types.FontEntryType
 */
 type FontEntryType struct {
 	Name                  string
@@ -36,7 +38,8 @@ type FontEntryType struct {
 Cell is a structure which represents a single character cell with a character and color.
 
 Example:
-    var cell types.Cell
+
+	var cell types.Cell
 */
 type Cell struct {
 	Char  rune
@@ -47,7 +50,8 @@ type Cell struct {
 Glyph is a structure which represents a single character glyph with its width, height, and cells.
 
 Example:
-    var glyph types.Glyph
+
+	var glyph types.Glyph
 */
 type Glyph struct {
 	Width, Height int
@@ -58,7 +62,8 @@ type Glyph struct {
 MarshalJSON is a method which marshals the FontEntryType into a JSON byte array.
 
 Example:
-    instance.MarshalJSON()
+
+	instance.MarshalJSON()
 */
 func (shared FontEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
@@ -92,7 +97,8 @@ func (shared FontEntryType) MarshalJSON() ([]byte, error) {
 GetEntryAsJsonDump is a method which returns a JSON string representation of the FontEntryType.
 
 Example:
-    instance.GetEntryAsJsonDump()
+
+	instance.GetEntryAsJsonDump()
 */
 func (shared FontEntryType) GetEntryAsJsonDump() string {
 	j, err := json.Marshal(shared)

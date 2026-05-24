@@ -9,11 +9,12 @@ import (
 TestButtonTypeCreation is a test which verifies the creation and cloning of button entries.
 
 Example:
-    Expected Inputs:
-        None
 
-    Expected Outputs:
-        None
+	Expected Inputs:
+	    None
+
+	Expected Outputs:
+	    None
 */
 func TestButtonTypeCreation(test *testing.T) {
 	firstButtonEntry := NewButtonEntry()
@@ -31,4 +32,3 @@ func TestButtonTypeCreation(test *testing.T) {
 	secondButtonEntry = NewButtonEntry(&firstButtonEntry)
 	assert.Equalf(test, secondButtonEntry, firstButtonEntry, "The first layer is not the same as the second, even though it should be an identical clone.")
 }
-

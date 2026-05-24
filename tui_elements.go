@@ -128,6 +128,7 @@ of connector it is. In addition, the following should be noted:
 - If the rune specified could not be found in your TUI style entry, then -1 will be returned instead.
 
 Example:
+
 	index := getConnectorIndexByCharacter('│', styleEntry)
 */
 func getConnectorIndexByCharacter(sourceCharacter rune, styleEntry types.TuiStyleEntryType) int {
@@ -176,6 +177,7 @@ existing connections are present. In addition, the following should be noted:
 - If the connector described could not be determined, then -1 will be returned instead.
 
 Example:
+
 	index := getConnectorIndexByConnections(true, true, false, false)
 */
 func getConnectorIndexByConnections(isConnectedTop bool, isConnectedBottom bool, isConnectedLeft bool, isConnectedRight bool) int {
@@ -213,6 +215,7 @@ and the TUI style provided. In addition, the following should be noted:
 - If the connector described could not be determined, then a NullRune will be returned instead.
 
 Example:
+
 	char := getConnectorCharacterByIndex(horizontalConnector, styleEntry)
 */
 func getConnectorCharacterByIndex(connectorIndex int, styleEntry types.TuiStyleEntryType) rune {
@@ -261,6 +264,7 @@ combined with a vertical line, then a cross connector will be returned. In addit
 - If the two runes could not be combined together, then the source rune will be returned instead.
 
 Example:
+
 	combinedChar := getConnectorCharacter('─', '│', styleEntry)
 */
 func getConnectorCharacter(sourceCharacter rune, targetCharacter rune, styleEntry types.TuiStyleEntryType) rune {
@@ -296,6 +300,7 @@ should be noted:
 - If the line to be drawn falls outside the area of the text layer specified, then only the visible portion of the.
 
 Example:
+
 	drawVerticalLine(layer, style, attr, 10, 5, 10, true)
 */
 func drawVerticalLine(layerEntry *types.LayerEntryType, styleEntry types.TuiStyleEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, height int, isConnectorsDrawn bool) {
@@ -331,6 +336,7 @@ following should be noted:
 - If the line to be drawn falls outside the area of the text layer specified, then only the visible portion of the.
 
 Example:
+
 	drawHorizontalLine(layer, style, attr, 10, 5, 20, true)
 */
 func drawHorizontalLine(layerEntry *types.LayerEntryType, styleEntry types.TuiStyleEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, width int, isConnectorsDrawn bool) {
@@ -370,6 +376,7 @@ are flat shaded and do not have a raised or sunken look to them. In addition, th
 - The isInteractive option allows you to specify if the window should interact with the layer being drawn on. For.
 
 Example:
+
 	drawBorder(layer, style, attr, 5, 5, 40, 15, true)
 */
 func drawBorder(layerEntry *types.LayerEntryType, styleEntry types.TuiStyleEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, width int, height int, isInteractive bool) {
@@ -384,6 +391,7 @@ characters "" and "" to blend in with a border of a frame. In addition, the foll
 - If the frame label to be drawn falls outside the range of the specified layer, then only the visible portion of the.
 
 Example:
+
 	drawFrameLabel(layer, style, "System Status", 10, 5)
 */
 func drawFrameLabel(layerEntry *types.LayerEntryType, styleEntry types.TuiStyleEntryType, label string, xLocation int, yLocation int) {
@@ -408,6 +416,7 @@ are flat shaded and do not have a raised or sunken look to them. In addition, th
 - The isInteractive option allows you to specify if the window should interact with the layer being drawn on. For.
 
 Example:
+
 	drawFrame(layer, style, attr, constants.FrameStyleRaised, 5, 5, 40, 15, true)
 */
 func drawFrame(layerEntry *types.LayerEntryType, styleEntry types.TuiStyleEntryType, attributeEntry types.AttributeEntryType, frameStyle int, xLocation int, yLocation int, width int, height int, isInteractive bool) {
@@ -512,6 +521,7 @@ entire area the window surrounds gets filled with a solid background color. In a
 - The isInteractive option allows you to specify if the window should interact with the layer being drawn on. For.
 
 Example:
+
 	drawWindow(layer, style, attr, 10, 5, 50, 20, true)
 */
 func drawWindow(layerEntry *types.LayerEntryType, styleEntry types.TuiStyleEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, width int, height int, isInteractive bool) {
@@ -539,12 +549,13 @@ which darken whatever text layers are underneath it by a specified degree. In ad
 
 - The alpha value can range from 0.0 (no shadow) to 1.0 (totally black).
 
-- If the shadow is drawn over a non-null (non-empty) character, it applies an in-layer shadow effect (i.e., darkens the
-  existing character).
+  - If the shadow is drawn over a non-null (non-empty) character, it applies an in-layer shadow effect (i.e., darkens the
+    existing character).
 
 - If the shadow is drawn over an empty area, it keeps the current behavior (drawing the solid shadow color).
 
 Example:
+
 	drawShadow(layer, attr, 12, 6, 50, 20, 0.5)
 */
 func drawShadow(layerEntry *types.LayerEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, width int, height int, alphaValue float32) {
@@ -593,6 +604,7 @@ noted:
 - If the area to fill falls outside the range of the specified layer, then only the visible portion of the fill will.
 
 Example:
+
 	fillArea(layer, attr, "*", 0, 0, 80, 24, 0)
 */
 func fillArea(layerEntry *types.LayerEntryType, attributeEntry types.AttributeEntryType, fillCharacters string, xLocation int, yLocation int, width int, height int, startingControlLocation int) {
@@ -626,6 +638,7 @@ fillAreaWithControlAlias is a method which fills an area of a given text layer w
 cell type. This is useful for marking areas for interactivity without drawing characters.
 
 Example:
+
 	fillAreaWithControlAlias(layer, constants.CellTypeButton, "btnSubmit", 10, 5, 10, 1, 0)
 */
 func fillAreaWithControlAlias(layerEntry *types.LayerEntryType, cellType int, cellControlAlias string, xLocation int, yLocation int, width int, height int, startingControlLocation int) {
@@ -645,6 +658,7 @@ fillLayer is a method which fills an entire layer with characters of your choice
 layer with repeating text, simply provide the string you wish to repeat.
 
 Example:
+
 	fillLayer(layer, attr, " ")
 */
 func fillLayer(layerEntry *types.LayerEntryType, attributeEntry types.AttributeEntryType, fillCharacters string) {
@@ -659,6 +673,7 @@ noted:
 - The alpha value can range from 0.0 (totally dark) to 1.0 (no difference).
 
 Example:
+
 	darkEntry := GetDarkenedCharacterEntry(entry, 0.5)
 */
 func GetDarkenedCharacterEntry(characterEntry *types.CharacterEntryType, alphaValue float32) types.CharacterEntryType {
@@ -676,10 +691,11 @@ In addition, the following should be noted:
 
 - The percent change can range from 0.0 (totally dark) to 1.0 (no difference).
 
-- If you pass in a percent change of less than 0.0 or greater than 1.0, a panic will be generated to fail as fast as
-  possible.
+  - If you pass in a percent change of less than 0.0 or greater than 1.0, a panic will be generated to fail as fast as
+    possible.
 
 Example:
+
 	darkColor := GetDarkenedColor(constants.ColorWhite, 0.5)
 */
 func GetDarkenedColor(color constants.ColorType, percentChange float32) constants.ColorType {

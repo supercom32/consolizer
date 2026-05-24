@@ -8,7 +8,8 @@ import (
 LogInfo is a method which appends information to a log file.
 
 Example:
-    LogInfo(info)
+
+	LogInfo(info)
 */
 func LogInfo(info string) {
 	var stringToAppend string

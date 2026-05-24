@@ -13,14 +13,15 @@ transitioning by 0.5 (fifty percent) will yield the color (128, 128, 0). In addi
 
 - If your percent change yields color indexes which are not evenly divisible, then the color index will be rounded up.
 
-- If you pass in a percent change of less than 0.0 or greater than 1.0, then the calculation will proceed as normal,
-  resulting in a color that may exceed the range of the source or target colors.
+  - If you pass in a percent change of less than 0.0 or greater than 1.0, then the calculation will proceed as normal,
+    resulting in a color that may exceed the range of the source or target colors.
 
-- If the resultant transitioned color falls outside of the RGB range of Black (0, 0, 0) or White (255, 255, 255), then
-  the value will be clamped to its nearest valid index.
+  - If the resultant transitioned color falls outside of the RGB range of Black (0, 0, 0) or White (255, 255, 255), then
+    the value will be clamped to its nearest valid index.
 
 Example:
-    transitionedColor := GetTransitionedColor(GetRGBColor(255, 0, 0), GetRGBColor(0, 255, 0), 0.5)
+
+	transitionedColor := GetTransitionedColor(GetRGBColor(255, 0, 0), GetRGBColor(0, 255, 0), 0.5)
 */
 func GetTransitionedColor(sourceColor constants.ColorType, targetColor constants.ColorType, percentChange float32) constants.ColorType {
 	var sourceColorIndex [3]int32
@@ -52,7 +53,8 @@ GetRGBColorComponents is a method which obtains RGB color component indexes for 
 channels.
 
 Example:
-    red, green, blue := GetRGBColorComponents(constants.ColorRed)
+
+	red, green, blue := GetRGBColorComponents(constants.ColorRed)
 */
 func GetRGBColorComponents(color constants.ColorType) (int32, int32, int32) {
 	var redColorIndex int32

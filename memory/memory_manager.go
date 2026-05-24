@@ -17,7 +17,8 @@ type MemoryManager[T any] struct {
 NewMemoryManager is a method which creates a new generic memory manager.
 
 Example:
-    manager := NewMemoryManagertypes.ButtonType()
+
+	manager := NewMemoryManagertypes.ButtonType()
 */
 func NewMemoryManager[T any]() *MemoryManager[T] {
 	return &MemoryManager[T]{
@@ -29,7 +30,8 @@ func NewMemoryManager[T any]() *MemoryManager[T] {
 Add is a method which inserts a pointer value into the memory manager under the specified key.
 
 Example:
-    manager.Add("button1", &button)
+
+	manager.Add("button1", &button)
 */
 func (shared *MemoryManager[T]) Add(key string, value *T) {
 	if value == nil {
@@ -45,7 +47,8 @@ func (shared *MemoryManager[T]) Add(key string, value *T) {
 Remove is a method which deletes a key-value pair from the memory manager.
 
 Example:
-    manager.Remove("button1")
+
+	manager.Remove("button1")
 */
 func (shared *MemoryManager[T]) Remove(key string) {
 	shared.muxtex.Lock()
@@ -57,7 +60,8 @@ func (shared *MemoryManager[T]) Remove(key string) {
 Get is a method which retrieves the value stored at the specified key.
 
 Example:
-    value := manager.Get("button1")
+
+	value := manager.Get("button1")
 */
 func (shared *MemoryManager[T]) Get(key string) *T {
 	shared.muxtex.RLock()
@@ -69,7 +73,8 @@ func (shared *MemoryManager[T]) Get(key string) *T {
 GetAllEntries is a method which retrieves all values stored in the memory manager as a slice of pointers.
 
 Example:
-    entries := manager.GetAllEntries()
+
+	entries := manager.GetAllEntries()
 */
 func (shared *MemoryManager[T]) GetAllEntries() []*T {
 	shared.muxtex.RLock()
@@ -86,7 +91,8 @@ func (shared *MemoryManager[T]) GetAllEntries() []*T {
 GetAllEntriesWithKeys is a method which retrieves all values stored in the memory manager as a map.
 
 Example:
-    entriesMap := manager.GetAllEntriesWithKeys()
+
+	entriesMap := manager.GetAllEntriesWithKeys()
 */
 func (shared *MemoryManager[T]) GetAllEntriesWithKeys() map[string]*T {
 	shared.muxtex.RLock()
@@ -104,7 +110,8 @@ func (shared *MemoryManager[T]) GetAllEntriesWithKeys() map[string]*T {
 RemoveAll is a method which clears all entries from the memory manager.
 
 Example:
-    manager.RemoveAll()
+
+	manager.RemoveAll()
 */
 func (shared *MemoryManager[T]) RemoveAll() {
 	shared.muxtex.Lock()
@@ -116,7 +123,8 @@ func (shared *MemoryManager[T]) RemoveAll() {
 IsExists is a method which checks if a value with the given key exists in the memory manager.
 
 Example:
-    exists := manager.IsExists("button1")
+
+	exists := manager.IsExists("button1")
 */
 func (shared *MemoryManager[T]) IsExists(key string) bool {
 	shared.muxtex.RLock()

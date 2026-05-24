@@ -13,11 +13,12 @@ const (
 TestGetScrambledPassword is a test which verifies that passwords can be correctly scrambled.
 
 Example:
-    Expected Inputs:
-        None
 
-    Expected Outputs:
-        None
+	Expected Inputs:
+	    None
+
+	Expected Outputs:
+	    None
 */
 func TestGetScrambledPassword(test *testing.T) {
 	obtainedResult := GetScrambledPassword("SamplePassword", "SampleScrambleKey")
@@ -29,11 +30,12 @@ func TestGetScrambledPassword(test *testing.T) {
 TestGetUnscrambledPassword is a test which verifies that scrambled passwords can be correctly unscrambled.
 
 Example:
-    Expected Inputs:
-        None
 
-    Expected Outputs:
-        None
+	Expected Inputs:
+	    None
+
+	Expected Outputs:
+	    None
 */
 func TestGetUnscrambledPassword(test *testing.T) {
 	obtainedResult := getUnscrambledPassword("awVdQ1tUYVAVR0VXEwE=", "SampleScrambleKey")
@@ -45,11 +47,12 @@ func TestGetUnscrambledPassword(test *testing.T) {
 TestMountVirtualFileSystem is a test which verifies the mounting and file retrieval from virtual file systems.
 
 Example:
-    Expected Inputs:
-        None
 
-    Expected Outputs:
-        None
+	Expected Inputs:
+	    None
+
+	Expected Outputs:
+	    None
 */
 func TestMountVirtualFileSystem(test *testing.T) {
 	var expectedResult error
@@ -96,11 +99,12 @@ func TestMountVirtualFileSystem(test *testing.T) {
 TestGetFileDataFromLocalFileSystem is a test which verifies reading file data from the local file system.
 
 Example:
-    Expected Inputs:
-        None
 
-    Expected Outputs:
-        None
+	Expected Inputs:
+	    None
+
+	Expected Outputs:
+	    None
 */
 func TestGetFileDataFromLocalFileSystem(test *testing.T) {
 	_, err := getFileDataFromLocalFileSystem(BASE_DIRECTORY + "valid.rar")
@@ -111,11 +115,12 @@ func TestGetFileDataFromLocalFileSystem(test *testing.T) {
 TestGetTextFromFileSystem is a test which verifies reading text from a file system.
 
 Example:
-    Expected Inputs:
-        None
 
-    Expected Outputs:
-        None
+	Expected Inputs:
+	    None
+
+	Expected Outputs:
+	    None
 */
 func TestGetTextFromFileSystem(test *testing.T) {
 	_, err := getTextFromFileSystem(BASE_DIRECTORY + "text_file.txt")

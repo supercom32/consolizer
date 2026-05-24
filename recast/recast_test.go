@@ -11,11 +11,12 @@ TestGetNumberAsInt is a test which verifies that numeric values of various types
 an integer.
 
 Example:
-    Expected Inputs:
-        float32(-3.312), float64(-3.312), int(-3), int8(-3), int16(-3), int32(-3), int64(-3), uint(3), uint8(3), uint16(3), uint32(3), uint64(3)
 
-    Expected Outputs:
-        int(-3), int(-3), int(-3), int(-3), int(-3), int(-3), int(-3), int(3), int(3), int(3), int(3), int(3)
+	Expected Inputs:
+	    float32(-3.312), float64(-3.312), int(-3), int8(-3), int16(-3), int32(-3), int64(-3), uint(3), uint8(3), uint16(3), uint32(3), uint64(3)
+
+	Expected Outputs:
+	    int(-3), int(-3), int(-3), int(-3), int(-3), int(-3), int(-3), int(3), int(3), int(3), int(3), int(3)
 */
 func TestGetNumberAsInt(test *testing.T) {
 	var floatValues = GetArrayOfInterfaces(float32(-3.312), float64(-3.312))
@@ -44,11 +45,12 @@ TestGetNumberAsInt64 is a test which verifies that numeric values of various typ
 to an int64.
 
 Example:
-    Expected Inputs:
-        float32(-3.312), float64(-3.312), int(-3), int8(-3), int16(-3), int32(-3), int64(-3), uint(3), uint8(3), uint16(3), uint32(3), uint64(3)
 
-    Expected Outputs:
-        int64(-3), int64(-3), int64(-3), int64(-3), int64(-3), int64(-3), int64(-3), int64(3), int64(3), int64(3), int64(3), int64(3)
+	Expected Inputs:
+	    float32(-3.312), float64(-3.312), int(-3), int8(-3), int16(-3), int32(-3), int64(-3), uint(3), uint8(3), uint16(3), uint32(3), uint64(3)
+
+	Expected Outputs:
+	    int64(-3), int64(-3), int64(-3), int64(-3), int64(-3), int64(-3), int64(-3), int64(3), int64(3), int64(3), int64(3), int64(3)
 */
 func TestGetNumberAsInt64(test *testing.T) {
 	var floatValues = GetArrayOfInterfaces(float32(-3.312), float64(-3.312))
@@ -77,11 +79,12 @@ TestGetNumberAsFloat64 is a test which verifies that numeric values of various t
 to a float64.
 
 Example:
-    Expected Inputs:
-        float32(-3.3), float64(-3.3)
 
-    Expected Outputs:
-        float64(-3.3), float64(-3.3)
+	Expected Inputs:
+	    float32(-3.3), float64(-3.3)
+
+	Expected Outputs:
+	    float64(-3.3), float64(-3.3)
 */
 func TestGetNumberAsFloat64(test *testing.T) {
 	var floatValues = GetArrayOfInterfaces(float32(-3.3), float64(-3.3))
@@ -91,4 +94,3 @@ func TestGetNumberAsFloat64(test *testing.T) {
 		assert.InDelta(test, expectedResult, obtainedResult, 0.0000001, "The variable of type '"+reflect.TypeOf(currentValue).String()+"' did not equal the expected amount.")
 	}
 }
-

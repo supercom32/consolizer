@@ -11,7 +11,8 @@ import (
 DropdownInstanceType is a structure which represents an instance of a dropdown control.
 
 Example:
-    var dropdownInstance DropdownInstanceType
+
+	var dropdownInstance DropdownInstanceType
 */
 type DropdownInstanceType struct {
 	BaseControlInstanceType
@@ -30,6 +31,7 @@ event. In addition, the following should be noted:
 - Returns true if the screen needs to be updated due to state changes.
 
 Example:
+
 	isUpdate, isConsumed := Dropdown.updateKeyboardEvent(keystroke)
 */
 func (shared *dropdownType) updateKeyboardEvent(keystroke []rune) (bool, bool) {
@@ -132,6 +134,7 @@ Delete is a method which removes a dropdown from a text layer. In addition, the 
 - All memory associated with the dropdown will be freed.
 
 Example:
+
 	dropdown.Delete()
 */
 func (shared *DropdownInstanceType) Delete() *DropdownInstanceType {
@@ -148,6 +151,7 @@ controls using the tab key. In addition, the following should be noted:
 - The tab index is used to determine which control receives focus when the tab key is pressed.
 
 Example:
+
 	dropdown.AddToTabIndex()
 */
 func (shared *DropdownInstanceType) AddToTabIndex() {
@@ -163,6 +167,7 @@ following should be noted:
 - If the dropdown does not exist, returns an empty string.
 
 Example:
+
 	val := dropdown.GetValue()
 */
 func (shared *DropdownInstanceType) GetValue() string {
@@ -185,6 +190,7 @@ following should be noted:
 - The alias is typically used for programmatic access to the selection.
 
 Example:
+
 	alias := dropdown.GetAlias()
 */
 func (shared *DropdownInstanceType) GetAlias() string {
@@ -200,6 +206,7 @@ func (shared *DropdownInstanceType) GetAlias() string {
 GetSelectedItemIndex is a method which retrieves the index of the currently selected item in the dropdown.
 
 Example:
+
 	index := dropdown.GetSelectedItemIndex()
 */
 func (shared *DropdownInstanceType) GetSelectedItemIndex() int {
@@ -216,6 +223,7 @@ following should be noted:
 - If the item index specified is invalid or out of range, the request will be ignored.
 
 Example:
+
 	dropdown.SetSelectedItemIndex(2)
 */
 func (shared *DropdownInstanceType) SetSelectedItemIndex(itemIndex int) {
@@ -238,6 +246,7 @@ following should be noted:
 - The associated selector and scrollbar will be updated to reflect the new items.
 
 Example:
+
 	dropdown.SetSelectionEntry(newSelection)
 */
 func (shared *DropdownInstanceType) SetSelectionEntry(selectionEntry types.SelectionEntryType) {
@@ -266,6 +275,7 @@ noted:
 - The default selected item can be specified when creating the dropdown.
 
 Example:
+
 	dropdown := Dropdown.Add("layer1", "myDropdown", style, items, 10, 10, 5, 15, 0)
 */
 func (shared *dropdownType) Add(layerAlias string, dropdownAlias string, styleEntry types.TuiStyleEntryType, selectionEntry types.SelectionEntryType, xLocation int, yLocation int, selectorHeight int, itemWidth int, defaultItemSelected int) DropdownInstanceType {
@@ -329,6 +339,7 @@ noted:
 - All memory associated with the dropdown will be freed.
 
 Example:
+
 	Dropdown.Delete("layer1", "myDropdown")
 */
 func (shared *dropdownType) Delete(layerAlias string, dropdownAlias string) {
@@ -344,6 +355,7 @@ should be noted:
 - All memory associated with the dropdowns will be freed.
 
 Example:
+
 	Dropdown.DeleteAll("layer1")
 */
 func (shared *dropdownType) DeleteAll(layerAlias string) {
@@ -361,6 +373,7 @@ following should be noted:
 - The dropdown tray (selector) is only drawn when the dropdown is open.
 
 Example:
+
 	Dropdown.drawOnLayer(layer)
 */
 func (shared *dropdownType) drawOnLayer(layerEntry types.LayerEntryType) {
@@ -381,6 +394,7 @@ should be noted:
 - The dropdown uses the style entry's foreground and background colors for rendering.
 
 Example:
+
 	Dropdown.draw(layer, "myDropdown")
 */
 func (shared *dropdownType) draw(layerEntry *types.LayerEntryType, dropdownAlias string) {
@@ -421,6 +435,7 @@ mouse event state. In addition, the following should be noted:
 - Returns true if the screen needs to be updated due to state changes.
 
 Example:
+
 	isUpdate := Dropdown.updateStateMouse()
 */
 func (shared *dropdownType) updateStateMouse() bool {
@@ -505,6 +520,7 @@ the following should be noted:
 - The selected item is updated if it was changed while the dropdown was open.
 
 Example:
+
 	isClosed := Dropdown.closeAllOpenOnLayer("layer1")
 */
 func (shared *dropdownType) closeAllOpenOnLayer(layerAlias string) bool {
@@ -540,6 +556,7 @@ should be noted:
 - The selected item is updated if it was changed while the dropdown was open.
 
 Example:
+
 	isClosed := Dropdown.closeAllOpen()
 */
 func (shared *dropdownType) closeAllOpen() bool {
@@ -566,6 +583,7 @@ following should be noted:
 - This method is used internally by other dropdown methods to access control data.
 
 Example:
+
 	entry := Dropdown.Get("layer1", "myDropdown")
 */
 func (shared *dropdownType) Get(layerAlias string, dropdownAlias string) *types.DropdownEntryType {
@@ -583,6 +601,7 @@ following should be noted:
 - Useful for preventing null pointer exceptions when accessing dropdown properties.
 
 Example:
+
 	exists := Dropdown.IsExists("layer1", "myDropdown")
 */
 func (shared *dropdownType) IsExists(layerAlias string, dropdownAlias string) bool {
@@ -600,6 +619,7 @@ following should be noted:
 - This method is useful for iterating over all dropdowns on a layer.
 
 Example:
+
 	entries := Dropdown.GetAllEntries("layer1")
 */
 func (shared *dropdownType) GetAllEntries(layerAlias string) []*types.DropdownEntryType {
