@@ -40,6 +40,7 @@ type LayerEntryType struct {
 	CursorXLocation  int
 	CursorYLocation  int
 	ZOrder           int
+	AlphaValue       float32
 	IsTopmost        bool
 	IsFocusable      bool
 	IsVisible        bool
@@ -66,6 +67,7 @@ func (shared LayerEntryType) MarshalJSON() ([]byte, error) {
 		CursorXLocation  int
 		CursorYLocation  int
 		ZOrder           int
+		AlphaValue       float32
 		IsTopmost        bool
 		IsFocusable      bool
 		IsVisible        bool
@@ -82,6 +84,7 @@ func (shared LayerEntryType) MarshalJSON() ([]byte, error) {
 		CursorXLocation:  shared.CursorXLocation,
 		CursorYLocation:  shared.CursorYLocation,
 		ZOrder:           shared.ZOrder,
+		AlphaValue:       shared.AlphaValue,
 		IsTopmost:        shared.IsTopmost,
 		IsFocusable:      shared.IsFocusable,
 		IsVisible:        shared.IsVisible,
@@ -286,6 +289,7 @@ func NewLayerEntry(layerAlias string, parentAlias string, width int, height int,
 		layerEntry.CursorXLocation = existingLayerEntry[0].CursorXLocation
 		layerEntry.CursorYLocation = existingLayerEntry[0].CursorYLocation
 		layerEntry.ZOrder = existingLayerEntry[0].ZOrder
+		layerEntry.AlphaValue = existingLayerEntry[0].AlphaValue
 		layerEntry.IsVisible = existingLayerEntry[0].IsVisible
 		layerEntry.IsTopmost = existingLayerEntry[0].IsTopmost
 		layerEntry.IsFocusable = existingLayerEntry[0].IsFocusable
@@ -307,6 +311,7 @@ func NewLayerEntry(layerAlias string, parentAlias string, width int, height int,
 		layerEntry.Width = width
 		layerEntry.Height = height
 		layerEntry.IsVisible = true
+		layerEntry.AlphaValue = 1.0
 		layerEntry.DefaultAttribute = NewAttributeEntry()
 		for currentRow := 0; currentRow < height; currentRow++ {
 			var characterObjectArray = make([]CharacterEntryType, width)
@@ -385,6 +390,9 @@ func (shared *LayerEntryType) SaveLayer(path string) error {
 	}
 	if err := binary.Write(writer, binary.LittleEndian, height); err != nil {
 		return fmt.Errorf("failed to write height: %w", err)
+	}
+	if err := binary.Write(writer, binary.LittleEndian, shared.AlphaValue); err != nil {
+		return fmt.Errorf("failed to write alpha value: %w", err)
 	}
 
 	// --- Layer Data ---
@@ -484,6 +492,10 @@ func (shared *LayerEntryType) LoadLayerFromBytes(data []byte) error {
 	}
 	if err := binary.Read(buffReader, binary.LittleEndian, &height); err != nil {
 		return fmt.Errorf("failed to read height: %w", err)
+	}
+
+	if err := binary.Read(buffReader, binary.LittleEndian, &shared.AlphaValue); err != nil {
+		return fmt.Errorf("failed to read alpha value: %w", err)
 	}
 
 	shared.Width = int(width)

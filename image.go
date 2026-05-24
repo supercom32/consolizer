@@ -2,11 +2,13 @@ package consolizer
 
 import (
 	"bytes"
+	"container/list"
 	"encoding/base64"
 	"fmt"
 	"github.com/disintegration/imaging"
 	"github.com/nfnt/resize"
 	"github.com/supercom32/consolizer/constants"
+	"github.com/supercom32/consolizer/memory"
 	"github.com/supercom32/consolizer/types"
 	"golang.org/x/image/draw"
 
@@ -21,25 +23,36 @@ import (
 	"sync"
 )
 
+const MaxCacheCharacters = 3500000
+
 type renderCacheKey struct {
 	imageAlias         string
-	drawingStyle       constants.ImageStyle
+	imageStyle         types.ImageStyleEntryType
 	widthInCharacters  int
 	heightInCharacters int
 	blurSigma          float64
 }
 
+type cacheEntry struct {
+	key   renderCacheKey
+	layer types.LayerEntryType
+	size  int
+}
+
 type ImageMemoryType struct {
 	sync.Mutex
-	Entries     map[string]*types.ImageEntryType
-	RenderCache map[renderCacheKey]types.LayerEntryType
+	Entries          *memory.MemoryManager[types.ImageEntryType]
+	RenderCache      map[renderCacheKey]*list.Element
+	RenderCacheList  *list.List
+	CurrentCacheSize int
 }
 
 var Image ImageMemoryType
 
 func init() {
-	Image.Entries = make(map[string]*types.ImageEntryType)
-	Image.RenderCache = make(map[renderCacheKey]types.LayerEntryType)
+	Image.Entries = memory.NewMemoryManager[types.ImageEntryType]()
+	Image.RenderCache = make(map[renderCacheKey]*list.Element)
+	Image.RenderCacheList = list.New()
 }
 
 /*
@@ -50,12 +63,8 @@ Example:
 	addImage("myImage", entry)
 */
 func addImage(imageAlias string, imageEntry types.ImageEntryType) {
-	Image.Lock()
-	defer func() {
-		Image.Unlock()
-	}()
 	// verify if any errors occurred?
-	Image.Entries[imageAlias] = &imageEntry
+	Image.Entries.Add(imageAlias, &imageEntry)
 }
 
 /*
@@ -68,14 +77,11 @@ Example:
 	entry := getImage("myImage")
 */
 func getImage(imageAlias string) *types.ImageEntryType {
-	Image.Lock()
-	defer func() {
-		Image.Unlock()
-	}()
-	if Image.Entries[imageAlias] == nil {
+	entry := Image.Entries.Get(imageAlias)
+	if entry == nil {
 		safeSttyPanic(fmt.Sprintf("The requested Image with alias '%s' could not be returned since it does not exist.", imageAlias))
 	}
-	return Image.Entries[imageAlias]
+	return entry
 }
 
 /*
@@ -86,14 +92,15 @@ Example:
 	deleteImage("myImage")
 */
 func deleteImage(imageAlias string) {
-	Image.Lock()
-	defer func() {
-		Image.Unlock()
-	}()
-	delete(Image.Entries, imageAlias)
+	Image.Entries.Remove(imageAlias)
 	// Also clear related cache entries
-	for key := range Image.RenderCache {
+	Image.Lock()
+	defer Image.Unlock()
+	for key, element := range Image.RenderCache {
 		if key.imageAlias == imageAlias {
+			entry := element.Value.(*cacheEntry)
+			Image.CurrentCacheSize -= entry.size
+			Image.RenderCacheList.Remove(element)
 			delete(Image.RenderCache, key)
 		}
 	}
@@ -107,14 +114,7 @@ Example:
 	exists := IsImageExists("myImage")
 */
 func IsImageExists(imageAlias string) bool {
-	Image.Lock()
-	defer func() {
-		Image.Unlock()
-	}()
-	if Image.Entries[imageAlias] == nil {
-		return false
-	}
-	return true
+	return Image.Entries.IsExists(imageAlias)
 }
 
 /*
@@ -125,12 +125,12 @@ Example:
 	ClearAllImages()
 */
 func ClearAllImages() {
+	Image.Entries.RemoveAll()
 	Image.Lock()
-	defer func() {
-		Image.Unlock()
-	}()
-	Image.Entries = make(map[string]*types.ImageEntryType)
-	Image.RenderCache = make(map[renderCacheKey]types.LayerEntryType)
+	defer Image.Unlock()
+	Image.RenderCache = make(map[renderCacheKey]*list.Element)
+	Image.RenderCacheList = list.New()
+	Image.CurrentCacheSize = 0
 }
 
 /*
@@ -1467,15 +1467,16 @@ func getImageLayer(imageAlias string, sourceImageData image.Image, imageStyle ty
 	if imageAlias != "" {
 		cacheKey = renderCacheKey{
 			imageAlias:         imageAlias,
-			drawingStyle:       imageStyle.DrawingStyle,
+			imageStyle:         imageStyle,
 			widthInCharacters:  widthInCharacters,
 			heightInCharacters: heightInCharacters,
 			blurSigma:          blurSigma,
 		}
 		Image.Lock()
-		if layer, exists := Image.RenderCache[cacheKey]; exists {
+		if element, exists := Image.RenderCache[cacheKey]; exists {
+			Image.RenderCacheList.MoveToFront(element)
 			Image.Unlock()
-			return layer
+			return element.Value.(*cacheEntry).layer
 		}
 		Image.Unlock()
 	}
@@ -1497,7 +1498,25 @@ func getImageLayer(imageAlias string, sourceImageData image.Image, imageStyle ty
 	// Store in cache if an alias is provided
 	if imageAlias != "" {
 		Image.Lock()
-		Image.RenderCache[cacheKey] = imageLayer
+		newSize := imageLayer.Width * imageLayer.Height
+
+		// Eviction: If adding this layer exceeds capacity, remove oldest items.
+		for Image.CurrentCacheSize+newSize > MaxCacheCharacters && Image.RenderCacheList.Len() > 0 {
+			oldest := Image.RenderCacheList.Back()
+			oldestEntry := oldest.Value.(*cacheEntry)
+			Image.CurrentCacheSize -= oldestEntry.size
+			delete(Image.RenderCache, oldestEntry.key)
+			Image.RenderCacheList.Remove(oldest)
+		}
+
+		entry := &cacheEntry{
+			key:   cacheKey,
+			layer: imageLayer,
+			size:  newSize,
+		}
+		element := Image.RenderCacheList.PushFront(entry)
+		Image.RenderCache[cacheKey] = element
+		Image.CurrentCacheSize += newSize
 		Image.Unlock()
 	}
 

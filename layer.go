@@ -1988,6 +1988,32 @@ func setLayerIsVisible(layerAlias string, isVisible bool) {
 }
 
 /*
+setLayerAlphaValue is a method which allows you to set the alpha value for a layer.
+
+Example:
+
+	setLayerAlphaValue("myLayer", 0.5)
+*/
+func setLayerAlphaValue(layerAlias string, alphaValue float32) {
+	validateLayer(layerAlias)
+	layerEntry := Layers.Get(layerAlias)
+	layerEntry.AlphaValue = alphaValue
+}
+
+/*
+getLayerAlphaValue is a method which allows you to obtain the alpha value for a layer.
+
+Example:
+
+	alpha := getLayerAlphaValue("myLayer")
+*/
+func getLayerAlphaValue(layerAlias string) float32 {
+	validateLayer(layerAlias)
+	layerEntry := Layers.Get(layerAlias)
+	return layerEntry.AlphaValue
+}
+
+/*
 validateLayerSize is a method which allows you to check if the given width and height are valid for a layer.
 
 Example:
