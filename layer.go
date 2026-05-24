@@ -772,7 +772,7 @@ func (shared *LayerInstanceType) DrawImage(fileName string, drawingStyle types.I
 	if imageEntryType.ImageData != nil {
 		imageData := imageEntryType.ImageData
 		// Get the current layer to pass for transparency handling
-		imageLayer = getImageLayer(imageData, drawingStyle, widthInCharacters, heightInCharacters, blurSigma)
+		imageLayer = getImageLayer(fileName, imageData, drawingStyle, widthInCharacters, heightInCharacters, blurSigma)
 	}
 	drawImageToLayer(currentLayer, imageLayer, xLocation, yLocation)
 	return err
@@ -791,28 +791,13 @@ Example:
 */
 func (shared *LayerInstanceType) DrawComposedImage(imageComposeEntry ImageComposerEntryType, drawingStyle types.ImageStyleEntryType, xLocation int, yLocation int, widthInCharacters int, heightInCharacters int) error {
 	var err error
-	var imageLayer types.LayerEntryType
 	baseImage := imageComposeEntry.RenderImage()
 
 	// Get the current layer to pass for transparency handling
 	var currentLayer *types.LayerEntryType
 	currentLayer = Layers.Get(shared.layerAlias)
 
-	if drawingStyle.DrawingStyle == constants.ImageStyleHalfBlock {
-		imageLayer = getImageLayerAsHalfBlock(baseImage, drawingStyle, widthInCharacters, heightInCharacters, drawingStyle.BlurSigmaIntensity)
-	} else if drawingStyle.DrawingStyle == constants.ImageStyleCharacters {
-		imageLayer = GetImageLayerAsAsciiColorArt(baseImage, drawingStyle, widthInCharacters, heightInCharacters, drawingStyle.BlurSigmaIntensity)
-	} else if drawingStyle.DrawingStyle == constants.ImageStyleBlockElementsAccurate {
-		imageLayer = getImageLayerAsBlockElementsAccurate(baseImage, drawingStyle, widthInCharacters, heightInCharacters, drawingStyle.BlurSigmaIntensity)
-	} else if drawingStyle.DrawingStyle == constants.ImageStyleBlockElementsFast {
-		imageLayer = getImageLayerAsBlockElementsFast(baseImage, drawingStyle, widthInCharacters, heightInCharacters, drawingStyle.BlurSigmaIntensity)
-	} else if drawingStyle.DrawingStyle == constants.ImageStyleBraille {
-		imageLayer = getImageLayerAsBraille(baseImage, drawingStyle, widthInCharacters, heightInCharacters, drawingStyle.BlurSigmaIntensity)
-	} else if drawingStyle.DrawingStyle == constants.ImageStyleFullBlock {
-		imageLayer = getImageLayerAsFullBlock(baseImage, drawingStyle, widthInCharacters, heightInCharacters, drawingStyle.BlurSigmaIntensity)
-	} else {
-		safeSttyPanic("Invalid image style rendering type!")
-	}
+	imageLayer := getImageLayer("", baseImage, drawingStyle, widthInCharacters, heightInCharacters, drawingStyle.BlurSigmaIntensity)
 	drawImageToLayer(currentLayer, imageLayer, xLocation, yLocation)
 	return err
 }

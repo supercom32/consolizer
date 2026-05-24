@@ -21,15 +21,25 @@ import (
 	"sync"
 )
 
+type renderCacheKey struct {
+	imageAlias         string
+	drawingStyle       constants.ImageStyle
+	widthInCharacters  int
+	heightInCharacters int
+	blurSigma          float64
+}
+
 type ImageMemoryType struct {
 	sync.Mutex
-	Entries map[string]*types.ImageEntryType
+	Entries     map[string]*types.ImageEntryType
+	RenderCache map[renderCacheKey]types.LayerEntryType
 }
 
 var Image ImageMemoryType
 
 func init() {
 	Image.Entries = make(map[string]*types.ImageEntryType)
+	Image.RenderCache = make(map[renderCacheKey]types.LayerEntryType)
 }
 
 /*
@@ -81,6 +91,12 @@ func deleteImage(imageAlias string) {
 		Image.Unlock()
 	}()
 	delete(Image.Entries, imageAlias)
+	// Also clear related cache entries
+	for key := range Image.RenderCache {
+		if key.imageAlias == imageAlias {
+			delete(Image.RenderCache, key)
+		}
+	}
 }
 
 /*
@@ -114,6 +130,7 @@ func ClearAllImages() {
 		Image.Unlock()
 	}()
 	Image.Entries = make(map[string]*types.ImageEntryType)
+	Image.RenderCache = make(map[renderCacheKey]types.LayerEntryType)
 }
 
 /*
@@ -268,7 +285,7 @@ func LoadPreRenderedImage(imageFile string, imageAlias string, imageStyle types.
 	if err != nil {
 		return err
 	}
-	imageEntry.LayerEntry = getImageLayer(imageEntry.ImageData, imageStyle, widthInCharacters, heightInCharacters, blurSigma)
+	imageEntry.LayerEntry = getImageLayer(imageAlias, imageEntry.ImageData, imageStyle, widthInCharacters, heightInCharacters, blurSigma)
 	imageEntry.ImageData = nil
 	addImage(imageAlias, imageEntry)
 	return err
@@ -345,7 +362,7 @@ func LoadPreRenderedBase64Image(imageDataAsBase64 string, imageAlias string, ima
 	if err != nil {
 		return err
 	}
-	imageEntry.LayerEntry = getImageLayer(imageData, imageStyle, widthInCharacters, heightInCharacters, blurSigma)
+	imageEntry.LayerEntry = getImageLayer(imageAlias, imageData, imageStyle, widthInCharacters, heightInCharacters, blurSigma)
 	addImage(imageAlias, imageEntry)
 	return err
 }
@@ -632,15 +649,24 @@ Example:
 	isTransparent := isTransparentPixel(img, 10, 10)
 */
 func isTransparentPixel(processedImageData image.Image, x, y int) bool {
-	// Get the color at the specified pixel
-	c := processedImageData.At(x, y)
+	switch img := processedImageData.(type) {
+	case *image.RGBA:
+		pixelOffset := img.PixOffset(x, y)
+		return img.Pix[pixelOffset+3] < 128
+	case *image.NRGBA:
+		pixelOffset := img.PixOffset(x, y)
+		return img.Pix[pixelOffset+3] < 128
+	default:
+		// Get the color at the specified pixel
+		c := processedImageData.At(x, y)
 
-	// Convert to RGBA to get access to individual channels
-	rgba := color.RGBAModel.Convert(c).(color.RGBA)
+		// Convert to RGBA to get access to individual channels
+		rgba := color.RGBAModel.Convert(c).(color.RGBA)
 
-	// Check if alpha value is below threshold (128 = ~50% transparency)
-	// Pixels with alpha < 128 are considered transparent
-	return rgba.A < 128
+		// Check if alpha value is below threshold (128 = ~50% transparency)
+		// Pixels with alpha < 128 are considered transparent
+		return rgba.A < 128
+	}
 }
 
 /*
@@ -918,10 +944,10 @@ func resizeImageForBlockElements(sourceImageData image.Image, targetWidth, targe
 					for targetYLocation := fromTargetYLocation; targetYLocation <= toTargetYLocation && targetYLocation < targetHeight; targetYLocation++ {
 						yAxisCoverage := 1.0
 						if targetYLocation == fromTargetYLocation {
-							yAxisCoverage -= math.Mod(targetYLocationStartingPoint, 1.0)
+							yAxisCoverage -= targetYLocationStartingPoint - math.Floor(targetYLocationStartingPoint)
 						}
 						if targetYLocation == toTargetYLocation {
-							yAxisCoverage -= 1.0 - math.Mod(targetYLocationEndingPoint, 1.0)
+							yAxisCoverage -= 1.0 - (targetYLocationEndingPoint - math.Floor(targetYLocationEndingPoint))
 						}
 
 						targetXLocationStartingPoint := float64(sourceXLocation-sourceBounds.Min.X) * coverageWidth
@@ -932,10 +958,10 @@ func resizeImageForBlockElements(sourceImageData image.Image, targetWidth, targe
 						for targetXLocation := fromTargetXLocation; targetXLocation <= toTargetXLocation && targetXLocation < targetWidth; targetXLocation++ {
 							xAxisCoverage := 1.0
 							if targetXLocation == fromTargetXLocation {
-								xAxisCoverage -= math.Mod(targetXLocationStartingPoint, 1.0)
+								xAxisCoverage -= targetXLocationStartingPoint - math.Floor(targetXLocationStartingPoint)
 							}
 							if targetXLocation == toTargetXLocation {
-								xAxisCoverage -= 1.0 - math.Mod(targetXLocationEndingPoint, 1.0)
+								xAxisCoverage -= 1.0 - (targetXLocationEndingPoint - math.Floor(targetXLocationEndingPoint))
 							}
 
 							totalCoverage := xAxisCoverage * yAxisCoverage
@@ -1173,9 +1199,8 @@ func findBestBlockElementForCell(
 	return bestBlockElement, bestForegroundColor, bestBackgroundColor, isForegroundColorTransparent, isBackgroundColorTransparent
 }
 
-type cellJob struct {
-	rowLocation    int
-	columnLocation int
+type rowJob struct {
+	rowLocation int
 }
 
 /*
@@ -1187,7 +1212,7 @@ Example:
 */
 func processCellsInParallel(pixelColorData [][4]float64, characterWidth, characterHeight int, targetLayerEntry *types.LayerEntryType, imageStyle types.ImageStyleEntryType) {
 	numberOfWorkers := runtime.NumCPU()
-	jobs := make(chan cellJob, characterWidth*characterHeight)
+	jobs := make(chan rowJob, characterHeight)
 	var waitGroup sync.WaitGroup
 
 	// Get the actual dimensions of the layer
@@ -1202,59 +1227,61 @@ func processCellsInParallel(pixelColorData [][4]float64, characterWidth, charact
 		go func() {
 			defer waitGroup.Done()
 			for job := range jobs {
-				// Skip processing if the cell is out of bounds
-				if job.rowLocation < 0 || job.rowLocation >= layerHeight ||
-					job.columnLocation < 0 || job.columnLocation >= layerWidth {
+				// Skip processing if the row is out of bounds
+				if job.rowLocation < 0 || job.rowLocation >= layerHeight {
 					continue
 				}
 
-				bestBlockElement, bestForegroundColor, bestBackgroundColor, isForegroundColorTransparent, isBackgroundColorTransparent := findBestBlockElementForCell(pixelColorData, job.rowLocation, job.columnLocation, characterWidth, characterHeight, imageStyle.TransparentForegroundPenalty, imageStyle.AggressiveCoverageThreshold, imageStyle.AggressiveErrorThreshold)
-				attributeEntry := targetLayerEntry.CharacterMemory[job.rowLocation][job.columnLocation].AttributeEntry
-				// Convert the calculated best colors for the incoming image cell to ColorType.
-				red := int32(math.Min(255, bestForegroundColor[0]*255))
-				green := int32(math.Min(255, bestForegroundColor[1]*255))
-				blue := int32(math.Min(255, bestForegroundColor[2]*255))
-				foregroundColor := GetRGBColor(red, green, blue)
+				for columnLocation := 0; columnLocation < characterWidth; columnLocation++ {
+					// Skip processing if the column is out of bounds
+					if columnLocation < 0 || columnLocation >= layerWidth {
+						continue
+					}
 
-				red = int32(math.Min(255, bestBackgroundColor[0]*255))
-				green = int32(math.Min(255, bestBackgroundColor[1]*255))
-				blue = int32(math.Min(255, bestBackgroundColor[2]*255))
-				backgroundColor := GetRGBColor(red, green, blue)
+					bestBlockElement, bestForegroundColor, bestBackgroundColor, isForegroundColorTransparent, isBackgroundColorTransparent := findBestBlockElementForCell(pixelColorData, job.rowLocation, columnLocation, characterWidth, characterHeight, imageStyle.TransparentForegroundPenalty, imageStyle.AggressiveCoverageThreshold, imageStyle.AggressiveErrorThreshold)
+					attributeEntry := targetLayerEntry.CharacterMemory[job.rowLocation][columnLocation].AttributeEntry
+					// Convert the calculated best colors for the incoming image cell to ColorType.
+					red := int32(math.Min(255, bestForegroundColor[0]*255))
+					green := int32(math.Min(255, bestForegroundColor[1]*255))
+					blue := int32(math.Min(255, bestForegroundColor[2]*255))
+					foregroundColor := GetRGBColor(red, green, blue)
 
-				// If the foreground part of the incoming cell is transparent.
-				if isForegroundColorTransparent {
-					attributeEntry.IsForegroundTransparent = true
+					red = int32(math.Min(255, bestBackgroundColor[0]*255))
+					green = int32(math.Min(255, bestBackgroundColor[1]*255))
+					blue = int32(math.Min(255, bestBackgroundColor[2]*255))
+					backgroundColor := GetRGBColor(red, green, blue)
+
+					// If the foreground part of the incoming cell is transparent.
+					if isForegroundColorTransparent {
+						attributeEntry.IsForegroundTransparent = true
+					}
+
+					// If the background part of the incoming cell is transparent.
+					if isBackgroundColorTransparent {
+						attributeEntry.IsBackgroundTransparent = true
+					}
+
+					// Update the layer entry with the final character and colors.
+					if bestBlockElement == ' ' {
+						// A space character indicates the entire 8x8 grid is transparent.
+						// We mark it as NullRune so the overlay process skips it, preserving the underlying cell.
+						targetLayerEntry.CharacterMemory[job.rowLocation][columnLocation].Character = constants.NullRune
+						attributeEntry.IsBackgroundTransparent = true
+						attributeEntry.CellType = constants.CellTypeShadow
+					} else {
+						targetLayerEntry.CharacterMemory[job.rowLocation][columnLocation].Character = bestBlockElement
+						attributeEntry.ForegroundColor = foregroundColor
+						attributeEntry.BackgroundColor = backgroundColor
+					}
+					targetLayerEntry.CharacterMemory[job.rowLocation][columnLocation].AttributeEntry = attributeEntry
 				}
-
-				// If the background part of the incoming cell is transparent.
-				if isBackgroundColorTransparent {
-					attributeEntry.IsBackgroundTransparent = true
-				}
-
-				// Update the layer entry with the final character and colors.
-				if bestBlockElement == ' ' {
-					// A space character indicates the entire 8x8 grid is transparent.
-					// We mark it as NullRune so the overlay process skips it, preserving the underlying cell.
-					targetLayerEntry.CharacterMemory[job.rowLocation][job.columnLocation].Character = constants.NullRune
-					attributeEntry.IsBackgroundTransparent = true
-					attributeEntry.CellType = constants.CellTypeShadow
-					//layerEntry.CharacterMemory[job.rowLocation][job.columnLocation].AttributeEntry.ForegroundColor = underlyingCell.AttributeEntry.ForegroundColor
-					//layerEntry.CharacterMemory[job.rowLocation][job.columnLocation].AttributeEntry.ForegroundColor = underlyingCell.AttributeEntry.BackgroundColor
-				} else {
-					targetLayerEntry.CharacterMemory[job.rowLocation][job.columnLocation].Character = bestBlockElement
-					attributeEntry.ForegroundColor = foregroundColor
-					attributeEntry.BackgroundColor = backgroundColor
-				}
-				targetLayerEntry.CharacterMemory[job.rowLocation][job.columnLocation].AttributeEntry = attributeEntry
 			}
 		}()
 	}
 
-	// Only process cells that are within the bounds of both the image and the layer
+	// Send row-based jobs to the worker pool
 	for rowLocation := 0; rowLocation < characterHeight; rowLocation++ {
-		for columnLocation := 0; columnLocation < characterWidth; columnLocation++ {
-			jobs <- cellJob{rowLocation: rowLocation, columnLocation: columnLocation}
-		}
+		jobs <- rowJob{rowLocation: rowLocation}
 	}
 	close(jobs)
 	waitGroup.Wait()
@@ -1430,10 +1457,28 @@ addition, the following should be noted:
 
 Example:
 
-	layer := getImageLayer(img, style, 80, 24, 0.5)
+	layer := getImageLayer("myImage", img, style, 80, 24, 0.5)
 */
-func getImageLayer(sourceImageData image.Image, imageStyle types.ImageStyleEntryType, widthInCharacters int, heightInCharacters int, blurSigma float64) types.LayerEntryType {
+func getImageLayer(imageAlias string, sourceImageData image.Image, imageStyle types.ImageStyleEntryType, widthInCharacters int, heightInCharacters int, blurSigma float64) types.LayerEntryType {
 	var imageLayer types.LayerEntryType
+
+	// Check cache if an alias is provided
+	var cacheKey renderCacheKey
+	if imageAlias != "" {
+		cacheKey = renderCacheKey{
+			imageAlias:         imageAlias,
+			drawingStyle:       imageStyle.DrawingStyle,
+			widthInCharacters:  widthInCharacters,
+			heightInCharacters: heightInCharacters,
+			blurSigma:          blurSigma,
+		}
+		Image.Lock()
+		if layer, exists := Image.RenderCache[cacheKey]; exists {
+			Image.Unlock()
+			return layer
+		}
+		Image.Unlock()
+	}
 
 	if imageStyle.DrawingStyle == constants.ImageStyleHalfBlock {
 		imageLayer = getImageLayerAsHalfBlock(sourceImageData, imageStyle, widthInCharacters, heightInCharacters, blurSigma)
@@ -1448,6 +1493,14 @@ func getImageLayer(sourceImageData image.Image, imageStyle types.ImageStyleEntry
 	} else {
 		imageLayer = getImageLayerAsBraille(sourceImageData, imageStyle, widthInCharacters, heightInCharacters, blurSigma)
 	}
+
+	// Store in cache if an alias is provided
+	if imageAlias != "" {
+		Image.Lock()
+		Image.RenderCache[cacheKey] = imageLayer
+		Image.Unlock()
+	}
+
 	return imageLayer
 }
 
