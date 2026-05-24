@@ -33,18 +33,19 @@ Example:
 	var layerEntry LayerEntryType
 */
 type LayerEntryType struct {
-	Width            int
-	Height           int
-	ScreenXLocation  int
-	ScreenYLocation  int
-	CursorXLocation  int
-	CursorYLocation  int
-	ZOrder           int
-	AlphaValue       float32
-	IsTopmost        bool
-	IsFocusable      bool
-	IsVisible        bool
-	LayerAlias       string
+	Width                int
+	Height               int
+	ScreenXLocation      int
+	ScreenYLocation      int
+	CursorXLocation      int
+	CursorYLocation      int
+	ZOrder               int
+	AlphaValue           float32
+	TransparencyStrategy constants.TransparencyStrategy
+	IsTopmost            bool
+	IsFocusable          bool
+	IsVisible            bool
+	LayerAlias           string
 	ParentAlias      string
 	IsParent         bool
 	DefaultAttribute AttributeEntryType
@@ -60,39 +61,41 @@ Example:
 */
 func (shared LayerEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
-		Width            int
-		Height           int
-		ScreenXLocation  int
-		ScreenYLocation  int
-		CursorXLocation  int
-		CursorYLocation  int
-		ZOrder           int
-		AlphaValue       float32
-		IsTopmost        bool
-		IsFocusable      bool
-		IsVisible        bool
-		LayerAlias       string
-		ParentAlias      string
-		IsParent         bool
-		DefaultAttribute AttributeEntryType
-		CharacterMemory  [][]CharacterEntryType
+		Width                int
+		Height               int
+		ScreenXLocation      int
+		ScreenYLocation      int
+		CursorXLocation      int
+		CursorYLocation      int
+		ZOrder               int
+		AlphaValue           float32
+		TransparencyStrategy constants.TransparencyStrategy
+		IsTopmost            bool
+		IsFocusable          bool
+		IsVisible            bool
+		LayerAlias           string
+		ParentAlias          string
+		IsParent             bool
+		DefaultAttribute     AttributeEntryType
+		CharacterMemory      [][]CharacterEntryType
 	}{
-		Width:            shared.Width,
-		Height:           shared.Height,
-		ScreenXLocation:  shared.ScreenXLocation,
-		ScreenYLocation:  shared.ScreenYLocation,
-		CursorXLocation:  shared.CursorXLocation,
-		CursorYLocation:  shared.CursorYLocation,
-		ZOrder:           shared.ZOrder,
-		AlphaValue:       shared.AlphaValue,
-		IsTopmost:        shared.IsTopmost,
-		IsFocusable:      shared.IsFocusable,
-		IsVisible:        shared.IsVisible,
-		LayerAlias:       shared.LayerAlias,
-		ParentAlias:      shared.ParentAlias,
-		IsParent:         shared.IsParent,
-		DefaultAttribute: shared.DefaultAttribute,
-		CharacterMemory:  shared.CharacterMemory,
+		Width:                shared.Width,
+		Height:               shared.Height,
+		ScreenXLocation:      shared.ScreenXLocation,
+		ScreenYLocation:      shared.ScreenYLocation,
+		CursorXLocation:      shared.CursorXLocation,
+		CursorYLocation:      shared.CursorYLocation,
+		ZOrder:               shared.ZOrder,
+		AlphaValue:           shared.AlphaValue,
+		TransparencyStrategy: shared.TransparencyStrategy,
+		IsTopmost:            shared.IsTopmost,
+		IsFocusable:          shared.IsFocusable,
+		IsVisible:            shared.IsVisible,
+		LayerAlias:           shared.LayerAlias,
+		ParentAlias:          shared.ParentAlias,
+		IsParent:             shared.IsParent,
+		DefaultAttribute:     shared.DefaultAttribute,
+		CharacterMemory:      shared.CharacterMemory,
 	})
 	if err != nil {
 		return nil, err
@@ -290,6 +293,7 @@ func NewLayerEntry(layerAlias string, parentAlias string, width int, height int,
 		layerEntry.CursorYLocation = existingLayerEntry[0].CursorYLocation
 		layerEntry.ZOrder = existingLayerEntry[0].ZOrder
 		layerEntry.AlphaValue = existingLayerEntry[0].AlphaValue
+		layerEntry.TransparencyStrategy = existingLayerEntry[0].TransparencyStrategy
 		layerEntry.IsVisible = existingLayerEntry[0].IsVisible
 		layerEntry.IsTopmost = existingLayerEntry[0].IsTopmost
 		layerEntry.IsFocusable = existingLayerEntry[0].IsFocusable
@@ -312,6 +316,7 @@ func NewLayerEntry(layerAlias string, parentAlias string, width int, height int,
 		layerEntry.Height = height
 		layerEntry.IsVisible = true
 		layerEntry.AlphaValue = 1.0
+		layerEntry.TransparencyStrategy = constants.TransparencyStrategyColorOnly
 		layerEntry.DefaultAttribute = NewAttributeEntry()
 		for currentRow := 0; currentRow < height; currentRow++ {
 			var characterObjectArray = make([]CharacterEntryType, width)
@@ -497,6 +502,12 @@ func (shared *LayerEntryType) LoadLayerFromBytes(data []byte) error {
 	if err := binary.Read(buffReader, binary.LittleEndian, &shared.AlphaValue); err != nil {
 		return fmt.Errorf("failed to read alpha value: %w", err)
 	}
+
+	var strategy int32
+	if err := binary.Read(buffReader, binary.LittleEndian, &strategy); err != nil {
+		return fmt.Errorf("failed to read transparency strategy: %w", err)
+	}
+	shared.TransparencyStrategy = constants.TransparencyStrategy(strategy)
 
 	shared.Width = int(width)
 	shared.Height = int(height)

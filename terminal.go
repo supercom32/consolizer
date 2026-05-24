@@ -8,6 +8,7 @@ import (
 	"github.com/supercom32/consolizer/types"
 	"os"
 	"os/signal"
+	"math/rand"
 	"runtime"
 	"sync"
 	"syscall"
@@ -813,6 +814,137 @@ func copyCharacterMemory(sourceCharacterMemory [][]types.CharacterEntryType, tar
 }
 
 /*
+getEffectiveAlpha is a method which calculates the final transparency value of a cell by multiplying the layer's
+global alpha with the cell-specific or default attribute alpha. It ensures that transparency is applied
+hierarchically so that a semi-transparent layer correctly attenuates the opacity of its individual character cells.
+
+Example:
+    alpha := getEffectiveAlpha(0.5, 1.0, 0.8)
+*/
+func getEffectiveAlpha(layerAlpha float32, defaultAlpha float32, cellAlpha float32) float32 {
+	effectiveAlpha := layerAlpha
+	if cellAlpha < 1 {
+		effectiveAlpha *= cellAlpha
+	} else if defaultAlpha < 1 {
+		effectiveAlpha *= defaultAlpha
+	}
+	return effectiveAlpha
+}
+
+/*
+shouldShowSource is a method which determines if a character from the source layer should be drawn over the target
+layer based on its alpha value and a dithering strategy. It compares the effective alpha against either a random float
+for stochastic transparency or a pre-defined threshold from a Bayer matrix for patterned dithering, returning true if
+the character is visible. In addition, the following should be noted:
+
+- The stochastic strategy relies on the global random number generator which can affect reproducibility if not seeded.
+
+Example:
+    show := shouldShowSource(0.5, constants.TransparencyStrategyStochastic, 10, 5)
+*/
+func shouldShowSource(effectiveAlpha float32, strategy constants.TransparencyStrategy, x, y int) bool {
+	if effectiveAlpha >= 1 {
+		return true
+	}
+	// Add a small epsilon to ensure that values very close to 0 are treated as 0
+	if effectiveAlpha <= 0.0001 {
+		return false
+	}
+	switch strategy {
+	case constants.TransparencyStrategyStochastic:
+		return rand.Float32() < effectiveAlpha
+	case constants.TransparencyStrategy2x2Bayer:
+		return effectiveAlpha > constants.BayerMatrix2x2[y%2][x%2]
+	case constants.TransparencyStrategy4x4Bayer:
+		return effectiveAlpha > constants.BayerMatrix4x4[y%4][x%4]
+	case constants.TransparencyStrategy8x8Bayer:
+		return effectiveAlpha > constants.BayerMatrix8x8[y%8][x%8]
+	default:
+		return true
+	}
+}
+
+/*
+compositeCell is a method which blends the contents and attributes of a source cell with a target cell to produce a
+single rendered character entry. It calculates color transitions for foregrounds and backgrounds, handles special cell
+types like shadows and tooltips, and processes transparency flags to ensure layers are combined with visual accuracy.
+
+Example:
+    result := compositeCell(&source, &target, 0.5, 1.0, 1.0, false)
+*/
+func compositeCell(sourceEntry *types.CharacterEntryType, targetEntry *types.CharacterEntryType, layerAlpha float32, defaultFgAlpha float32, defaultBgAlpha float32, isOpaque bool, isBinaryAlpha bool) types.CharacterEntryType {
+	sourceAttributeEntry := sourceEntry.AttributeEntry
+	targetAttributeEntry := targetEntry.AttributeEntry
+
+	// For dithering strategies, we treat the layer as fully opaque if it's shown at all
+	blendAlpha := layerAlpha
+	if isBinaryAlpha {
+		blendAlpha = 1.0
+	}
+
+	// Handle NullRune (transparent) cells
+	if sourceEntry.Character == constants.NullRune {
+		resultEntry := *targetEntry
+		if sourceAttributeEntry.CellType == constants.CellTypeShadow {
+			if sourceAttributeEntry.ForegroundAlphaValue < 1 {
+				resultEntry.AttributeEntry.ForegroundColor = GetTransitionedColor(targetAttributeEntry.ForegroundColor, GetRGBColor(0, 0, 0), sourceAttributeEntry.ForegroundAlphaValue*blendAlpha)
+			}
+			if sourceAttributeEntry.BackgroundAlphaValue < 1 {
+				resultEntry.AttributeEntry.BackgroundColor = GetTransitionedColor(targetAttributeEntry.BackgroundColor, GetRGBColor(0, 0, 0), sourceAttributeEntry.BackgroundAlphaValue*blendAlpha)
+			}
+			resultEntry.AttributeEntry.CellType = constants.CellTypeShadow
+		}
+		if sourceAttributeEntry.CellType == constants.CellTypeTooltip {
+			resultEntry.AttributeEntry.CellType = constants.CellTypeTooltip
+			resultEntry.AttributeEntry.CellControlAlias = sourceAttributeEntry.CellControlAlias
+			resultEntry.LayerAlias = sourceEntry.LayerAlias
+		}
+		return resultEntry
+	}
+
+	resultEntry := *sourceEntry
+	newAttributeEntry := types.NewAttributeEntry(&sourceAttributeEntry)
+
+	// Copy layer and parent aliases if they exist
+	if sourceEntry.LayerAlias != "" {
+		resultEntry.LayerAlias = sourceEntry.LayerAlias
+	} else {
+		resultEntry.LayerAlias = targetEntry.LayerAlias
+	}
+	if sourceEntry.ParentAlias != "" {
+		resultEntry.ParentAlias = sourceEntry.ParentAlias
+	} else {
+		resultEntry.ParentAlias = targetEntry.ParentAlias
+	}
+
+	// --- Efficient transparency handling ---
+	if !isOpaque {
+		if sourceAttributeEntry.IsForegroundTransparent {
+			newAttributeEntry.ForegroundColor = targetAttributeEntry.ForegroundColor
+			newAttributeEntry.IsForegroundTransparent = true
+		}
+		if sourceAttributeEntry.IsBackgroundTransparent {
+			newAttributeEntry.BackgroundColor = targetAttributeEntry.BackgroundColor
+			newAttributeEntry.IsBackgroundTransparent = true
+		}
+	}
+
+	// Apply color transformations
+	effectiveFgAlpha := getEffectiveAlpha(blendAlpha, defaultFgAlpha, sourceAttributeEntry.ForegroundAlphaValue)
+	if effectiveFgAlpha < 1 {
+		newAttributeEntry.ForegroundColor = GetTransitionedColor(targetAttributeEntry.ForegroundColor, sourceAttributeEntry.ForegroundColor, effectiveFgAlpha)
+	}
+
+	effectiveBgAlpha := getEffectiveAlpha(blendAlpha, defaultBgAlpha, sourceAttributeEntry.BackgroundAlphaValue)
+	if effectiveBgAlpha < 1 {
+		newAttributeEntry.BackgroundColor = GetTransitionedColor(targetAttributeEntry.BackgroundColor, sourceAttributeEntry.BackgroundColor, effectiveBgAlpha)
+	}
+
+	resultEntry.AttributeEntry = newAttributeEntry
+	return resultEntry
+}
+
+/*
 overlayLayers is a method which allows you to overlay one text layer on top of another text layer. In addition, the
 following should be noted:
 
@@ -868,6 +1000,9 @@ func overlayLayers(sourceLayerEntry *types.LayerEntryType, targetLayerEntry *typ
 	targetCharacterMemory := targetLayerEntry.CharacterMemory
 	defaultFgAlpha := sourceLayerEntry.DefaultAttribute.ForegroundAlphaValue
 	defaultBgAlpha := sourceLayerEntry.DefaultAttribute.BackgroundAlphaValue
+	layerAlpha := sourceLayerEntry.AlphaValue
+	strategy := sourceLayerEntry.TransparencyStrategy
+	isBinaryAlpha := strategy != constants.TransparencyStrategyColorOnly
 
 	// 3. Parallel Processing with Goroutines
 	var wg sync.WaitGroup
@@ -880,73 +1015,20 @@ func overlayLayers(sourceLayerEntry *types.LayerEntryType, targetLayerEntry *typ
 			targetRow := row + targetStartY
 
 			for currentColumn := 0; currentColumn < widthToCopy; currentColumn++ {
-				sourceCol := currentColumn + sourceStartX
 				targetCol := currentColumn + targetStartX
+				sourceCol := currentColumn + sourceStartX
 
-				sourceCharacterEntry := &sourceCharacterMemory[sourceRow][sourceCol]
-				targetCharacterEntry := &targetCharacterMemory[targetRow][targetCol]
-				sourceAttributeEntry := sourceCharacterEntry.AttributeEntry
-				targetAttributeEntry := targetCharacterEntry.AttributeEntry
+				sourceEntry := &sourceCharacterMemory[sourceRow][sourceCol]
+				targetEntry := &targetCharacterMemory[targetRow][targetCol]
 
-				// Handle NullRune (transparent) cells
-				if sourceCharacterEntry.Character == constants.NullRune {
-					if sourceAttributeEntry.CellType == constants.CellTypeShadow && sourceAttributeEntry.ForegroundAlphaValue < 1 {
-						targetCharacterEntry.AttributeEntry.ForegroundColor = GetTransitionedColor(targetAttributeEntry.ForegroundColor, GetRGBColor(0, 0, 0), sourceAttributeEntry.ForegroundAlphaValue)
-					}
-					if sourceAttributeEntry.CellType == constants.CellTypeShadow && sourceAttributeEntry.BackgroundAlphaValue < 1 {
-						targetCharacterEntry.AttributeEntry.BackgroundColor = GetTransitionedColor(targetAttributeEntry.BackgroundColor, GetRGBColor(0, 0, 0), sourceAttributeEntry.BackgroundAlphaValue)
-					}
+				effectiveAlpha := getEffectiveAlpha(layerAlpha, defaultFgAlpha, sourceEntry.AttributeEntry.ForegroundAlphaValue)
 
-					if sourceAttributeEntry.CellType == constants.CellTypeTooltip {
-						targetCharacterEntry.AttributeEntry.CellType = constants.CellTypeTooltip
-						targetCharacterEntry.AttributeEntry.CellControlAlias = sourceAttributeEntry.CellControlAlias
-						targetCharacterEntry.LayerAlias = sourceCharacterEntry.LayerAlias
-					}
-					if sourceAttributeEntry.CellType == constants.CellTypeShadow {
-						targetCharacterEntry.AttributeEntry.CellType = constants.CellTypeShadow
-					}
-					targetCharacterMemory[targetRow][targetCol] = *targetCharacterEntry
+				if !shouldShowSource(effectiveAlpha, strategy, targetCol, targetRow) {
+					targetCharacterMemory[targetRow][targetCol] = *targetEntry
 					continue
 				}
 
-				// Copy layer and parent aliases
-				if sourceCharacterEntry.LayerAlias != "" {
-					targetCharacterEntry.LayerAlias = sourceCharacterEntry.LayerAlias
-				}
-				if sourceCharacterEntry.ParentAlias != "" {
-					targetCharacterEntry.ParentAlias = sourceCharacterEntry.ParentAlias
-				}
-
-				newAttributeEntry := types.NewAttributeEntry(&sourceAttributeEntry)
-				targetCharacterEntry.Character = sourceCharacterEntry.Character
-
-				// --- Efficient transparency handling ---
-				if !isOpaque {
-					if sourceAttributeEntry.IsForegroundTransparent {
-						newAttributeEntry.ForegroundColor = targetAttributeEntry.ForegroundColor
-						newAttributeEntry.IsForegroundTransparent = true
-					}
-					if sourceAttributeEntry.IsBackgroundTransparent {
-						newAttributeEntry.BackgroundColor = targetAttributeEntry.BackgroundColor
-						newAttributeEntry.IsBackgroundTransparent = true
-					}
-				}
-
-				// Apply color transformations
-				if sourceAttributeEntry.ForegroundAlphaValue < 1 {
-					newAttributeEntry.ForegroundColor = GetTransitionedColor(targetAttributeEntry.ForegroundColor, sourceAttributeEntry.ForegroundColor, sourceAttributeEntry.ForegroundAlphaValue)
-				} else if defaultFgAlpha < 1 {
-					newAttributeEntry.ForegroundColor = GetTransitionedColor(targetAttributeEntry.ForegroundColor, sourceAttributeEntry.ForegroundColor, defaultFgAlpha)
-				}
-
-				if sourceAttributeEntry.BackgroundAlphaValue < 1 {
-					newAttributeEntry.BackgroundColor = GetTransitionedColor(targetAttributeEntry.BackgroundColor, sourceAttributeEntry.BackgroundColor, sourceAttributeEntry.BackgroundAlphaValue)
-				} else if defaultBgAlpha < 1 {
-					newAttributeEntry.BackgroundColor = GetTransitionedColor(targetAttributeEntry.BackgroundColor, sourceAttributeEntry.BackgroundColor, defaultBgAlpha)
-				}
-
-				targetCharacterEntry.AttributeEntry = newAttributeEntry
-				targetCharacterMemory[targetRow][targetCol] = *targetCharacterEntry
+				targetCharacterMemory[targetRow][targetCol] = compositeCell(sourceEntry, targetEntry, layerAlpha, defaultFgAlpha, defaultBgAlpha, isOpaque, isBinaryAlpha)
 			}
 		}(currentRow)
 	}

@@ -1547,6 +1547,56 @@ func (shared *LayerInstanceType) SetIsVisible(isVisible bool) {
 }
 
 /*
+SetAlphaValue is a method which defines a global transparency level for the entire layer by providing a percentage
+between zero and one. This value acts as a multiplier for all individual cell alpha values during the layer composition
+phase to determine the final visual opacity of the layer's contents.
+
+Example:
+    instance.SetAlphaValue(0.5)
+*/
+func (shared *LayerInstanceType) SetAlphaValue(alphaValue float32) {
+	validateLayer(shared.layerAlias)
+	setLayerAlphaValue(shared.layerAlias, alphaValue)
+}
+
+/*
+GetAlphaValue is a method which retrieves the current global transparency level of the layer. It returns a float32
+where 0.0 represents a fully transparent layer and 1.0 represents a fully opaque one.
+
+Example:
+    alpha := instance.GetAlphaValue()
+*/
+func (shared *LayerInstanceType) GetAlphaValue() float32 {
+	validateLayer(shared.layerAlias)
+	return getLayerAlphaValue(shared.layerAlias)
+}
+
+/*
+SetTransparencyStrategy is a method which configures the specific algorithm used to handle character-level visibility
+for the layer. It allows you to toggle between standard color blending and various dithering patterns that determine
+whether a cell's character should be rendered or if the layer beneath it should show through.
+
+Example:
+    instance.SetTransparencyStrategy(constants.TransparencyStrategyBayer8x8)
+*/
+func (shared *LayerInstanceType) SetTransparencyStrategy(strategy constants.TransparencyStrategy) {
+	validateLayer(shared.layerAlias)
+	setLayerTransparencyStrategy(shared.layerAlias, strategy)
+}
+
+/*
+GetTransparencyStrategy is a method which obtains the current rendering algorithm used for cell-level transparency.
+It returns the transparency strategy constant currently assigned to the layer entry.
+
+Example:
+    strategy := instance.GetTransparencyStrategy()
+*/
+func (shared *LayerInstanceType) GetTransparencyStrategy() constants.TransparencyStrategy {
+	validateLayer(shared.layerAlias)
+	return getLayerTransparencyStrategy(shared.layerAlias)
+}
+
+/*
 SetTopmost is a method which allows you to set the current layer to be the topmost layer within its parent hierarchy.
 
 Example:
@@ -1988,11 +2038,23 @@ func setLayerIsVisible(layerAlias string, isVisible bool) {
 }
 
 /*
-setLayerAlphaValue is a method which allows you to set the alpha value for a layer.
+setLayerAlphaValue is a method which allows you to set the alpha value for a layer. In addition, the following should
+be noted:
+
+- This internal function updates the underlying layer entry memory.
 
 Example:
+    setLayerAlphaValue("myLayer", 0.5)
+*/
+/*
+setLayerAlphaValue is a method which updates the underlying transparency property of a layer entry in memory. It
+directly modifies the alpha value of the layer entry identified by the provided alias, affecting all subsequent
+rendering operations for that layer. In addition, the following should be noted:
 
-	setLayerAlphaValue("myLayer", 0.5)
+- This function triggers a full layer validation check before performing the update.
+
+Example:
+    setLayerAlphaValue("myLayer", 0.5)
 */
 func setLayerAlphaValue(layerAlias string, alphaValue float32) {
 	validateLayer(layerAlias)
@@ -2001,16 +2063,51 @@ func setLayerAlphaValue(layerAlias string, alphaValue float32) {
 }
 
 /*
-getLayerAlphaValue is a method which allows you to obtain the alpha value for a layer.
+getLayerAlphaValue is a method which retrieves the transparency multiplier directly from the layer entry memory. It
+accesses the layer entry via its alias and returns the current float32 alpha value. In addition, the following should
+be noted:
+
+- This function performs a layer validation check to ensure the entry exists before access.
 
 Example:
-
-	alpha := getLayerAlphaValue("myLayer")
+    alpha := getLayerAlphaValue("myLayer")
 */
 func getLayerAlphaValue(layerAlias string) float32 {
 	validateLayer(layerAlias)
 	layerEntry := Layers.Get(layerAlias)
 	return layerEntry.AlphaValue
+}
+
+/*
+setLayerTransparencyStrategy is a method which updates the dithering or blending algorithm assigned to a layer entry.
+It changes how individual cells are evaluated for visibility during composition, allowing for dynamic transitions
+between opaque and transparent states. In addition, the following should be noted:
+
+- This function performs a layer validation check to ensure the entry exists before access.
+
+Example:
+    setLayerTransparencyStrategy("myLayer", constants.TransparencyStrategyBayer)
+*/
+func setLayerTransparencyStrategy(layerAlias string, strategy constants.TransparencyStrategy) {
+	validateLayer(layerAlias)
+	layerEntry := Layers.Get(layerAlias)
+	layerEntry.TransparencyStrategy = strategy
+}
+
+/*
+getLayerTransparencyStrategy is a method which retrieves the active transparency algorithm from a layer entry's memory.
+It returns the TransparencyStrategy constant currently determining the layer's character-level rendering behavior. In
+addition, the following should be noted:
+
+- This function performs a layer validation check to ensure the entry exists before access.
+
+Example:
+    strategy := getLayerTransparencyStrategy("myLayer")
+*/
+func getLayerTransparencyStrategy(layerAlias string) constants.TransparencyStrategy {
+	validateLayer(layerAlias)
+	layerEntry := Layers.Get(layerAlias)
+	return layerEntry.TransparencyStrategy
 }
 
 /*
