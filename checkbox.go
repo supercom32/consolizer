@@ -85,9 +85,9 @@ returned which will allow you to read or manipulate the properties for it. The s
 by the style entry passed in. If you wish to remove a checkbox from a text layer, simply call 'DeleteCheckbox'. In
 addition, the following should be noted:
 
-  - Checkboxes are not drawn physically to the text layer provided. Instead, they are rendered to the terminal at the same
-    time when the text layer is rendered. This allows you to create checkboxes without actually overwriting the text layer
-    data under it.
+  - Checkboxes are not drawn physically to the text layer provided. Instead, they are rendered to the terminal at
+    the same time when the text layer is rendered. This allows you to create checkboxes without actually
+    overwriting the text layer data under it.
 
   - If the checkbox to be drawn falls outside the range of the provided layer, then only the visible portion of the
     checkbox will be drawn.
@@ -170,9 +170,9 @@ func (shared *checkboxType) drawOnLayer(layerEntry types.LayerEntryType) {
 draw is a method which draws a checkbox on a given text layer. The style of the checkbox will be
 determined by the style entry passed in. In addition, the following should be noted:
 
-  - Checkboxes are not drawn physically to the text layer provided. Instead, they are rendered to the terminal at the same
-    time when the text layer is rendered. This allows you to create checkboxes without actually overwriting the text layer
-    data under it.
+  - Checkboxes are not drawn physically to the text layer provided. Instead, they are rendered to the terminal at
+    the same time when the text layer is rendered. This allows you to create checkboxes without actually
+    overwriting the text layer data under it.
 
   - If the checkbox to be drawn falls outside the range of the provided layer, then only the visible portion of the
     checkbox will be drawn.

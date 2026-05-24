@@ -72,18 +72,18 @@ func (shared *TextFieldInstanceType) SetLocation(xLocation int, yLocation int) {
 Add is a method which adds a text field to a given layer. Once called, a text field instance is returned which will allow
 you to read or manipulate properties of your text field. In addition, the following should be noted:
 
-  - If the location specified for the text field falls outside the range of the text layer, then only the visible portion
-    of your text field will be rendered.
+  - If the location specified for the text field falls outside the range of the text layer, then only the
+    visible portion of your text field will be rendered.
 
-  - If the max length of your text field is less than or equal to 0, a panic will be generated to fail as fast as
-    possible.
+  - If the max length of your text field is less than or equal to 0, a panic will be generated to fail as fast
+    as possible.
 
-- Password protection will echo back '*' characters to the terminal instead of the actual characters entered.
+  - Password protection will echo back '*' characters to the terminal instead of the actual characters entered.
 
-- Specifying a default value will simply pre-populate the text field with the value specified.
+  - Specifying a default value will simply pre-populate the text field with the value specified.
 
-  - If the cursor position moves outside the visible display area of the field, then the entire text field will shift to
-    keep it in view.
+  - If the cursor position moves outside the visible display area of the field, then the entire text field will
+    shift to keep it in view.
 
 Example:
 

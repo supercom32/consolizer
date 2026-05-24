@@ -547,12 +547,12 @@ func drawWindow(layerEntry *types.LayerEntryType, styleEntry types.TuiStyleEntry
 drawShadow is a method which draws shadows on a given text layer. Shadows are simply transparent areas
 which darken whatever text layers are underneath it by a specified degree. In addition, the following should be noted:
 
-- The alpha value can range from 0.0 (no shadow) to 1.0 (totally black).
+  - The alpha value can range from 0.0 (no shadow) to 1.0 (totally black).
 
-  - If the shadow is drawn over a non-null (non-empty) character, it applies an in-layer shadow effect (i.e., darkens the
-    existing character).
+  - If the shadow is drawn over a non-null (non-empty) character, it applies an in-layer shadow effect (i.e.,
+    darkens the existing character).
 
-- If the shadow is drawn over an empty area, it keeps the current behavior (drawing the solid shadow color).
+  - If the shadow is drawn over an empty area, it keeps the current behavior (drawing the solid shadow color).
 
 Example:
 

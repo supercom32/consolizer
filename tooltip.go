@@ -147,15 +147,18 @@ func (shared *tooltipType) renderAll(layerEntry types.LayerEntryType) {
 /*
 render is a method which renders a tooltip on a given text layer. In addition, the following should be noted:
 
-- This method handles both absolute and relative positioning based on the tooltip configuration.
+  - This method handles both absolute and relative positioning based on the tooltip configuration.
 
-- Rendering always starts at the coordinates specified by the user. However, the dimensions are always for the text area.
+  - Rendering always starts at the coordinates specified by the user. However, the dimensions are always for
+    the text area.
 
-- If the tooltip is not enabled or not marked as drawn, then no rendering will occur.
+  - If the tooltip is not enabled or not marked as drawn, then no rendering will occur.
 
-- When absolute positioning is not used, the tooltip will be positioned relative to the current mouse cursor location.
+  - When absolute positioning is not used, the tooltip will be positioned relative to the current mouse cursor
+    location.
 
-- If borders are enabled, they will be drawn around the text area, expanding the total rendered size by 2 characters in.
+  - If borders are enabled, they will be drawn around the text area, expanding the total rendered size by 2
+    characters in.
 
 Example:
 

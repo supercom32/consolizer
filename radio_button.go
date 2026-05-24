@@ -99,23 +99,25 @@ Add is a method which adds a radio button to a given text layer. Once called, an
 which will allow you to read or manipulate the properties for it. In addition, the following information should be
 noted:
 
-- The Style of the radio button will be determined by the style entry passed in.
+  - The Style of the radio button will be determined by the style entry passed in.
 
-- If you wish to remove a radio button from a text layer, simply call 'DeleteRadioButton'.
+  - If you wish to remove a radio button from a text layer, simply call 'DeleteRadioButton'.
 
-- Radio buttons are not drawn physically to the text layer provided.
+  - Radio buttons are not drawn physically to the text layer provided.
 
-- Instead, they are rendered to the terminal at the same time when the text layer is rendered.
+  - Instead, they are rendered to the terminal at the same time when the text layer is rendered.
 
-- This allows you to create radio buttons without actually overwriting the text layer data under it.
+  - This allows you to create radio buttons without actually overwriting the text layer data under it.
 
-- If the radio button to be drawn falls outside the range of the provided layer, then only the visible portion of the radio button will be drawn.
+  - If the radio button to be drawn falls outside the range of the provided layer, then only the visible portion of
+    the radio button will be drawn.
 
-- The group ID allows you to specify which collection of radio buttons belong together.
+  - The group ID allows you to specify which collection of radio buttons belong together.
 
-- Only one radio button may be selected at any given time for a particular group.
+  - Only one radio button may be selected at any given time for a particular group.
 
-- If the radio button being created is marked as being selected, then any previously selected radio button with the same group ID becomes unselected.
+  - If the radio button being created is marked as being selected, then any previously selected radio button with
+    the same group ID becomes unselected.
 
 Example:
 
@@ -174,15 +176,16 @@ func (shared *radioButtonType) drawOnLayer(layerEntry types.LayerEntryType) {
 draw is a method which draws a radio button on a given text layer. In addition, the following information should be
 noted:
 
-- The Style of the radio button will be determined by the style entry passed in.
+  - The Style of the radio button will be determined by the style entry passed in.
 
-- Radio buttons are not drawn physically to the text layer provided.
+  - Radio buttons are not drawn physically to the text layer provided.
 
-- Instead, they are rendered to the terminal at the same time when the text layer is rendered.
+  - Instead, they are rendered to the terminal at the same time when the text layer is rendered.
 
-- This allows you to create radio buttons without actually overwriting the text layer data under it.
+  - This allows you to create radio buttons without actually overwriting the text layer data under it.
 
-- If the radio button to be drawn falls outside the range of the provided layer, then only the visible portion of the radio button will be drawn.
+  - If the radio button to be drawn falls outside the range of the provided layer, then only the visible portion of
+    the radio button will be drawn.
 
 Example:
 

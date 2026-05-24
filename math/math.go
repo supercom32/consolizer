@@ -83,9 +83,11 @@ func IsNumberEven(number interface{}) bool {
 /*
 IsFloatEffectivelyEqual is a method which checks if two floating point numbers are effectively equal to each other. In addition, the following should be noted:
 
-- Since floating point operations perform approximate arithmetic, it is normal that there will be an accumulation of rounding errors in floating-point operations.
+  - Since floating point operations perform approximate arithmetic, it is normal that there will be an
+    accumulation of rounding errors in floating-point operations.
 
-- By using this method, you can check if your numbers are for most practical purposes, equal or not by automatically rounding numbers down to 7 places.
+  - By using this method, you can check if your numbers are for most practical purposes, equal or not by
+    automatically rounding numbers down to 7 places.
 
 Example:
 

@@ -119,13 +119,13 @@ func ClearAllImages() {
 /*
 UnloadImage is a method which allows you to remove an image from memory. In addition, the following should be noted:
 
-  - Since images can take up a large amount of space, it is recommended to unload images any time you are done working with
-    them.
+  - Since images can take up a large amount of space, it is recommended to unload images any time you are done
+    working with them.
 
-  - However, you may consider retaining images if they are frequently used and repeatedly loading them would be less
-    efficient.
+  - However, you may consider retaining images if they are frequently used and repeatedly loading them would be
+    less efficient.
 
-- If you pass in an image alias that does not exist, then the delete operation will be ignored.
+  - If you pass in an image alias that does not exist, then the delete operation will be ignored.
 
 Example:
 
@@ -139,7 +139,7 @@ func UnloadImage(imageAlias string) {
 LoadImage is a method which allows you to load an image into memory without performing any ansi conversions ahead of
 time. In addition, the following should be noted:
 
-- This takes up more memory for larger images but allows you to render those images at arbitrary resolutions.
+  - This takes up more memory for larger images but allows you to render those images at arbitrary resolutions.
 
   - For example, loading a large image to retain detail and dynamically rendering that image later depending on the
     available terminal resolution detected.
@@ -232,32 +232,32 @@ func LoadImagesInBulk(assetList types.AssetListType) error {
 LoadPreRenderedImage is a method which allows you to pre-render an image before loading it into memory. In addition, the
 following should be noted:
 
-  - This enables you to save memory by rendering larger images ahead of time instead of storing the image data for later
-    use.
+  - This enables you to save memory by rendering larger images ahead of time instead of storing the image data for
+    later use.
 
-- For example, you can take a large image and pre-render it at a much lower resolution suitable for the terminal.
+  - For example, you can take a large image and pre-render it at a much lower resolution suitable for the terminal.
 
-  - If you load a pre-rendered image, you are not able to draw them dynamically at various resolutions. The image can only
-    be drawn with the settings specified at load time.
+  - If you load a pre-rendered image, you are not able to draw them dynamically at various resolutions. The image
+    can only be drawn with the settings specified at load time.
 
-  - If you specify a value of 0 for ether the width or height, then that dimension will be automatically calculated to a
-    value that best maintain the images aspect ratio.
+  - If you specify a value of 0 for ether the width or height, then that dimension will be automatically calculated
+    to a value that best maintain the images aspect ratio.
 
-  - If you specify a value less than or equal to 0 for both the width and height, a panic will be generated to fail as fast
-    as possible.
+  - If you specify a value less than or equal to 0 for both the width and height, a panic will be generated to fail
+    as fast as possible.
 
-  - When pre-rendering an image, it should be noted that each text cell assigned contains a top and bottom pixel. This is
-    done to provide as much resolution as possible for your image.
+  - When pre-rendering an image, it should be noted that each text cell assigned contains a top and bottom pixel.
+    This is done to provide as much resolution as possible for your image.
 
-  - That means for a pre-rendered image with a size of 10x10 characters, the actual image being rendered would be 10x20
-    pixels tall.
+  - That means for a pre-rendered image with a size of 10x10 characters, the actual image being rendered would be
+    10x20 pixels tall.
 
-  - If the user wishes to maintain proper aspect ratios, they must manually select a height that appropriately compensates
-    for this effect, or leave the height value as 0 to have it done automatically.
+  - If the user wishes to maintain proper aspect ratios, they must manually select a height that appropriately
+    compensates for this effect, or leave the height value as 0 to have it done automatically.
 
-  - The blur sigma controls how much blurring occurs after your image has been resized. This allows you to soften your
-    image before it is rendered in ansi so that hard edges are removed. A value of 0.0 means no blurring will occur, with
-    higher values increasing the blur factor.
+  - The blur sigma controls how much blurring occurs after your image has been resized. This allows you to soften
+    your image before it is rendered in ansi so that hard edges are removed. A value of 0.0 means no blurring will
+    occur, with higher values increasing the blur factor.
 
 Example:
 
@@ -304,34 +304,36 @@ func LoadBase64Image(imageDataAsBase64 string, imageAlias string) error {
 LoadPreRenderedBase64Image is a method which allows you to pre-render an image before loading it into memory. In
 addition, the following should be noted:
 
-  - This enables you to save memory by rendering larger images ahead of time instead of storing the image data for later
-    use.
+  - This enables you to save memory by rendering larger images ahead of time instead of storing the image data for
+    later use.
 
-- For example, you can take a large image and pre-render it at a much lower resolution suitable for the terminal.
+  - For example, you can take a large image and pre-render it at a much lower resolution suitable for the terminal.
 
-- Since base64 encoded images can be stored in strings, they are ideal for directly embedding them into applications.
+  - Since base64 encoded images can be stored in strings, they are ideal for directly embedding them into
+    applications.
 
-  - If you load a pre-rendered image, you are not able to draw them dynamically at various resolutions. The image can only
-    be drawn with the settings specified at load time.
+  - If you load a pre-rendered image, you are not able to draw them dynamically at various resolutions. The image
+    can only be drawn with the settings specified at load time.
 
-  - If you specify a value of 0 for ether the width or height, then that dimension will be automatically calculated to a
-    value that best maintain the images aspect ratio. This is useful since it removes the need to calculate this manually.
+  - If you specify a value of 0 for ether the width or height, then that dimension will be automatically calculated
+    to a value that best maintain the images aspect ratio. This is useful since it removes the need to calculate
+    this manually.
 
-  - If you specify a value less than or equal to 0 for both the width and height, a panic will be generated to fail as fast
-    as possible.
+  - If you specify a value less than or equal to 0 for both the width and height, a panic will be generated to fail
+    as fast as possible.
 
-  - When pre-rendering an image, it should be noted that each text cell assigned contains a top and bottom pixel. This is
-    done to provide as much resolution as possible for your image.
+  - When pre-rendering an image, it should be noted that each text cell assigned contains a top and bottom pixel.
+    This is done to provide as much resolution as possible for your image.
 
-  - That means for a pre-rendered image with a size of 10x10 characters, the actual image being rendered would be 10x20
-    pixels tall.
+  - That means for a pre-rendered image with a size of 10x10 characters, the actual image being rendered would be
+    10x20 pixels tall.
 
-  - If the user wishes to maintain proper aspect ratios, they must manually select a height that appropriately compensates
-    for this effect, or leave the height value as 0 to have it done automatically.
+  - If the user wishes to maintain proper aspect ratios, they must manually select a height that appropriately
+    compensates for this effect, or leave the height value as 0 to have it done automatically.
 
-  - The blur sigma controls how much blurring occurs after your image has been resized. This allows you to soften your
-    image before it is rendered in ansi so that hard edges are removed. A value of 0.0 means no blurring will occur, with
-    higher values increasing the blur factor.
+  - The blur sigma controls how much blurring occurs after your image has been resized. This allows you to soften
+    your image before it is rendered in ansi so that hard edges are removed. A value of 0.0 means no blurring will
+    occur, with higher values increasing the blur factor.
 
 Example:
 
@@ -427,9 +429,9 @@ In addition, the following should be noted:
 
 - This method is used when you want to represent each pixel of the image as a single character cell in the terminal.
 
-  - The blur sigma controls how much blurring occurs after your image has been resized. This allows you to soften your
-    image before it is rendered in ansi so that hard edges are removed. A value of 0.0 means no blurring will occur, with
-    higher values increasing the blur factor.
+  - The blur sigma controls how much blurring occurs after your image has been resized. This allows you to soften
+    your image before it is rendered in ansi so that hard edges are removed. A value of 0.0 means no blurring will
+    occur, with higher values increasing the blur factor.
 
 Example:
 
@@ -504,17 +506,25 @@ drawing with.
 
 In addition, the following should be noted:
 
-- If you specify a value of 0 for ether the width or height, then that dimension will be automatically calculated to a value that best maintain the images aspect ratio. This is useful since it removes the need to calculate this manually.
+  - If you specify a value of 0 for ether the width or height, then that dimension will be automatically
+    calculated to a value that best maintain the images aspect ratio. This is useful since it removes the need
+    to calculate this manually.
 
-- If you specify a value less than or equal to 0 for both the width and height, a panic will be generated to fail as fast as possible.
+  - If you specify a value less than or equal to 0 for both the width and height, a panic will be generated to fail
+    as fast as possible.
 
-- When pre-rendering an image, it should be noted that each text cell assigned contains a top and bottom pixel. This is done to provide as much resolution as possible for your image.
+  - When pre-rendering an image, it should be noted that each text cell assigned contains a top and bottom pixel.
+    This is done to provide as much resolution as possible for your image.
 
-- That means for a pre-rendered image with a size of 10x10 characters, the actual image being rendered would be 10x20 pixels tall.
+  - That means for a pre-rendered image with a size of 10x10 characters, the actual image being rendered would be
+    10x20 pixels tall.
 
-- If the user wishes to maintain proper aspect ratios, they must manually select a height that appropriately compensates for this effect, or leave the height value as 0 to have it done automatically.
+  - If the user wishes to maintain proper aspect ratios, they must manually select a height that appropriately
+    compensates for this effect, or leave the height value as 0 to have it done automatically.
 
-- The blur sigma controls how much blurring occurs after your image has been resized. This allows you to soften your image before it is rendered in ansi so that hard edges are removed. A value of 0.0 means no blurring will occur, with higher values increasing the blur factor.
+  - The blur sigma controls how much blurring occurs after your image has been resized. This allows you to soften
+    your image before it is rendered in ansi so that hard edges are removed. A value of 0.0 means no blurring will
+    occur, with higher values increasing the blur factor.
 
 Example:
 
@@ -748,9 +758,9 @@ func mapBrightnessToCharacter(brightness float64, random *rand.Rand) rune {
 GetImageLayerAsAsciiColorArt is a method which allows you to convert an image into a text layer using ASCII characters
 to represent brightness levels. In addition, the following should be noted:
 
-  - The blur sigma controls how much blurring occurs after your image has been resized. This allows you to soften your
-    image before it is rendered in ansi so that hard edges are removed. A value of 0.0 means no blurring will occur, with
-    higher values increasing the blur factor.
+  - The blur sigma controls how much blurring occurs after your image has been resized. This allows you to soften
+    your image before it is rendered in ansi so that hard edges are removed. A value of 0.0 means no blurring will
+    occur, with higher values increasing the blur factor.
 
 Example:
 
@@ -1005,17 +1015,34 @@ element character and corresponding foreground/background colors to represent th
 
 In addition, the following should be noted:
 
-- This function is at the core of the block element rendering style. It takes a small section of the source image (corresponding to a single character cell) and determines the best Unicode block element character (like '▀', '▐', '░', etc.) to approximate it.
+  - This function is at the core of the block element rendering style. It takes a small section of the source image
+    (corresponding to a single character cell) and determines the best Unicode block element character (like '▀',
+    '▐', '░', etc.) to approximate it.
 
-- It does this by trying every available block element and calculating which one, along with its optimal foreground and background colors, minimizes the visual error (Sum of Absolute Differences) compared to the original pixels.
+  - It does this by trying every available block element and calculating which one, along with its optimal
+    foreground and background colors, minimizes the visual error (Sum of Absolute Differences) compared to the
+    original pixels.
 
-- The function also includes logic to handle transparency and to discard cells that have very little content or are poorly represented, preventing visual noise in the final output.
+  - The function also includes logic to handle transparency and to discard cells that have very little content or
+    are poorly represented, preventing visual noise in the final output.
 
-- `transparentForegroundPenalty`: This parameter controls how strongly the algorithm avoids placing foreground parts of a block element over transparent areas of the original image. A higher value results in a larger penalty, making the algorithm more aggressively select block elements that do not have "spikes" or "stray pixels" protruding into transparent regions. This is useful for cleaning up the edges of sprites against a transparent background. A typical range is 10.0 to 100.0. A value of 0 disables this feature.
+  - `transparentForegroundPenalty`: This parameter controls how strongly the algorithm avoids placing foreground
+    parts of a block element over transparent areas of the original image. A higher value results in a larger
+    penalty, making the algorithm more aggressively select block elements that do not have "spikes" or "stray
+    pixels" protruding into transparent regions. This is useful for cleaning up the edges of sprites against a
+    transparent background. A typical range is 10.0 to 100.0. A value of 0 disables this feature.
 
-- `aggressiveCoverageThreshold`: This is the minimum percentage of opaque pixels required within an 8x8 cell to consider it for rendering. If the coverage is below this threshold (e.g., less than 35% of the 64 pixels are opaque), the cell may be culled. This helps remove isolated, noisy pixels or very thin, faint parts of an image that don't render well as block elements. The value should be between 0.0 (nothing is culled) and 1.0 (everything is culled). A typical value is around 0.35.
+  - `aggressiveCoverageThreshold`: This is the minimum percentage of opaque pixels required within an 8x8 cell to
+    consider it for rendering. If the coverage is below this threshold (e.g., less than 35% of the 64 pixels are
+    opaque), the cell may be culled. This helps remove isolated, noisy pixels or very thin, faint parts of an image
+    that don't render well as block elements. The value should be between 0.0 (nothing is culled) and 1.0
+    (everything is culled). A typical value is around 0.35.
 
-- `aggressiveErrorThreshold`: This sets the maximum allowed error (Sum of Absolute Differences) for a low-coverage cell to survive culling. Even if a cell is below `aggressiveCoverageThreshold`, it can be kept if it's still a very good fit for a block element (i.e., its error is below this threshold). Lowering this value makes the culling more aggressive, as it requires even low-coverage cells to be a near-perfect match. A typical range is 1.0 to 5.0.
+  - `aggressiveErrorThreshold`: This sets the maximum allowed error (Sum of Absolute Differences) for a low-coverage
+    cell to survive culling. Even if a cell is below `aggressiveCoverageThreshold`, it can be kept if it's still a
+    very good fit for a block element (i.e., its error is below this threshold). Lowering this value makes the
+    culling more aggressive, as it requires even low-coverage cells to be a near-perfect match. A typical range is
+    1.0 to 5.0.
 
 Example:
 
@@ -1270,9 +1297,9 @@ following should be noted:
 
 - It accepts a resizer function to handle the specific image scaling method.
 
-  - The blur sigma controls how much blurring occurs after your image has been resized. This allows you to soften your
-    image before it is rendered in ansi so that hard edges are removed. A value of 0.0 means no blurring will occur, with
-    higher values increasing the blur factor.
+  - The blur sigma controls how much blurring occurs after your image has been resized. This allows you to soften
+    your image before it is rendered in ansi so that hard edges are removed. A value of 0.0 means no blurring will
+    occur, with higher values increasing the blur factor.
 
 Example:
 
@@ -1341,9 +1368,9 @@ precision. In addition, the following should be noted:
 
 - It divides each character cell into an 8x8 grid and finds the best block element to represent the image in that cell.
 
-  - The blur sigma controls how much blurring occurs after your image has been resized. This allows you to soften your
-    image before it is rendered in ansi so that hard edges are removed. A value of 0.0 means no blurring will occur, with
-    higher values increasing the blur factor.
+  - The blur sigma controls how much blurring occurs after your image has been resized. This allows you to soften
+    your image before it is rendered in ansi so that hard edges are removed. A value of 0.0 means no blurring will
+    occur, with higher values increasing the blur factor.
 
 Example:
 
@@ -1357,9 +1384,9 @@ func getImageLayerAsBlockElementsAccurate(sourceImageData image.Image, imageStyl
 getImageLayerAsBlockElementsFast is a method which allows you to render an image using block elements with a faster
 algorithm. In addition, the following should be noted:
 
-  - The blur sigma controls how much blurring occurs after your image has been resized. This allows you to soften your
-    image before it is rendered in ansi so that hard edges are removed. A value of 0.0 means no blurring will occur, with
-    higher values increasing the blur factor.
+  - The blur sigma controls how much blurring occurs after your image has been resized. This allows you to soften
+    your image before it is rendered in ansi so that hard edges are removed. A value of 0.0 means no blurring will
+    occur, with higher values increasing the blur factor.
 
 Example:
 
@@ -1397,9 +1424,9 @@ func convertImageToPixelData(img image.Image) [][4]float64 {
 getImageLayer is a method which allows you to retrieve a text layer for an image based on the specified style. In
 addition, the following should be noted:
 
-  - The blur sigma controls how much blurring occurs after your image has been resized. This allows you to soften your
-    image before it is rendered in ansi so that hard edges are removed. A value of 0.0 means no blurring will occur, with
-    higher values increasing the blur factor.
+  - The blur sigma controls how much blurring occurs after your image has been resized. This allows you to soften
+    your image before it is rendered in ansi so that hard edges are removed. A value of 0.0 means no blurring will
+    occur, with higher values increasing the blur factor.
 
 Example:
 
@@ -1697,15 +1724,16 @@ LoadPreRenderedLayerImage is a method which allows you to load a pre-rendered la
 
 In addition, the following should be noted:
 
-- This is different from loading an image and pre-rendering it afterwards, as it directly loads a layer that has already been rendered.
+  - This is different from loading an image and pre-rendering it afterwards, as it directly loads a layer
+    that has already been rendered.
 
-- This is useful for quickly loading complex images that have been pre-processed and saved as layers.
+  - This is useful for quickly loading complex images that have been pre-processed and saved as layers.
 
-- The file extension ".clayer" is automatically appended to the filename if not provided.
+  - The file extension ".clayer" is automatically appended to the filename if not provided.
 
-- If the file cannot be read or is not a valid layer file, an error is returned.
+  - If the file cannot be read or is not a valid layer file, an error is returned.
 
-- The loaded layer is added to the image system with the specified alias.
+  - The loaded layer is added to the image system with the specified alias.
 
 Example:
 

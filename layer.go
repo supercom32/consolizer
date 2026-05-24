@@ -966,17 +966,19 @@ control that can show text with markup codes for colorization. It supports scrol
 
 In addition, the following should be noted:
 
-- If vertical scrollbars are enabled, the viewport will maintain scrollback history up to the specified maxHistoryLines.
+  - If vertical scrollbars are enabled, the viewport will maintain scrollback history up to the specified
+    maxHistoryLines.
 
-- If vertical scrollbars are not enabled, then no history is needed and only memory for the visible display is required.
+  - If vertical scrollbars are not enabled, then no history is needed and only memory for the visible display is
+    required.
 
-  - If isLinesWrapped is enabled, text printed to screen will wrap text cleanly like dialog.go's printMarkup method and no
-    horizontal scrollbars will be shown.
+  - If isLinesWrapped is enabled, text printed to screen will wrap text cleanly like dialog.go's printMarkup
+    method and no horizontal scrollbars will be shown.
 
-  - If isLinesWrapped is disabled, lines will remain on the same line and horizontal scrollbars will be rendered if
-    needed.
+  - If isLinesWrapped is disabled, lines will remain on the same line and horizontal scrollbars will be rendered
+    if needed.
 
-- Text can be added to the viewport using the Print method.
+  - Text can be added to the viewport using the Print method.
 
 Example:
 
@@ -1159,9 +1161,10 @@ Print is a method which allows you to write text to the current layer.
 
 In addition, the following should be noted:
 
-- When text is written to the text layer, the cursor position is also updated to reflect its new location.
+  - When text is written to the text layer, the cursor position is also updated to reflect its new location.
 
-- If the string to print ends up being too long to fit at its current location, then only the visible portion of your text will be printed.
+  - If the string to print ends up being too long to fit at its current location, then only the visible portion of
+    your text will be printed.
 
 Example:
 
@@ -1176,9 +1179,10 @@ Locate is a method which allows you to set the default cursor location on your t
 
 In addition, the following should be noted:
 
-- If you pass in a location value that falls outside the dimensions of the default text layer, a panic will be generated.
+  - If you pass in a location value that falls outside the dimensions of the default text layer, a panic will be
+    generated.
 
-- Valid text layer locations start at position (0,0) for the upper left corner.
+  - Valid text layer locations start at position (0,0) for the upper left corner.
 
 Example:
 
@@ -1264,9 +1268,11 @@ DrawVerticalLine is a method which allows you to draw a vertical line on a text 
 
 In addition, the following should be noted:
 
-- This method also has the ability to draw connectors in case the line intersects with other lines that have already been drawn.
+  - This method also has the ability to draw connectors in case the line intersects with other lines that have
+    already been drawn.
 
-- If the line to be drawn falls outside the area of the text layer specified, then only the visible portion of the line will be drawn.
+  - If the line to be drawn falls outside the area of the text layer specified, then only the visible portion of the
+    line will be drawn.
 
 Example:
 
@@ -1283,9 +1289,11 @@ DrawHorizontalLine is a method which allows you to draw a horizontal line on a t
 
 In addition, the following should be noted:
 
-- This method also has the ability to draw connectors in case the line intersects with other lines that have already been drawn.
+  - This method also has the ability to draw connectors in case the line intersects with other lines that have
+    already been drawn.
 
-- If the line to be drawn falls outside the area of the text layer specified, then only the visible portion of the line will be drawn.
+  - If the line to be drawn falls outside the area of the text layer specified, then only the visible portion of the
+    line will be drawn.
 
 Example:
 
@@ -1302,11 +1310,12 @@ DrawBorder is a method which allows you to draw a border on a given text layer.
 
 In addition, the following should be noted:
 
-- Borders differ from frames since they are flat shaded and do not have a raised or sunken look to them.
+  - Borders differ from frames since they are flat shaded and do not have a raised or sunken look to them.
 
-- If the border to be drawn falls outside the range of the specified layer, then only the visible portion of the border will be drawn.
+  - If the border to be drawn falls outside the range of the specified layer, then only the visible portion of the
+    border will be drawn.
 
-- The 'isInteractive' option allows you to specify if the window should interact with the layer being drawn on.
+  - The 'isInteractive' option allows you to specify if the window should interact with the layer being drawn on.
 
 Example:
 
@@ -1323,9 +1332,10 @@ DrawFrameLabel is a method which allows you to draw a label for a frame.
 
 In addition, the following should be noted:
 
-- The label will be automatically enclosed by characters to blend in with a border of a frame.
+  - The label will be automatically enclosed by characters to blend in with a border of a frame.
 
-- If the frame label to be drawn falls outside the range of the specified layer, then only the visible portion of the label will be drawn.
+  - If the frame label to be drawn falls outside the range of the specified layer, then only the visible portion of
+    the label will be drawn.
 
 Example:
 
@@ -1341,11 +1351,12 @@ DrawFrame is a method which allows you to draw a frame on a given text layer.
 
 In addition, the following should be noted:
 
-- Frames differ from borders since borders are flat shaded and do not have a raised or sunken look to them.
+  - Frames differ from borders since borders are flat shaded and do not have a raised or sunken look to them.
 
-- If the frame to be drawn falls outside the range of the specified layer, then only the visible portion of the frame will be drawn.
+  - If the frame to be drawn falls outside the range of the specified layer, then only the visible portion of the
+    frame will be drawn.
 
-- The 'isInteractive' option allows you to specify if the window should interact with the layer being drawn on.
+  - The 'isInteractive' option allows you to specify if the window should interact with the layer being drawn on.
 
 Example:
 
@@ -1366,11 +1377,13 @@ DrawWindow is a method which allows you to draw a window on a given text layer.
 
 In addition, the following should be noted:
 
-- Windows differ from borders since the entire area the window surrounds gets filled with a solid background color.
+  - Windows differ from borders since the entire area the window surrounds gets filled with a solid background
+    color.
 
-- If the window to be drawn falls outside the range of the specified layer, then only the visible portion of the window will be drawn.
+  - If the window to be drawn falls outside the range of the specified layer, then only the visible portion of the
+    window will be drawn.
 
-- The 'isInteractive' option allows you to specify if the window should interact with the layer being drawn on.
+  - The 'isInteractive' option allows you to specify if the window should interact with the layer being drawn on.
 
 Example:
 
@@ -1406,9 +1419,10 @@ FillArea is a method which allows you to fill an area of a given text layer with
 
 In addition, the following should be noted:
 
-- If you wish to fill the area with repeating text, simply provide the string you wish to repeat.
+  - If you wish to fill the area with repeating text, simply provide the string you wish to repeat.
 
-- If the area to fill falls outside the range of the specified layer, then only the visible portion of the fill will be drawn.
+  - If the area to fill falls outside the range of the specified layer, then only the visible portion of the fill
+    will be drawn.
 
 Example:
 
@@ -1478,11 +1492,13 @@ MoveLayerByRelativeValue is a method which allows you to move a text layer by a 
 
 In addition, the following should be noted:
 
-- This is useful for windows, foregrounds, backgrounds, or any kind of animations or movement you may wish to do in increments.
+  - This is useful for windows, foregrounds, backgrounds, or any kind of animations or movement you may wish
+    to do in increments.
 
-- If you move your layer outside the visible terminal display, only the visible display area will be rendered.
+  - If you move your layer outside the visible terminal display, only the visible display area will be rendered.
 
-- If your text layer is a child of a parent layer, then only the visible display area will be rendered on the parent.
+  - If your text layer is a child of a parent layer, then only the visible display area will be rendered on
+    the parent.
 
 Example:
 
@@ -1497,15 +1513,17 @@ Delete is a method which allows you to remove a text layer.
 
 In addition, the following should be noted:
 
-- If you wish to reuse a text layer for a future purpose, you may also consider making the layer invisible instead of deleting it.
+  - If you wish to reuse a text layer for a future purpose, you may also consider making the layer invisible
+    instead of deleting it.
 
-- When a text layer is deleted, all child text layers are recursively deleted as well.
+  - When a text layer is deleted, all child text layers are recursively deleted as well.
 
-- If any dynamically drawn TUI controls reference the deleted layer, they will still be present.
+  - If any dynamically drawn TUI controls reference the deleted layer, they will still be present.
 
-- If you attempt to delete a text layer which is currently set as your default text layer, then a panic will be generated.
+  - If you attempt to delete a text layer which is currently set as your default text layer, then a panic will
+    be generated.
 
-- If you attempt to delete a text layer that does not exist, then the operation will be ignored.
+  - If you attempt to delete a text layer that does not exist, then the operation will be ignored.
 
 Example:
 
@@ -1631,13 +1649,14 @@ LoadPreRenderedLayerImage is a method which allows you to load a pre-rendered la
 
 In addition, the following should be noted:
 
-- This is different from loading an image and pre-rendering it afterwards, as it directly loads a layer that has already been rendered.
+  - This is different from loading an image and pre-rendering it afterwards, as it directly loads a layer
+    that has already been rendered.
 
-- The file extension ".clayer" is automatically appended to the filename if not provided.
+  - The file extension ".clayer" is automatically appended to the filename if not provided.
 
-- If the file cannot be read or is not a valid layer file, an error is returned.
+  - If the file cannot be read or is not a valid layer file, an error is returned.
 
-- The loaded layer is added to the image system with the specified alias.
+  - The loaded layer is added to the image system with the specified alias.
 
 Example:
 
@@ -1688,7 +1707,8 @@ Resize is a method which allows you to change the width and height of a layer.
 
 In addition, the following should be noted:
 
-- If you pass in a zero or negative value for either width or height a panic will be generated to fail as fast as possible.
+  - If you pass in a zero or negative value for either width or height a panic will be generated to fail as fast
+    as possible.
 
 Example:
 
@@ -1724,21 +1744,26 @@ PrintDialog is a method which allows you to write text immediately to the termin
 
 In addition, the following should be noted:
 
-- This is useful for video games or other applications that may require printing text in a dialog box.
+  - This is useful for video games or other applications that may require printing text in a dialog box.
 
-- If you specify a print location outside the range of your specified text layer, a panic will be generated to fail as fast as possible.
+  - If you specify a print location outside the range of your specified text layer, a panic will be generated
+    to fail as fast as possible.
 
-- If printing has reached the last line of your text layer, printing will not advance to the next line. Instead, it will resume and overwrite what was already printed on the same line.
+  - If printing has reached the last line of your text layer, printing will not advance to the next line.
+    Instead, it will resume and overwrite what was already printed on the same line.
 
-- Specifying the width of your text line allows you to control when text wrapping occurs.
+  - Specifying the width of your text line allows you to control when text wrapping occurs.
 
-- When a word is too long to be printed on a text layer line, or the width of your line has already exceed its allowed maximum, the word will be pushed to the line directly under it.
+  - When a word is too long to be printed on a text layer line, or the width of your line has already exceed
+    its allowed maximum, the word will be pushed to the line directly under it.
 
-- When specifying a printing delay, the amount of time to wait is inserted between each character printed.
+  - When specifying a printing delay, the amount of time to wait is inserted between each character printed.
 
-- If the dialog being printed is flagged as skipable, the user can speed up printing by pressing the 'enter' key or right mouse button.
+  - If the dialog being printed is flagged as skipable, the user can speed up printing by pressing the 'enter'
+    key or right mouse button.
 
-- This method supports the use of text styles during printing to add color or styles to specific words in your string. All text styles must be enclosed around the "{" and "}" characters.
+  - This method supports the use of text styles during printing to add color or styles to specific words in
+    your string. All text styles must be enclosed around the "{" and "}" characters.
 
 Example:
 
@@ -1759,17 +1784,21 @@ attribute tags.
 
 In addition, the following should be noted:
 
-- This is similar to PrintDialog but without the typewriter effect and printing delay.
+  - This is similar to PrintDialog but without the typewriter effect and printing delay.
 
-- If you specify a print location outside the range of your specified text layer, a panic will be generated to fail as fast as possible.
+  - If you specify a print location outside the range of your specified text layer, a panic will be generated
+    to fail as fast as possible.
 
-- If printing has reached the last line of your text layer, printing will not advance to the next line. Instead, it will resume and overwrite what was already printed on the same line.
+  - If printing has reached the last line of your text layer, printing will not advance to the next line.
+    Instead, it will resume and overwrite what was already printed on the same line.
 
-- Specifying the width of your text line allows you to control when text wrapping occurs.
+  - Specifying the width of your text line allows you to control when text wrapping occurs.
 
-- When a word is too long to be printed on a text layer line, or the width of your line has already exceeded its allowed maximum, the word will be pushed to the line directly under it.
+  - When a word is too long to be printed on a text layer line, or the width of your line has already exceeded
+    its allowed maximum, the word will be pushed to the line directly under it.
 
-- This method supports the use of text styles during printing to add color or styles to specific words in your string. All text styles must be enclosed around the "{{" and "}}" characters.
+  - This method supports the use of text styles during printing to add color or styles to specific words in
+    your string. All text styles must be enclosed around the "{{" and "}}" characters.
 
 Example:
 
@@ -1805,15 +1834,16 @@ specified font.
 
 In addition, the following should be noted:
 
-- This is useful for creating animated text sequences with custom fonts.
+  - This is useful for creating animated text sequences with custom fonts.
 
-- If you specify a print location outside the range of your specified text layer, a panic will be generated.
+  - If you specify a print location outside the range of your specified text layer, a panic will be generated.
 
-- When specifying a printing delay, the amount of time to wait is inserted between each character printed.
+  - When specifying a printing delay, the amount of time to wait is inserted between each character printed.
 
-- If the dialog being printed is flagged as skippable, the user can speed up printing by pressing the 'enter' key or right mouse button.
+  - If the dialog being printed is flagged as skippable, the user can speed up printing by pressing the 'enter'
+    key or right mouse button.
 
-- Specifying the width of your text line in characters allows you to control when text wrapping occurs.
+  - Specifying the width of your text line in characters allows you to control when text wrapping occurs.
 
 Example:
 
@@ -1833,19 +1863,23 @@ AddLayer is a method which allows you to add a text layer to the current termina
 
 In addition, the following should be noted:
 
-- You can add as many layers as you wish to suit your applications needs.
+  - You can add as many layers as you wish to suit your applications needs.
 
-- Text layers are useful for setting up windows, modal dialogs, viewports, game foregrounds and backgrounds, and even effects like parallax scrolling.
+  - Text layers are useful for setting up windows, modal dialogs, viewports, game foregrounds and backgrounds,
+    and even effects like parallax scrolling.
 
-- If you specify a location for your layer that is outside the visible terminal display, then only the visible portion will be rendered.
+  - If you specify a location for your layer that is outside the visible terminal display, then only the
+    visible portion will be rendered.
 
-- If you pass in a zero or negative value for either width or height a panic will be generated to fail as fast as possible.
+  - If you pass in a zero or negative value for either width or height a panic will be generated to fail as fast
+    as possible.
 
-- The z-order priority controls which text layer should be drawn first and which text layer should be drawn last.
+  - The z-order priority controls which text layer should be drawn first and which text layer should be drawn
+    last.
 
-- The parent layer instance specifies which text layer is the parent of the one being created.
+  - The parent layer instance specifies which text layer is the parent of the one being created.
 
-- When adding a new text layer, it will become the default working text layer automatically.
+  - When adding a new text layer, it will become the default working text layer automatically.
 
 Example:
 
@@ -1868,11 +1902,13 @@ deleteLayer is a method which allows you to remove a text layer.
 
 In addition, the following should be noted:
 
-- If any dynamically drawn TUI controls reference the deleted layer, they will still be present but no longer rendered.
+  - If any dynamically drawn TUI controls reference the deleted layer, they will still be present but no
+    longer rendered.
 
-- If you attempt to delete a text layer which is currently set as your default text layer, then a panic will be generated.
+  - If you attempt to delete a text layer which is currently set as your default text layer, then a panic will
+    be generated.
 
-- If you attempt to delete a text layer that does not exist, then the operation will be ignored.
+  - If you attempt to delete a text layer that does not exist, then the operation will be ignored.
 
 Example:
 

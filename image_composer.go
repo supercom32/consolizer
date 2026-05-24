@@ -238,8 +238,8 @@ getImageLayerAsBraille is a method which allows you to convert an image into a l
 specified dimensions and style. In addition, the following should be noted:
 
   - The blur sigma controls how much blurring occurs after your image has been resized. This allows you to soften your
-    image before it is rendered in ansi so that hard edges are removed. A value of 0.0 means no blurring will occur, with
-    higher values increasing the blur factor.
+    image before it is rendered in ansi so that hard edges are removed. A value of 0.0 means no blurring will occur,
+    with higher values increasing the blur factor.
 
 Example:
 
@@ -415,8 +415,8 @@ func getBrailleImageData(inputImage image.Image, imageStyle types.ImageStyleEntr
 adjustContrast is a method which allows you to modify the contrast of an image by a specified factor. In addition, the
 following should be noted:
 
-  - The contrast factor is a scaling value where 1.0 results in no change, values greater than 1.0 increase contrast, and
-    values less than 1.0 decrease it.
+  - The contrast factor is a scaling value where 1.0 results in no change, values greater than 1.0 increase contrast,
+    and values less than 1.0 decrease it.
 
 Example:
 

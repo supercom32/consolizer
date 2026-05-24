@@ -139,11 +139,11 @@ following should be noted:
   - If the button to be drawn falls outside the range of the provided layer, then only the visible portion of the button
     will be drawn.
 
-  - If the width of your button is less than the length of your button label, then the width will automatically default to
-    the width of your button label.
+  - If the width of your button is less than the length of your button label, then the width will automatically
+    default to the width of your button label.
 
-  - If the height of your button is less than 3 characters high, then the height will automatically default to the minimum
-    of 3 characters.
+  - If the height of your button is less than 3 characters high, then the height will automatically default to the
+    minimum of 3 characters.
 
 Example:
 

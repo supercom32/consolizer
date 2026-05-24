@@ -496,14 +496,14 @@ by the style entry passed in. If you wish to remove a selector from a text layer
 
 In addition, the following should be noted:
 
-- Selectors are not drawn physically to the text layer provided. Instead, they are rendered to the terminal at the same
-  time when the text layer is rendered. This allows you to create selectors without actually overwriting the text layer
-  data under it.
+  - Selectors are not drawn physically to the text layer provided. Instead, they are rendered to the terminal at
+    the same time when the text layer is rendered. This allows you to create selectors without actually
+    overwriting the text layer data under it.
 
-- If the selector to be drawn falls outside the range of the provided layer, then only the visible portion of the
-  selector will be drawn.
+  - If the selector to be drawn falls outside the range of the provided layer, then only the visible portion of the
+    selector will be drawn.
 
-- If the selector height is greater than the number of selections available, then no scroll bars are drawn.
+  - If the selector height is greater than the number of selections available, then no scroll bars are drawn.
 
 Example:
     selectorInstance := Selector.Add("Layer1", "Selector1", style, selection, 0, 0, 10, 20, 1, 0, 0, false, true)

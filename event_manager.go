@@ -386,13 +386,13 @@ isInteractiveLayerOffscreen is a method which detects if a layer has been moved 
 when you want to constrain a window from moving off-screen because it would be impossible for the user to drag it back
 to the visible viewing area. In addition, the following should be noted:
 
-  - This method only considers a layer off-screen if the top row of characters are not visible (the interactive title
-    bar).
+  - This method only considers a layer off-screen if the top row of characters are not visible (the
+    interactive title bar).
 
-- Layers that are moved to the far left are considered off-screen when only two character spaces remain.
+  - Layers that are moved to the far left are considered off-screen when only two character spaces remain.
 
-  - This constraint is triggered two spaces early to account for window drop shadows that are not part of the interactive
-    area.
+  - This constraint is triggered two spaces early to account for window drop shadows that are not part of the
+    interactive area.
 
   - If a layer has a parent alias, then the constraining area is set to the parent layer dimensions instead of the
     terminal dimensions.
