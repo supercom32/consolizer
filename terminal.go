@@ -861,6 +861,8 @@ func shouldShowSource(effectiveAlpha float32, strategy constants.TransparencyStr
 		return effectiveAlpha > constants.BayerMatrix8x8[y%8][x%8]
 	case constants.TransparencyStrategyDissolve:
 		return true
+	case constants.TransparencyStrategyCurtainWipe:
+		return true
 	default:
 		return true
 	}
@@ -874,7 +876,7 @@ types like shadows and tooltips, and processes transparency flags to ensure laye
 Example:
     result := compositeCell(&source, &target, 0.5, 1.0, 1.0, false)
 */
-func compositeCell(sourceEntry *types.CharacterEntryType, targetEntry *types.CharacterEntryType, layerAlpha float32, defaultFgAlpha float32, defaultBgAlpha float32, isOpaque bool, isBinaryAlpha bool, strategy constants.TransparencyStrategy) types.CharacterEntryType {
+func compositeCell(sourceEntry *types.CharacterEntryType, targetEntry *types.CharacterEntryType, layerAlpha float32, defaultFgAlpha float32, defaultBgAlpha float32, isOpaque bool, isBinaryAlpha bool, strategy constants.TransparencyStrategy, cellX int, layerWidth int) types.CharacterEntryType {
 	sourceAttributeEntry := sourceEntry.AttributeEntry
 	targetAttributeEntry := targetEntry.AttributeEntry
 
@@ -951,6 +953,31 @@ func compositeCell(sourceEntry *types.CharacterEntryType, targetEntry *types.Cha
 			newAttributeEntry.ForegroundColor = GetTransitionedColor(targetAttributeEntry.ForegroundColor, blendedBG, normalizedAlpha)
 			resultEntry.Character = targetEntry.Character
 		}
+	} else if strategy == constants.TransparencyStrategyCurtainWipe {
+		// Calculate a local alpha based on X position.
+		// As layerAlpha goes from 1.0 to 0.0, the "cutoff" moves from right to left.
+		// We use a small "soft edge" width for the transition.
+		softEdgeWidth := float32(0.2)
+		normalizedX := float32(cellX) / float32(layerWidth)
+
+		// We want the layer to be fully visible at alpha 1.0 and fully gone at 0.0.
+		// Map global alpha [0, 1] to a spatial range [ -softEdge, 1 + softEdge ]
+		spatialAlpha := (1.0 - layerAlpha) * (1.0 + softEdgeWidth)
+		
+		localAlpha := float32(1.0)
+		if normalizedX < spatialAlpha-softEdgeWidth {
+			localAlpha = 0.0
+		} else if normalizedX < spatialAlpha {
+			localAlpha = 1.0 - (normalizedX-(spatialAlpha-softEdgeWidth))/softEdgeWidth
+		}
+
+		newAttributeEntry.ForegroundColor = GetTransitionedColor(targetAttributeEntry.ForegroundColor, sourceAttributeEntry.ForegroundColor, localAlpha)
+		newAttributeEntry.BackgroundColor = GetTransitionedColor(targetAttributeEntry.BackgroundColor, sourceAttributeEntry.BackgroundColor, localAlpha)
+		if localAlpha < 0.5 {
+			resultEntry.Character = targetEntry.Character
+		} else {
+			resultEntry.Character = sourceEntry.Character
+		}
 	} else {
 		if effectiveFgAlpha < 1 {
 			newAttributeEntry.ForegroundColor = GetTransitionedColor(targetAttributeEntry.ForegroundColor, sourceAttributeEntry.ForegroundColor, effectiveFgAlpha)
@@ -1022,7 +1049,8 @@ func overlayLayers(sourceLayerEntry *types.LayerEntryType, targetLayerEntry *typ
 	defaultBgAlpha := sourceLayerEntry.DefaultAttribute.BackgroundAlphaValue
 	layerAlpha := sourceLayerEntry.AlphaValue
 	strategy := sourceLayerEntry.TransparencyStrategy
-	isBinaryAlpha := strategy != constants.TransparencyStrategyColorOnly && strategy != constants.TransparencyStrategyDissolve
+	isBinaryAlpha := strategy != constants.TransparencyStrategyColorOnly && strategy != constants.TransparencyStrategyDissolve && strategy != constants.TransparencyStrategyCurtainWipe
+	layerWidth := sourceLayerEntry.Width
 
 	// 3. Parallel Processing with Goroutines
 	var wg sync.WaitGroup
@@ -1048,7 +1076,7 @@ func overlayLayers(sourceLayerEntry *types.LayerEntryType, targetLayerEntry *typ
 					continue
 				}
 
-				targetCharacterMemory[targetRow][targetCol] = compositeCell(sourceEntry, targetEntry, layerAlpha, defaultFgAlpha, defaultBgAlpha, isOpaque, isBinaryAlpha, strategy)
+				targetCharacterMemory[targetRow][targetCol] = compositeCell(sourceEntry, targetEntry, layerAlpha, defaultFgAlpha, defaultBgAlpha, isOpaque, isBinaryAlpha, strategy, sourceCol, layerWidth)
 			}
 		}(currentRow)
 	}

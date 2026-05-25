@@ -72,6 +72,7 @@ const (
 	TransparencyStrategy4x4Bayer
 	TransparencyStrategy8x8Bayer
 	TransparencyStrategyDissolve
+	TransparencyStrategyCurtainWipe
 )
 
 /*
