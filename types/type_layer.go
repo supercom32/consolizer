@@ -399,6 +399,9 @@ func (shared *LayerEntryType) SaveLayer(path string) error {
 	if err := binary.Write(writer, binary.LittleEndian, shared.AlphaValue); err != nil {
 		return fmt.Errorf("failed to write alpha value: %w", err)
 	}
+	if err := binary.Write(writer, binary.LittleEndian, int32(shared.TransparencyStrategy)); err != nil {
+		return fmt.Errorf("failed to write transparency strategy: %w", err)
+	}
 
 	// --- Layer Data ---
 	for y := 0; y < int(height); y++ {

@@ -859,6 +859,8 @@ func shouldShowSource(effectiveAlpha float32, strategy constants.TransparencyStr
 		return effectiveAlpha > constants.BayerMatrix4x4[y%4][x%4]
 	case constants.TransparencyStrategy8x8Bayer:
 		return effectiveAlpha > constants.BayerMatrix8x8[y%8][x%8]
+	case constants.TransparencyStrategyDissolve:
+		return true
 	default:
 		return true
 	}
@@ -872,7 +874,7 @@ types like shadows and tooltips, and processes transparency flags to ensure laye
 Example:
     result := compositeCell(&source, &target, 0.5, 1.0, 1.0, false)
 */
-func compositeCell(sourceEntry *types.CharacterEntryType, targetEntry *types.CharacterEntryType, layerAlpha float32, defaultFgAlpha float32, defaultBgAlpha float32, isOpaque bool, isBinaryAlpha bool) types.CharacterEntryType {
+func compositeCell(sourceEntry *types.CharacterEntryType, targetEntry *types.CharacterEntryType, layerAlpha float32, defaultFgAlpha float32, defaultBgAlpha float32, isOpaque bool, isBinaryAlpha bool, strategy constants.TransparencyStrategy) types.CharacterEntryType {
 	sourceAttributeEntry := sourceEntry.AttributeEntry
 	targetAttributeEntry := targetEntry.AttributeEntry
 
@@ -931,13 +933,31 @@ func compositeCell(sourceEntry *types.CharacterEntryType, targetEntry *types.Cha
 
 	// Apply color transformations
 	effectiveFgAlpha := getEffectiveAlpha(blendAlpha, defaultFgAlpha, sourceAttributeEntry.ForegroundAlphaValue)
-	if effectiveFgAlpha < 1 {
-		newAttributeEntry.ForegroundColor = GetTransitionedColor(targetAttributeEntry.ForegroundColor, sourceAttributeEntry.ForegroundColor, effectiveFgAlpha)
-	}
-
 	effectiveBgAlpha := getEffectiveAlpha(blendAlpha, defaultBgAlpha, sourceAttributeEntry.BackgroundAlphaValue)
-	if effectiveBgAlpha < 1 {
+
+	if strategy == constants.TransparencyStrategyDissolve {
+		// For Dissolve, background always transitions smoothly
 		newAttributeEntry.BackgroundColor = GetTransitionedColor(targetAttributeEntry.BackgroundColor, sourceAttributeEntry.BackgroundColor, effectiveBgAlpha)
+		blendedBG := newAttributeEntry.BackgroundColor
+
+		if effectiveFgAlpha > 0.5 {
+			// Alpha 1.0 -> 0.5: Transition from source FG to blended BG
+			normalizedAlpha := (effectiveFgAlpha - 0.5) * 2
+			newAttributeEntry.ForegroundColor = GetTransitionedColor(blendedBG, sourceAttributeEntry.ForegroundColor, normalizedAlpha)
+			resultEntry.Character = sourceEntry.Character
+		} else {
+			// Alpha 0.5 -> 0.0: Transition from blended BG to target FG
+			normalizedAlpha := effectiveFgAlpha * 2
+			newAttributeEntry.ForegroundColor = GetTransitionedColor(targetAttributeEntry.ForegroundColor, blendedBG, normalizedAlpha)
+			resultEntry.Character = targetEntry.Character
+		}
+	} else {
+		if effectiveFgAlpha < 1 {
+			newAttributeEntry.ForegroundColor = GetTransitionedColor(targetAttributeEntry.ForegroundColor, sourceAttributeEntry.ForegroundColor, effectiveFgAlpha)
+		}
+		if effectiveBgAlpha < 1 {
+			newAttributeEntry.BackgroundColor = GetTransitionedColor(targetAttributeEntry.BackgroundColor, sourceAttributeEntry.BackgroundColor, effectiveBgAlpha)
+		}
 	}
 
 	resultEntry.AttributeEntry = newAttributeEntry
@@ -1002,7 +1022,7 @@ func overlayLayers(sourceLayerEntry *types.LayerEntryType, targetLayerEntry *typ
 	defaultBgAlpha := sourceLayerEntry.DefaultAttribute.BackgroundAlphaValue
 	layerAlpha := sourceLayerEntry.AlphaValue
 	strategy := sourceLayerEntry.TransparencyStrategy
-	isBinaryAlpha := strategy != constants.TransparencyStrategyColorOnly
+	isBinaryAlpha := strategy != constants.TransparencyStrategyColorOnly && strategy != constants.TransparencyStrategyDissolve
 
 	// 3. Parallel Processing with Goroutines
 	var wg sync.WaitGroup
@@ -1028,7 +1048,7 @@ func overlayLayers(sourceLayerEntry *types.LayerEntryType, targetLayerEntry *typ
 					continue
 				}
 
-				targetCharacterMemory[targetRow][targetCol] = compositeCell(sourceEntry, targetEntry, layerAlpha, defaultFgAlpha, defaultBgAlpha, isOpaque, isBinaryAlpha)
+				targetCharacterMemory[targetRow][targetCol] = compositeCell(sourceEntry, targetEntry, layerAlpha, defaultFgAlpha, defaultBgAlpha, isOpaque, isBinaryAlpha, strategy)
 			}
 		}(currentRow)
 	}

@@ -61,17 +61,6 @@ const (
 )
 
 /*
-TransparencyMode is a type which represents how transparency is handled when rendering.
-*/
-type TransparencyMode int
-
-const (
-	TransparencyModeBackground TransparencyMode = iota
-	TransparencyModeForeground
-	TransparencyModeBlended
-)
-
-/*
 TransparencyStrategy is a type which represents the strategy used for layer transparency.
 */
 type TransparencyStrategy int
@@ -82,6 +71,7 @@ const (
 	TransparencyStrategy2x2Bayer
 	TransparencyStrategy4x4Bayer
 	TransparencyStrategy8x8Bayer
+	TransparencyStrategyDissolve
 )
 
 /*
