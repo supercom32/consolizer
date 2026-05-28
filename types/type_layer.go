@@ -41,6 +41,8 @@ type LayerEntryType struct {
 	CursorYLocation      int
 	ZOrder               int
 	AlphaValue           float32
+	TransitionProgress   float32
+	TransitionStyle      TransitionStyleEntryType
 	TransparencyStrategy constants.TransparencyStrategy
 	IsTopmost            bool
 	IsFocusable          bool
@@ -69,6 +71,8 @@ func (shared LayerEntryType) MarshalJSON() ([]byte, error) {
 		CursorYLocation      int
 		ZOrder               int
 		AlphaValue           float32
+		TransitionProgress   float32
+		TransitionStyle      TransitionStyleEntryType
 		TransparencyStrategy constants.TransparencyStrategy
 		IsTopmost            bool
 		IsFocusable          bool
@@ -293,6 +297,8 @@ func NewLayerEntry(layerAlias string, parentAlias string, width int, height int,
 		layerEntry.CursorYLocation = existingLayerEntry[0].CursorYLocation
 		layerEntry.ZOrder = existingLayerEntry[0].ZOrder
 		layerEntry.AlphaValue = existingLayerEntry[0].AlphaValue
+		layerEntry.TransitionProgress = existingLayerEntry[0].TransitionProgress
+		layerEntry.TransitionStyle = existingLayerEntry[0].TransitionStyle
 		layerEntry.TransparencyStrategy = existingLayerEntry[0].TransparencyStrategy
 		layerEntry.IsVisible = existingLayerEntry[0].IsVisible
 		layerEntry.IsTopmost = existingLayerEntry[0].IsTopmost
@@ -316,7 +322,9 @@ func NewLayerEntry(layerAlias string, parentAlias string, width int, height int,
 		layerEntry.Height = height
 		layerEntry.IsVisible = true
 		layerEntry.AlphaValue = 1.0
-		layerEntry.TransparencyStrategy = constants.TransparencyStrategyColorOnly
+		layerEntry.TransitionProgress = 1.0
+		layerEntry.TransitionStyle = NewTransitionStyleEntry()
+		layerEntry.TransparencyStrategy = constants.TransparencyStrategyNone
 		layerEntry.DefaultAttribute = NewAttributeEntry()
 		for currentRow := 0; currentRow < height; currentRow++ {
 			var characterObjectArray = make([]CharacterEntryType, width)
@@ -398,6 +406,18 @@ func (shared *LayerEntryType) SaveLayer(path string) error {
 	}
 	if err := binary.Write(writer, binary.LittleEndian, shared.AlphaValue); err != nil {
 		return fmt.Errorf("failed to write alpha value: %w", err)
+	}
+	if err := binary.Write(writer, binary.LittleEndian, shared.TransitionProgress); err != nil {
+		return fmt.Errorf("failed to write transition progress: %w", err)
+	}
+	if err := binary.Write(writer, binary.LittleEndian, int32(shared.TransitionStyle.TransitionType)); err != nil {
+		return fmt.Errorf("failed to write transition type: %w", err)
+	}
+	if err := binary.Write(writer, binary.LittleEndian, int32(shared.TransitionStyle.Direction)); err != nil {
+		return fmt.Errorf("failed to write transition direction: %w", err)
+	}
+	if err := binary.Write(writer, binary.LittleEndian, shared.TransitionStyle.SoftEdgeWidth); err != nil {
+		return fmt.Errorf("failed to write transition soft edge: %w", err)
 	}
 	if err := binary.Write(writer, binary.LittleEndian, int32(shared.TransparencyStrategy)); err != nil {
 		return fmt.Errorf("failed to write transparency strategy: %w", err)
@@ -504,6 +524,26 @@ func (shared *LayerEntryType) LoadLayerFromBytes(data []byte) error {
 
 	if err := binary.Read(buffReader, binary.LittleEndian, &shared.AlphaValue); err != nil {
 		return fmt.Errorf("failed to read alpha value: %w", err)
+	}
+
+	if err := binary.Read(buffReader, binary.LittleEndian, &shared.TransitionProgress); err != nil {
+		return fmt.Errorf("failed to read transition progress: %w", err)
+	}
+	var transType, transDir int32
+	if err := binary.Read(buffReader, binary.LittleEndian, &transType); err != nil {
+		return fmt.Errorf("failed to read transition type: %w", err)
+	}
+	if err := binary.Read(buffReader, binary.LittleEndian, &transDir); err != nil {
+		return fmt.Errorf("failed to read transition direction: %w", err)
+	}
+	var softEdge float32
+	if err := binary.Read(buffReader, binary.LittleEndian, &softEdge); err != nil {
+		return fmt.Errorf("failed to read transition soft edge: %w", err)
+	}
+	shared.TransitionStyle = TransitionStyleEntryType{
+		TransitionType: constants.TransitionType(transType),
+		Direction:      constants.TransitionDirection(transDir),
+		SoftEdgeWidth:  softEdge,
 	}
 
 	var strategy int32

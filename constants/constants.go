@@ -66,13 +66,40 @@ TransparencyStrategy is a type which represents the strategy used for layer tran
 type TransparencyStrategy int
 
 const (
-	TransparencyStrategyColorOnly TransparencyStrategy = iota
+	TransparencyStrategyNone TransparencyStrategy = iota
 	TransparencyStrategyStochastic
 	TransparencyStrategy2x2Bayer
 	TransparencyStrategy4x4Bayer
 	TransparencyStrategy8x8Bayer
 	TransparencyStrategyDissolve
-	TransparencyStrategyCurtainWipe
+)
+
+/*
+TransitionType is a type which represents the spatial pattern used for transitions.
+*/
+type TransitionType int
+
+const (
+	TransitionTypeNone TransitionType = iota
+	TransitionTypeCurtainWipe
+	TransitionTypeBlinds
+	TransitionTypeInterlaced
+)
+
+/*
+TransitionDirection is a type which represents the direction of a spatial transition.
+*/
+type TransitionDirection int
+
+const (
+	TransitionDirectionLeftToRight TransitionDirection = iota
+	TransitionDirectionRightToLeft
+	TransitionDirectionTopToBottom
+	TransitionDirectionBottomToTop
+	TransitionDirectionTopLeftToBottomRight
+	TransitionDirectionTopRightToBottomLeft
+	TransitionDirectionBottomLeftToTopRight
+	TransitionDirectionBottomRightToTopLeft
 )
 
 /*

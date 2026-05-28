@@ -1572,6 +1572,51 @@ func (shared *LayerInstanceType) GetAlphaValue() float32 {
 }
 
 /*
+SetTransitionStyle is a method which allows you to set the spatial transition effect for a layer.
+
+Example:
+    instance.SetTransitionStyle(style)
+*/
+func (shared *LayerInstanceType) SetTransitionStyle(style types.TransitionStyleEntryType) {
+	validateLayer(shared.layerAlias)
+	setLayerTransitionStyle(shared.layerAlias, style)
+}
+
+/*
+GetTransitionStyle is a method which obtains the current spatial transition effect for a layer.
+
+Example:
+    style := instance.GetTransitionStyle()
+*/
+func (shared *LayerInstanceType) GetTransitionStyle() types.TransitionStyleEntryType {
+	validateLayer(shared.layerAlias)
+	return getLayerTransitionStyle(shared.layerAlias)
+}
+
+/*
+SetTransitionProgress is a method which allows you to set the animation state of a spatial transition.
+A value of 1.0 means the transition is complete (layer visible), and 0.0 means it hasn't started (layer hidden).
+
+Example:
+    instance.SetTransitionProgress(0.5)
+*/
+func (shared *LayerInstanceType) SetTransitionProgress(progress float32) {
+	validateLayer(shared.layerAlias)
+	setLayerTransitionProgress(shared.layerAlias, progress)
+}
+
+/*
+GetTransitionProgress is a method which obtains the current animation state of a spatial transition.
+
+Example:
+    progress := instance.GetTransitionProgress()
+*/
+func (shared *LayerInstanceType) GetTransitionProgress() float32 {
+	validateLayer(shared.layerAlias)
+	return getLayerTransitionProgress(shared.layerAlias)
+}
+
+/*
 SetTransparencyStrategy is a method which configures the specific algorithm used to handle character-level visibility
 for the layer. It allows you to toggle between standard color blending and various dithering patterns that determine
 whether a cell's character should be rendered or if the layer beneath it should show through.
@@ -2108,6 +2153,54 @@ func getLayerTransparencyStrategy(layerAlias string) constants.TransparencyStrat
 	validateLayer(layerAlias)
 	layerEntry := Layers.Get(layerAlias)
 	return layerEntry.TransparencyStrategy
+}
+
+/*
+setLayerTransitionStyle is a method which allows you to set the spatial transition effect for a layer in memory.
+
+Example:
+    setLayerTransitionStyle("myLayer", style)
+*/
+func setLayerTransitionStyle(layerAlias string, style types.TransitionStyleEntryType) {
+	validateLayer(layerAlias)
+	layerEntry := Layers.Get(layerAlias)
+	layerEntry.TransitionStyle = style
+}
+
+/*
+getLayerTransitionStyle is a method which obtains the current spatial transition effect for a layer from memory.
+
+Example:
+    style := getLayerTransitionStyle("myLayer")
+*/
+func getLayerTransitionStyle(layerAlias string) types.TransitionStyleEntryType {
+	validateLayer(layerAlias)
+	layerEntry := Layers.Get(layerAlias)
+	return layerEntry.TransitionStyle
+}
+
+/*
+setLayerTransitionProgress is a method which updates the progress value of a transition for a layer in memory.
+
+Example:
+    setLayerTransitionProgress("myLayer", 0.5)
+*/
+func setLayerTransitionProgress(layerAlias string, progress float32) {
+	validateLayer(layerAlias)
+	layerEntry := Layers.Get(layerAlias)
+	layerEntry.TransitionProgress = progress
+}
+
+/*
+getLayerTransitionProgress is a method which retrieves the current progress value of a transition for a layer from memory.
+
+Example:
+    progress := getLayerTransitionProgress("myLayer")
+*/
+func getLayerTransitionProgress(layerAlias string) float32 {
+	validateLayer(layerAlias)
+	layerEntry := Layers.Get(layerAlias)
+	return layerEntry.TransitionProgress
 }
 
 /*

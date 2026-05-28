@@ -290,6 +290,17 @@ func NewImageStyle() types.ImageStyleEntryType {
 }
 
 /*
+NewTransitionStyle is a constructor which allows you to obtain a new transition style entry.
+
+Example:
+
+	myTransitionStyle := NewTransitionStyle()
+*/
+func NewTransitionStyle() types.TransitionStyleEntryType {
+	return types.NewTransitionStyleEntry()
+}
+
+/*
 NewTuiStyleEntry is a constructor which allows you to obtain a new style entry which can be used for specifying how TUI
 controls and other TUI drawing operations should occur.
 
@@ -861,8 +872,6 @@ func shouldShowSource(effectiveAlpha float32, strategy constants.TransparencyStr
 		return effectiveAlpha > constants.BayerMatrix8x8[y%8][x%8]
 	case constants.TransparencyStrategyDissolve:
 		return true
-	case constants.TransparencyStrategyCurtainWipe:
-		return true
 	default:
 		return true
 	}
@@ -876,12 +885,12 @@ types like shadows and tooltips, and processes transparency flags to ensure laye
 Example:
     result := compositeCell(&source, &target, 0.5, 1.0, 1.0, false)
 */
-func compositeCell(sourceEntry *types.CharacterEntryType, targetEntry *types.CharacterEntryType, layerAlpha float32, defaultFgAlpha float32, defaultBgAlpha float32, isOpaque bool, isBinaryAlpha bool, strategy constants.TransparencyStrategy, cellX int, layerWidth int) types.CharacterEntryType {
+func compositeCell(sourceEntry *types.CharacterEntryType, targetEntry *types.CharacterEntryType, effectiveAlpha float32, isOpaque bool, isBinaryAlpha bool, strategy constants.TransparencyStrategy) types.CharacterEntryType {
 	sourceAttributeEntry := sourceEntry.AttributeEntry
 	targetAttributeEntry := targetEntry.AttributeEntry
 
 	// For dithering strategies, we treat the layer as fully opaque if it's shown at all
-	blendAlpha := layerAlpha
+	blendAlpha := effectiveAlpha
 	if isBinaryAlpha {
 		blendAlpha = 1.0
 	}
@@ -934,56 +943,28 @@ func compositeCell(sourceEntry *types.CharacterEntryType, targetEntry *types.Cha
 	}
 
 	// Apply color transformations
-	effectiveFgAlpha := getEffectiveAlpha(blendAlpha, defaultFgAlpha, sourceAttributeEntry.ForegroundAlphaValue)
-	effectiveBgAlpha := getEffectiveAlpha(blendAlpha, defaultBgAlpha, sourceAttributeEntry.BackgroundAlphaValue)
-
 	if strategy == constants.TransparencyStrategyDissolve {
 		// For Dissolve, background always transitions smoothly
-		newAttributeEntry.BackgroundColor = GetTransitionedColor(targetAttributeEntry.BackgroundColor, sourceAttributeEntry.BackgroundColor, effectiveBgAlpha)
+		newAttributeEntry.BackgroundColor = GetTransitionedColor(targetAttributeEntry.BackgroundColor, sourceAttributeEntry.BackgroundColor, blendAlpha)
 		blendedBG := newAttributeEntry.BackgroundColor
 
-		if effectiveFgAlpha > 0.5 {
+		if blendAlpha > 0.5 {
 			// Alpha 1.0 -> 0.5: Transition from source FG to blended BG
-			normalizedAlpha := (effectiveFgAlpha - 0.5) * 2
+			normalizedAlpha := (blendAlpha - 0.5) * 2
 			newAttributeEntry.ForegroundColor = GetTransitionedColor(blendedBG, sourceAttributeEntry.ForegroundColor, normalizedAlpha)
 			resultEntry.Character = sourceEntry.Character
 		} else {
 			// Alpha 0.5 -> 0.0: Transition from blended BG to target FG
-			normalizedAlpha := effectiveFgAlpha * 2
+			normalizedAlpha := blendAlpha * 2
 			newAttributeEntry.ForegroundColor = GetTransitionedColor(targetAttributeEntry.ForegroundColor, blendedBG, normalizedAlpha)
 			resultEntry.Character = targetEntry.Character
 		}
-	} else if strategy == constants.TransparencyStrategyCurtainWipe {
-		// Calculate a local alpha based on X position.
-		// As layerAlpha goes from 1.0 to 0.0, the "cutoff" moves from right to left.
-		// We use a small "soft edge" width for the transition.
-		softEdgeWidth := float32(0.2)
-		normalizedX := float32(cellX) / float32(layerWidth)
-
-		// We want the layer to be fully visible at alpha 1.0 and fully gone at 0.0.
-		// Map global alpha [0, 1] to a spatial range [ -softEdge, 1 + softEdge ]
-		spatialAlpha := (1.0 - layerAlpha) * (1.0 + softEdgeWidth)
-		
-		localAlpha := float32(1.0)
-		if normalizedX < spatialAlpha-softEdgeWidth {
-			localAlpha = 0.0
-		} else if normalizedX < spatialAlpha {
-			localAlpha = 1.0 - (normalizedX-(spatialAlpha-softEdgeWidth))/softEdgeWidth
-		}
-
-		newAttributeEntry.ForegroundColor = GetTransitionedColor(targetAttributeEntry.ForegroundColor, sourceAttributeEntry.ForegroundColor, localAlpha)
-		newAttributeEntry.BackgroundColor = GetTransitionedColor(targetAttributeEntry.BackgroundColor, sourceAttributeEntry.BackgroundColor, localAlpha)
-		if localAlpha < 0.5 {
-			resultEntry.Character = targetEntry.Character
-		} else {
-			resultEntry.Character = sourceEntry.Character
-		}
 	} else {
-		if effectiveFgAlpha < 1 {
-			newAttributeEntry.ForegroundColor = GetTransitionedColor(targetAttributeEntry.ForegroundColor, sourceAttributeEntry.ForegroundColor, effectiveFgAlpha)
+		if blendAlpha < 1 {
+			newAttributeEntry.ForegroundColor = GetTransitionedColor(targetAttributeEntry.ForegroundColor, sourceAttributeEntry.ForegroundColor, blendAlpha)
 		}
-		if effectiveBgAlpha < 1 {
-			newAttributeEntry.BackgroundColor = GetTransitionedColor(targetAttributeEntry.BackgroundColor, sourceAttributeEntry.BackgroundColor, effectiveBgAlpha)
+		if blendAlpha < 1 {
+			newAttributeEntry.BackgroundColor = GetTransitionedColor(targetAttributeEntry.BackgroundColor, sourceAttributeEntry.BackgroundColor, blendAlpha)
 		}
 	}
 
@@ -1046,11 +1027,13 @@ func overlayLayers(sourceLayerEntry *types.LayerEntryType, targetLayerEntry *typ
 	sourceCharacterMemory := sourceLayerEntry.CharacterMemory
 	targetCharacterMemory := targetLayerEntry.CharacterMemory
 	defaultFgAlpha := sourceLayerEntry.DefaultAttribute.ForegroundAlphaValue
-	defaultBgAlpha := sourceLayerEntry.DefaultAttribute.BackgroundAlphaValue
 	layerAlpha := sourceLayerEntry.AlphaValue
+	transitionProgress := sourceLayerEntry.TransitionProgress
+	transitionStyle := sourceLayerEntry.TransitionStyle
 	strategy := sourceLayerEntry.TransparencyStrategy
-	isBinaryAlpha := strategy != constants.TransparencyStrategyColorOnly && strategy != constants.TransparencyStrategyDissolve && strategy != constants.TransparencyStrategyCurtainWipe
-	layerWidth := sourceLayerEntry.Width
+	isBinaryAlpha := strategy != constants.TransparencyStrategyNone && strategy != constants.TransparencyStrategyDissolve
+	sourceWidth := sourceLayerEntry.Width
+	sourceHeight := sourceLayerEntry.Height
 
 	// 3. Parallel Processing with Goroutines
 	var wg sync.WaitGroup
@@ -1069,14 +1052,102 @@ func overlayLayers(sourceLayerEntry *types.LayerEntryType, targetLayerEntry *typ
 				sourceEntry := &sourceCharacterMemory[sourceRow][sourceCol]
 				targetEntry := &targetCharacterMemory[targetRow][targetCol]
 
+				// 1. Calculate Spatial Multiplier from Transition
+				spatialMultiplier := float32(1.0)
+				if transitionStyle.TransitionType != constants.TransitionTypeNone {
+					softEdgeWidth := transitionStyle.SoftEdgeWidth
+					if softEdgeWidth <= 0.001 {
+						softEdgeWidth = 0.001 // Prevent division by zero
+					}
+					normalizedPos := float32(0.0)
+
+					// Use (N-1) as denominator to ensure pos reaches exactly 1.0 for discrete cells.
+					// Guard against division by zero for layers with width/height of 1.
+					safeWidth := float32(sourceWidth - 1)
+					if safeWidth <= 0 {
+						safeWidth = 1.0
+					}
+					safeHeight := float32(sourceHeight - 1)
+					if safeHeight <= 0 {
+						safeHeight = 1.0
+					}
+
+					// First, calculate a "forward" normalized position (0.0 to 1.0)
+					switch transitionStyle.Direction {
+					case constants.TransitionDirectionLeftToRight, constants.TransitionDirectionRightToLeft:
+						normalizedPos = float32(sourceCol) / safeWidth
+					case constants.TransitionDirectionTopToBottom, constants.TransitionDirectionBottomToTop:
+						normalizedPos = float32(sourceRow) / safeHeight
+					case constants.TransitionDirectionTopLeftToBottomRight, constants.TransitionDirectionBottomRightToTopLeft:
+						normalizedPos = (float32(sourceCol) + float32(sourceRow)) / (safeWidth + safeHeight)
+					case constants.TransitionDirectionTopRightToBottomLeft, constants.TransitionDirectionBottomLeftToTopRight:
+						normalizedPos = (float32(sourceWidth-1-sourceCol) + float32(sourceRow)) / (safeWidth + safeHeight)
+					}
+
+					// Apply Blinds effect if active (turning the 0-1 range into a sawtooth 0-1 repeating pattern)
+					if transitionStyle.TransitionType == constants.TransitionTypeBlinds {
+						blindCount := float32(transitionStyle.BlindCount)
+						if blindCount <= 0 {
+							blindCount = 6
+						}
+						scaledPos := normalizedPos * blindCount
+						blindIndex := int(scaledPos)
+						if blindIndex >= int(blindCount) {
+							blindIndex = int(blindCount) - 1
+						}
+						normalizedPos = scaledPos - float32(blindIndex)
+					}
+
+					// Apply Interlaced effect if active
+					if transitionStyle.TransitionType == constants.TransitionTypeInterlaced {
+						isEvenLine := false
+						switch transitionStyle.Direction {
+						case constants.TransitionDirectionTopToBottom, constants.TransitionDirectionBottomToTop:
+							isEvenLine = sourceCol%2 == 0
+						default:
+							isEvenLine = sourceRow%2 == 0
+						}
+						if !isEvenLine {
+							normalizedPos = 1.0 - normalizedPos
+						}
+					}
+
+					// Now apply direction inversion for reverse directions
+					switch transitionStyle.Direction {
+					case constants.TransitionDirectionRightToLeft,
+						constants.TransitionDirectionBottomToTop,
+						constants.TransitionDirectionBottomRightToTopLeft,
+						constants.TransitionDirectionBottomLeftToTopRight:
+						normalizedPos = 1.0 - normalizedPos
+					}
+
+					// Clamp normalizedPos to [0, 1] to prevent overflow artifacts
+					if normalizedPos < 0 {
+						normalizedPos = 0
+					}
+					if normalizedPos > 1 {
+						normalizedPos = 1
+					}
+
+					spatialAlpha := (1.0 - transitionProgress) * (1.0 + softEdgeWidth)
+					if normalizedPos < spatialAlpha-softEdgeWidth {
+						spatialMultiplier = 0.0
+					} else if normalizedPos < spatialAlpha {
+						spatialMultiplier = (normalizedPos - (spatialAlpha - softEdgeWidth)) / softEdgeWidth
+					}
+				}
+
+				// 2. Calculate Final Effective Alpha for this cell
+				// Final Alpha = Global Alpha * Spatial Multiplier * Local Cell Alpha
 				effectiveAlpha := getEffectiveAlpha(layerAlpha, defaultFgAlpha, sourceEntry.AttributeEntry.ForegroundAlphaValue)
+				effectiveAlpha *= spatialMultiplier
 
 				if !shouldShowSource(effectiveAlpha, strategy, targetCol, targetRow) {
 					targetCharacterMemory[targetRow][targetCol] = *targetEntry
 					continue
 				}
 
-				targetCharacterMemory[targetRow][targetCol] = compositeCell(sourceEntry, targetEntry, layerAlpha, defaultFgAlpha, defaultBgAlpha, isOpaque, isBinaryAlpha, strategy, sourceCol, layerWidth)
+				targetCharacterMemory[targetRow][targetCol] = compositeCell(sourceEntry, targetEntry, effectiveAlpha, isOpaque, isBinaryAlpha, strategy)
 			}
 		}(currentRow)
 	}
