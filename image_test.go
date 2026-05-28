@@ -45,10 +45,9 @@ confirmed using the IMAGE_COMPLEX asset.
 
 Example:
     Expected Inputs:
-        Input: IMAGE_COMPLEX file path.
-
+        IMAGE_COMPLEX file path.
     Expected Outputs:
-        Output: LoadImage returns nil, IsImageExists returns true.
+        Image is successfully loaded into memory and IsImageExists returns true.
 */
 func TestAddAndIsImageExists(test *testing.T) {
 	setupTest()
@@ -66,10 +65,9 @@ subsequently reported as non-existent.
 
 Example:
     Expected Inputs:
-        Input: IMAGE_COMPLEX file path.
-
+        IMAGE_COMPLEX file path.
     Expected Outputs:
-        Output: LoadImage returns nil, UnloadImage removes entry, IsImageExists returns false.
+        Image is removed from memory and IsImageExists returns false.
 */
 func TestDeleteImage(t *testing.T) {
 	setupTest()
@@ -85,10 +83,9 @@ non-existent images.
 
 Example:
     Expected Inputs:
-        Input: IMAGE_COMPLEX file path and a non-existent alias.
-
+        IMAGE_COMPLEX file path and a non-existent alias.
     Expected Outputs:
-        Output: IsImageExists returns true for IMAGE_COMPLEX and false for the non-existent alias.
+        True for the loaded image and False for the non-existent alias.
 */
 func TestIsImageExists(test *testing.T) {
 	setupTest()
@@ -104,10 +101,9 @@ existence checks.
 
 Example:
     Expected Inputs:
-        Input: IMAGE_COMPLEX file path.
-
+        IMAGE_COMPLEX file path.
     Expected Outputs:
-        Output: LoadImage returns nil, UnloadImage removes entry, IsImageExists returns false.
+        Image is removed from memory and is no longer available for use.
 */
 func TestUnloadImage(test *testing.T) {
 	setupTest()
@@ -123,10 +119,9 @@ cause errors and correctly reports non-existence.
 
 Example:
     Expected Inputs:
-        Input: Non-existent image alias.
-
+        A non-existent image alias string.
     Expected Outputs:
-        Output: UnloadImage returns without error, IsImageExists returns false.
+        Function completes without errors and IsImageExists remains false.
 */
 func TestUnloadNonExistentImage(test *testing.T) {
 	setupTest()
@@ -142,10 +137,9 @@ string.
 
 Example:
     Expected Inputs:
-        Input: IMAGE_TRANSPARENCY asset, block element style.
-
+        IMAGE_TRANSPARENCY asset rendered with block element style.
     Expected Outputs:
-        Output: Screen content matches expected ANSI string (Base64 encoded).
+        Screen content matches the master ANSI string showing transparent background regions.
 */
 func TestTransparentImageBlockStyleBackgroundTransparency(test *testing.T) {
 	layer1, _, _, _, imageStyle := setupTest()
@@ -170,10 +164,9 @@ string.
 
 Example:
     Expected Inputs:
-        Input: IMAGE_TRANSPARENCY asset, block element style.
-
+        IMAGE_TRANSPARENCY asset rendered with block element style on a secondary layer.
     Expected Outputs:
-        Output: Screen content matches expected ANSI string (Base64 encoded).
+        Screen content matches the master ANSI string showing correctly handled foreground transparency.
 */
 func TestTransparentImageBlockStyleForegroundTransparency(test *testing.T) {
 	_, layer2, _, _, imageStyle := setupTest()
@@ -197,10 +190,9 @@ using block style correctly handles blended transparency by comparing against a 
 
 Example:
     Expected Inputs:
-        Input: IMAGE_TRANSPARENCY asset, block element style.
-
+        IMAGE_TRANSPARENCY asset rendered with block element style and alpha blending.
     Expected Outputs:
-        Output: Screen content matches expected ANSI string (Base64 encoded).
+        Screen content matches the master ANSI string with correct color blending in semi-transparent regions.
 */
 func TestTransparentImageBlockStyleBlendedTransparency(test *testing.T) {
 	_, layer2, _, _, imageStyle := setupTest()
@@ -225,10 +217,9 @@ base64 encoded ANSI string.
 
 Example:
     Expected Inputs:
-        Input: IMAGE_TRANSPARENCY asset, half block style.
-
+        IMAGE_TRANSPARENCY asset rendered with half block style.
     Expected Outputs:
-        Output: Screen content matches expected ANSI string (Base64 encoded).
+        Screen content matches the master ANSI string showing correctly handled background transparency in half-block resolution.
 */
 func TestTransparentImageMediumResolutionStyleBackgroundTransparency(test *testing.T) {
 	layer1, _, _, _, imageStyle := setupTest()
@@ -254,10 +245,9 @@ base64 encoded ANSI string.
 
 Example:
     Expected Inputs:
-        Input: IMAGE_TRANSPARENCY asset, half block style.
-
+        IMAGE_TRANSPARENCY asset rendered with half block style on a layer with existing content.
     Expected Outputs:
-        Output: Screen content matches expected ANSI string (Base64 encoded).
+        Screen content matches the master ANSI string showing correctly handled foreground transparency in half-block resolution.
 */
 func TestTransparentImageMediumResolutionStyleForegroundTransparency(test *testing.T) {
 	layer1, _, _, _, imageStyle := setupTest()
@@ -283,10 +273,9 @@ base64 encoded ANSI string.
 
 Example:
     Expected Inputs:
-        Input: IMAGE_TRANSPARENCY asset, half block style.
-
+        IMAGE_TRANSPARENCY asset rendered with half block style and color blending enabled.
     Expected Outputs:
-        Output: Screen content matches expected ANSI string (Base64 encoded).
+        Screen content matches the master ANSI string with correct pixel color blending in half-block resolution.
 */
 func TestTransparentImageMediumResolutionStyleBlendedTransparency(test *testing.T) {
 	layer1, _, _, _, imageStyle := setupTest()
@@ -312,10 +301,9 @@ string.
 
 Example:
     Expected Inputs:
-        Input: IMAGE_TRANSPARENCY asset, Braille style.
-
+        IMAGE_TRANSPARENCY asset rendered using Braille characters.
     Expected Outputs:
-        Output: Screen content matches expected ANSI string (Base64 encoded).
+        Screen content matches the master ANSI string showing correctly handled transparency in Braille resolution.
 */
 func TestTransparentImageBrailleStyleBackgroundTransparency(test *testing.T) {
 	layer1, _, _, _, imageStyle := setupTest()
@@ -341,10 +329,9 @@ string.
 
 Example:
     Expected Inputs:
-        Input: IMAGE_TRANSPARENCY asset, Braille style.
-
+        IMAGE_TRANSPARENCY asset rendered using Braille characters on a layer with existing background characters.
     Expected Outputs:
-        Output: Screen content matches expected ANSI string (Base64 encoded).
+        Screen content matches the master ANSI string showing correctly handled foreground transparency in Braille resolution.
 */
 func TestTransparentImageBrailleStyleForegroundTransparency(test *testing.T) {
 	layer1, _, _, _, imageStyle := setupTest()
@@ -370,10 +357,9 @@ string.
 
 Example:
     Expected Inputs:
-        Input: IMAGE_TRANSPARENCY asset, Braille style.
-
+        IMAGE_TRANSPARENCY asset rendered using Braille characters with alpha blending enabled.
     Expected Outputs:
-        Output: Screen content matches expected ANSI string (Base64 encoded).
+        Screen content matches the master ANSI string with correct dot patterns and color blending in semi-transparent regions.
 */
 func TestTransparentImageBrailleStyleBlendedTransparency(test *testing.T) {
 	layer1, _, _, _, imageStyle := setupTest()
@@ -399,10 +385,9 @@ string.
 
 Example:
     Expected Inputs:
-        Input: IMAGE_TRANSPARENCY asset, ASCII character style.
-
+        IMAGE_TRANSPARENCY asset rendered using ASCII characters.
     Expected Outputs:
-        Output: Screen content matches expected ANSI string (Base64 encoded).
+        Screen content matches the master ANSI string showing correctly handled transparency in ASCII character resolution.
 */
 func TestTransparentImageAsciiStyleBackgroundTransparency(test *testing.T) {
 	_, layer2, _, _, imageStyle := setupTest()
@@ -429,10 +414,9 @@ string.
 
 Example:
     Expected Inputs:
-        Input: IMAGE_TRANSPARENCY asset, ASCII character style.
-
+        IMAGE_TRANSPARENCY asset rendered using ASCII characters on a secondary layer with background content.
     Expected Outputs:
-        Output: Screen content matches expected ANSI string (Base64 encoded).
+        Screen content matches the master ANSI string showing correctly handled foreground transparency in ASCII character resolution.
 */
 func TestTransparentImageAsciiStyleForegroundTransparency(test *testing.T) {
 	_, layer2, _, _, imageStyle := setupTest()
@@ -458,10 +442,9 @@ using ASCII style correctly handles blended transparency by comparing against a 
 
 Example:
     Expected Inputs:
-        Input: IMAGE_TRANSPARENCY asset, ASCII character style.
-
+        IMAGE_TRANSPARENCY asset rendered using ASCII characters with alpha blending enabled.
     Expected Outputs:
-        Output: Screen content matches expected ANSI string (Base64 encoded).
+        Screen content matches the master ANSI string with correct character selection and color blending.
 */
 func TestTransparentImageAsciiStyleBlendedTransparency(test *testing.T) {
 	_, layer2, _, _, imageStyle := setupTest()
@@ -488,9 +471,8 @@ accurate block element style at a specific size and aspect ratio.
 Example:
     Expected Inputs:
         Input: IMAGE_GEOMETRY asset, 140x50 size, accurate block style.
-
     Expected Outputs:
-        Output: The rendered image matches the master base64 string stored in the master images directory.
+        The rendered image matches the master base64 string stored in the master images directory.
 */
 func TestComplexGeometryImage(test *testing.T) {
 	layer1, _, _, _ := CommonTestSetupHighResolutionImages()

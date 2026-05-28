@@ -16,10 +16,9 @@ default state.
 
 Example:
     Expected Inputs:
-        None
-
+        A dropdown control added to a layer with three items.
     Expected Outputs:
-        Output: Screen content matches expected ANSI string (Base64 encoded).
+        Screen content matches expected ANSI string (Base64 encoded) for the closed dropdown.
 */
 func TestDropdownDefaultState(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
@@ -46,10 +45,9 @@ selected item upon initialization.
 
 Example:
     Expected Inputs:
-        None
-
+        A dropdown control initialized with the second item (index 1) pre-selected.
     Expected Outputs:
-        Output: Screen content matches expected ANSI string (Base64 encoded) and selected value/alias are correct.
+        Screen content matches expected ANSI string (Base64 encoded) and selected value is "Item 2".
 */
 func TestDropdownWithDefaultSelection(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
@@ -86,10 +84,9 @@ when the dropdown is opened.
 
 Example:
     Expected Inputs:
-        None
-
+        A focused dropdown control with its tray visibility manually set to true.
     Expected Outputs:
-        Output: Screen content matches expected ANSI string (Base64 encoded) with dropdown tray open.
+        Screen content matches expected ANSI string (Base64 encoded) showing the expanded selection tray.
 */
 func TestDropdownOpenState(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
@@ -128,10 +125,9 @@ correctly updates the dropdown's value.
 
 Example:
     Expected Inputs:
-        None
-
+        A manually opened dropdown where the selector index is changed from 0 to 2.
     Expected Outputs:
-        Output: Screen content matches expected ANSI string (Base64 encoded) after changing selection.
+        Screen content matches expected ANSI string (Base64 encoded) and the dropdown value is updated to "Item 3".
 */
 func TestDropdownChangeSelection(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
@@ -183,10 +179,9 @@ items, including the rendering of a scrollbar when the tray is opened.
 
 Example:
     Expected Inputs:
-        None
-
+        A dropdown control added with six items and a tray height restricted to three.
     Expected Outputs:
-        Output: Screen content matches expected ANSI string (Base64 encoded) with scrollbar visible.
+        Screen content matches expected ANSI string (Base64 encoded) showing an open tray with a visible scrollbar.
 */
 func TestDropdownWithManyItems(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
@@ -229,10 +224,9 @@ scrollbar interaction occurs.
 
 Example:
     Expected Inputs:
-        None
-
+        An open dropdown tray with six items where the viewport position is programmatically set to 3.
     Expected Outputs:
-        Output: Screen content matches expected ANSI string (Base64 encoded) after scrolling tray items.
+        Screen content matches expected ANSI string (Base64 encoded) showing the scrolled list of items in the tray.
 */
 func TestDropdownScrolling(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
@@ -279,10 +273,9 @@ parent layer.
 
 Example:
     Expected Inputs:
-        None
-
+        A layer containing one dropdown control which is سپس deleted.
     Expected Outputs:
-        Output: Screen content matches expected ANSI string (Base64 encoded) after deleting the dropdown.
+        Screen content matches expected ANSI string (Base64 encoded) for an empty layer.
 */
 func TestDropdownDelete(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
@@ -314,10 +307,9 @@ deleted at once.
 
 Example:
     Expected Inputs:
-        None
-
+        A layer containing two dropdown controls followed by a DeleteAll call.
     Expected Outputs:
-        Output: Screen content matches expected ANSI string (Base64 encoded) after deleting all dropdowns.
+        Screen content matches expected ANSI string (Base64 encoded) for an empty layer after all controls are removed.
 */
 func TestDropdownDeleteAll(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
@@ -350,10 +342,9 @@ renders accordingly.
 
 Example:
     Expected Inputs:
-        None
-
+        A layer containing a dropdown where focus is programmatically set to that dropdown control.
     Expected Outputs:
-        Output: Screen content matches expected ANSI string (Base64 encoded) with dropdown in focus.
+        Screen content matches expected ANSI string (Base64 encoded) showing the dropdown in its focused visual state.
 */
 func TestDropdownFocus(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()

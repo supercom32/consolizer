@@ -11,9 +11,9 @@ and markup tags without boundary errors or incorrect length calculations.
 
 Example:
     Expected Inputs:
-        Various strings containing emojis and Chinese characters mixed with {{style}} tags.
+        Various strings containing emojis and Japanese/Chinese characters mixed with {{style}} tags.
     Expected Outputs:
-        Correct non-markup text and word lengths.
+        Correct non-markup text, correct word lengths (counting runes), and correctly identified attribute tags.
 */
 func TestRuneAndMarkupHandling(test *testing.T) {
 	// 1. Test GetNonMarkupText with multi-byte characters
@@ -71,9 +71,9 @@ containing multi-byte characters and markup correctly.
 
 Example:
     Expected Inputs:
-        Rune arrays with Chinese characters and markup tags.
+        Rune arrays containing Japanese characters and {{red}} markup tags.
     Expected Outputs:
-        Correct word width excluding markup.
+        Correct word width excluding markup tags, ensuring multi-byte characters are counted as single units.
 */
 func TestCalculateWordWidthWithRunes(test *testing.T) {
 	input := []rune(" こんにちは {{red}}世界{{/}} test")
