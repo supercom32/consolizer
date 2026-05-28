@@ -9,8 +9,7 @@ import (
 )
 
 /*
-connectorEntryType is a structure which defines all the attributes that a connector should
-have. A connector is a character that joins lines together.
+connectorEntryType is a structure which defines all the attributes that a connector should have.
 */
 type connectorEntryType struct {
 	connectorIndex    int
@@ -128,8 +127,7 @@ of connector it is. In addition, the following should be noted:
 - If the rune specified could not be found in your TUI style entry, then -1 will be returned instead.
 
 Example:
-
-	index := getConnectorIndexByCharacter('│', styleEntry)
+    index := getConnectorIndexByCharacter('│', styleEntry)
 */
 func getConnectorIndexByCharacter(sourceCharacter rune, styleEntry types.TuiStyleEntryType) int {
 	connectorIndex := -1
@@ -177,8 +175,7 @@ existing connections are present. In addition, the following should be noted:
 - If the connector described could not be determined, then -1 will be returned instead.
 
 Example:
-
-	index := getConnectorIndexByConnections(true, true, false, false)
+    index := getConnectorIndexByConnections(true, true, false, false)
 */
 func getConnectorIndexByConnections(isConnectedTop bool, isConnectedBottom bool, isConnectedLeft bool, isConnectedRight bool) int {
 	connectorIndex := -1
@@ -206,7 +203,7 @@ func getConnectorIndexByConnections(isConnectedTop bool, isConnectedBottom bool,
 		connectorIndex = lowerRightConnector
 	}
 	return connectorIndex
-}
+	}
 
 /*
 getConnectorCharacterByIndex is a method which obtains a connector character based on the connector index
@@ -215,8 +212,7 @@ and the TUI style provided. In addition, the following should be noted:
 - If the connector described could not be determined, then a NullRune will be returned instead.
 
 Example:
-
-	char := getConnectorCharacterByIndex(horizontalConnector, styleEntry)
+    char := getConnectorCharacterByIndex(horizontalConnector, styleEntry)
 */
 func getConnectorCharacterByIndex(connectorIndex int, styleEntry types.TuiStyleEntryType) rune {
 	characterToReturn := constants.NullRune
@@ -264,8 +260,7 @@ combined with a vertical line, then a cross connector will be returned. In addit
 - If the two runes could not be combined together, then the source rune will be returned instead.
 
 Example:
-
-	combinedChar := getConnectorCharacter('─', '│', styleEntry)
+    combinedChar := getConnectorCharacter('─', '│', styleEntry)
 */
 func getConnectorCharacter(sourceCharacter rune, targetCharacter rune, styleEntry types.TuiStyleEntryType) rune {
 	connectorCharacter := sourceCharacter
@@ -297,11 +292,10 @@ drawVerticalLine is a method which draws a vertical line on a text layer. This m
 to draw connectors in case the line intersects with other lines that have already been drawn. In addition, the following
 should be noted:
 
-- If the line to be drawn falls outside the area of the text layer specified, then only the visible portion of the.
+- If the line to be drawn falls outside the area of the text layer specified, then only the visible portion will be drawn.
 
 Example:
-
-	drawVerticalLine(layer, style, attr, 10, 5, 10, true)
+    drawVerticalLine(layer, style, attr, 10, 5, 10, true)
 */
 func drawVerticalLine(layerEntry *types.LayerEntryType, styleEntry types.TuiStyleEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, height int, isConnectorsDrawn bool) {
 	localAttributeEntry := types.NewAttributeEntry(&attributeEntry)
@@ -333,11 +327,10 @@ drawHorizontalLine is a method which draws a horizontal line on a text layer. Th
 ability to draw connectors in case the line intersects with other lines that have already been drawn. In addition, the
 following should be noted:
 
-- If the line to be drawn falls outside the area of the text layer specified, then only the visible portion of the.
+- If the line to be drawn falls outside the area of the text layer specified, then only the visible portion will be drawn.
 
 Example:
-
-	drawHorizontalLine(layer, style, attr, 10, 5, 20, true)
+    drawHorizontalLine(layer, style, attr, 10, 5, 20, true)
 */
 func drawHorizontalLine(layerEntry *types.LayerEntryType, styleEntry types.TuiStyleEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, width int, isConnectorsDrawn bool) {
 	localAttributeEntry := types.NewAttributeEntry(&attributeEntry)
@@ -371,13 +364,12 @@ func drawHorizontalLine(layerEntry *types.LayerEntryType, styleEntry types.TuiSt
 drawBorder is a method which draws a border on a given text layer. Borders differ from frames since they
 are flat shaded and do not have a raised or sunken look to them. In addition, the following should be noted:
 
-- If the border to be drawn falls outside the range of the specified layer, then only the visible portion of the.
+- If the border to be drawn falls outside the range of the specified layer, then only the visible portion will be drawn.
 
-- The isInteractive option allows you to specify if the window should interact with the layer being drawn on. For.
+- The isInteractive option allows you to specify if the window should interact with the layer being drawn on.
 
 Example:
-
-	drawBorder(layer, style, attr, 5, 5, 40, 15, true)
+    drawBorder(layer, style, attr, 5, 5, 40, 15, true)
 */
 func drawBorder(layerEntry *types.LayerEntryType, styleEntry types.TuiStyleEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, width int, height int, isInteractive bool) {
 	localAttributeEntry := types.NewAttributeEntry(&attributeEntry)
@@ -385,14 +377,14 @@ func drawBorder(layerEntry *types.LayerEntryType, styleEntry types.TuiStyleEntry
 }
 
 /*
-drawFrameLabel is a method which draws a label for a frame. The label will be automatically enclosed by the
-characters "" and "" to blend in with a border of a frame. In addition, the following should be noted:
+drawFrameLabel is a method which draws a label for a frame. The label will be automatically enclosed by characters to
+blend in with a border of a frame. In addition, the following should be noted:
 
-- If the frame label to be drawn falls outside the range of the specified layer, then only the visible portion of the.
+- If the frame label to be drawn falls outside the range of the specified layer, then only the visible portion will be
+  drawn.
 
 Example:
-
-	drawFrameLabel(layer, style, "System Status", 10, 5)
+    drawFrameLabel(layer, style, "System Status", 10, 5)
 */
 func drawFrameLabel(layerEntry *types.LayerEntryType, styleEntry types.TuiStyleEntryType, label string, xLocation int, yLocation int) {
 	attributeEntry := types.NewAttributeEntry()
@@ -411,13 +403,12 @@ func drawFrameLabel(layerEntry *types.LayerEntryType, styleEntry types.TuiStyleE
 drawFrame is a method which draws a frame on a given text layer. Frames differ from borders since borders
 are flat shaded and do not have a raised or sunken look to them. In addition, the following should be noted:
 
-- If the frame to be drawn falls outside the range of the specified layer, then only the visible portion of the frame.
+- If the frame to be drawn falls outside the range of the specified layer, then only the visible portion will be drawn.
 
-- The isInteractive option allows you to specify if the window should interact with the layer being drawn on. For.
+- The isInteractive option allows you to specify if the window should interact with the layer being drawn on.
 
 Example:
-
-	drawFrame(layer, style, attr, constants.FrameStyleRaised, 5, 5, 40, 15, true)
+    drawFrame(layer, style, attr, constants.FrameStyleRaised, 5, 5, 40, 15, true)
 */
 func drawFrame(layerEntry *types.LayerEntryType, styleEntry types.TuiStyleEntryType, attributeEntry types.AttributeEntryType, frameStyle int, xLocation int, yLocation int, width int, height int, isInteractive bool) {
 	localAttributeEntry := types.NewAttributeEntry(&attributeEntry)
@@ -516,13 +507,12 @@ func drawFrame(layerEntry *types.LayerEntryType, styleEntry types.TuiStyleEntryT
 drawWindow is a method which draws a window on a given text layer. Windows differ from borders since the
 entire area the window surrounds gets filled with a solid background color. In addition, the following should be noted:
 
-- If the window to be drawn falls outside the range of the specified layer, then only the visible portion of the.
+- If the window to be drawn falls outside the range of the specified layer, then only the visible portion will be drawn.
 
-- The isInteractive option allows you to specify if the window should interact with the layer being drawn on. For.
+- The isInteractive option allows you to specify if the window should interact with the layer being drawn on.
 
 Example:
-
-	drawWindow(layer, style, attr, 10, 5, 50, 20, true)
+    drawWindow(layer, style, attr, 10, 5, 50, 20, true)
 */
 func drawWindow(layerEntry *types.LayerEntryType, styleEntry types.TuiStyleEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, width int, height int, isInteractive bool) {
 	localAttributeEntry := types.NewAttributeEntry(&attributeEntry)
@@ -547,16 +537,15 @@ func drawWindow(layerEntry *types.LayerEntryType, styleEntry types.TuiStyleEntry
 drawShadow is a method which draws shadows on a given text layer. Shadows are simply transparent areas
 which darken whatever text layers are underneath it by a specified degree. In addition, the following should be noted:
 
-  - The alpha value can range from 0.0 (no shadow) to 1.0 (totally black).
+- The alpha value can range from 0.0 (no shadow) to 1.0 (totally black).
 
-  - If the shadow is drawn over a non-null (non-empty) character, it applies an in-layer shadow effect (i.e.,
-    darkens the existing character).
+- If the shadow is drawn over a non-null (non-empty) character, it applies an in-layer shadow effect (i.e., darkens the
+  existing character).
 
-  - If the shadow is drawn over an empty area, it keeps the current behavior (drawing the solid shadow color).
+- If the shadow is drawn over an empty area, it keeps the current behavior (drawing the solid shadow color).
 
 Example:
-
-	drawShadow(layer, attr, 12, 6, 50, 20, 0.5)
+    drawShadow(layer, attr, 12, 6, 50, 20, 0.5)
 */
 func drawShadow(layerEntry *types.LayerEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, width int, height int, alphaValue float32) {
 	localAttributeEntry := types.NewAttributeEntry(&attributeEntry)
@@ -601,11 +590,10 @@ fillArea is a method which fills an area of a given text layer with characters o
 to fill the area with repeating text, simply provide the string you wish to repeat. In addition, the following should be
 noted:
 
-- If the area to fill falls outside the range of the specified layer, then only the visible portion of the fill will.
+- If the area to fill falls outside the range of the specified layer, then only the visible portion will be filled.
 
 Example:
-
-	fillArea(layer, attr, "*", 0, 0, 80, 24, 0)
+    fillArea(layer, attr, "*", 0, 0, 80, 24, 0)
 */
 func fillArea(layerEntry *types.LayerEntryType, attributeEntry types.AttributeEntryType, fillCharacters string, xLocation int, yLocation int, width int, height int, startingControlLocation int) {
 	currentFillCharacterIndex := 0
@@ -638,8 +626,7 @@ fillAreaWithControlAlias is a method which fills an area of a given text layer w
 cell type. This is useful for marking areas for interactivity without drawing characters.
 
 Example:
-
-	fillAreaWithControlAlias(layer, constants.CellTypeButton, "btnSubmit", 10, 5, 10, 1, 0)
+    fillAreaWithControlAlias(layer, constants.CellTypeButton, "btnSubmit", 10, 5, 10, 1, 0)
 */
 func fillAreaWithControlAlias(layerEntry *types.LayerEntryType, cellType int, cellControlAlias string, xLocation int, yLocation int, width int, height int, startingControlLocation int) {
 	characterMemory := layerEntry.CharacterMemory
@@ -658,8 +645,7 @@ fillLayer is a method which fills an entire layer with characters of your choice
 layer with repeating text, simply provide the string you wish to repeat.
 
 Example:
-
-	fillLayer(layer, attr, " ")
+    fillLayer(layer, attr, " ")
 */
 func fillLayer(layerEntry *types.LayerEntryType, attributeEntry types.AttributeEntryType, fillCharacters string) {
 	fillArea(layerEntry, attributeEntry, fillCharacters, 0, 0, layerEntry.Width, layerEntry.Height, constants.NullCellControlLocation)
@@ -673,8 +659,7 @@ noted:
 - The alpha value can range from 0.0 (totally dark) to 1.0 (no difference).
 
 Example:
-
-	darkEntry := GetDarkenedCharacterEntry(entry, 0.5)
+    darkEntry := GetDarkenedCharacterEntry(entry, 0.5)
 */
 func GetDarkenedCharacterEntry(characterEntry *types.CharacterEntryType, alphaValue float32) types.CharacterEntryType {
 	var newCharacterEntry = types.NewCharacterEntry(characterEntry)
@@ -686,17 +671,16 @@ func GetDarkenedCharacterEntry(characterEntry *types.CharacterEntryType, alphaVa
 }
 
 /*
-GetDarkenedColor is a method which obtains a color that has been darkened uniformly by a specific amount.
-In addition, the following should be noted:
+GetDarkenedColor is a method which obtains a color that has been darkened uniformly by a specific amount. In addition,
+the following should be noted:
 
 - The percent change can range from 0.0 (totally dark) to 1.0 (no difference).
 
-  - If you pass in a percent change of less than 0.0 or greater than 1.0, a panic will be generated to fail as fast as
-    possible.
+- If you pass in a percent change of less than 0.0 or greater than 1.0, a panic will be generated to fail as fast as
+  possible.
 
 Example:
-
-	darkColor := GetDarkenedColor(constants.ColorWhite, 0.5)
+    darkColor := GetDarkenedColor(constants.ColorWhite, 0.5)
 */
 func GetDarkenedColor(color constants.ColorType, percentChange float32) constants.ColorType {
 	var redColorIndex int32

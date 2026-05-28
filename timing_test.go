@@ -9,12 +9,10 @@ import (
 TestTimerFunctionality is a test which verifies the basic functionality of a timer, including expiration after a set duration.
 
 Example:
-
-	Expected Inputs:
-	    None
-
-	Expected Outputs:
-	    None
+    Expected Inputs:
+        A timer set for 3000ms, checked after 1000ms and 3500ms.
+    Expected Outputs:
+        IsExpired returns false after 1000ms and true after 3500ms.
 */
 func TestTimerFunctionality(test *testing.T) {
 	InitializeTimerMemory()
@@ -29,12 +27,10 @@ func TestTimerFunctionality(test *testing.T) {
 TestSetTimerFunctionality is a test which verifies that a timer can be correctly set with new values.
 
 Example:
-
-	Expected Inputs:
-	    None
-
-	Expected Outputs:
-	    None
+    Expected Inputs:
+        A timer initialized with 9000ms (disabled) then updated to 3000ms (enabled).
+    Expected Outputs:
+        The updated timer correctly expires based on the new 3000ms duration.
 */
 func TestSetTimerFunctionality(test *testing.T) {
 	InitializeTimerMemory()
@@ -51,12 +47,10 @@ func TestSetTimerFunctionality(test *testing.T) {
 TestResetTimerFunctionality is a test which verifies that a timer can be correctly reset and restarted.
 
 Example:
-
-	Expected Inputs:
-	    None
-
-	Expected Outputs:
-	    None
+    Expected Inputs:
+        An expired timer that is restarted using the Start method.
+    Expected Outputs:
+        The timer's start time is updated and it correctly reports as non-expired immediately after restarting.
 */
 func TestResetTimerFunctionality(test *testing.T) {
 	InitializeTimerMemory()

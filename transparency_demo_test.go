@@ -14,12 +14,10 @@ transparency strategies. It initializes the terminal and animates the alpha valu
 0.0 for each algorithm, allowing you to see the dissolve effects in action.
 
 Example:
-
-	Expected Inputs:
-	    None
-
-	Expected Outputs:
-	    An animated terminal display showing various transparency transitions.
+    Expected Inputs:
+        A terminal session with background and foreground images, animated across various transparency strategies.
+    Expected Outputs:
+        An animated terminal display showing smooth transitions between layers using CurtainWipe, Blinds, and Interlaced effects.
 */
 func TestTransparencyVisualDemo(test *testing.T) {
 	InitializeTerminal(80, 25)

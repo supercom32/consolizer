@@ -10,6 +10,9 @@ import (
 	"github.com/supercom32/consolizer/types"
 )
 
+/*
+TextFieldInstanceType is a structure which represents an instance of a text field control.
+*/
 type TextFieldInstanceType struct {
 	BaseControlInstanceType
 }
@@ -24,9 +27,7 @@ var TextField textFieldType
 // ============================================================================
 
 /*
-GetValue is a method which gets the current value of your text field.
-
-In addition, the following should be noted:
+GetValue is a method which gets the current value of your text field. In addition, the following should be noted:
 
 - If the text field is password protected, the actual value will be returned, not the masked characters.
 
@@ -35,8 +36,7 @@ In addition, the following should be noted:
 - If the text field does not exist, an empty string will be returned.
 
 Example:
-
-	value := textField.GetValue()
+    value := textField.GetValue()
 */
 func (shared *TextFieldInstanceType) GetValue() string {
 	if TextFields.IsExists(shared.layerAlias, shared.controlAlias) {
@@ -55,8 +55,7 @@ func (shared *TextFieldInstanceType) GetValue() string {
 SetLocation is a method which sets the current location of your text field.
 
 Example:
-
-	textField.SetLocation(10, 5)
+    textField.SetLocation(10, 5)
 */
 func (shared *TextFieldInstanceType) SetLocation(xLocation int, yLocation int) {
 	if TextFields.IsExists(shared.layerAlias, shared.controlAlias) {
@@ -72,22 +71,21 @@ func (shared *TextFieldInstanceType) SetLocation(xLocation int, yLocation int) {
 Add is a method which adds a text field to a given layer. Once called, a text field instance is returned which will allow
 you to read or manipulate properties of your text field. In addition, the following should be noted:
 
-  - If the location specified for the text field falls outside the range of the text layer, then only the
-    visible portion of your text field will be rendered.
+- If the location specified for the text field falls outside the range of the text layer, then only the
+  visible portion of your text field will be rendered.
 
-  - If the max length of your text field is less than or equal to 0, a panic will be generated to fail as fast
-    as possible.
+- If the max length of your text field is less than or equal to 0, a panic will be generated to fail as fast
+  as possible.
 
-  - Password protection will echo back '*' characters to the terminal instead of the actual characters entered.
+- Password protection will echo back '*' characters to the terminal instead of the actual characters entered.
 
-  - Specifying a default value will simply pre-populate the text field with the value specified.
+- Specifying a default value will simply pre-populate the text field with the value specified.
 
-  - If the cursor position moves outside the visible display area of the field, then the entire text field will
-    shift to keep it in view.
+- If the cursor position moves outside the visible display area of the field, then the entire text field will
+  shift to keep it in view.
 
 Example:
-
-	textFieldInstance := TextField.Add("Layer1", "Text1", style, 0, 0, 20, 100, false, "", true)
+    textFieldInstance := TextField.Add("Layer1", "Text1", style, 0, 0, 20, 100, false, "", true)
 */
 func (shared *textFieldType) Add(layerAlias string, textFieldAlias string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, maxLengthAllowed int, IsPasswordProtected bool, defaultValue string, isEnabled bool) TextFieldInstanceType {
 	validateLayerLocationByLayerAlias(layerAlias, xLocation, yLocation)
@@ -127,9 +125,7 @@ func (shared *textFieldType) Add(layerAlias string, textFieldAlias string, style
 }
 
 /*
-Delete is a method which deletes a text field on a given layer.
-
-In addition, the following should be noted:
+Delete is a method which deletes a text field on a given layer. In addition, the following should be noted:
 
 - If the text field does not exist, the request will be ignored.
 
@@ -138,8 +134,7 @@ In addition, the following should be noted:
 - The text field will be removed from the tab index if it was added.
 
 Example:
-
-	TextField.Delete("Layer1", "Text1")
+    TextField.Delete("Layer1", "Text1")
 */
 func (shared *textFieldType) Delete(layerAlias string, textFieldAlias string) {
 	validatorTextField(layerAlias, textFieldAlias)
@@ -147,9 +142,7 @@ func (shared *textFieldType) Delete(layerAlias string, textFieldAlias string) {
 }
 
 /*
-DeleteAll is a method which deletes all text fields on a given layer.
-
-In addition, the following should be noted:
+DeleteAll is a method which deletes all text fields on a given layer. In addition, the following should be noted:
 
 - All text fields on the specified layer will be removed.
 
@@ -158,17 +151,15 @@ In addition, the following should be noted:
 - The text fields will be removed from the tab index if they were added.
 
 Example:
-
-	TextField.DeleteAll("Layer1")
+    TextField.DeleteAll("Layer1")
 */
 func (shared *textFieldType) DeleteAll(layerAlias string) {
 	TextFields.RemoveAll(layerAlias)
 }
 
 /*
-drawOnLayer is a method which draws all text fields on a given text layer entry.
-
-In addition, the following should be noted:
+drawOnLayer is a method which draws all text fields on a given text layer entry. In addition, the following should be
+noted:
 
 - Text fields are drawn in the order they were created.
 
@@ -177,8 +168,7 @@ In addition, the following should be noted:
 - The cursor is drawn if the text field is currently focused.
 
 Example:
-
-	TextField.drawOnLayer(layerEntry)
+    TextField.drawOnLayer(layerEntry)
 */
 func (shared *textFieldType) drawOnLayer(layerEntry types.LayerEntryType) {
 	layerAlias := layerEntry.LayerAlias
@@ -189,9 +179,7 @@ func (shared *textFieldType) drawOnLayer(layerEntry types.LayerEntryType) {
 }
 
 /*
-drawInputString is a method which draws the input string for a text field.
-
-In addition, the following should be noted:
+drawInputString is a method which draws the input string for a text field. In addition, the following should be noted:
 
 - The input string is drawn with the specified style and attributes.
 
@@ -202,8 +190,7 @@ In addition, the following should be noted:
 - Highlighted text is drawn with inverted colors if active.
 
 Example:
-
-	TextField.drawInputString(&layerEntry, style, "Text1", 0, 0, 20, 0, runes)
+    TextField.drawInputString(&layerEntry, style, "Text1", 0, 0, 20, 0, runes)
 */
 func (shared *textFieldType) drawInputString(layerEntry *types.LayerEntryType, styleEntry types.TuiStyleEntryType, textFieldAlias string, xLocation int, yLocation int, width int, stringPosition int, inputValue []rune) {
 	attributeEntry := types.NewAttributeEntry()
@@ -278,9 +265,8 @@ func (shared *textFieldType) drawInputString(layerEntry *types.LayerEntryType, s
 }
 
 /*
-updateViewport is a method which updates the current viewport based on the current text and cursor location.
-
-In addition, the following should be noted:
+updateViewport is a method which updates the current viewport based on the current text and cursor location. In
+addition, the following should be noted:
 
 - Adjusts the viewport to ensure the cursor remains visible within the text field's width.
 
@@ -291,8 +277,7 @@ In addition, the following should be noted:
 - Maintains proper text alignment and visibility when the cursor moves.
 
 Example:
-
-	TextField.updateViewport(textFieldEntry)
+    TextField.updateViewport(textFieldEntry)
 */
 func (shared *textFieldType) updateViewport(textFieldEntry *types.TextFieldEntryType) {
 	// If cursor xLocation is lower than the viewport window
@@ -326,8 +311,7 @@ func (shared *textFieldType) updateViewport(textFieldEntry *types.TextFieldEntry
 insertCharacterAtPosition is a method which inserts a character into a given text field. The location to insert is determined automatically by the current cursor position.
 
 Example:
-
-	TextField.insertCharacterAtPosition(textFieldEntry, 'a')
+    TextField.insertCharacterAtPosition(textFieldEntry, 'a')
 */
 func (shared *textFieldType) insertCharacterAtPosition(textFieldEntry *types.TextFieldEntryType, characterToInsert rune) {
 	textAfterCursor := stringformat.GetRuneArrayCopy(textFieldEntry.CurrentValue[textFieldEntry.CursorPosition:])
@@ -336,9 +320,8 @@ func (shared *textFieldType) insertCharacterAtPosition(textFieldEntry *types.Tex
 }
 
 /*
-deleteCharacterAtPosition is a method which deletes a character at the current cursor position.
-
-In addition, the following should be noted:
+deleteCharacterAtPosition is a method which deletes a character at the current cursor position. In addition, the
+following should be noted:
 
 - If the cursor is at the end of the text, no character is deleted.
 
@@ -347,8 +330,7 @@ In addition, the following should be noted:
 - The text field's current value is updated to reflect the deletion.
 
 Example:
-
-	TextField.deleteCharacterAtPosition(textFieldEntry)
+    TextField.deleteCharacterAtPosition(textFieldEntry)
 */
 func (shared *textFieldType) deleteCharacterAtPosition(textFieldEntry *types.TextFieldEntryType) {
 	if len(textFieldEntry.CurrentValue) != 1 {
@@ -359,9 +341,8 @@ func (shared *textFieldType) deleteCharacterAtPosition(textFieldEntry *types.Tex
 }
 
 /*
-backspaceCharacterAtPosition is a method which backspaces a character at the current cursor position.
-
-In addition, the following should be noted:
+backspaceCharacterAtPosition is a method which backspaces a character at the current cursor position. In addition, the
+following should be noted:
 
 - If the cursor is at the beginning of the text, no character is deleted.
 
@@ -370,8 +351,7 @@ In addition, the following should be noted:
 - The text field's current value is updated to reflect the deletion.
 
 Example:
-
-	TextField.backspaceCharacterAtPosition(textFieldEntry)
+    TextField.backspaceCharacterAtPosition(textFieldEntry)
 */
 func (shared *textFieldType) backspaceCharacterAtPosition(textFieldEntry *types.TextFieldEntryType) {
 	if textFieldEntry.CursorPosition >= 0 {
@@ -380,9 +360,7 @@ func (shared *textFieldType) backspaceCharacterAtPosition(textFieldEntry *types.
 }
 
 /*
-updateCursor is a method which updates a text field cursor's location.
-
-In addition, the following should be noted:
+updateCursor is a method which updates a text field cursor's location. In addition, the following should be noted:
 
 - Ensures the cursor position is within valid bounds.
 
@@ -391,8 +369,7 @@ In addition, the following should be noted:
 - Handles cases where the cursor position is invalid or out of range.
 
 Example:
-
-	TextField.updateCursor(textFieldEntry)
+    TextField.updateCursor(textFieldEntry)
 */
 func (shared *textFieldType) updateCursor(textFieldEntry *types.TextFieldEntryType) {
 	if textFieldEntry.CursorPosition == constants.NullCellControlId || textFieldEntry.CursorPosition >= len(textFieldEntry.CurrentValue) {
@@ -407,8 +384,7 @@ func (shared *textFieldType) updateCursor(textFieldEntry *types.TextFieldEntryTy
 updateKeyboardEventManually is a method which manually updates the state of a text field according to a keystroke event.
 
 Example:
-
-	updateRequired, consumed := TextField.updateKeyboardEventManually("Layer1", "Text1", rune("a"))
+    updateRequired, consumed := TextField.updateKeyboardEventManually("Layer1", "Text1", rune("a"))
 */
 func (shared *textFieldType) updateKeyboardEventManually(layerAlias string, textFieldAlias string, keystroke []rune) (bool, bool) {
 	keystrokeAsString := string(keystroke)
@@ -748,17 +724,15 @@ func (shared *textFieldType) updateKeyboardEventManually(layerAlias string, text
 }
 
 /*
-updateKeyboardEvent is a method which updates the state of all text fields according to the current keystroke event.
-
-In addition, the following should be noted:
+updateKeyboardEvent is a method which updates the state of all text fields according to the current keystroke event. In
+addition, the following should be noted:
 
 - Handles all keyboard input for text fields.
 
 - Only the currently focused text field will process the event.
 
 Example:
-
-	updateRequired, consumed := TextField.updateKeyboardEvent(rune("a"))
+    updateRequired, consumed := TextField.updateKeyboardEvent(rune("a"))
 */
 func (shared *textFieldType) updateKeyboardEvent(keystroke []rune) (bool, bool) {
 	focusedLayerAlias := eventStateMemory.currentlyFocusedControl.layerAlias
@@ -771,15 +745,13 @@ func (shared *textFieldType) updateKeyboardEvent(keystroke []rune) (bool, bool) 
 }
 
 /*
-updateMouseEvent is a method which updates the state of all text fields according to the current mouse event.
-
-In addition, the following should be noted:
+updateMouseEvent is a method which updates the state of all text fields according to the current mouse event. In
+addition, the following should be noted:
 
 - Handles mouse clicks and drags for text selection and cursor positioning.
 
 Example:
-
-	updateRequired := TextField.updateMouseEvent()
+    updateRequired := TextField.updateMouseEvent()
 */
 func (shared *textFieldType) updateMouseEvent() bool {
 	isScreenUpdateRequired := false
@@ -821,17 +793,15 @@ func (shared *textFieldType) updateMouseEvent() bool {
 }
 
 /*
-updateKeyboardEventTextboxWithString is a method which updates a text field with a string of characters.
-
-In addition, the following should be noted:
+updateKeyboardEventTextboxWithString is a method which updates a text field with a string of characters. In addition, the
+following should be noted:
 
 - Processes each character in the string as a separate keystroke.
 
 - Useful for programmatically inserting text into a text field.
 
 Example:
-
-	TextField.updateKeyboardEventTextboxWithString("Hello")
+    TextField.updateKeyboardEventTextboxWithString("Hello")
 */
 func (shared *textFieldType) updateKeyboardEventTextboxWithString(keystroke string) {
 	for _, currentCharacter := range keystroke {
@@ -840,17 +810,15 @@ func (shared *textFieldType) updateKeyboardEventTextboxWithString(keystroke stri
 }
 
 /*
-updateKeyboardEventTextboxWithCommands is a method which updates a text field with a list of command strings.
-
-In addition, the following should be noted:
+updateKeyboardEventTextboxWithCommands is a method which updates a text field with a list of command strings. In
+addition, the following should be noted:
 
 - Processes each command string as a separate keystroke.
 
 - Useful for programmatically executing commands in a text field.
 
 Example:
-
-	TextField.updateKeyboardEventTextboxWithCommands("ctrl+a", "delete")
+    TextField.updateKeyboardEventTextboxWithCommands("ctrl+a", "delete")
 */
 func (shared *textFieldType) updateKeyboardEventTextboxWithCommands(keystroke ...string) {
 	for _, currentCommand := range keystroke {
@@ -859,17 +827,14 @@ func (shared *textFieldType) updateKeyboardEventTextboxWithCommands(keystroke ..
 }
 
 /*
-SetValue is a method which sets the current value of your text field.
-
-In addition, the following should be noted:
+SetValue is a method which sets the current value of your text field. In addition, the following should be noted:
 
 - If the text field is password protected, the value will be stored but displayed as masked characters.
 
 - If the text field does not exist, the request will be ignored.
 
 Example:
-
-	textField.SetValue("New Value")
+    textField.SetValue("New Value")
 */
 func (shared *TextFieldInstanceType) SetValue(value string) *TextFieldInstanceType {
 	if TextFields.IsExists(shared.layerAlias, shared.controlAlias) {
@@ -883,15 +848,12 @@ func (shared *TextFieldInstanceType) SetValue(value string) *TextFieldInstanceTy
 }
 
 /*
-SetDefaultValue is a method which sets the default value of your text field.
-
-In addition, the following should be noted:
+SetDefaultValue is a method which sets the default value of your text field. In addition, the following should be noted:
 
 - The default value will be used when the text field is reset.
 
 Example:
-
-	textField.SetDefaultValue("Default")
+    textField.SetDefaultValue("Default")
 */
 func (shared *TextFieldInstanceType) SetDefaultValue(value string) *TextFieldInstanceType {
 	if TextFields.IsExists(shared.layerAlias, shared.controlAlias) {
@@ -906,8 +868,7 @@ func (shared *TextFieldInstanceType) SetDefaultValue(value string) *TextFieldIns
 SetMaxLength is a method which sets the maximum number of characters allowed in the text field.
 
 Example:
-
-	textField.SetMaxLength(50)
+    textField.SetMaxLength(50)
 */
 func (shared *TextFieldInstanceType) SetMaxLength(length int) *TextFieldInstanceType {
 	if TextFields.IsExists(shared.layerAlias, shared.controlAlias) {
@@ -919,17 +880,15 @@ func (shared *TextFieldInstanceType) SetMaxLength(length int) *TextFieldInstance
 }
 
 /*
-SetPasswordProtected is a method which specifies whether the text field should mask its contents.
-
-In addition, the following should be noted:
+SetPasswordProtected is a method which specifies whether the text field should mask its contents. In addition, the
+following should be noted:
 
 - When enabled, all characters will be displayed as asterisks (*).
 
 - The actual value is still stored and can be retrieved using GetValue.
 
 Example:
-
-	textField.SetPasswordProtected(true)
+    textField.SetPasswordProtected(true)
 */
 func (shared *TextFieldInstanceType) SetPasswordProtected(isProtected bool) *TextFieldInstanceType {
 	if TextFields.IsExists(shared.layerAlias, shared.controlAlias) {
@@ -941,17 +900,15 @@ func (shared *TextFieldInstanceType) SetPasswordProtected(isProtected bool) *Tex
 }
 
 /*
-SetCursorPosition is a method which sets the position of the cursor within the text field.
-
-In addition, the following should be noted:
+SetCursorPosition is a method which sets the position of the cursor within the text field. In addition, the following
+should be noted:
 
 - The cursor position is zero-based.
 
 - The viewport will automatically adjust to keep the cursor visible.
 
 Example:
-
-	textField.SetCursorPosition(10)
+    textField.SetCursorPosition(10)
 */
 func (shared *TextFieldInstanceType) SetCursorPosition(position int) *TextFieldInstanceType {
 	if TextFields.IsExists(shared.layerAlias, shared.controlAlias) {
@@ -963,17 +920,15 @@ func (shared *TextFieldInstanceType) SetCursorPosition(position int) *TextFieldI
 }
 
 /*
-SetViewportPosition is a method which sets the starting position of the visible portion of the text field.
-
-In addition, the following should be noted:
+SetViewportPosition is a method which sets the starting position of the visible portion of the text field. In addition,
+the following should be noted:
 
 - The viewport position is zero-based.
 
 - The cursor will remain visible within the viewport.
 
 Example:
-
-	textField.SetViewportPosition(5)
+    textField.SetViewportPosition(5)
 */
 func (shared *TextFieldInstanceType) SetViewportPosition(position int) *TextFieldInstanceType {
 	if TextFields.IsExists(shared.layerAlias, shared.controlAlias) {
@@ -985,15 +940,13 @@ func (shared *TextFieldInstanceType) SetViewportPosition(position int) *TextFiel
 }
 
 /*
-GetTooltip is a method which retrieves the tooltip associated with this text field and returns the text field instance for method chaining.
-
-In addition, the following should be noted:
+GetTooltip is a method which retrieves the tooltip associated with this text field and returns the text field instance
+for method chaining. In addition, the following should be noted:
 
 - The tooltip is automatically created when the text field is added.
 
 Example:
-
-	textField.GetTooltip()
+    textField.GetTooltip()
 */
 func (shared *TextFieldInstanceType) GetTooltip() *TextFieldInstanceType {
 	// No need to retrieve the tooltip, just return self for chaining
@@ -1004,8 +957,7 @@ func (shared *TextFieldInstanceType) GetTooltip() *TextFieldInstanceType {
 SetTooltipText is a method which sets the text of the tooltip associated with the text field.
 
 Example:
-
-	textField.SetTooltipText("Helpful info")
+    textField.SetTooltipText("Helpful info")
 */
 func (shared *TextFieldInstanceType) SetTooltipText(text string) *TextFieldInstanceType {
 	if TextFields.IsExists(shared.layerAlias, shared.controlAlias) {
@@ -1022,8 +974,7 @@ func (shared *TextFieldInstanceType) SetTooltipText(text string) *TextFieldInsta
 EnableTooltip is a method which enables or disables the tooltip associated with the text field.
 
 Example:
-
-	textField.EnableTooltip(true)
+    textField.EnableTooltip(true)
 */
 func (shared *TextFieldInstanceType) EnableTooltip(enabled bool) *TextFieldInstanceType {
 	if TextFields.IsExists(shared.layerAlias, shared.controlAlias) {

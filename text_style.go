@@ -17,8 +17,7 @@ func init() {
 GetTextStyle is a method which retrieves a text style entry by its alias.
 
 Example:
-
-	style := GetTextStyle("myStyle")
+    style := GetTextStyle("myStyle")
 */
 func GetTextStyle(textStyleAlias string) *types.TextCellStyleEntryType {
 	// Use the generic memory manager to retrieve the text style entry
@@ -32,8 +31,7 @@ func GetTextStyle(textStyleAlias string) *types.TextCellStyleEntryType {
 GetTextStyleAsAttributeEntry is a method which retrieves a text style entry and converts it to an attribute entry.
 
 Example:
-
-	attribute := GetTextStyleAsAttributeEntry("myStyle")
+    attribute := GetTextStyleAsAttributeEntry("myStyle")
 */
 func GetTextStyleAsAttributeEntry(textStyleAlias string) types.AttributeEntryType {
 	// Use the generic memory manager to retrieve the text style entry
@@ -58,8 +56,7 @@ func GetTextStyleAsAttributeEntry(textStyleAlias string) types.AttributeEntryTyp
 IsTextStyleExists is a method which checks if a text style exists in memory.
 
 Example:
-
-	exists := IsTextStyleExists("myStyle")
+    exists := IsTextStyleExists("myStyle")
 */
 func IsTextStyleExists(textStyleAlias string) bool {
 	// Use the generic memory manager to check if the text style exists
@@ -67,15 +64,15 @@ func IsTextStyleExists(textStyleAlias string) bool {
 }
 
 /*
-CalculateStringLengthWithoutMarkup is a method which calculates the length of a string without counting markup tags. In addition, the following should be noted:
+CalculateStringLengthWithoutMarkup is a method which calculates the length of a string without counting markup tags. In
+addition, the following should be noted:
 
 - Markup tags are sequences surrounded by "{{" and "}}".
 
 - This is useful for calculating the visual length of a string that contains markup.
 
 Example:
-
-	length := CalculateStringLengthWithoutMarkup("{{red}}Hello{{white}} World")
+    length := CalculateStringLengthWithoutMarkup("{{red}}Hello{{white}} World")
 */
 func CalculateStringLengthWithoutMarkup(text string) int {
 	length := 0
