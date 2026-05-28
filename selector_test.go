@@ -9,6 +9,16 @@ import (
 
 const SELECTOR_TEST_SUITE_NAME = "selector"
 
+/*
+TestSelectorRandomSelection is a test which verifies that a selector control correctly renders a selection made at
+an arbitrary index.
+
+Example:
+    Expected Inputs:
+        A selector with 4 items, where the second item (index 1) is programmatically selected.
+    Expected Outputs:
+        Screen content matches expected ANSI string (Base64 encoded) showing the selected item highlighted.
+*/
 func TestSelectorRandomSelection(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	selectionEntry := NewSelectionEntry()
@@ -31,6 +41,16 @@ func TestSelectorRandomSelection(test *testing.T) {
 	}
 }
 
+/*
+TestSelectorLongList is a test which verifies that a selector control correctly handles a long list of items,
+including the rendering of a scrollbar when necessary.
+
+Example:
+    Expected Inputs:
+        A selector with 8 items and a viewport height of 4.
+    Expected Outputs:
+        Screen content matches expected ANSI string (Base64 encoded) showing a subset of items and a scrollbar.
+*/
 func TestSelectorLongList(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	selectionEntry := NewSelectionEntry()
@@ -57,6 +77,16 @@ func TestSelectorLongList(test *testing.T) {
 	}
 }
 
+/*
+TestGetAllItems is a test which verifies that the GetAllItems method correctly retrieves all aliases and values
+from a selector control.
+
+Example:
+    Expected Inputs:
+        A selector containing 4 items with known aliases and values.
+    Expected Outputs:
+        The returned alias and value slices exactly match the expected input collections.
+*/
 func TestGetAllItems(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	selectionEntry := NewSelectionEntry()
@@ -89,6 +119,16 @@ func TestGetAllItems(test *testing.T) {
 	assert.Empty(test, emptyValues, "The returned values should be empty for an empty selector")
 }
 
+/*
+TestSelectorLongListWithColors is a test which verifies that a selector control correctly renders items that
+contain markup tags for colorization.
+
+Example:
+    Expected Inputs:
+        A selector containing an item with "{{red}}Text{{/}}" markup.
+    Expected Outputs:
+        Screen content matches expected ANSI string (Base64 encoded) showing the item with correct color formatting.
+*/
 func TestSelectorLongListWithColors(test *testing.T) {
 	textStyleAlias := "red"
 	attributeEntry := NewTextStyle()
@@ -119,6 +159,16 @@ func TestSelectorLongListWithColors(test *testing.T) {
 	}
 }
 
+/*
+TestFocusSelectionInitialPosition is a test which verifies that a selector control initializes with the correct
+viewport position of 0.
+
+Example:
+    Expected Inputs:
+        A selector with 20 items and a viewport height of 4.
+    Expected Outputs:
+        The initial ViewportPosition is 0 and the screen content matches the default view.
+*/
 func TestFocusSelectionInitialPosition(test *testing.T) {
 	// Setup
 	layer1, _, _, styleEntry := CommonTestSetup()
@@ -154,6 +204,16 @@ func TestFocusSelectionInitialPosition(test *testing.T) {
 	}
 }
 
+/*
+TestFocusSelectionMiddleItem is a test which verifies that the FocusSelection method correctly adjusts the
+viewport position to center a selected item.
+
+Example:
+    Expected Inputs:
+        A selector with 20 items where FocusSelection is called for "Alias 10".
+    Expected Outputs:
+        The ViewportPosition is adjusted to 7 to center the 10th item (index 9) in a height-4 viewport.
+*/
 func TestFocusSelectionMiddleItem(test *testing.T) {
 	// Setup
 	layer1, _, _, styleEntry := CommonTestSetup()
@@ -196,6 +256,16 @@ func TestFocusSelectionMiddleItem(test *testing.T) {
 	}
 }
 
+/*
+TestFocusSelectionEndItem is a test which verifies that FocusSelection correctly clamps the viewport position
+to the bottom of the list.
+
+Example:
+    Expected Inputs:
+        A selector with 20 items where FocusSelection is called for "Alias 18".
+    Expected Outputs:
+        The ViewportPosition is adjusted but correctly limited by the maximum possible value of 16.
+*/
 func TestFocusSelectionEndItem(test *testing.T) {
 	// Setup
 	layer1, _, _, styleEntry := CommonTestSetup()
@@ -238,6 +308,16 @@ func TestFocusSelectionEndItem(test *testing.T) {
 	}
 }
 
+/*
+TestFocusSelectionBeginningItem is a test which verifies that FocusSelection correctly clamps the viewport
+position to 0 when an item near the start is focused.
+
+Example:
+    Expected Inputs:
+        A selector with 20 items where FocusSelection is called for "Alias 2".
+    Expected Outputs:
+        The ViewportPosition is set to 0 and not allowed to become negative.
+*/
 func TestFocusSelectionBeginningItem(test *testing.T) {
 	// Setup
 	layer1, _, _, styleEntry := CommonTestSetup()
@@ -278,6 +358,16 @@ func TestFocusSelectionBeginningItem(test *testing.T) {
 	}
 }
 
+/*
+TestFocusSelectionNonExistentItem is a test which verifies that FocusSelection does not change the viewport
+position when called with a non-existent item alias.
+
+Example:
+    Expected Inputs:
+        A selector with 20 items where FocusSelection is called for a missing alias.
+    Expected Outputs:
+        The ViewportPosition remains at its previous value.
+*/
 func TestFocusSelectionNonExistentItem(test *testing.T) {
 	// Setup
 	layer1, _, _, styleEntry := CommonTestSetup()

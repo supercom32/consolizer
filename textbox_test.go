@@ -10,15 +10,13 @@ import (
 const TEXTBOX_TEST_SUITE_NAME = "textbox"
 
 /*
-TestTextboxMultiline is a test which verifies that a multiline textbox is rendered correctly.
+TestTextboxMultiline is a test which verifies that a multiline textbox correctly renders several lines of text.
 
 Example:
-
-	Expected Inputs:
-	    A multiline textbox with several lines of text.
-
-	Expected Outputs:
-	    A rendered multiline textbox.
+    Expected Inputs:
+        A multiline textbox where multiple lines of text are programmatically inserted.
+    Expected Outputs:
+        Screen content matches expected ANSI string (Base64 encoded) showing multiple lines of rendered text.
 */
 func TestTextboxMultiline(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
@@ -44,15 +42,14 @@ func TestTextboxMultiline(test *testing.T) {
 }
 
 /*
-TestTextboxLongLine is a test which verifies that a textbox with a long line is rendered correctly.
+TestTextboxLongLine is a test which verifies that a textbox correctly handles and renders a line of text that
+exceeds its visible width.
 
 Example:
-
-	Expected Inputs:
-	    A textbox with a line of text exceeding its width.
-
-	Expected Outputs:
-	    A rendered textbox with horizontally scrolled text.
+    Expected Inputs:
+        A textbox containing a line of text longer than 20 characters.
+    Expected Outputs:
+        Screen content matches expected ANSI string (Base64 encoded) showing horizontally scrolled or truncated text.
 */
 func TestTextboxLongLine(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
@@ -78,15 +75,14 @@ func TestTextboxLongLine(test *testing.T) {
 }
 
 /*
-TestTextboxTallLine is a test which verifies that a textbox with many lines is rendered correctly.
+TestTextboxTallLine is a test which verifies that a textbox correctly handles and renders text content that
+contains more lines than its visible height.
 
 Example:
-
-	Expected Inputs:
-	    A textbox with more lines of text than its height.
-
-	Expected Outputs:
-	    A rendered textbox with vertically scrolled text.
+    Expected Inputs:
+        A textbox containing more than 4 lines of text.
+    Expected Outputs:
+        Screen content matches expected ANSI string (Base64 encoded) showing vertically scrolled text.
 */
 func TestTextboxTallLine(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
@@ -115,15 +111,14 @@ func TestTextboxTallLine(test *testing.T) {
 }
 
 /*
-TestTextboxLongAndTall is a test which verifies that a textbox with both long and many lines is rendered correctly.
+TestTextboxLongAndTall is a test which verifies that a textbox correctly handles text content that exceeds both
+its width and its height.
 
 Example:
-
-	Expected Inputs:
-	    A textbox with lines exceeding both width and height.
-
-	Expected Outputs:
-	    A rendered textbox with both horizontally and vertically scrolled text.
+    Expected Inputs:
+        A textbox with long lines and many rows of text.
+    Expected Outputs:
+        Screen content matches expected ANSI string (Base64 encoded) showing both horizontal and vertical scrolling.
 */
 func TestTextboxLongAndTall(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
@@ -152,15 +147,13 @@ func TestTextboxLongAndTall(test *testing.T) {
 }
 
 /*
-TestTextboxLineBreak is a test which verifies that a textbox handles line breaks correctly.
+TestTextboxLineBreak is a test which verifies that a textbox correctly handles explicit line break commands.
 
 Example:
-
-	Expected Inputs:
-	    A textbox where an enter key is pressed to create a new line.
-
-	Expected Outputs:
-	    A rendered textbox with a new line inserted.
+    Expected Inputs:
+        A focused textbox where an "enter" keystroke is simulated.
+    Expected Outputs:
+        Screen content matches expected ANSI string (Base64 encoded) showing a new line inserted at the cursor.
 */
 func TestTextboxLineBreak(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
@@ -191,15 +184,14 @@ func TestTextboxLineBreak(test *testing.T) {
 }
 
 /*
-TestTextboxDeleting is a test which verifies that deleting text in a textbox works correctly.
+TestTextboxDeleting is a test which verifies that deleting characters in a textbox correctly updates the text
+data and rendering.
 
 Example:
-
-	Expected Inputs:
-	    A textbox where the delete key is pressed to remove characters.
-
-	Expected Outputs:
-	    A rendered textbox with the specified characters removed.
+    Expected Inputs:
+        A textbox where multiple "delete" commands are executed at specific cursor positions.
+    Expected Outputs:
+        Screen content matches expected ANSI string (Base64 encoded) with characters removed as expected.
 */
 func TestTextboxDeleting(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
@@ -225,15 +217,14 @@ func TestTextboxDeleting(test *testing.T) {
 }
 
 /*
-TestTextboxHome is a test which verifies that the home key in a textbox works correctly.
+TestTextboxHome is a test which verifies that the "home" key correctly moves the cursor to the beginning of a
+line in the textbox.
 
 Example:
-
-	Expected Inputs:
-	    A textbox where the home key is pressed to move the cursor to the beginning of the line.
-
-	Expected Outputs:
-	    A rendered textbox with the cursor at the beginning of the line.
+    Expected Inputs:
+        A focused textbox where the "home" command is simulated after moving to the end of a line.
+    Expected Outputs:
+        Screen content matches expected ANSI string (Base64 encoded) showing the cursor at column 0.
 */
 func TestTextboxHome(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
