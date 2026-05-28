@@ -11,13 +11,18 @@ import (
 CheckboxInstanceType is a structure which represents an instance of a checkbox control.
 
 Example:
-
-	var checkboxInstance CheckboxInstanceType
+    var checkboxInstance CheckboxInstanceType
 */
 type CheckboxInstanceType struct {
 	BaseControlInstanceType
 }
 
+/*
+checkboxType is a structure which provides the global namespace for checkbox management operations.
+
+Example:
+    var checkbox checkboxType
+*/
 type checkboxType struct{}
 
 var Checkbox checkboxType
@@ -28,8 +33,7 @@ var Checkboxes = memory.NewControlMemoryManager[types.CheckboxEntryType]()
 Delete is a method which removes a checkbox instance from its memory manager.
 
 Example:
-
-	checkbox.Delete()
+    checkbox.Delete()
 */
 func (shared *CheckboxInstanceType) Delete() *CheckboxInstanceType {
 	shared.BaseControlInstanceType.Delete()
@@ -40,8 +44,7 @@ func (shared *CheckboxInstanceType) Delete() *CheckboxInstanceType {
 AddToTabIndex is a method which adds the checkbox to the tab index of its associated layer.
 
 Example:
-
-	checkbox.AddToTabIndex()
+    checkbox.AddToTabIndex()
 */
 func (shared *CheckboxInstanceType) AddToTabIndex() {
 	addTabIndex(shared.layerAlias, shared.controlAlias, constants.CellTypeCheckbox)
@@ -52,8 +55,7 @@ IsSelected is a method which detects if the checkbox is selected. If the checkbo
 longer exists, then a result of false is always returned.
 
 Example:
-
-	isSelected := checkbox.IsSelected()
+    isSelected := checkbox.IsSelected()
 */
 func (shared *CheckboxInstanceType) IsSelected() bool {
 	if Checkboxes.IsExists(shared.layerAlias, shared.controlAlias) {
@@ -69,8 +71,7 @@ func (shared *CheckboxInstanceType) IsSelected() bool {
 SetState is a method which sets the selection state of the checkbox.
 
 Example:
-
-	checkbox.SetState(true)
+    checkbox.SetState(true)
 */
 func (shared *CheckboxInstanceType) SetState(isChecked bool) {
 	if Checkboxes.IsExists(shared.layerAlias, shared.controlAlias) {
@@ -85,16 +86,15 @@ returned which will allow you to read or manipulate the properties for it. The s
 by the style entry passed in. If you wish to remove a checkbox from a text layer, simply call 'DeleteCheckbox'. In
 addition, the following should be noted:
 
-  - Checkboxes are not drawn physically to the text layer provided. Instead, they are rendered to the terminal at
-    the same time when the text layer is rendered. This allows you to create checkboxes without actually
-    overwriting the text layer data under it.
+- Checkboxes are not drawn physically to the text layer provided. Instead, they are rendered to the terminal at
+  the same time when the text layer is rendered. This allows you to create checkboxes without actually
+  overwriting the text layer data under it.
 
-  - If the checkbox to be drawn falls outside the range of the provided layer, then only the visible portion of the
-    checkbox will be drawn.
+- If the checkbox to be drawn falls outside the range of the provided layer, then only the visible portion of the
+  checkbox will be drawn.
 
 Example:
-
-	checkboxInstance := Checkbox.Add("layer1", "cb1", "Enable Feature", style, 5, 5, false, true)
+    checkboxInstance := Checkbox.Add("layer1", "cb1", "Enable Feature", style, 5, 5, false, true)
 */
 func (shared *checkboxType) Add(layerAlias string, checkboxAlias string, checkboxLabel string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, isSelected bool, isEnabled bool) CheckboxInstanceType {
 	checkboxEntry := types.NewCheckboxEntry()
@@ -134,8 +134,7 @@ noted:
 - If you attempt to delete a checkbox which does not exist, then the request will simply be ignored.
 
 Example:
-
-	Checkbox.Delete("layer1", "cb1")
+    Checkbox.Delete("layer1", "cb1")
 */
 func (shared *checkboxType) Delete(layerAlias string, checkboxAlias string) {
 	Checkboxes.Remove(layerAlias, checkboxAlias)
@@ -145,8 +144,7 @@ func (shared *checkboxType) Delete(layerAlias string, checkboxAlias string) {
 DeleteAll is a method which deletes all checkboxes on a given text layer.
 
 Example:
-
-	Checkbox.DeleteAll("layer1")
+    Checkbox.DeleteAll("layer1")
 */
 func (shared *checkboxType) DeleteAll(layerAlias string) {
 	Checkboxes.RemoveAll(layerAlias)
@@ -156,8 +154,7 @@ func (shared *checkboxType) DeleteAll(layerAlias string) {
 drawOnLayer is a method which draws all checkboxes on a given text layer.
 
 Example:
-
-	Checkbox.drawOnLayer(myLayer)
+    Checkbox.drawOnLayer(myLayer)
 */
 func (shared *checkboxType) drawOnLayer(layerEntry types.LayerEntryType) {
 	layerAlias := layerEntry.LayerAlias
@@ -170,16 +167,15 @@ func (shared *checkboxType) drawOnLayer(layerEntry types.LayerEntryType) {
 draw is a method which draws a checkbox on a given text layer. The style of the checkbox will be
 determined by the style entry passed in. In addition, the following should be noted:
 
-  - Checkboxes are not drawn physically to the text layer provided. Instead, they are rendered to the terminal at
-    the same time when the text layer is rendered. This allows you to create checkboxes without actually
-    overwriting the text layer data under it.
+- Checkboxes are not drawn physically to the text layer provided. Instead, they are rendered to the terminal at
+  the same time when the text layer is rendered. This allows you to create checkboxes without actually
+  overwriting the text layer data under it.
 
-  - If the checkbox to be drawn falls outside the range of the provided layer, then only the visible portion of the
-    checkbox will be drawn.
+- If the checkbox to be drawn falls outside the range of the provided layer, then only the visible portion of the
+  checkbox will be drawn.
 
 Example:
-
-	Checkbox.draw(&myLayer, "cb1", "Enable Feature", style, 0, 0, false, true)
+    Checkbox.draw(&myLayer, "cb1", "Enable Feature", style, 0, 0, false, true)
 */
 func (shared *checkboxType) draw(layerEntry *types.LayerEntryType, checkboxAlias string, checkboxLabel string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, isSelected bool, isEnabled bool) {
 	localStyleEntry := types.NewTuiStyleEntry(&styleEntry)
@@ -207,8 +203,7 @@ updateMouseEvent is a method which updates the state of all checkboxes according
 state.
 
 Example:
-
-	isUpdateNeeded := Checkbox.updateMouseEvent()
+    isUpdateNeeded := Checkbox.updateMouseEvent()
 */
 func (shared *checkboxType) updateMouseEvent() bool {
 	isUpdateRequired := false

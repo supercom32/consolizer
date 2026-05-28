@@ -13,12 +13,11 @@ const CHECKBOX_TEST_SUITE_NAME = "checkbox"
 TestCheckboxDefaultState is a test which verifies that a checkbox is rendered correctly in its default state.
 
 Example:
+    Expected Inputs:
+        None
 
-	Expected Inputs:
-	    None
-
-	Expected Outputs:
-	    Checkbox is rendered at (2,2) with label "Test Checkbox" and unselected.
+    Expected Outputs:
+        Checkbox is rendered at (2,2) with label "Test Checkbox" and unselected.
 */
 func TestCheckboxDefaultState(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
@@ -41,12 +40,11 @@ TestCheckboxSelectedState is a test which verifies that a checkbox is rendered c
 selected state.
 
 Example:
+    Expected Inputs:
+        None
 
-	Expected Inputs:
-	    None
-
-	Expected Outputs:
-	    Expects checkbox to be rendered with its selected character.
+    Expected Outputs:
+        Expects checkbox to be rendered with its selected character.
 */
 func TestCheckboxSelectedState(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
@@ -69,12 +67,11 @@ TestCheckboxDisabledState is a test which verifies that a checkbox is rendered c
 disabled state.
 
 Example:
+    Expected Inputs:
+        None
 
-	Expected Inputs:
-	    None
-
-	Expected Outputs:
-	    Expects checkbox to be rendered with its disabled state appearance.
+    Expected Outputs:
+        Expects checkbox to be rendered with its disabled state appearance.
 */
 func TestCheckboxDisabledState(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
@@ -96,12 +93,11 @@ func TestCheckboxDisabledState(test *testing.T) {
 TestCheckboxToggleState is a test which verifies that a checkbox correctly toggles its selection state.
 
 Example:
+    Expected Inputs:
+        None
 
-	Expected Inputs:
-	    None
-
-	Expected Outputs:
-	    Expects checkbox selection state to change after a simulated interaction.
+    Expected Outputs:
+        Expects checkbox selection state to change after a simulated interaction.
 */
 func TestCheckboxToggleState(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
@@ -134,12 +130,11 @@ TestCheckboxMultiple is a test which verifies that multiple checkboxes are rende
 layer.
 
 Example:
+    Expected Inputs:
+        None
 
-	Expected Inputs:
-	    None
-
-	Expected Outputs:
-	    Expects multiple checkboxes with different states to be rendered correctly.
+    Expected Outputs:
+        Expects multiple checkboxes with different states to be rendered correctly.
 */
 func TestCheckboxMultiple(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
@@ -163,12 +158,11 @@ TestCheckboxDelete is a test which verifies that a checkbox is successfully remo
 is called.
 
 Example:
+    Expected Inputs:
+        None
 
-	Expected Inputs:
-	    None
-
-	Expected Outputs:
-	    Expects checkbox to be absent from the rendered output after deletion.
+    Expected Outputs:
+        Expects checkbox to be absent from the rendered output after deletion.
 */
 func TestCheckboxDelete(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
@@ -195,12 +189,11 @@ func TestCheckboxDelete(test *testing.T) {
 TestCheckboxDeleteAll is a test which verifies that all checkboxes are successfully removed from a layer.
 
 Example:
+    Expected Inputs:
+        None
 
-	Expected Inputs:
-	    None
-
-	Expected Outputs:
-	    Expects all checkboxes to be absent from the rendered output after calling DeleteAllCheckboxes.
+    Expected Outputs:
+        Expects all checkboxes to be absent from the rendered output after calling DeleteAllCheckboxes.
 */
 func TestCheckboxDeleteAll(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
@@ -228,12 +221,11 @@ func TestCheckboxDeleteAll(test *testing.T) {
 TestCheckboxFocus is a test which verifies that a checkbox correctly handles focus state.
 
 Example:
+    Expected Inputs:
+        None
 
-	Expected Inputs:
-	    None
-
-	Expected Outputs:
-	    Expects checkbox focus state to be reflected in the system.
+    Expected Outputs:
+        Expects checkbox focus state to be reflected in the system.
 */
 func TestCheckboxFocus(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
@@ -260,12 +252,11 @@ TestCheckboxLongLabel is a test which verifies that a checkbox is rendered corre
 label.
 
 Example:
+    Expected Inputs:
+        None
 
-	Expected Inputs:
-	    None
-
-	Expected Outputs:
-	    Expects checkbox label to be rendered without breaking the layout.
+    Expected Outputs:
+        Expects checkbox label to be rendered without breaking the layout.
 */
 func TestCheckboxLongLabel(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
