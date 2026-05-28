@@ -17,7 +17,6 @@ type keyboardMemoryType struct {
 	lastKeystroke []rune
 }
 
-// KeyboardMemory is the global instance for managing the current keyboard state.
 /*
 KeyboardMemory is a variable which acts as the global instance for managing the current keyboard state.
 */
@@ -29,12 +28,11 @@ func init() {
 }
 
 /*
-AddToBuffer is a method which allows you to add one or more keystrokes to the keyboard buffer. Each
-keystroke is represented as a slice of runes.
+AddToBuffer is a method which allows you to add one or more keystrokes to the keyboard buffer. Each keystroke is
+represented as a slice of runes.
 
 Example:
-
-	KeyboardMemory.AddToBuffer(rune{'a'}, rune{'b'})
+    KeyboardMemory.AddToBuffer(rune{'a'}, rune{'b'})
 */
 func (shared *keyboardMemoryType) AddToBuffer(keystroke ...[]rune) {
 	shared.Lock()
@@ -54,12 +52,11 @@ func (shared *keyboardMemoryType) AddToBuffer(keystroke ...[]rune) {
 }
 
 /*
-GetFromBuffer is a method which allows you to retrieve the next available keystroke from the keyboard
-buffer. The keystroke is returned as a slice of runes.
+GetFromBuffer is a method which allows you to retrieve the next available keystroke from the keyboard buffer. The
+keystroke is returned as a slice of runes.
 
 Example:
-
-	keystroke := KeyboardMemory.GetFromBuffer()
+    keystroke := KeyboardMemory.GetFromBuffer()
 */
 func (shared *keyboardMemoryType) GetFromBuffer() []rune {
 	if shared.entries == nil || len(shared.entries) == 0 {
@@ -80,8 +77,7 @@ LiveInkey is a method which allows you to retrieve the key currently being press
 empty string is returned.
 
 Example:
-
-	key := KeyboardMemory.LiveInkey()
+    key := KeyboardMemory.LiveInkey()
 */
 func (shared *keyboardMemoryType) LiveInkey() string {
 	shared.Lock()
@@ -101,8 +97,7 @@ func (shared *keyboardMemoryType) LiveInkey() string {
 IsKeyPressed is a method which allows you to check if a specific key is currently being pressed.
 
 Example:
-
-	isPressed := KeyboardMemory.IsKeyPressed("a")
+    isPressed := KeyboardMemory.IsKeyPressed("a")
 */
 func (shared *keyboardMemoryType) IsKeyPressed(key string) bool {
 	shared.Lock()
@@ -116,8 +111,7 @@ func (shared *keyboardMemoryType) IsKeyPressed(key string) bool {
 GetLastKeystroke is a method which allows you to retrieve the last keystroke that was processed by the keyboard buffer.
 
 Example:
-
-	lastKeystroke := KeyboardMemory.GetLastKeystroke()
+    lastKeystroke := KeyboardMemory.GetLastKeystroke()
 */
 func (shared *keyboardMemoryType) GetLastKeystroke() []rune {
 	shared.Lock()
@@ -131,8 +125,7 @@ ClearKeyStates is a method which allows you to mark all keys as released, effect
 keys.
 
 Example:
-
-	KeyboardMemory.ClearKeyStates()
+    KeyboardMemory.ClearKeyStates()
 */
 func (shared *keyboardMemoryType) ClearKeyStates() {
 	shared.Lock()
