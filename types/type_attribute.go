@@ -8,13 +8,6 @@ import (
 
 /*
 AttributeEntryType is a structure which contains the visual and metadata properties for a single terminal cell.
-
-Example:
-
-	attributeEntry := AttributeEntryType{
-	    ForegroundColor: constants.ColorType{R: 255, G: 255, B: 255},
-	    BackgroundColor: constants.ColorType{R: 0, G: 0, B: 0},
-	}
 */
 type AttributeEntryType struct {
 	ForegroundColor         constants.ColorType
@@ -46,8 +39,7 @@ MarshalJSON is a method which serializes an attribute entry to JSON. In addition
 - Used for saving and loading attribute configurations.
 
 Example:
-
-	jsonData, err := attributeEntry.MarshalJSON()
+    jsonData, err := attributeEntry.MarshalJSON()
 */
 func (shared AttributeEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
@@ -96,7 +88,8 @@ func (shared AttributeEntryType) MarshalJSON() ([]byte, error) {
 }
 
 /*
-GetEntryAsJsonDump is a method which returns a JSON string representation of an attribute entry. In addition, the following should be noted:
+GetEntryAsJsonDump is a method which returns a JSON string representation of an attribute entry. In addition, the
+following should be noted:
 
 - Returns a formatted JSON string of the attribute entry's state.
 
@@ -105,8 +98,7 @@ GetEntryAsJsonDump is a method which returns a JSON string representation of an 
 - Panics if JSON marshaling fails.
 
 Example:
-
-	jsonString := attributeEntry.GetEntryAsJsonDump()
+    jsonString := attributeEntry.GetEntryAsJsonDump()
 */
 func (shared AttributeEntryType) GetEntryAsJsonDump() string {
 	j, err := json.Marshal(shared)
@@ -126,8 +118,7 @@ NewAttributeEntry is a constructor which creates a new attribute entry. In addit
 - Sets up all visual and control-specific attributes.
 
 Example:
-
-	attributeEntry := NewAttributeEntry(&existingAttributeEntry)
+    attributeEntry := NewAttributeEntry(&existingAttributeEntry)
 */
 func NewAttributeEntry(existingAttributeEntry ...*AttributeEntryType) AttributeEntryType {
 	var attributeEntry AttributeEntryType
