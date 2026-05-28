@@ -9,6 +9,16 @@ import (
 
 const RADIO_BUTTON_TEST_SUITE_NAME = "radio_button"
 
+/*
+TestRadioButtonDefaultState is a test which verifies that a radio button control is rendered correctly with its
+default (unselected) state.
+
+Example:
+    Expected Inputs:
+        A radio button added to a layer with isSelected set to false.
+    Expected Outputs:
+        Screen content matches expected ANSI string (Base64 encoded) showing the unselected character.
+*/
 func TestRadioButtonDefaultState(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	radioButton.Add(layer1.layerAlias, "testRadioButton", "Test Radio Button", styleEntry, 2, 2, 1, false)
@@ -25,6 +35,16 @@ func TestRadioButtonDefaultState(test *testing.T) {
 	}
 }
 
+/*
+TestRadioButtonSelectedState is a test which verifies that a radio button control is rendered correctly with its
+selected state.
+
+Example:
+    Expected Inputs:
+        A radio button added to a layer with isSelected set to true.
+    Expected Outputs:
+        Screen content matches expected ANSI string (Base64 encoded) showing the selected character.
+*/
 func TestRadioButtonSelectedState(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	radioButton.Add(layer1.layerAlias, "testRadioButton", "Test Radio Button", styleEntry, 2, 2, 1, true)
@@ -41,6 +61,16 @@ func TestRadioButtonSelectedState(test *testing.T) {
 	}
 }
 
+/*
+TestRadioButtonGroup is a test which verifies that only one radio button within a single group can be selected at
+a time.
+
+Example:
+    Expected Inputs:
+        Three radio buttons added to the same group ID.
+    Expected Outputs:
+        Only the first radio button is reported as selected, and the others are false.
+*/
 func TestRadioButtonGroup(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	radioButtonInstance1 := radioButton.Add(layer1.layerAlias, "testRadioButton1", "Radio Button 1", styleEntry, 2, 2, 1, true)
@@ -73,6 +103,15 @@ func TestRadioButtonGroup(test *testing.T) {
 	}
 }
 
+/*
+TestRadioButtonMultipleGroups is a test which verifies that radio buttons in different groups operate independently.
+
+Example:
+    Expected Inputs:
+        Two groups of radio buttons, each with two buttons.
+    Expected Outputs:
+        One button in each group can be selected simultaneously without affecting the other group.
+*/
 func TestRadioButtonMultipleGroups(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	radioButtonInstance1 := radioButton.Add(layer1.layerAlias, "testRadioButton1", "Group 1 - Button 1", styleEntry, 2, 2, 1, true)
@@ -110,6 +149,16 @@ func TestRadioButtonMultipleGroups(test *testing.T) {
 	}
 }
 
+/*
+TestRadioButtonChangeSelection is a test which verifies that selecting a new radio button correctly updates the
+selection state of all buttons in that group.
+
+Example:
+    Expected Inputs:
+        A group of two buttons where the selection is programmatically changed from the first to the second.
+    Expected Outputs:
+        The first button becomes unselected and the second button becomes selected.
+*/
 func TestRadioButtonChangeSelection(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	radioButtonInstance1 := radioButton.Add(layer1.layerAlias, "testRadioButton1", "Radio Button 1", styleEntry, 2, 2, 1, true)
@@ -149,6 +198,16 @@ func TestRadioButtonChangeSelection(test *testing.T) {
 	}
 }
 
+/*
+TestRadioButtonGetSelected is a test which verifies that the GetSelected method correctly returns the alias of
+the selected radio button in a group.
+
+Example:
+    Expected Inputs:
+        A group of two radio buttons with the first one selected.
+    Expected Outputs:
+        GetSelected returns the alias of the first radio button.
+*/
 func TestRadioButtonGetSelected(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	radioButtonInstance1 := radioButton.Add(layer1.layerAlias, "testRadioButton1", "Radio Button 1", styleEntry, 2, 2, 1, true)
@@ -175,6 +234,16 @@ func TestRadioButtonGetSelected(test *testing.T) {
 	}
 }
 
+/*
+TestRadioButtonDelete is a test which verifies that a radio button control can be successfully removed from its
+parent layer.
+
+Example:
+    Expected Inputs:
+        A layer containing a single radio button that is subsequently deleted.
+    Expected Outputs:
+        Screen content matches expected ANSI string (Base64 encoded) for an empty layer.
+*/
 func TestRadioButtonDelete(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	radioButtonInstance := radioButton.Add(layer1.layerAlias, "testRadioButton", "Test Radio Button", styleEntry, 2, 2, 1, true)
@@ -196,6 +265,16 @@ func TestRadioButtonDelete(test *testing.T) {
 	}
 }
 
+/*
+TestRadioButtonDeleteAll is a test which verifies that all radio button controls on a layer can be successfully
+removed at once.
+
+Example:
+    Expected Inputs:
+        A layer containing multiple radio buttons from different groups, followed by a DeleteAll call.
+    Expected Outputs:
+        Screen content matches expected ANSI string (Base64 encoded) for an empty layer after all controls are removed.
+*/
 func TestRadioButtonDeleteAll(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	radioButton.Add(layer1.layerAlias, "testRadioButton1", "Radio Button 1", styleEntry, 2, 2, 1, true)
@@ -219,6 +298,16 @@ func TestRadioButtonDeleteAll(test *testing.T) {
 	}
 }
 
+/*
+TestRadioButtonFocus is a test which verifies that a radio button control correctly handles gaining focus and
+renders its focused state accordingly.
+
+Example:
+    Expected Inputs:
+        A focused radio button control added to a layer.
+    Expected Outputs:
+        Screen content matches expected ANSI string (Base64 encoded) showing the radio button in its focused visual state.
+*/
 func TestRadioButtonFocus(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	radioButton.Add(layer1.layerAlias, "testRadioButton", "Test Radio Button", styleEntry, 2, 2, 1, true)
@@ -239,6 +328,16 @@ func TestRadioButtonFocus(test *testing.T) {
 	}
 }
 
+/*
+TestRadioButtonLongLabel is a test which verifies that a radio button with a long label is rendered correctly,
+even if it extends beyond standard screen boundaries.
+
+Example:
+    Expected Inputs:
+        A radio button with a very long label string.
+    Expected Outputs:
+        Screen content matches expected ANSI string (Base64 encoded) and no panics occur during rendering.
+*/
 func TestRadioButtonLongLabel(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	// We color this at 1,1,1 because intellij has a color bug which makes black transparent.

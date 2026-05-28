@@ -9,6 +9,9 @@ import (
 	"github.com/supercom32/consolizer/types"
 )
 
+/*
+SelectorInstanceType is a structure which represents an instance of a selector control.
+*/
 type SelectorInstanceType struct {
 	BaseControlInstanceType
 }
@@ -19,17 +22,15 @@ var Selector selectorType
 var Selectors = memory.NewControlMemoryManager[types.SelectorEntryType]()
 
 /*
-IsSelectorExists is a method which checks if a selector with the specified alias exists on a given text layer.
-
-In addition, the following should be noted:
+IsSelectorExists is a method which checks if a selector with the specified alias exists on a given text layer. In
+addition, the following should be noted:
 
 - Returns true if the selector exists, false otherwise.
 
 - This method is useful for validating selector existence before performing operations on it.
 
 Example:
-
-	exists := IsSelectorExists("Layer1", "Selector1")
+    exists := IsSelectorExists("Layer1", "Selector1")
 */
 func IsSelectorExists(layerAlias string, selectorAlias string) bool {
 	// Use the generic memory manager to check existence
@@ -37,9 +38,7 @@ func IsSelectorExists(layerAlias string, selectorAlias string) bool {
 }
 
 /*
-GetSelector is a method which retrieves a selector entry from a given text layer.
-
-In addition, the following should be noted:
+GetSelector is a method which retrieves a selector entry from a given text layer. In addition, the following should be noted:
 
 - If the selector does not exist, a panic will be generated to fail as fast as possible.
 
@@ -48,8 +47,7 @@ In addition, the following should be noted:
 - Changes made to the returned entry will be reflected when the selector is next drawn.
 
 Example:
-
-	selectorEntry := GetSelector("Layer1", "Selector1")
+    selectorEntry := GetSelector("Layer1", "Selector1")
 */
 func GetSelector(layerAlias string, selectorAlias string) *types.SelectorEntryType {
 	// Use the generic memory manager to retrieve the selector entry
@@ -65,32 +63,29 @@ func GetSelector(layerAlias string, selectorAlias string) *types.SelectorEntryTy
 // ============================================================================
 
 /*
-AddToTabIndex is a method which adds a selector to the tab index. This enables keyboard navigation between controls using the tab key. In addition, the following should be noted:
+AddToTabIndex is a method which adds a selector to the tab index. This enables keyboard navigation between controls using
+the tab key. In addition, the following should be noted:
 
 - The selector will be added to the tab order based on the order in which it was created.
 
 - The tab index is used to determine which control receives focus when the tab key is pressed.
 
 Example:
-
-	selector.AddToTabIndex()
+    selector.AddToTabIndex()
 */
 func (shared *SelectorInstanceType) AddToTabIndex() {
 	addTabIndex(shared.layerAlias, shared.controlAlias, constants.CellTypeSelectorItem)
 }
 
 /*
-Delete is a method which removes a selector from a text layer.
-
-In addition, the following should be noted:
+Delete is a method which removes a selector from a text layer. In addition, the following should be noted:
 
 - If you attempt to delete a selector which does not exist, then the request will simply be ignored.
 
 - All memory associated with the selector will be freed.
 
 Example:
-
-	selector = selector.Delete()
+    selector = selector.Delete()
 */
 func (shared *SelectorInstanceType) Delete() *SelectorInstanceType {
 	shared.BaseControlInstanceType.Delete()
@@ -101,8 +96,7 @@ func (shared *SelectorInstanceType) Delete() *SelectorInstanceType {
 IsNewItemSelected is a method which checks if a new item has been selected in the selector.
 
 Example:
-
-	if selector.IsNewItemSelected() { ... }
+    if selector.IsNewItemSelected() { ... }
 */
 func (shared *SelectorInstanceType) IsNewItemSelected() bool {
 	if Selectors.IsExists(shared.layerAlias, shared.controlAlias) {
@@ -113,9 +107,7 @@ func (shared *SelectorInstanceType) IsNewItemSelected() bool {
 }
 
 /*
-GetSelected is a method which retrieves the currently selected item from a selector.
-
-In addition, the following should be noted:
+GetSelected is a method which retrieves the currently selected item from a selector. In addition, the following should be noted:
 
 - Returns both the alias and index of the selected item.
 
@@ -124,8 +116,7 @@ In addition, the following should be noted:
 - The alias is typically used for display purposes, while the index is used for programmatic access to the selection.
 
 Example:
-
-	alias, index := selector.GetSelected()
+    alias, index := selector.GetSelected()
 */
 func (shared *SelectorInstanceType) GetSelected() (string, int) {
 	if Selectors.IsExists(shared.layerAlias, shared.controlAlias) {
@@ -144,9 +135,7 @@ func (shared *SelectorInstanceType) GetSelected() (string, int) {
 }
 
 /*
-GetAllItems is a method which retrieves all items from a selector.
-
-In addition, the following should be noted:
+GetAllItems is a method which retrieves all items from a selector. In addition, the following should be noted:
 
 - Returns two arrays: one containing all aliases and one containing all values.
 
@@ -155,8 +144,7 @@ In addition, the following should be noted:
 - The arrays are returned in the order they were added to the selector.
 
 Example:
-
-	aliases, values := selector.GetAllItems()
+    aliases, values := selector.GetAllItems()
 */
 func (shared *SelectorInstanceType) GetAllItems() ([]string, []string) {
 	if Selectors.IsExists(shared.layerAlias, shared.controlAlias) {
@@ -168,17 +156,14 @@ func (shared *SelectorInstanceType) GetAllItems() ([]string, []string) {
 }
 
 /*
-Unselect is a method which clears the current selection for a selector.
-
-In addition, the following should be noted:
+Unselect is a method which clears the current selection for a selector. In addition, the following should be noted:
 
 - The selector's selected item will be set to SELECTED_NONE.
 
 - If the selector does not exist, no operation occurs.
 
 Example:
-
-	selector.Unselect()
+    selector.Unselect()
 */
 func (shared *SelectorInstanceType) Unselect() {
 	if Selectors.IsExists(shared.layerAlias, shared.controlAlias) {
@@ -189,17 +174,14 @@ func (shared *SelectorInstanceType) Unselect() {
 }
 
 /*
-Select is a method which allows you to select an item by its alias.
-
-In addition, the following should be noted:
+Select is a method which allows you to select an item by its alias. In addition, the following should be noted:
 
 - If an item with the matching alias is found, it will be set as the selected and highlighted item.
 
 - If the selector or the item does not exist, no operation occurs.
 
 Example:
-
-	selector.Select("Option1")
+    selector.Select("Option1")
 */
 func (shared *SelectorInstanceType) Select(selectionAlias string) {
 	if Selectors.IsExists(shared.layerAlias, shared.controlAlias) {
@@ -225,9 +207,7 @@ func (shared *SelectorInstanceType) Select(selectionAlias string) {
 }
 
 /*
-FocusSelection is a method which allows you to focus on a specific item in the selector by its alias.
-
-In addition, the following should be noted:
+FocusSelection is a method which allows you to focus on a specific item in the selector by its alias. In addition, the following should be noted:
 
 - The item with the matching alias will be scrolled into view.
 
@@ -240,8 +220,7 @@ In addition, the following should be noted:
 - If the selector or item does not exist, no operation occurs.
 
 Example:
-
-	selector.FocusSelection("Option5")
+    selector.FocusSelection("Option5")
 */
 func (shared *SelectorInstanceType) FocusSelection(selectionAlias string) {
 	if Selectors.IsExists(shared.layerAlias, shared.controlAlias) {
@@ -298,9 +277,7 @@ func (shared *SelectorInstanceType) FocusSelection(selectionAlias string) {
 }
 
 /*
-setViewport is a method which allows you to specify the current viewport index for a given selector.
-
-In addition, the following should be noted:
+setViewport is a method which allows you to specify the current viewport index for a given selector. In addition, the following should be noted:
 
 - The viewport determines which items are currently visible in the selector.
 
@@ -309,8 +286,7 @@ In addition, the following should be noted:
 - The viewport position is automatically adjusted when navigating through items.
 
 Example:
-
-	selector.setViewport(10)
+    selector.setViewport(10)
 */
 func (shared *SelectorInstanceType) setViewport(viewportPosition int) {
 	if Selectors.IsExists(shared.layerAlias, shared.controlAlias) {
@@ -321,9 +297,7 @@ func (shared *SelectorInstanceType) setViewport(viewportPosition int) {
 }
 
 /*
-SetSelectionEntry is a method which allows you to overwrite the current selection entry with a new one.
-
-In addition, the following should be noted:
+SetSelectionEntry is a method which allows you to overwrite the current selection entry with a new one. In addition, the following should be noted:
 
 - The selector's selected and highlighted item will be reset.
 
@@ -334,8 +308,7 @@ In addition, the following should be noted:
 - If the selector does not exist, no operation occurs.
 
 Example:
-
-	selector.SetSelectionEntry(newSelection)
+    selector.SetSelectionEntry(newSelection)
 */
 func (shared *SelectorInstanceType) SetSelectionEntry(selectionEntry types.SelectionEntryType) {
 	if Selectors.IsExists(shared.layerAlias, shared.controlAlias) {
@@ -371,9 +344,7 @@ func (shared *SelectorInstanceType) SetSelectionEntry(selectionEntry types.Selec
 }
 
 /*
-AddItem is a method which allows you to add a new selector item to the already loaded list of selector items.
-
-In addition, the following should be noted:
+AddItem is a method which allows you to add a new selector item to the already loaded list of selector items. In addition, the following should be noted:
 
 - The new item is added to the end of the list.
 
@@ -384,8 +355,7 @@ In addition, the following should be noted:
 - Scroll bars are automatically enabled if items overflow the visible area.
 
 Example:
-
-	selector.AddItem("NewOpt", "New Option")
+    selector.AddItem("NewOpt", "New Option")
 */
 func (shared *SelectorInstanceType) AddItem(selectionAlias string, selectionValue string) {
 	if Selectors.IsExists(shared.layerAlias, shared.controlAlias) {
@@ -416,7 +386,6 @@ func (shared *SelectorInstanceType) AddItem(selectionAlias string, selectionValu
 
 /*
 DeleteItem is a method which allows you to delete a selector item at a specified index from the list of selector items.
-
 In addition, the following should be noted:
 
 - The index is zero-based.
@@ -430,8 +399,7 @@ In addition, the following should be noted:
 - Scroll bars are automatically disabled if items no longer overflow the visible area.
 
 Example:
-
-	selector.DeleteItem(2)
+    selector.DeleteItem(2)
 */
 func (shared *SelectorInstanceType) DeleteItem(index int) {
 	if Selectors.IsExists(shared.layerAlias, shared.controlAlias) {
@@ -492,18 +460,17 @@ func (shared *SelectorInstanceType) DeleteItem(index int) {
 /*
 Add is a method which allows you to add a selector to a given text layer. Once called, an instance of your control is
 returned which will allow you to read or manipulate the properties for it. The style of the selector will be determined
-by the style entry passed in. If you wish to remove a selector from a text layer, simply call DeleteSelector.
+by the style entry passed in. If you wish to remove a selector from a text layer, simply call DeleteSelector. In addition,
+the following should be noted:
 
-In addition, the following should be noted:
+- Selectors are not drawn physically to the text layer provided. Instead, they are rendered to the terminal at the
+  same time when the text layer is rendered. This allows you to create selectors without actually overwriting the
+  text layer data under it.
 
-  - Selectors are not drawn physically to the text layer provided. Instead, they are rendered to the terminal at
-    the same time when the text layer is rendered. This allows you to create selectors without actually
-    overwriting the text layer data under it.
+- If the selector to be drawn falls outside the range of the provided layer, then only the visible portion of the
+  selector will be drawn.
 
-  - If the selector to be drawn falls outside the range of the provided layer, then only the visible portion of the
-    selector will be drawn.
-
-  - If the selector height is greater than the number of selections available, then no scroll bars are drawn.
+- If the selector height is greater than the number of selections available, then no scroll bars are drawn.
 
 Example:
     selectorInstance := Selector.Add("Layer1", "Selector1", style, selection, 0, 0, 10, 20, 1, 0, 0, false, true)
@@ -577,34 +544,29 @@ func (shared *selectorType) Add(layerAlias string, selectorAlias string, styleEn
 }
 
 /*
-Delete is a method which allows you to remove a selector from a text layer.
-
-In addition, the following should be noted:
+Delete is a method which allows you to remove a selector from a text layer. In addition, the following should be noted:
 
 - If you attempt to delete a selector which does not exist, then the request will simply be ignored.
 
 - All memory associated with the selector will be freed.
 
 Example:
-
-	Selector.Delete("Layer1", "Selector1")
+    Selector.Delete("Layer1", "Selector1")
 */
 func (shared *selectorType) Delete(layerAlias string, selectorAlias string) {
 	Selectors.Remove(layerAlias, selectorAlias)
 }
 
 /*
-DeleteAll is a method which allows you to remove all selectors from a text layer.
-
-In addition, the following should be noted:
+DeleteAll is a method which allows you to remove all selectors from a text layer. In addition, the following should be
+noted:
 
 - This operation cannot be undone.
 
 - All memory associated with the selectors will be freed.
 
 Example:
-
-	Selector.DeleteAll("Layer1")
+    Selector.DeleteAll("Layer1")
 */
 func (shared *selectorType) DeleteAll(layerAlias string) {
 	Selectors.RemoveAll(layerAlias)
@@ -612,9 +574,7 @@ func (shared *selectorType) DeleteAll(layerAlias string) {
 
 /*
 setupSelectorAttributes is a method which allows you to create and configure the standard and highlight attribute
-entries for a selector based on the provided style entry.
-
-In addition, the following should be noted:
+entries for a selector based on the provided style entry. In addition, the following should be noted:
 
 - Returns two attribute entries: one for normal menu items and one for highlighted items.
 
@@ -623,8 +583,7 @@ In addition, the following should be noted:
 - These attributes control the visual appearance of selector items when drawn.
 
 Example:
-
-	attr, highAttr := Selector.setupSelectorAttributes(style)
+    attr, highAttr := Selector.setupSelectorAttributes(style)
 */
 func (shared *selectorType) setupSelectorAttributes(styleEntry types.TuiStyleEntryType) (types.AttributeEntryType, types.AttributeEntryType) {
 	menuAttributeEntry := types.NewAttributeEntry()
@@ -639,9 +598,8 @@ func (shared *selectorType) setupSelectorAttributes(styleEntry types.TuiStyleEnt
 }
 
 /*
-drawSelectorBorder is a method which allows you to draw a border around a selector on the specified text layer.
-
-In addition, the following should be noted:
+drawSelectorBorder is a method which allows you to draw a border around a selector on the specified text layer. In
+addition, the following should be noted:
 
 - The border is drawn using the border characters defined in the style entry.
 
@@ -652,8 +610,7 @@ In addition, the following should be noted:
 - If IsShadowDrawn is enabled, a shadow is drawn using drawWindow, otherwise a border is drawn using drawBorder.
 
 Example:
-
-	Selector.drawSelectorBorder(&layerEntry, style, attr, 0, 0, 20, 10)
+    Selector.drawSelectorBorder(&layerEntry, style, attr, 0, 0, 20, 10)
 */
 func (shared *selectorType) drawSelectorBorder(layerEntry *types.LayerEntryType, styleEntry types.TuiStyleEntryType,
 	attributeEntry types.AttributeEntryType, xLocation int, yLocation int, itemWidth int, selectorHeight int) {
@@ -668,9 +625,7 @@ func (shared *selectorType) drawSelectorBorder(layerEntry *types.LayerEntryType,
 
 /*
 formatSelectorItemText is a method which allows you to format the text for a selector item based on the provided style
-and whether the item is highlighted.
-
-In addition, the following should be noted:
+and whether the item is highlighted. In addition, the following should be noted:
 
 - Handles text alignment according to the style entry's text alignment setting.
 
@@ -681,8 +636,7 @@ In addition, the following should be noted:
 - Returns a string formatted to the specified width with appropriate padding.
 
 Example:
-
-	formattedText := Selector.formatSelectorItemText("Option 1", 20, style, false)
+    formattedText := Selector.formatSelectorItemText("Option 1", 20, style, false)
 */
 func (shared *selectorType) formatSelectorItemText(menuItemText string, itemWidth int, styleEntry types.TuiStyleEntryType, isHighlighted bool) string {
 	var menuItemName string
@@ -724,9 +678,8 @@ func (shared *selectorType) formatSelectorItemText(menuItemText string, itemWidt
 }
 
 /*
-drawSelectorItem is a method which allows you to draw a single selector item on the specified text layer.
-
-In addition, the following should be noted:
+drawSelectorItem is a method which allows you to draw a single selector item on the specified text layer. In addition,
+the following should be noted:
 
 - For non-highlighted items, markup processing is applied to support styled text.
 
@@ -737,8 +690,7 @@ In addition, the following should be noted:
 - Returns the width of the drawn item, which may vary based on the content.
 
 Example:
-
-	width := Selector.drawSelectorItem(&layerEntry, attr, "Option 1", 0, 0, 0, false)
+    width := Selector.drawSelectorItem(&layerEntry, attr, "Option 1", 0, 0, 0, false)
 */
 func (shared *selectorType) drawSelectorItem(layerEntry *types.LayerEntryType, attributeEntry types.AttributeEntryType,
 	menuItemName string, xLocation int, currentXOffset int, currentYLocation int, isHighlighted bool) int {
@@ -757,19 +709,16 @@ func (shared *selectorType) drawSelectorItem(layerEntry *types.LayerEntryType, a
 
 /*
 drawSelector is a method which allows you to draw a selector on a given text layer. The style of the selector will be
-determined by the style entry passed in.
+determined by the style entry passed in. In addition, the following should be noted:
 
-In addition, the following should be noted:
+- Selectors are not drawn physically to the text layer provided. Instead, they are rendered to the terminal at the
+  same time when the text layer is rendered.
 
-  - Selectors are not drawn physically to the text layer provided. Instead, they are rendered to the terminal at the
-    same time when the text layer is rendered.
-
-  - If the selector to be drawn falls outside the range of the provided layer, then only the visible portion of the
-    selector will be drawn.
+- If the selector to be drawn falls outside the range of the provided layer, then only the visible portion of the
+  selector will be drawn.
 
 Example:
-
-	Selector.drawSelector("Sel1", &layerEntry, style, selection, 0, 0, 10, 20, 1, 0, 0)
+    Selector.drawSelector("Sel1", &layerEntry, style, selection, 0, 0, 10, 20, 1, 0, 0)
 */
 func (shared *selectorType) drawSelector(selectorAlias string, layerEntry *types.LayerEntryType, styleEntry types.TuiStyleEntryType, selectionEntry types.SelectionEntryType, xLocation int, yLocation int, selectorHeight int, itemWidth int, numberOfColumns int, viewportPosition int, itemHighlighted int) {
 	selectorEntry := Selectors.Get(layerEntry.LayerAlias, selectorAlias)
@@ -813,9 +762,8 @@ func (shared *selectorType) drawSelector(selectorAlias string, layerEntry *types
 }
 
 /*
-drawSelectorsOnLayer is a method which allows you to draw all selectors on a given text layer.
-
-In addition, the following should be noted:
+drawSelectorsOnLayer is a method which allows you to draw all selectors on a given text layer. In addition, the
+following should be noted:
 
 - Selectors are drawn in alphabetical order by their alias.
 
@@ -824,8 +772,7 @@ In addition, the following should be noted:
 - Internally generated selectors (like those used by dropdowns) are drawn last.
 
 Example:
-
-	Selector.drawSelectorsOnLayer(layerEntry)
+    Selector.drawSelectorsOnLayer(layerEntry)
 */
 func (shared *selectorType) drawSelectorsOnLayer(layerEntry types.LayerEntryType) {
 	layerAlias := layerEntry.LayerAlias
@@ -842,9 +789,8 @@ func (shared *selectorType) drawSelectorsOnLayer(layerEntry types.LayerEntryType
 }
 
 /*
-updateKeyboardEventForSelector is a method which allows you to process keyboard events for a specific selector.
-
-In addition, the following should be noted:
+updateKeyboardEventForSelector is a method which allows you to process keyboard events for a specific selector. In
+addition, the following should be noted:
 
 - Handles navigation keys (up, down, left, right) to move between items.
 
@@ -855,8 +801,7 @@ In addition, the following should be noted:
 - Returns true if the screen needs to be updated due to state changes.
 
 Example:
-
-	updateRequired, consumed := Selector.updateKeyboardEventForSelector("Layer1", "Sel1", rune("down"))
+    updateRequired, consumed := Selector.updateKeyboardEventForSelector("Layer1", "Sel1", rune("down"))
 */
 func (shared *selectorType) updateKeyboardEventForSelector(layerAlias string, selectorAlias string, keystroke []rune) (bool, bool) {
 	keystrokeAsString := string(keystroke)
@@ -933,9 +878,7 @@ func (shared *selectorType) updateKeyboardEventForSelector(layerAlias string, se
 
 /*
 updateKeyboardEvent is a method which allows you to update the state of all selectors according to the current keystroke
-event.
-
-In addition, the following should be noted:
+event. In addition, the following should be noted:
 
 - Handles navigation keys (up, down, left, right) to move between items.
 
@@ -944,8 +887,7 @@ In addition, the following should be noted:
 - Returns true if the screen needs to be updated due to state changes.
 
 Example:
-
-	updateRequired, consumed := Selector.updateKeyboardEvent(rune("up"))
+    updateRequired, consumed := Selector.updateKeyboardEvent(rune("up"))
 */
 func (shared *selectorType) updateKeyboardEvent(keystroke []rune) (bool, bool) {
 	isScreenUpdateRequired := false
@@ -958,9 +900,7 @@ func (shared *selectorType) updateKeyboardEvent(keystroke []rune) (bool, bool) {
 
 /*
 updateMouseEvent is a method which allows you to update the state of all selectors according to the current mouse event
-state.
-
-In addition, the following should be noted:
+state. In addition, the following should be noted:
 
 - Handles mouse clicks to select items.
 
@@ -969,8 +909,7 @@ In addition, the following should be noted:
 - Returns true if the screen needs to be updated due to state changes.
 
 Example:
-
-	updateRequired := Selector.updateMouseEvent()
+    updateRequired := Selector.updateMouseEvent()
 */
 func (shared *selectorType) updateMouseEvent() bool {
 	isScreenUpdateRequired := false
