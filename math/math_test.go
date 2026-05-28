@@ -8,16 +8,14 @@ import (
 )
 
 /*
-TestGetAbsoluteValue is a test which tests that the absolute value of various number types is correctly
+TestGetAbsoluteValue is a test which verifies that the absolute value of various number types is correctly
 calculated.
 
 Example:
-
-	Expected Inputs:
-	    None
-
-	Expected Outputs:
-	    None
+    Expected Inputs:
+        Interface arrays containing negative and positive integers, unsigned integers, and floats.
+    Expected Outputs:
+        GetAbsoluteValueAsFloat64 returns the positive equivalent of each input value.
 */
 func TestGetAbsoluteValue(test *testing.T) {
 	var intValues = recast.GetArrayOfInterfaces(int(-3), int8(-3), int16(-3), int32(-3), int64(-3))
@@ -44,16 +42,14 @@ func TestGetAbsoluteValue(test *testing.T) {
 }
 
 /*
-TestIsNumberEven is a test which tests that the IsNumberEven method correctly identifies even and odd
-numbers.
+TestIsNumberEven is a test which verifies that the IsNumberEven method correctly identifies even and odd
+numbers across various data types.
 
 Example:
-
-	Expected Inputs:
-	    None
-
-	Expected Outputs:
-	    None
+    Expected Inputs:
+        Interface arrays containing even integers (12), odd unsigned integers (13), and floats (12.3).
+    Expected Outputs:
+        Correct boolean result (true for 12, false for 13, and false for 12.3).
 */
 func TestIsNumberEven(test *testing.T) {
 	var intValues = recast.GetArrayOfInterfaces(int(12), int8(12), int16(12), int32(12), int64(12))
@@ -80,16 +76,14 @@ func TestIsNumberEven(test *testing.T) {
 }
 
 /*
-TestRoundToWholeNumber is a test which tests that various number types are correctly rounded to the nearest
+TestRoundToWholeNumber is a test which verifies that various number types are correctly rounded to the nearest
 whole number.
 
 Example:
-
-	Expected Inputs:
-	    None
-
-	Expected Outputs:
-	    None
+    Expected Inputs:
+        Interface arrays containing integers (5) and floats (5.5).
+    Expected Outputs:
+        Rounded values match expected results (5 for integers, 6 for 5.5).
 */
 func TestRoundToWholeNumber(test *testing.T) {
 	var intValues = recast.GetArrayOfInterfaces(int(5), int8(5), int16(5), int32(5), int64(5))
@@ -116,16 +110,14 @@ func TestRoundToWholeNumber(test *testing.T) {
 }
 
 /*
-TestRoundToDecimal is a test which tests that various number types are correctly rounded to a specific
+TestRoundToDecimal is a test which verifies that various number types are correctly rounded to a specific
 number of decimal places.
 
 Example:
-
-	Expected Inputs:
-	    None
-
-	Expected Outputs:
-	    None
+    Expected Inputs:
+        Interface arrays containing integers (3) and high-precision floats (5.1234567).
+    Expected Outputs:
+        Rounded values match the specified precision (3 for integers, 5.1235 for 4 decimal places).
 */
 func TestRoundToDecimal(test *testing.T) {
 	var intValues = recast.GetArrayOfInterfaces(int(3), int8(3), int16(3), int32(3), int64(3))

@@ -6,21 +6,50 @@ import (
 	"sync"
 )
 
+/*
+audioPlayerMemoryType is a structure which holds information about the current audio player state including entries and
+mutex for thread safety.
+*/
 type audioPlayerMemoryType struct {
 	sync.Mutex
 	Entries map[string]*consolizer.AudioPlayer
 }
 
+/*
+AudioPlayers is a variable which acts as the global instance for managing audio players.
+*/
 var AudioPlayers audioPlayerMemoryType
 
+/*
+init is a method which initializes the audio player memory system.
+
+Example:
+    init()
+*/
 func init() {
 	InitializeAudioPlayerMemory()
 }
 
+/*
+InitializeAudioPlayerMemory is a method which allows you to initialize the audio player memory system by creating an empty
+entries map.
+
+Example:
+    InitializeAudioPlayerMemory()
+*/
 func InitializeAudioPlayerMemory() {
 	AudioPlayers.Entries = make(map[string]*consolizer.AudioPlayer)
 }
 
+/*
+AddAudioPlayer is a method which allows you to add a new audio player to the memory manager. In addition, the following
+should be noted:
+
+- It panics if an audio player with the same alias already exists.
+
+Example:
+    AddAudioPlayer("player1", player)
+*/
 func AddAudioPlayer(playerAlias string, player *consolizer.AudioPlayer) {
 	AudioPlayers.Lock()
 	defer AudioPlayers.Unlock()
@@ -32,6 +61,15 @@ func AddAudioPlayer(playerAlias string, player *consolizer.AudioPlayer) {
 	AudioPlayers.Entries[playerAlias] = player
 }
 
+/*
+GetAudioPlayer is a method which allows you to retrieve an audio player from the memory manager. In addition, the
+following should be noted:
+
+- It panics if the requested audio player alias does not exist.
+
+Example:
+    player := GetAudioPlayer("player1")
+*/
 func GetAudioPlayer(playerAlias string) *consolizer.AudioPlayer {
 	AudioPlayers.Lock()
 	defer AudioPlayers.Unlock()
@@ -42,6 +80,15 @@ func GetAudioPlayer(playerAlias string) *consolizer.AudioPlayer {
 	panic(fmt.Sprintf("The requested AudioPlayer with alias '%s' could not be returned since it does not exist.", playerAlias))
 }
 
+/*
+DeleteAudioPlayer is a method which allows you to remove an audio player from the memory manager. In addition, the
+following should be noted:
+
+- It panics if the specified audio player alias does not exist.
+
+Example:
+    DeleteAudioPlayer("player1")
+*/
 func DeleteAudioPlayer(playerAlias string) {
 	AudioPlayers.Lock()
 	defer AudioPlayers.Unlock()
@@ -53,6 +100,12 @@ func DeleteAudioPlayer(playerAlias string) {
 	delete(AudioPlayers.Entries, playerAlias)
 }
 
+/*
+UnloadAllAudioPlayers is a method which allows you to remove all audio players from memory and unload them.
+
+Example:
+    UnloadAllAudioPlayers()
+*/
 func UnloadAllAudioPlayers() {
 	AudioPlayers.Lock()
 	defer AudioPlayers.Unlock()
@@ -62,6 +115,12 @@ func UnloadAllAudioPlayers() {
 	}
 }
 
+/*
+GetAllAudioPlayers is a method which allows you to retrieve all audio players currently in memory.
+
+Example:
+    players := GetAllAudioPlayers()
+*/
 func GetAllAudioPlayers() []*consolizer.AudioPlayer {
 	AudioPlayers.Lock()
 	defer AudioPlayers.Unlock()
