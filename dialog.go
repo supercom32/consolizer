@@ -3,7 +3,6 @@ package consolizer
 import (
 	"fmt"
 	"github.com/supercom32/consolizer/stringformat"
-	"strings"
 
 	"github.com/supercom32/consolizer/types"
 )
@@ -13,8 +12,7 @@ printDialog is a method which writes text to the terminal screen via a typewrite
 for video games or other applications that may require printing text in a dialog box.
 
 Example:
-
-	printDialog(layer, attr, 0, 0, 20, 50, true, "Hello {{red}}World{{/}}")
+    printDialog(layer, attr, 0, 0, 20, 50, true, "Hello {{red}}World{{/}}")
 */
 func printDialog(layerEntry *types.LayerEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, widthOfLineInCharacters int, printDelayInMilliseconds int, isSkipable bool, textToPrint string) {
 	// If no delay is requested, just print the text normally and return
@@ -35,7 +33,6 @@ func printDialog(layerEntry *types.LayerEntryType, attributeEntry types.Attribut
 
 	// Convert runes to string for markup processing
 	arrayOfRunes := stringformat.GetRunesFromString(textToPrint)
-	textString := textToPrint
 
 	for currentCharacterIndex := 0; currentCharacterIndex < len(arrayOfRunes); currentCharacterIndex++ {
 		currentCharacter := arrayOfRunes[currentCharacterIndex]
@@ -64,18 +61,17 @@ func printDialog(layerEntry *types.LayerEntryType, attributeEntry types.Attribut
 		// Handle markup
 		if currentCharacter == '{' && currentCharacterIndex+1 < len(arrayOfRunes) && arrayOfRunes[currentCharacterIndex+1] == '{' {
 			tagStartIndex := currentCharacterIndex + 2
-			tagEndRelIndex := strings.Index(textString[tagStartIndex:], "}}")
-
-			if tagEndRelIndex != -1 {
-				// Valid tag found
-				tagEndIndex := tagStartIndex + tagEndRelIndex
-				tagContent := textString[tagStartIndex:tagEndIndex]
-
-				// Apply the new attribute
-				currentAttributeEntry = getDialogAttributeEntry(tagContent, attributeEntry)
-
-				// Skip over the full tag, including '{{' and '}}'
-				currentCharacterIndex = tagEndIndex + 1 // We find the start of }}, so we need to add 1 to bypass the tag totally.
+			foundClosing := false
+			for j := tagStartIndex; j < len(arrayOfRunes)-1; j++ {
+				if arrayOfRunes[j] == '}' && arrayOfRunes[j+1] == '}' {
+					tagContent := string(arrayOfRunes[tagStartIndex:j])
+					currentAttributeEntry = getDialogAttributeEntry(tagContent, attributeEntry)
+					currentCharacterIndex = j + 1
+					foundClosing = true
+					break
+				}
+			}
+			if foundClosing {
 				continue
 			}
 		}
@@ -139,15 +135,13 @@ surrounded by "{{" and "}}" characters. In addition, the following should be not
 - If no attribute tag could be detected at the given string location, then an empty string will be returned instead.
 
 Example:
-
-	tag := getAttributeTag("Hello {{red}}World", 6)
+    tag := getAttributeTag("Hello {{red}}World", 6)
 */
 func getAttributeTag(stringToParse string, startingCharacterIndex int) string {
-	var lengthOfAttributeTag int
-	for currentCharacterIndex := startingCharacterIndex; currentCharacterIndex < len(stringToParse)-1; currentCharacterIndex++ {
-		lengthOfAttributeTag++
-		if stringformat.GetSubString(stringToParse, currentCharacterIndex, 2) == "}}" {
-			return stringformat.GetSubString(stringToParse, startingCharacterIndex, lengthOfAttributeTag+1)
+	runes := []rune(stringToParse)
+	for currentCharacterIndex := startingCharacterIndex; currentCharacterIndex < len(runes)-1; currentCharacterIndex++ {
+		if runes[currentCharacterIndex] == '}' && runes[currentCharacterIndex+1] == '}' {
+			return string(runes[startingCharacterIndex : currentCharacterIndex+2])
 		}
 	}
 	// If we reach here, we didn't find the closing tag.
@@ -159,12 +153,11 @@ func getAttributeTag(stringToParse string, startingCharacterIndex int) string {
 getDialogAttributeEntry is a method which obtains an attribute entry based on the text style detected in
 your attribute tag. In addition, the following should be noted:
 
-  - If no text style could be found that matches the attribute tag provided, then the default attribute entry will be
-    returned instead.
+- If no text style could be found that matches the attribute tag provided, then the default attribute entry will be
+  returned instead.
 
 Example:
-
-	attr := getDialogAttributeEntry("red", defaultAttr)
+    attr := getDialogAttributeEntry("red", defaultAttr)
 */
 func getDialogAttributeEntry(attributeTag string, defaultAttributeEntry types.AttributeEntryType) types.AttributeEntryType {
 	var attributeEntry types.AttributeEntryType
@@ -187,20 +180,21 @@ getLengthOfNextWord is a method which gets the length of the next word at a give
 string. It ignores markup tags when calculating the length.
 
 Example:
-
-	length := getLengthOfNextWord("Hello {{red}}World", 0)
+    length := getLengthOfNextWord("Hello {{red}}World", 0)
 */
 func getLengthOfNextWord(stringToParse string, startingCharacterIndex int) int {
 	// First, get the substring from the starting index to the end
-	substring := stringToParse[startingCharacterIndex:]
+	runes := []rune(stringToParse)
+	substring := string(runes[startingCharacterIndex:])
 
 	// Get the text without markup
 	textWithoutMarkup := GetNonMarkupText(substring)
 
 	// Now calculate the length of the next word in the text without markup
+	textWithoutMarkupRunes := []rune(textWithoutMarkup)
 	var lengthOfNextWord int
-	for currentCharacterIndex := 0; currentCharacterIndex < len(textWithoutMarkup); currentCharacterIndex++ {
-		if stringformat.GetSubString(textWithoutMarkup, currentCharacterIndex, 1) == " " {
+	for currentCharacterIndex := 0; currentCharacterIndex < len(textWithoutMarkupRunes); currentCharacterIndex++ {
+		if textWithoutMarkupRunes[currentCharacterIndex] == ' ' {
 			return lengthOfNextWord
 		}
 		lengthOfNextWord++
@@ -218,23 +212,23 @@ found, then the {{someTagText is printed out as regular text. In addition, the f
 - Handles nested tags and unclosed tags appropriately.
 
 Example:
-
-	plainText := GetNonMarkupText("Hello {{red}}World{{/}}")
+    plainText := GetNonMarkupText("Hello {{red}}World{{/}}")
 */
 func GetNonMarkupText(textString string) string {
-	var result string
+	var result []rune
+	runes := []rune(textString)
 	var i int
 
-	for i < len(textString) {
+	for i < len(runes) {
 		// Check for opening tag
-		if i+1 < len(textString) && textString[i:i+2] == "{{" {
+		if i+1 < len(runes) && runes[i] == '{' && runes[i+1] == '{' {
 			// Look for closing tag
 			tagStart := i
 			i += 2 // Skip past "{{"
 			foundClosing := false
 
-			for j := i; j < len(textString)-1; j++ {
-				if textString[j:j+2] == "}}" {
+			for j := i; j < len(runes)-1; j++ {
+				if runes[j] == '}' && runes[j+1] == '}' {
 					// Found closing tag, skip the entire tag
 					i = j + 2
 					foundClosing = true
@@ -244,17 +238,17 @@ func GetNonMarkupText(textString string) string {
 
 			// If no closing tag found, treat opening tag as regular text
 			if !foundClosing {
-				result += "{{"
+				result = append(result, '{', '{')
 				i = tagStart + 2
 			}
 		} else {
 			// Regular character, add to result
-			result += string(textString[i])
+			result = append(result, runes[i])
 			i++
 		}
 	}
 
-	return result
+	return string(result)
 }
 
 /*
@@ -262,8 +256,7 @@ printMarkup is a method which writes text to the terminal screen with word wrapp
 This is similar to printDialog but without the typewriter effect and printing delay.
 
 Example:
-
-	printMarkup(layer, attr, 0, 0, 20, "Hello {{red}}World{{/}}")
+    printMarkup(layer, attr, 0, 0, 20, "Hello {{red}}World{{/}}")
 */
 func printMarkup(layerEntry *types.LayerEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, widthOfLineInCharacters int, stringToPrint string) {
 	if xLocation < 0 || xLocation > layerEntry.Width || yLocation < 0 || yLocation > layerEntry.Height {
@@ -276,18 +269,17 @@ func printMarkup(layerEntry *types.LayerEntryType, attributeEntry types.Attribut
 	cursorYLocation := yLocation
 	currentAttributeEntry := attributeEntry
 	for currentCharacterIndex := 0; currentCharacterIndex < len(arrayOfRunes); currentCharacterIndex++ {
-		currentCharacter := stringformat.GetSubString(stringToPrint, currentCharacterIndex, 1)
-		printLayer(layerEntry, currentAttributeEntry, cursorXLocation, cursorYLocation, []rune{arrayOfRunes[currentCharacterIndex]})
+		currentCharacterRune := arrayOfRunes[currentCharacterIndex]
+		printLayer(layerEntry, currentAttributeEntry, cursorXLocation, cursorYLocation, []rune{currentCharacterRune})
 		cursorXLocation++
 		lengthOfNextWord := 0
-		if currentCharacter == " " {
+		if currentCharacterRune == ' ' {
 			lengthOfNextWord = getLengthOfNextWord(stringToPrint, currentCharacterIndex+1)
 		}
-		nextCharacter := stringformat.GetSubString(stringToPrint, currentCharacterIndex+1, 2)
-		if nextCharacter == "{{" {
+		if currentCharacterIndex+2 < len(arrayOfRunes) && arrayOfRunes[currentCharacterIndex+1] == '{' && arrayOfRunes[currentCharacterIndex+2] == '{' {
 			attributeTag := getAttributeTag(stringToPrint, currentCharacterIndex+1)
 			currentAttributeEntry = getDialogAttributeEntry(attributeTag, attributeEntry)
-			currentCharacterIndex += len(attributeTag)
+			currentCharacterIndex += len([]rune(attributeTag))
 		}
 		if cursorXLocation+lengthOfNextWord-xLocation >= widthOfLineInCharacters || cursorXLocation+lengthOfNextWord >= layerWidth {
 			cursorXLocation = xLocation

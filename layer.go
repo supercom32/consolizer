@@ -358,15 +358,15 @@ func calculateWordWidth(textToPrint []rune, start int, useMarkup bool) int {
 
 	// If markup is enabled, use the string version and handle markup tags
 	if useMarkup {
-		textString := string(textToPrint)
 		// Use the substring from the starting index
-		substring := textString[start+1:]
+		substring := string(textToPrint[start+1:])
 		// Get the text without markup
 		textWithoutMarkup := GetNonMarkupText(substring)
 		// Calculate the length of the next word
+		textWithoutMarkupRunes := []rune(textWithoutMarkup)
 		var wordWidth int
-		for i := 0; i < len(textWithoutMarkup); i++ {
-			if stringformat.GetSubString(textWithoutMarkup, i, 1) == " " {
+		for i := 0; i < len(textWithoutMarkupRunes); i++ {
+			if textWithoutMarkupRunes[i] == ' ' {
 				return wordWidth
 			}
 			wordWidth++
