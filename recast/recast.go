@@ -24,8 +24,7 @@ const (
 GetDataType is a method which gets the data type of a variable.
 
 Example:
-
-	dataType := GetDataType("test")
+    dataType := GetDataType("test")
 */
 func GetDataType(variable interface{}) int {
 	switch variable.(type) {
@@ -63,8 +62,7 @@ func GetDataType(variable interface{}) int {
 GetNumberAsInt is a method which gets a number as an integer.
 
 Example:
-
-	intValue := GetNumberAsInt(12.5)
+    intValue := GetNumberAsInt(12.5)
 */
 func GetNumberAsInt(number interface{}) int {
 	detectedType := GetDataType(number)
@@ -111,8 +109,7 @@ func GetNumberAsInt(number interface{}) int {
 GetNumberAsInt64 is a method which gets a number as an int64.
 
 Example:
-
-	int64Value := GetNumberAsInt64(12.5)
+    int64Value := GetNumberAsInt64(12.5)
 */
 func GetNumberAsInt64(number interface{}) int64 {
 	detectedType := GetDataType(number)
@@ -159,8 +156,7 @@ func GetNumberAsInt64(number interface{}) int64 {
 GetStringAsInt is a method which gets a string as an integer.
 
 Example:
-
-	intValue := GetStringAsInt("123")
+    intValue := GetStringAsInt("123")
 */
 func GetStringAsInt(stringToConvert string) int {
 	return int(GetStringAsInt64(stringToConvert))
@@ -170,8 +166,7 @@ func GetStringAsInt(stringToConvert string) int {
 GetStringAsInt64 is a method which gets a string as an int64.
 
 Example:
-
-	int64Value := GetStringAsInt64("123")
+    int64Value := GetStringAsInt64("123")
 */
 func GetStringAsInt64(stringToConvert string) int64 {
 	number, _ := strconv.Atoi(stringToConvert)
@@ -182,8 +177,7 @@ func GetStringAsInt64(stringToConvert string) int64 {
 GetNumberAsFloat64 is a method which gets a number as a float64.
 
 Example:
-
-	floatValue := GetNumberAsFloat64(12)
+    floatValue := GetNumberAsFloat64(12)
 */
 func GetNumberAsFloat64(number interface{}) float64 {
 	detectedType := GetDataType(number)
@@ -230,8 +224,7 @@ func GetNumberAsFloat64(number interface{}) float64 {
 GetArrayOfInterfaces is a method which gets an array of interfaces from a variadic list of interfaces.
 
 Example:
-
-	interfaces := GetArrayOfInterfaces(1, "test", 3.14)
+    interfaces := GetArrayOfInterfaces(1, "test", 3.14)
 */
 func GetArrayOfInterfaces(variables ...interface{}) []interface{} {
 	var arrayOfVariables []interface{}
