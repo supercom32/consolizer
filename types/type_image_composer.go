@@ -7,10 +7,6 @@ import (
 
 /*
 ImageComposerEntryType is a structure which represents a collection of images to be composed together.
-
-Example:
-
-	var imageComposer types.ImageComposerEntryType
 */
 type ImageComposerEntryType struct {
 	images map[string]*ImageComposerImageEntryType
@@ -18,10 +14,6 @@ type ImageComposerEntryType struct {
 
 /*
 ImageComposerImageEntryType is a structure which represents an individual image within an image composer.
-
-Example:
-
-	var imageComposerImage types.ImageComposerImageEntryType
 */
 type ImageComposerImageEntryType struct {
 	ImageData   image.Image
@@ -41,8 +33,7 @@ type ImageComposerImageEntryType struct {
 NewImageComposerEntry is a constructor which creates a new image composer entry.
 
 Example:
-
-	NewImageComposerEntry()
+    NewImageComposerEntry()
 */
 func NewImageComposerEntry() ImageComposerEntryType {
 	var imageComposerEntry ImageComposerEntryType
@@ -54,8 +45,7 @@ func NewImageComposerEntry() ImageComposerEntryType {
 NewImageComposerImageEntry is a constructor which creates a new image composer image entry.
 
 Example:
-
-	NewImageComposerImageEntry()
+    NewImageComposerImageEntry()
 */
 func NewImageComposerImageEntry() ImageComposerImageEntryType {
 	var imageComposerImageEntry ImageComposerImageEntryType

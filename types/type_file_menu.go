@@ -1,19 +1,7 @@
 package types
 
 /*
-FileMenuEntryType is a structure which represents a file menu entry in memory. In addition, the following should be noted:
-
-- The file menu will be drawn at the specified location with the given style.
-
-- Each heading in the menu can have its own dropdown with selectable items.
-
-- The top level headings widths are always dynamic based on how large the heading is.
-
-- The file menu reuses existing selectors for dropdown functionality.
-
-Example:
-
-	var fileMenu types.FileMenuEntryType
+FileMenuEntryType is a structure which represents a file menu entry in memory.
 */
 type FileMenuEntryType struct {
 	LayerAlias         string
@@ -44,8 +32,7 @@ NewFileMenuEntry is a constructor which creates a new file menu entry. In additi
 - Sets up arrays for selector aliases.
 
 Example:
-
-	NewFileMenuEntry()
+    NewFileMenuEntry()
 */
 func NewFileMenuEntry() FileMenuEntryType {
 	var fileMenuEntry FileMenuEntryType

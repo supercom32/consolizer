@@ -6,15 +6,14 @@ import (
 )
 
 /*
-TestGetImageEntry is a test which verifies the creation and cloning of image entries.
+TestGetImageEntry is a test which verifies the correct creation and cloning of image entries, ensuring that cloned
+entries are initially identical but remain independent of future modifications to the original.
 
 Example:
-
-	Expected Inputs:
-	    None
-
-	Expected Outputs:
-	    None
+    Expected Inputs:
+        An initial image entry with a populated layer entry, followed by its clone.
+    Expected Outputs:
+        The clone is initially identical to the original, but subsequent modifications to the original do not affect the clone.
 */
 func TestGetImageEntry(test *testing.T) {
 	firstImageEntry := NewImageEntry()
