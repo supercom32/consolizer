@@ -6,15 +6,14 @@ import (
 )
 
 /*
-TestAttributeTypeCreation is a test which verifies the creation and cloning of attribute entries.
+TestAttributeTypeCreation is a test which verifies the correct creation, cloning, and independent modification of
+attribute entries.
 
 Example:
-
-	Expected Inputs:
-	    None
-
-	Expected Outputs:
-	    None
+    Expected Inputs:
+        An initial attribute entry with specific colors and styles, followed by its clone.
+    Expected Outputs:
+        The clone is initially identical to the original, but subsequent modifications to the original do not affect the clone.
 */
 func TestAttributeTypeCreation(test *testing.T) {
 	firstAttributeEntry := NewAttributeEntry()

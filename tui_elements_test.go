@@ -16,12 +16,10 @@ const TUI_ELEMENTS_TEST_SUITE_NAME = "tui_elements"
 TestGetDarkenedCharacterEntry is a test which verifies the darkening of a character entry's colors.
 
 Example:
-
-	Expected Inputs:
-	    None
-
-	Expected Outputs:
-	    None
+    Expected Inputs:
+        A character entry with full white foreground and gray background, darkened by 50%.
+    Expected Outputs:
+        The resulting character entry has colors with approximately 50% of the original RGB values.
 */
 func TestGetDarkenedCharacterEntry(test *testing.T) {
 	characterEntry := types.NewCharacterEntry()
@@ -44,12 +42,10 @@ func TestGetDarkenedCharacterEntry(test *testing.T) {
 TestColorDarkening is a test which verifies the darkening of individual colors.
 
 Example:
-
-	Expected Inputs:
-	    None
-
-	Expected Outputs:
-	    None
+    Expected Inputs:
+        White and gray colors subjected to varying darkening percentages (0%, 50%, 100%).
+    Expected Outputs:
+        RGB components match the expected mathematical reduction for each percentage.
 */
 func TestColorDarkening(test *testing.T) {
 	testColor := GetDarkenedColor(constants.ColorType(tcell.NewRGBColor(255, 255, 255)), 0.5)
@@ -81,12 +77,10 @@ func TestColorDarkening(test *testing.T) {
 TestColorTransitions is a test which verifies color transitions between source and target colors.
 
 Example:
-
-	Expected Inputs:
-	    None
-
-	Expected Outputs:
-	    None
+    Expected Inputs:
+        Specific source and target colors with various percentage transition steps.
+    Expected Outputs:
+        The resulting transitional colors match expected intermediate RGB values.
 */
 func TestColorTransitions(test *testing.T) {
 	sourceColor := constants.ColorType(tcell.NewRGBColor(255, 0, 0))
@@ -142,12 +136,10 @@ func TestColorTransitions(test *testing.T) {
 TestDrawButton is a test which verifies the correct rendering of buttons on a layer.
 
 Example:
-
-	Expected Inputs:
-	    None
-
-	Expected Outputs:
-	    None
+    Expected Inputs:
+        A layer hierarchy with multiple buttons, one of which is programmatically set to a pressed state.
+    Expected Outputs:
+        Screen content matches expected ANSI string (Base64 encoded) showing both normal and pressed button visuals.
 */
 func TestDrawButton(test *testing.T) {
 	commonResource.isDebugEnabled = true
@@ -181,12 +173,10 @@ func TestDrawButton(test *testing.T) {
 TestDrawFrameLabel is a test which verifies the correct rendering of frame labels on a layer.
 
 Example:
-
-	Expected Inputs:
-	    None
-
-	Expected Outputs:
-	    None
+    Expected Inputs:
+        Multiple frame labels drawn at various coordinates including off-screen and edge positions.
+    Expected Outputs:
+        Screen content matches expected ANSI string (Base64 encoded) showing correctly formatted and clipped labels.
 */
 func TestDrawFrameLabel(test *testing.T) {
 	commonResource.isDebugEnabled = true
@@ -222,12 +212,10 @@ func TestDrawFrameLabel(test *testing.T) {
 TestDrawFrame is a test which verifies the correct rendering of frames on a layer.
 
 Example:
-
-	Expected Inputs:
-	    None
-
-	Expected Outputs:
-	    None
+    Expected Inputs:
+        Raised and sunken frames drawn with specific line-drawing colors.
+    Expected Outputs:
+        Screen content matches expected ANSI string (Base64 encoded) with correct frame highlights and shadows.
 */
 func TestDrawFrame(test *testing.T) {
 	commonResource.isDebugEnabled = true
@@ -261,12 +249,10 @@ func TestDrawFrame(test *testing.T) {
 TestDrawBorder is a test which verifies the correct rendering of borders on a layer.
 
 Example:
-
-	Expected Inputs:
-	    None
-
-	Expected Outputs:
-	    None
+    Expected Inputs:
+        A simple flat border drawn with specific foreground and background colors.
+    Expected Outputs:
+        Screen content matches expected ANSI string (Base64 encoded) showing the single-line border.
 */
 func TestDrawBorder(test *testing.T) {
 	commonResource.isDebugEnabled = true
@@ -297,12 +283,10 @@ func TestDrawBorder(test *testing.T) {
 TestDrawWindow is a test which verifies the correct rendering of windows on multiple layers.
 
 Example:
-
-	Expected Inputs:
-	    None
-
-	Expected Outputs:
-	    None
+    Expected Inputs:
+        A multi-layered setup with a window drawn on the topmost layer.
+    Expected Outputs:
+        Screen content matches expected ANSI string (Base64 encoded) with correct transparency and overlap.
 */
 func TestDrawWindow(test *testing.T) {
 	commonResource.isDebugEnabled = true
@@ -341,12 +325,10 @@ func TestDrawWindow(test *testing.T) {
 TestDrawShadow is a test which verifies the correct rendering of shadows on a layer.
 
 Example:
-
-	Expected Inputs:
-	    None
-
-	Expected Outputs:
-	    None
+    Expected Inputs:
+        A multi-layered setup with a transparent shadow area drawn on the topmost layer.
+    Expected Outputs:
+        Screen content matches expected ANSI string (Base64 encoded) showing the darkening effect on underlying layers.
 */
 func TestDrawShadow(test *testing.T) {
 	commonResource.isDebugEnabled = true
@@ -385,12 +367,10 @@ func TestDrawShadow(test *testing.T) {
 TestDrawLines is a test which verifies the correct rendering of horizontal and vertical lines on a layer.
 
 Example:
-
-	Expected Inputs:
-	    None
-
-	Expected Outputs:
-	    None
+    Expected Inputs:
+        A variety of horizontal and vertical lines, some with connectors enabled and some without.
+    Expected Outputs:
+        Screen content matches expected ANSI string (Base64 encoded) showing all lines and intersections.
 */
 func TestDrawLines(test *testing.T) {
 	commonResource.isDebugEnabled = true

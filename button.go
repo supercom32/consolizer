@@ -9,6 +9,9 @@ import (
 
 /*
 buttonHistoryType is a structure which allows you to track the history of button presses for specific layers and aliases.
+
+Example:
+    var history buttonHistoryType
 */
 type buttonHistoryType struct {
 	buttonAlias string
@@ -17,6 +20,9 @@ type buttonHistoryType struct {
 
 /*
 buttonHistory is a variable which stores the last recorded button press information.
+
+Example:
+    buttonHistory.buttonAlias = "myButton"
 */
 var buttonHistory buttonHistoryType
 
@@ -24,8 +30,7 @@ var buttonHistory buttonHistoryType
 ButtonInstanceType is a structure which represents an instance of a button control.
 
 Example:
-
-	var buttonInstance ButtonInstanceType
+    var buttonInstance ButtonInstanceType
 */
 type ButtonInstanceType struct {
 	BaseControlInstanceType
@@ -33,6 +38,9 @@ type ButtonInstanceType struct {
 
 /*
 buttonType is a structure which provides the global namespace for button management operations.
+
+Example:
+    var button buttonType
 */
 type buttonType struct{}
 
@@ -47,8 +55,7 @@ var Buttons = memory.NewControlMemoryManager[types.ButtonEntryType]()
 Delete is a method which removes a button instance from its memory manager.
 
 Example:
-
-	button.Delete()
+    button.Delete()
 */
 func (shared *ButtonInstanceType) Delete() *ButtonInstanceType {
 	shared.BaseControlInstanceType.Delete()
@@ -59,8 +66,7 @@ func (shared *ButtonInstanceType) Delete() *ButtonInstanceType {
 AddToTabIndex is a method which adds the button to the tab index of its associated layer.
 
 Example:
-
-	button.AddToTabIndex()
+    button.AddToTabIndex()
 */
 func (shared *ButtonInstanceType) AddToTabIndex() {
 	addTabIndex(shared.layerAlias, shared.controlAlias, constants.CellTypeButton)
@@ -73,8 +79,7 @@ and to clear this state, you must call the GetPressed method. In addition, the f
 - If buttonHistory matches the current button, the state is cleared and true is returned.
 
 Example:
-
-	isPressed := button.IsPressed()
+    isPressed := button.IsPressed()
 */
 func (shared *ButtonInstanceType) IsPressed() bool {
 	if buttonHistory.layerAlias != "" && buttonHistory.buttonAlias != "" {
@@ -97,8 +102,7 @@ empty values for the layer and button alias are returned instead. In addition, t
 - If any button is successfully returned, the pressed state is automatically cleared.
 
 Example:
-
-	layerAlias, buttonAlias := button.GetPressed()
+    layerAlias, buttonAlias := button.GetPressed()
 */
 func (shared *ButtonInstanceType) GetPressed() (string, string) {
 	if buttonHistory.layerAlias != "" && buttonHistory.buttonAlias != "" {
@@ -115,8 +119,7 @@ func (shared *ButtonInstanceType) GetPressed() (string, string) {
 IsStatePressed is a method which checks the current internal pressed state of the button.
 
 Example:
-
-	isStatePressed := button.IsStatePressed()
+    isStatePressed := button.IsStatePressed()
 */
 func (shared *ButtonInstanceType) IsStatePressed() bool {
 	buttonEntry := Buttons.Get(shared.layerAlias, shared.controlAlias)
@@ -132,22 +135,21 @@ which will allow you to read or manipulate the properties for it. The Style of t
 style entry passed in. If you wish to remove a button from a text layer, simply call 'DeleteButton'. In addition, the
 following should be noted:
 
-  - Buttons are not drawn physically to the text layer provided. Instead they are rendered to the terminal at the same
-    time when the text layer is rendered. This allows you to create buttons without actually overwriting the text layer
-    data under it.
+- Buttons are not drawn physically to the text layer provided. Instead they are rendered to the terminal at the same
+  time when the text layer is rendered. This allows you to create buttons without actually overwriting the text layer
+  data under it.
 
-  - If the button to be drawn falls outside the range of the provided layer, then only the visible portion of the button
-    will be drawn.
+- If the button to be drawn falls outside the range of the provided layer, then only the visible portion of the button
+  will be drawn.
 
-  - If the width of your button is less than the length of your button label, then the width will automatically
-    default to the width of your button label.
+- If the width of your button is less than the length of your button label, then the width will automatically
+  default to the width of your button label.
 
-  - If the height of your button is less than 3 characters high, then the height will automatically default to the
-    minimum of 3 characters.
+- If the height of your button is less than 3 characters high, then the height will automatically default to the
+  minimum of 3 characters.
 
 Example:
-
-	buttonInstance := Button.Add("layer1", "btn1", "Submit", style, 10, 5, 20, 3, true)
+    buttonInstance := Button.Add("layer1", "btn1", "Submit", style, 10, 5, 20, 3, true)
 */
 func (shared *buttonType) Add(layerAlias string, buttonAlias string, buttonLabel string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, height int, isEnabled bool) ButtonInstanceType {
 	buttonEntry := types.NewButtonEntry()
@@ -185,8 +187,7 @@ Delete is a method which removes a button from a text layer. In addition, the fo
 - If you attempt to delete a button which does not exist, then the request will simply be ignored.
 
 Example:
-
-	Button.Delete("layer1", "btn1")
+    Button.Delete("layer1", "btn1")
 */
 func (shared *buttonType) Delete(layerAlias string, buttonAlias string) {
 	Buttons.Remove(layerAlias, buttonAlias)
@@ -196,8 +197,7 @@ func (shared *buttonType) Delete(layerAlias string, buttonAlias string) {
 DeleteAll is a method which deletes all buttons on a given text layer.
 
 Example:
-
-	Button.DeleteAll("layer1")
+    Button.DeleteAll("layer1")
 */
 func (shared *buttonType) DeleteAll(layerAlias string) {
 	Buttons.RemoveAll(layerAlias)
@@ -207,8 +207,7 @@ func (shared *buttonType) DeleteAll(layerAlias string) {
 drawOnLayer is a method which draws all buttons on a given text layer.
 
 Example:
-
-	Button.drawOnLayer(myLayer)
+    Button.drawOnLayer(myLayer)
 */
 func (shared *buttonType) drawOnLayer(layerEntry types.LayerEntryType) {
 	layerAlias := layerEntry.LayerAlias
@@ -222,15 +221,14 @@ func (shared *buttonType) drawOnLayer(layerEntry types.LayerEntryType) {
 draw is a method which draws a button on a given text layer. The style of the button will be
 determined by the style entry passed in. In addition, the following should be noted:
 
-  - Buttons are not drawn physically to the text layer provided. Instead, they are rendered to the terminal at the
-    same time when the text layer is rendered.
+- Buttons are not drawn physically to the text layer provided. Instead, they are rendered to the terminal at the
+  same time when the text layer is rendered.
 
-  - If the button to be drawn falls outside the range of the provided layer, then only the visible portion of the
-    button will be drawn.
+- If the button to be drawn falls outside the range of the provided layer, then only the visible portion of the
+  button will be drawn.
 
 Example:
-
-	Button.draw(&myLayer, "btn1", "OK", style, false, false, true, 0, 0, 10, 3)
+    Button.draw(&myLayer, "btn1", "OK", style, false, false, true, 0, 0, 10, 3)
 */
 func (shared *buttonType) draw(layerEntry *types.LayerEntryType, buttonAlias string, buttonLabel string, styleEntry types.TuiStyleEntryType, isPressed bool, isSelected bool, isEnabled bool, xLocation int, yLocation int, width int, height int) {
 	localStyleEntry := types.NewTuiStyleEntry(&styleEntry)
@@ -271,8 +269,7 @@ updateStates is a method which updates the state of all buttons. This needs to b
 occurs so that changes in button state are reflected to the user as quickly as possible.
 
 Example:
-
-	isUpdateNeeded := Button.updateStates(true)
+    isUpdateNeeded := Button.updateStates(true)
 */
 func (shared *buttonType) updateStates(isMouseTriggered bool) bool {
 	if isMouseTriggered {
@@ -288,8 +285,7 @@ func (shared *buttonType) updateStates(isMouseTriggered bool) bool {
 updateStateMouse is a method which updates button states that are triggered by mouse events.
 
 Example:
-
-	isUpdateNeeded := Button.updateStateMouse()
+    isUpdateNeeded := Button.updateStateMouse()
 */
 func (shared *buttonType) updateStateMouse() bool {
 	// If we're currently in a scrollbar drag operation, don't process button clicks

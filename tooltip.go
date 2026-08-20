@@ -9,6 +9,9 @@ import (
 	"github.com/supercom32/consolizer/types"
 )
 
+/*
+TooltipInstanceType is a structure which represents a specific instance of a tooltip control.
+*/
 type TooltipInstanceType struct {
 	BaseControlInstanceType
 }
@@ -23,11 +26,10 @@ var Tooltips = memory.NewControlMemoryManager[types.TooltipEntryType]()
 // ============================================================================
 
 /*
-SetEnabled is a method which enables or disables a tooltip.
+SetEnabled is a method which enables or disables a tooltip instance.
 
 Example:
-
-	tooltip.SetEnabled(true)
+    tooltip.SetEnabled(true)
 */
 func (shared *TooltipInstanceType) SetEnabled(enabled bool) *TooltipInstanceType {
 	tooltipEntry := Tooltips.Get(shared.layerAlias, shared.controlAlias)
@@ -38,11 +40,12 @@ func (shared *TooltipInstanceType) SetEnabled(enabled bool) *TooltipInstanceType
 }
 
 /*
-Add is a method which creates and adds a new tooltip to a layer.
+Add is a method which creates and adds a new tooltip to a given text layer. In addition, the following should be noted:
+
+- The tooltip is defined by a hotspot area and a separate display area for the tooltip text.
 
 Example:
-
-	tooltip.Add("layer1", "tooltip1", "Info", style, 10, 10, 5, 1, 10, 12, 10, 3, true, true, 500)
+    tooltip.Add("layer1", "tooltip1", "Info", style, 10, 10, 5, 1, 10, 12, 10, 3, true, true, 500)
 */
 func (shared *tooltipType) Add(layerAlias string, tooltipAlias string, tooltipText string, styleEntry types.TuiStyleEntryType, hotspotXLocation int, hotspotYLocation int, hotspotWidth int, hotspotHeight int, tooltipXLocation int, tooltipYLocation int, tooltipWidth int, tooltipHeight int, isLocationAbsolute bool, isBorderDrawn bool, hoverTime int) TooltipInstanceType {
 	tooltipEntry := types.NewTooltipEntry()
@@ -74,19 +77,17 @@ Delete is a method which removes a tooltip from a text layer. In addition, the f
 - If you attempt to delete a tooltip which does not exist, then the request will simply be ignored.
 
 Example:
-
-	tooltip.Delete("layer1", "tooltip1")
+    tooltip.Delete("layer1", "tooltip1")
 */
 func (shared *tooltipType) Delete(layerAlias string, labelAlias string) {
 	Tooltips.Remove(layerAlias, labelAlias)
 }
 
 /*
-DeleteAll is a method which removes all tooltips from a layer.
+DeleteAll is a method which removes all tooltips from a specified layer.
 
 Example:
-
-	tooltip.DeleteAll("layer1")
+    tooltip.DeleteAll("layer1")
 */
 func (shared *tooltipType) DeleteAll(layerAlias string) {
 	Tooltips.RemoveAll(layerAlias)
@@ -96,8 +97,7 @@ func (shared *tooltipType) DeleteAll(layerAlias string) {
 drawHotspotZonesOnLayer is a method which draws all tooltip hotspot zones on a given text layer.
 
 Example:
-
-	tooltip.drawHotspotZonesOnLayer(layerEntry)
+    tooltip.drawHotspotZonesOnLayer(layerEntry)
 */
 func (shared *tooltipType) drawHotspotZonesOnLayer(layerEntry types.LayerEntryType) {
 	layerAlias := layerEntry.LayerAlias
@@ -113,8 +113,7 @@ drawHotspot is a method which draws a single tooltip hotspot zone. In addition, 
 - If a parent exists, do not overwrite the parent's attributes.
 
 Example:
-
-	tooltip.drawHotspot(layerEntry, entry)
+    tooltip.drawHotspot(layerEntry, entry)
 */
 func (shared *tooltipType) drawHotspot(layerEntry *types.LayerEntryType, tooltipEntry *types.TooltipEntryType) {
 	if !tooltipEntry.IsEnabled {
@@ -134,8 +133,7 @@ func (shared *tooltipType) drawHotspot(layerEntry *types.LayerEntryType, tooltip
 renderAll is a method which renders all tooltips on a given text layer.
 
 Example:
-
-	tooltip.renderAll(layerEntry)
+    tooltip.renderAll(layerEntry)
 */
 func (shared *tooltipType) renderAll(layerEntry types.LayerEntryType) {
 	for _, currentTooltipEntry := range Tooltips.GetAllEntriesOverall() {
@@ -147,22 +145,19 @@ func (shared *tooltipType) renderAll(layerEntry types.LayerEntryType) {
 /*
 render is a method which renders a tooltip on a given text layer. In addition, the following should be noted:
 
-  - This method handles both absolute and relative positioning based on the tooltip configuration.
+- This method handles both absolute and relative positioning based on the tooltip configuration.
 
-  - Rendering always starts at the coordinates specified by the user. However, the dimensions are always for
-    the text area.
+- Rendering always starts at the coordinates specified by the user. However, the dimensions are always for the text
+  area.
 
-  - If the tooltip is not enabled or not marked as drawn, then no rendering will occur.
+- If the tooltip is not enabled or not marked as drawn, then no rendering will occur.
 
-  - When absolute positioning is not used, the tooltip will be positioned relative to the current mouse cursor
-    location.
+- When absolute positioning is not used, the tooltip will be positioned relative to the current mouse cursor location.
 
-  - If borders are enabled, they will be drawn around the text area, expanding the total rendered size by 2
-    characters in.
+- If borders are enabled, they will be drawn around the text area, expanding the total rendered size by 2 characters.
 
 Example:
-
-	tooltip.render(layerEntry, entry)
+    tooltip.render(layerEntry, entry)
 */
 func (shared *tooltipType) render(layerEntry *types.LayerEntryType, tooltipEntry *types.TooltipEntryType) {
 	if !tooltipEntry.IsEnabled || !tooltipEntry.IsDrawn {
@@ -214,13 +209,13 @@ func (shared *tooltipType) render(layerEntry *types.LayerEntryType, tooltipEntry
 }
 
 /*
-getFromCharacterEntry is a method which retrieves a tooltip entry associated with a given character entry. In addition, the following should be noted:
+getFromCharacterEntry is a method which retrieves a tooltip entry associated with a given character entry. In addition,
+the following should be noted:
 
 - It checks various control types (buttons, labels, checkboxes, etc.) for associated tooltips.
 
 Example:
-
-	entry := tooltip.getFromCharacterEntry(charEntry)
+    entry := tooltip.getFromCharacterEntry(charEntry)
 */
 func (shared *tooltipType) getFromCharacterEntry(entry types.CharacterEntryType) *types.TooltipEntryType {
 	layer := entry.LayerAlias
@@ -296,11 +291,10 @@ updateMouseEvent is a method which processes mouse events for tooltips. In addit
 
 - Handles hover detection and timing.
 
-- Manages showing and hiding of tooltips.
+- Manages showing and hiding of tooltips based on mouse movement and position.
 
 Example:
-
-	update := tooltip.updateMouseEvent()
+    update := tooltip.updateMouseEvent()
 */
 func (shared *tooltipType) updateMouseEvent() bool {
 	isScreenUpdateRequired := false
@@ -351,8 +345,7 @@ func (shared *tooltipType) updateMouseEvent() bool {
 setParentControlAlias is a method which associates a tooltip with a parent control.
 
 Example:
-
-	tooltip.setParentControlAlias("parent1")
+    tooltip.setParentControlAlias("parent1")
 */
 func (shared *TooltipInstanceType) setParentControlAlias(parentControlAlias string) *TooltipInstanceType {
 	tooltipEntry := Tooltips.Get(shared.layerAlias, shared.controlAlias)
@@ -363,13 +356,13 @@ func (shared *TooltipInstanceType) setParentControlAlias(parentControlAlias stri
 }
 
 /*
-SetValue is a method which sets the value of the tooltip associated with the TooltipInstanceType. In addition, the following should be noted:
+SetValue is a method which sets the value of the tooltip associated with the TooltipInstanceType. In addition, the
+following should be noted:
 
 - This function updates the value of the tooltip label identified by the layerAlias and tooltipAlias fields.
 
 Example:
-
-	tooltip.SetValue("New value")
+    tooltip.SetValue("New value")
 */
 func (shared *TooltipInstanceType) SetValue(text string) *TooltipInstanceType {
 	labelEntry := Labels.Get(shared.layerAlias, shared.controlAlias)
@@ -383,8 +376,7 @@ SetText is a method which sets the text of the tooltip. In addition, the followi
 - This is an alias for SetTooltipValue for consistency with other controls.
 
 Example:
-
-	tooltip.SetText("New text")
+    tooltip.SetText("New text")
 */
 func (shared *TooltipInstanceType) SetText(text string) *TooltipInstanceType {
 	return shared.SetValue(text)

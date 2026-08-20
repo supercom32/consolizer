@@ -7,15 +7,13 @@ import (
 )
 
 /*
-TestAddImage is a test which verifies that images can be added to an asset list.
+TestAddImage is a test which verifies that images can be successfully added to an asset list and then cleared.
 
 Example:
-
-	Expected Inputs:
-	    None
-
-	Expected Outputs:
-	    None
+    Expected Inputs:
+        An asset list where an image with the filename "fileName1" is added.
+    Expected Outputs:
+        The ImageList contains one entry with matching filename and alias, and is empty after Clear().
 */
 func TestAddImage(test *testing.T) {
 	assetList := NewAssetList()
@@ -30,15 +28,14 @@ func TestAddImage(test *testing.T) {
 }
 
 /*
-TestAddPreloadedImage is a test which verifies that preloaded images can be added to an asset list.
+TestAddPreloadedImage is a test which verifies that preloaded images with specific styles and dimensions can
+be added to an asset list.
 
 Example:
-
-	Expected Inputs:
-	    None
-
-	Expected Outputs:
-	    None
+    Expected Inputs:
+        An asset list where a preloaded image with 10x11 dimensions and 0.6 blur sigma is added.
+    Expected Outputs:
+        The PreloadedImageList contains an entry with all properties matching the input parameters.
 */
 func TestAddPreloadedImage(test *testing.T) {
 	imageStyle := NewImageStyleEntry()

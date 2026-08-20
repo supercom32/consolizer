@@ -23,10 +23,6 @@ type fileMenuType struct {
 
 /*
 FileMenu is a structure which represents a singleton instance of fileMenuType.
-
-Example:
-
-	FileMenu
 */
 var FileMenu fileMenuType
 var FileMenus = memory.NewControlMemoryManager[types.FileMenuEntryType]()
@@ -40,8 +36,7 @@ noted:
 - After deletion, the file menu instance should not be used anymore.
 
 Example:
-
-	fileMenu.Delete()
+    fileMenu.Delete()
 */
 func (shared *FileMenuInstanceType) Delete() *FileMenuInstanceType {
 	shared.BaseControlInstanceType.Delete()
@@ -55,8 +50,7 @@ noted:
 - This method is used to make the file menu focusable via tab navigation.
 
 Example:
-
-	fileMenu.AddToTabIndex()
+    fileMenu.AddToTabIndex()
 */
 func (shared *FileMenuInstanceType) AddToTabIndex() {
 	addTabIndex(shared.layerAlias, shared.controlAlias, constants.CellTypeFileMenuHeading)
@@ -80,8 +74,7 @@ Add is a method which allows you to add a new file menu to a layer. In addition,
 - The file menu reuses existing selectors for dropdown functionality.
 
 Example:
-
-	FileMenu.Add("main", "fileMenu", style, headings, selections, 0, 0, true)
+    FileMenu.Add("main", "fileMenu", style, headings, selections, 0, 0, true)
 */
 func (shared *fileMenuType) Add(layerAlias string, menuAlias string, styleEntry types.TuiStyleEntryType,
 	menuHeadings []string, menuSelections []types.SelectionEntryType, xLocation int, yLocation int,
@@ -150,8 +143,7 @@ noted:
 - After deletion, the file menu should not be used anymore.
 
 Example:
-
-	FileMenu.Delete("main", "fileMenu")
+    FileMenu.Delete("main", "fileMenu")
 */
 func (shared *fileMenuType) Delete(layerAlias string, menuAlias string) {
 	if FileMenus.IsExists(layerAlias, menuAlias) {
@@ -179,8 +171,7 @@ be noted:
 - After deletion, the file menus should not be used anymore.
 
 Example:
-
-	FileMenu.DeleteAll("main")
+    FileMenu.DeleteAll("main")
 */
 func (shared *fileMenuType) DeleteAll(layerAlias string) {
 	fileMenuEntries := FileMenus.GetAllEntries(layerAlias)
@@ -198,8 +189,7 @@ be noted:
 - It iterates through all file menus and draws them on the specified layer.
 
 Example:
-
-	FileMenu.drawOnLayer(layer)
+    FileMenu.drawOnLayer(layer)
 */
 func (shared *fileMenuType) drawOnLayer(layerEntry types.LayerEntryType) {
 	layerAlias := layerEntry.LayerAlias
@@ -217,8 +207,7 @@ draw is a method which allows you to draw a file menu on a layer. In addition, t
 - It draws the menu bar and manages the visibility of associated selectors.
 
 Example:
-
-	FileMenu.draw(layer, entry)
+    FileMenu.draw(layer, entry)
 */
 func (shared *fileMenuType) draw(layerEntry *types.LayerEntryType, fileMenuEntry *types.FileMenuEntryType) {
 	if !fileMenuEntry.IsEnabled {
@@ -282,8 +271,7 @@ addition, the following should be noted:
 - It handles keyboard navigation for file menus.
 
 Example:
-
-	updateRequired, consumed := FileMenu.updateKeyboardEvent(keystroke)
+    updateRequired, consumed := FileMenu.updateKeyboardEvent(keystroke)
 */
 func (shared *fileMenuType) updateKeyboardEvent(keystroke []rune) (bool, bool) {
 	keystrokeAsString := string(keystroke)
@@ -319,8 +307,7 @@ addition, the following should be noted:
 - It handles mouse clicks on menu headings and delegates to selectors for menu items.
 
 Example:
-
-	updateRequired := FileMenu.updateStateMouse()
+    updateRequired := FileMenu.updateStateMouse()
 */
 func (shared *fileMenuType) updateStateMouse() bool {
 	isUpdateRequired := false
@@ -383,8 +370,7 @@ be noted:
 - Returns true if any menu was closed, false otherwise.
 
 Example:
-
-	FileMenu.closeAllOpenMenus()
+    FileMenu.closeAllOpenMenus()
 */
 func (shared *fileMenuType) closeAllOpenMenus() bool {
 	menuClosed := false
@@ -407,8 +393,7 @@ func (shared *fileMenuType) closeAllOpenMenus() bool {
 GetSelectedItem is a method which allows you to retrieve the currently selected item from the file menu.
 
 Example:
-
-	heading, item, alias, value := fileMenu.GetSelectedItem()
+    heading, item, alias, value := fileMenu.GetSelectedItem()
 */
 func (shared *FileMenuInstanceType) GetSelectedItem() (int, int, string, string) {
 	if !FileMenus.IsExists(shared.layerAlias, shared.controlAlias) {
@@ -440,10 +425,9 @@ be noted:
 - If the file menu instance does not exist, it will return false.
 
 Example:
-
-	if fileMenu.IsOpen() {
-	    fmt.Println("Menu is open")
-	}
+    if fileMenu.IsOpen() {
+        fmt.Println("Menu is open")
+    }
 */
 func (shared *FileMenuInstanceType) IsOpen() bool {
 	if !FileMenus.IsExists(shared.layerAlias, shared.controlAlias) {
@@ -462,8 +446,7 @@ be noted:
 - If the file menu does not exist, no operation occurs.
 
 Example:
-
-	fileMenu.Unselect()
+    fileMenu.Unselect()
 */
 func (shared *FileMenuInstanceType) Unselect() {
 	if !FileMenus.IsExists(shared.layerAlias, shared.controlAlias) {

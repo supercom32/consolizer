@@ -10,15 +10,14 @@ const (
 )
 
 /*
-TestGetScrambledPassword is a test which verifies that passwords can be correctly scrambled.
+TestGetScrambledPassword is a test which verifies that passwords can be correctly scrambled using a base64 encoded XOR
+result.
 
 Example:
-
-	Expected Inputs:
-	    None
-
-	Expected Outputs:
-	    None
+    Expected Inputs:
+        Password string "SamplePassword" and scramble key "SampleScrambleKey".
+    Expected Outputs:
+        The resulting base64 string matches "awVdQ1tUYVAVR0VXEwE=".
 */
 func TestGetScrambledPassword(test *testing.T) {
 	obtainedResult := GetScrambledPassword("SamplePassword", "SampleScrambleKey")
@@ -27,15 +26,14 @@ func TestGetScrambledPassword(test *testing.T) {
 }
 
 /*
-TestGetUnscrambledPassword is a test which verifies that scrambled passwords can be correctly unscrambled.
+TestGetUnscrambledPassword is a test which verifies that scrambled passwords can be correctly unscrambled using the
+original key.
 
 Example:
-
-	Expected Inputs:
-	    None
-
-	Expected Outputs:
-	    None
+    Expected Inputs:
+        Scrambled base64 string "awVdQ1tUYVAVR0VXEwE=" and original scramble key.
+    Expected Outputs:
+        The decrypted string matches the original "SamplePassword".
 */
 func TestGetUnscrambledPassword(test *testing.T) {
 	obtainedResult := getUnscrambledPassword("awVdQ1tUYVAVR0VXEwE=", "SampleScrambleKey")
@@ -44,15 +42,14 @@ func TestGetUnscrambledPassword(test *testing.T) {
 }
 
 /*
-TestMountVirtualFileSystem is a test which verifies the mounting and file retrieval from virtual file systems.
+TestMountVirtualFileSystem is a test which verifies the mounting and file retrieval from virtual ZIP and RAR file
+systems, including error handling for invalid passwords and missing files.
 
 Example:
-
-	Expected Inputs:
-	    None
-
-	Expected Outputs:
-	    None
+    Expected Inputs:
+        Valid and invalid ZIP/RAR archives and password/key combinations.
+    Expected Outputs:
+        Successful mounting returns nil, and subsequent file reads return correct data or appropriate errors.
 */
 func TestMountVirtualFileSystem(test *testing.T) {
 	var expectedResult error
@@ -96,15 +93,14 @@ func TestMountVirtualFileSystem(test *testing.T) {
 }
 
 /*
-TestGetFileDataFromLocalFileSystem is a test which verifies reading file data from the local file system.
+TestGetFileDataFromLocalFileSystem is a test which verifies that file data can be correctly read directly from the
+local host file system.
 
 Example:
-
-	Expected Inputs:
-	    None
-
-	Expected Outputs:
-	    None
+    Expected Inputs:
+        Path to an existing RAR file on the local disk.
+    Expected Outputs:
+        File bytes are successfully retrieved without error.
 */
 func TestGetFileDataFromLocalFileSystem(test *testing.T) {
 	_, err := getFileDataFromLocalFileSystem(BASE_DIRECTORY + "valid.rar")
@@ -112,15 +108,14 @@ func TestGetFileDataFromLocalFileSystem(test *testing.T) {
 }
 
 /*
-TestGetTextFromFileSystem is a test which verifies reading text from a file system.
+TestGetTextFromFileSystem is a test which verifies that text content can be successfully retrieved from a file on the
+file system.
 
 Example:
-
-	Expected Inputs:
-	    None
-
-	Expected Outputs:
-	    None
+    Expected Inputs:
+        Path to an existing text file "text_file.txt".
+    Expected Outputs:
+        The string content of the file is correctly returned.
 */
 func TestGetTextFromFileSystem(test *testing.T) {
 	_, err := getTextFromFileSystem(BASE_DIRECTORY + "text_file.txt")

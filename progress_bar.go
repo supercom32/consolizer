@@ -11,10 +11,6 @@ import (
 
 /*
 ProgressBarInstanceType is a structure which represents an instance of a progress bar control.
-
-Example:
-
-	var progressBar ProgressBarInstanceType
 */
 type ProgressBarInstanceType struct {
 	BaseControlInstanceType
@@ -22,10 +18,6 @@ type ProgressBarInstanceType struct {
 
 /*
 progressBarType is a structure which provides methods for managing progress bar controls.
-
-Example:
-
-	var progressBar progressBarType
 */
 type progressBarType struct{}
 
@@ -40,8 +32,7 @@ var ProgressBars = memory.NewControlMemoryManager[types.ProgressBarEntryType]()
 AddToTabIndex is a method which adds the progress bar to the tab navigation index.
 
 Example:
-
-	progressBar.AddToTabIndex()
+    progressBar.AddToTabIndex()
 */
 func (shared *ProgressBarInstanceType) AddToTabIndex() {
 	addTabIndex(shared.layerAlias, shared.controlAlias, constants.CellTypeProgressBar)
@@ -51,8 +42,7 @@ func (shared *ProgressBarInstanceType) AddToTabIndex() {
 Delete is a method which removes the progress bar instance.
 
 Example:
-
-	progressBar = progressBar.Delete()
+    progressBar = progressBar.Delete()
 */
 func (shared *ProgressBarInstanceType) Delete() *ProgressBarInstanceType {
 	shared.BaseControlInstanceType.Delete()
@@ -65,8 +55,7 @@ SetValue is a method which sets the current value of the progress bar. In additi
 - If the value provided is greater than the maximum value, the current value will be set to the maximum value.
 
 Example:
-
-	progressBar.SetValue(50)
+    progressBar.SetValue(50)
 */
 func (shared *ProgressBarInstanceType) SetValue(value int) {
 	progressBarEntry := ProgressBars.Get(shared.layerAlias, shared.controlAlias)
@@ -83,8 +72,7 @@ SetMaxValue is a method which sets the maximum value of the progress bar. In add
 - The maximum value must be greater than zero.
 
 Example:
-
-	progressBar.SetMaxValue(100)
+    progressBar.SetMaxValue(100)
 */
 func (shared *ProgressBarInstanceType) SetMaxValue(value int) {
 	progressBarEntry := ProgressBars.Get(shared.layerAlias, shared.controlAlias)
@@ -97,8 +85,7 @@ func (shared *ProgressBarInstanceType) SetMaxValue(value int) {
 SetLabel is a method which sets the label text displayed on the progress bar.
 
 Example:
-
-	progressBar.SetLabel("Loading...")
+    progressBar.SetLabel("Loading...")
 */
 func (shared *ProgressBarInstanceType) SetLabel(label string) {
 	progressBarEntry := ProgressBars.Get(shared.layerAlias, shared.controlAlias)
@@ -106,13 +93,13 @@ func (shared *ProgressBarInstanceType) SetLabel(label string) {
 }
 
 /*
-IncrementValue is a method which increases the current value of the progress bar by one. In addition, the following should be noted:
+IncrementValue is a method which increases the current value of the progress bar by one. In addition, the following
+should be noted:
 
 - The value will not exceed the defined maximum value.
 
 Example:
-
-	progressBar.IncrementValue()
+    progressBar.IncrementValue()
 */
 func (shared *ProgressBarInstanceType) IncrementValue() {
 	progressBarEntry := ProgressBars.Get(shared.layerAlias, shared.controlAlias)
@@ -127,8 +114,7 @@ GetValueAsRatio is a method which retrieves the progress bar's current value and
 string.
 
 Example:
-
-	ratio := progressBar.GetValueAsRatio()
+    ratio := progressBar.GetValueAsRatio()
 */
 func (shared *ProgressBarInstanceType) GetValueAsRatio() string {
 	progressBarEntry := ProgressBars.Get(shared.layerAlias, shared.controlAlias)
@@ -140,8 +126,7 @@ func (shared *ProgressBarInstanceType) GetValueAsRatio() string {
 GetValue is a method which retrieves the current value of the progress bar.
 
 Example:
-
-	currentValue := progressBar.GetValue()
+    currentValue := progressBar.GetValue()
 */
 func (shared *ProgressBarInstanceType) GetValue() int {
 	progressBarEntry := ProgressBars.Get(shared.layerAlias, shared.controlAlias)
@@ -152,8 +137,7 @@ func (shared *ProgressBarInstanceType) GetValue() int {
 GetValueAsPercent is a method which retrieves the progress bar's current value as a percentage of its maximum value.
 
 Example:
-
-	percent := progressBar.GetValueAsPercent()
+    percent := progressBar.GetValueAsPercent()
 */
 func (shared *ProgressBarInstanceType) GetValueAsPercent() string {
 	var returnValue int
@@ -170,8 +154,7 @@ Add is a method which adds a progress bar to a given text layer. In addition, th
 - A tooltip is automatically created for the progress bar but is disabled by default.
 
 Example:
-
-	progressBarInstance := ProgressBar.Add("Layer1", "Progress1", "Loading", style, 0, 0, 20, 1, false, 0, 100, false)
+    progressBarInstance := ProgressBar.Add("Layer1", "Progress1", "Loading", style, 0, 0, 20, 1, false, 0, 100, false)
 */
 func (shared *progressBarType) Add(layerAlias string, progressBarAlias string, progressBarLabel string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, height int, isVertical bool, value int, maxValue int, isBackgroundTransparent bool) ProgressBarInstanceType {
 	progressBarEntry := types.NewProgressBarEntry()
@@ -212,8 +195,7 @@ Delete is a method which removes a progress bar from a text layer. In addition, 
 - If you attempt to delete a progress bar which does not exist, then the request will simply be ignored.
 
 Example:
-
-	ProgressBar.Delete("Layer1", "Progress1")
+    ProgressBar.Delete("Layer1", "Progress1")
 */
 func (shared *progressBarType) Delete(layerAlias string, progressBarAlias string) {
 	Buttons.Remove(layerAlias, progressBarAlias)
@@ -223,8 +205,7 @@ func (shared *progressBarType) Delete(layerAlias string, progressBarAlias string
 DeleteAll is a method which removes all progress bars from a specified text layer.
 
 Example:
-
-	ProgressBar.DeleteAll("Layer1")
+    ProgressBar.DeleteAll("Layer1")
 */
 func (shared *progressBarType) DeleteAll(layerAlias string) {
 	ProgressBars.RemoveAll(layerAlias)
@@ -234,8 +215,7 @@ func (shared *progressBarType) DeleteAll(layerAlias string) {
 drawOnLayer is a method which draws all progress bars on a given text layer.
 
 Example:
-
-	ProgressBar.drawOnLayer(layerEntry)
+    ProgressBar.drawOnLayer(layerEntry)
 */
 func (shared *progressBarType) drawOnLayer(layerEntry types.LayerEntryType) {
 	layerAlias := layerEntry.LayerAlias
@@ -252,8 +232,7 @@ In addition, the following should be noted:
 - The partial fill value should range from 0.0 (empty) to 1.0 (full).
 
 Example:
-
-	char := getHorizontalPartialFillChar(0.5)
+    char := getHorizontalPartialFillChar(0.5)
 */
 func getHorizontalPartialFillChar(partialFill float64) rune {
 	// Map the partial fill (0.0 to 1.0) to one of the block characters
@@ -284,8 +263,7 @@ In addition, the following should be noted:
 - The partial fill value should range from 0.0 (empty) to 1.0 (full).
 
 Example:
-
-	char := getVerticalPartialFillChar(0.5)
+    char := getVerticalPartialFillChar(0.5)
 */
 func getVerticalPartialFillChar(partialFill float64) rune {
 	// Map the partial fill (0.0 to 1.0) to one of the block characters
@@ -317,8 +295,7 @@ drawProgressBar is a method which renders a progress bar onto a layer. In additi
 - Labels are automatically centered and truncated if they exceed the available dimensions.
 
 Example:
-
-	drawProgressBar(&layerEntry, "Progress1", "Loading", style, 0, 0, 20, 1, 50, 100, false, false)
+    drawProgressBar(&layerEntry, "Progress1", "Loading", style, 0, 0, 20, 1, 50, 100, false, false)
 */
 func drawProgressBar(layerEntry *types.LayerEntryType, progressBarAlias string, progressBarLabel string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, height int, currentValue int, maxValue int, isBackgroundTransparent bool, isVertical bool) {
 	attributeEntry := types.NewAttributeEntry()

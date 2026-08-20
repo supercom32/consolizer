@@ -26,10 +26,12 @@ func TestLayerTypeCreation(test *testing.T) {
 	firstLayerEntry.CursorXLocation = 3
 	firstLayerEntry.CursorYLocation = 4
 	firstLayerEntry.ZOrder = 1
+	firstLayerEntry.AlphaValue = 0.5
 	firstLayerEntry.IsVisible = true
 	secondLayerEntry := NewLayerEntry(layerAlias, parentAlias, 20, 20)
 	assert.NotEqualf(test, secondLayerEntry, firstLayerEntry, "The first layer entry is the same as the second, even though it should be different.")
 
 	secondLayerEntry = NewLayerEntry(layerAlias, parentAlias, 0, 0, &firstLayerEntry)
 	assert.Equalf(test, secondLayerEntry, firstLayerEntry, "The first layer is not the same as the second, even though it should be an identical clone.")
+	assert.Equalf(test, float32(0.5), secondLayerEntry.AlphaValue, "The alpha value was not cloned correctly.")
 }

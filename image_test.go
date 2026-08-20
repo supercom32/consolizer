@@ -16,12 +16,11 @@ const (
 )
 
 /*
-setupTest is a test which allows you to initialize the testing environment by clearing image entries and setting up
+setupTest is a method which allows you to initialize the testing environment by clearing image entries and setting up
 standard styles and layers.
 
 Example:
-
-	layer1, layer2, layer3, tuiStyle, imageStyle := setupTest()
+    layer1, layer2, layer3, tuiStyle, imageStyle := setupTest()
 */
 func setupTest() (*LayerInstanceType, *LayerInstanceType, *LayerInstanceType, types.TuiStyleEntryType, types.ImageStyleEntryType) {
 	ClearAllImages()
@@ -43,6 +42,12 @@ func setupTest() (*LayerInstanceType, *LayerInstanceType, *LayerInstanceType, ty
 /*
 TestAddAndIsImageExists is a test which allows you to verify that an image can be successfully loaded and its existence
 confirmed using the IMAGE_COMPLEX asset.
+
+Example:
+    Expected Inputs:
+        IMAGE_COMPLEX file path.
+    Expected Outputs:
+        Image is successfully loaded into memory and IsImageExists returns true.
 */
 func TestAddAndIsImageExists(test *testing.T) {
 	setupTest()
@@ -57,6 +62,12 @@ func TestAddAndIsImageExists(test *testing.T) {
 /*
 TestDeleteImage is a test which allows you to verify that a loaded image can be successfully unloaded and is
 subsequently reported as non-existent.
+
+Example:
+    Expected Inputs:
+        IMAGE_COMPLEX file path.
+    Expected Outputs:
+        Image is removed from memory and IsImageExists returns false.
 */
 func TestDeleteImage(t *testing.T) {
 	setupTest()
@@ -69,6 +80,12 @@ func TestDeleteImage(t *testing.T) {
 /*
 TestIsImageExists is a test which allows you to verify the IsImageExists function correctly reports both existent and
 non-existent images.
+
+Example:
+    Expected Inputs:
+        IMAGE_COMPLEX file path and a non-existent alias.
+    Expected Outputs:
+        True for the loaded image and False for the non-existent alias.
 */
 func TestIsImageExists(test *testing.T) {
 	setupTest()
@@ -81,6 +98,12 @@ func TestIsImageExists(test *testing.T) {
 /*
 TestUnloadImage is a test which allows you to verify that unloading an image correctly removes it from memory and
 existence checks.
+
+Example:
+    Expected Inputs:
+        IMAGE_COMPLEX file path.
+    Expected Outputs:
+        Image is removed from memory and is no longer available for use.
 */
 func TestUnloadImage(test *testing.T) {
 	setupTest()
@@ -93,6 +116,12 @@ func TestUnloadImage(test *testing.T) {
 /*
 TestUnloadNonExistentImage is a test which allows you to verify that attempting to unload a non-existent image does not
 cause errors and correctly reports non-existence.
+
+Example:
+    Expected Inputs:
+        A non-existent image alias string.
+    Expected Outputs:
+        Function completes without errors and IsImageExists remains false.
 */
 func TestUnloadNonExistentImage(test *testing.T) {
 	setupTest()
@@ -105,6 +134,12 @@ func TestUnloadNonExistentImage(test *testing.T) {
 TestTransparentImageBlockStyleBackgroundTransparency is a test which allows you to verify that drawing a transparent
 image using block style correctly handles background transparency by comparing against a known base64 encoded ANSI
 string.
+
+Example:
+    Expected Inputs:
+        IMAGE_TRANSPARENCY asset rendered with block element style.
+    Expected Outputs:
+        Screen content matches the master ANSI string showing transparent background regions.
 */
 func TestTransparentImageBlockStyleBackgroundTransparency(test *testing.T) {
 	layer1, _, _, _, imageStyle := setupTest()
@@ -126,6 +161,12 @@ func TestTransparentImageBlockStyleBackgroundTransparency(test *testing.T) {
 TestTransparentImageBlockStyleForegroundTransparency is a test which allows you to verify that drawing a transparent
 image using block style correctly handles foreground transparency by comparing against a known base64 encoded ANSI
 string.
+
+Example:
+    Expected Inputs:
+        IMAGE_TRANSPARENCY asset rendered with block element style on a secondary layer.
+    Expected Outputs:
+        Screen content matches the master ANSI string showing correctly handled foreground transparency.
 */
 func TestTransparentImageBlockStyleForegroundTransparency(test *testing.T) {
 	_, layer2, _, _, imageStyle := setupTest()
@@ -146,6 +187,12 @@ func TestTransparentImageBlockStyleForegroundTransparency(test *testing.T) {
 /*
 TestTransparentImageBlockStyleBlendedTransparency is a test which allows you to verify that drawing a transparent image
 using block style correctly handles blended transparency by comparing against a known base64 encoded ANSI string.
+
+Example:
+    Expected Inputs:
+        IMAGE_TRANSPARENCY asset rendered with block element style and alpha blending.
+    Expected Outputs:
+        Screen content matches the master ANSI string with correct color blending in semi-transparent regions.
 */
 func TestTransparentImageBlockStyleBlendedTransparency(test *testing.T) {
 	_, layer2, _, _, imageStyle := setupTest()
@@ -167,6 +214,12 @@ func TestTransparentImageBlockStyleBlendedTransparency(test *testing.T) {
 TestTransparentImageMediumResolutionStyleBackgroundTransparency is a test which allows you to verify that drawing a
 transparent image using medium resolution style correctly handles background transparency by comparing against a known
 base64 encoded ANSI string.
+
+Example:
+    Expected Inputs:
+        IMAGE_TRANSPARENCY asset rendered with half block style.
+    Expected Outputs:
+        Screen content matches the master ANSI string showing correctly handled background transparency in half-block resolution.
 */
 func TestTransparentImageMediumResolutionStyleBackgroundTransparency(test *testing.T) {
 	layer1, _, _, _, imageStyle := setupTest()
@@ -189,6 +242,12 @@ func TestTransparentImageMediumResolutionStyleBackgroundTransparency(test *testi
 TestTransparentImageMediumResolutionStyleForegroundTransparency is a test which allows you to verify that drawing a
 transparent image using medium resolution style correctly handles foreground transparency by comparing against a known
 base64 encoded ANSI string.
+
+Example:
+    Expected Inputs:
+        IMAGE_TRANSPARENCY asset rendered with half block style on a layer with existing content.
+    Expected Outputs:
+        Screen content matches the master ANSI string showing correctly handled foreground transparency in half-block resolution.
 */
 func TestTransparentImageMediumResolutionStyleForegroundTransparency(test *testing.T) {
 	layer1, _, _, _, imageStyle := setupTest()
@@ -211,6 +270,12 @@ func TestTransparentImageMediumResolutionStyleForegroundTransparency(test *testi
 TestTransparentImageMediumResolutionStyleBlendedTransparency is a test which allows you to verify that drawing a
 transparent image using medium resolution style correctly handles blended transparency by comparing against a known
 base64 encoded ANSI string.
+
+Example:
+    Expected Inputs:
+        IMAGE_TRANSPARENCY asset rendered with half block style and color blending enabled.
+    Expected Outputs:
+        Screen content matches the master ANSI string with correct pixel color blending in half-block resolution.
 */
 func TestTransparentImageMediumResolutionStyleBlendedTransparency(test *testing.T) {
 	layer1, _, _, _, imageStyle := setupTest()
@@ -233,6 +298,12 @@ func TestTransparentImageMediumResolutionStyleBlendedTransparency(test *testing.
 TestTransparentImageBrailleStyleBackgroundTransparency is a test which allows you to verify that drawing a transparent
 image using Braille style correctly handles background transparency by comparing against a known base64 encoded ANSI
 string.
+
+Example:
+    Expected Inputs:
+        IMAGE_TRANSPARENCY asset rendered using Braille characters.
+    Expected Outputs:
+        Screen content matches the master ANSI string showing correctly handled transparency in Braille resolution.
 */
 func TestTransparentImageBrailleStyleBackgroundTransparency(test *testing.T) {
 	layer1, _, _, _, imageStyle := setupTest()
@@ -255,6 +326,12 @@ func TestTransparentImageBrailleStyleBackgroundTransparency(test *testing.T) {
 TestTransparentImageBrailleStyleForegroundTransparency is a test which allows you to verify that drawing a transparent
 image using Braille style correctly handles foreground transparency by comparing against a known base64 encoded ANSI
 string.
+
+Example:
+    Expected Inputs:
+        IMAGE_TRANSPARENCY asset rendered using Braille characters on a layer with existing background characters.
+    Expected Outputs:
+        Screen content matches the master ANSI string showing correctly handled foreground transparency in Braille resolution.
 */
 func TestTransparentImageBrailleStyleForegroundTransparency(test *testing.T) {
 	layer1, _, _, _, imageStyle := setupTest()
@@ -277,6 +354,12 @@ func TestTransparentImageBrailleStyleForegroundTransparency(test *testing.T) {
 TestTransparentImageBrailleStyleBlendedTransparency is a test which allows you to verify that drawing a transparent
 image using Braille style correctly handles blended transparency by comparing against a known base64 encoded ANSI
 string.
+
+Example:
+    Expected Inputs:
+        IMAGE_TRANSPARENCY asset rendered using Braille characters with alpha blending enabled.
+    Expected Outputs:
+        Screen content matches the master ANSI string with correct dot patterns and color blending in semi-transparent regions.
 */
 func TestTransparentImageBrailleStyleBlendedTransparency(test *testing.T) {
 	layer1, _, _, _, imageStyle := setupTest()
@@ -299,6 +382,12 @@ func TestTransparentImageBrailleStyleBlendedTransparency(test *testing.T) {
 TestTransparentImageAsciiStyleBackgroundTransparency is a test which allows you to verify that drawing a transparent
 image using ASCII style correctly handles background transparency by comparing against a known base64 encoded ANSI
 string.
+
+Example:
+    Expected Inputs:
+        IMAGE_TRANSPARENCY asset rendered using ASCII characters.
+    Expected Outputs:
+        Screen content matches the master ANSI string showing correctly handled transparency in ASCII character resolution.
 */
 func TestTransparentImageAsciiStyleBackgroundTransparency(test *testing.T) {
 	_, layer2, _, _, imageStyle := setupTest()
@@ -322,6 +411,12 @@ func TestTransparentImageAsciiStyleBackgroundTransparency(test *testing.T) {
 TestTransparentImageAsciiStyleForegroundTransparency is a test which allows you to verify that drawing a transparent
 image using ASCII style correctly handles foreground transparency by comparing against a known base64 encoded ANSI
 string.
+
+Example:
+    Expected Inputs:
+        IMAGE_TRANSPARENCY asset rendered using ASCII characters on a secondary layer with background content.
+    Expected Outputs:
+        Screen content matches the master ANSI string showing correctly handled foreground transparency in ASCII character resolution.
 */
 func TestTransparentImageAsciiStyleForegroundTransparency(test *testing.T) {
 	_, layer2, _, _, imageStyle := setupTest()
@@ -344,6 +439,12 @@ func TestTransparentImageAsciiStyleForegroundTransparency(test *testing.T) {
 /*
 TestTransparentImageAsciiStyleBlendedTransparency is a test which allows you to verify that drawing a transparent image
 using ASCII style correctly handles blended transparency by comparing against a known base64 encoded ANSI string.
+
+Example:
+    Expected Inputs:
+        IMAGE_TRANSPARENCY asset rendered using ASCII characters with alpha blending enabled.
+    Expected Outputs:
+        Screen content matches the master ANSI string with correct character selection and color blending.
 */
 func TestTransparentImageAsciiStyleBlendedTransparency(test *testing.T) {
 	_, layer2, _, _, imageStyle := setupTest()
@@ -364,16 +465,46 @@ func TestTransparentImageAsciiStyleBlendedTransparency(test *testing.T) {
 }
 
 /*
+TestTransparentImageOverImage is a test which allows you to verify that a transparent image drawn on an upper layer
+correctly reveals another image rendered on the layer beneath it. The transparent edges of the circle must show the
+underlying image's block art with sub-cell accuracy rather than a substituted flat background color.
+
+Example:
+    Expected Inputs:
+        IMAGE_COMPLEX asset rendered with block element style on the bottom layer, with the IMAGE_TRANSPARENCY asset
+        rendered with block element style on the layer above it.
+    Expected Outputs:
+        Screen content matches the master ANSI string, with the underlying image visible through the transparent
+        regions and edges of the circle.
+*/
+func TestTransparentImageOverImage(test *testing.T) {
+	layer1, layer2, _, _, imageStyle := setupTest()
+	err := layer1.DrawImage(IMAGE_COMPLEX, imageStyle, 0, 0, 50, 20, 0)
+	assert.Nil(test, err, "Drawing the background image should not produce an error")
+	err = layer2.DrawImage(IMAGE_TRANSPARENCY, imageStyle, 1, 0, 40, 20, 0)
+	assert.Nil(test, err, "Drawing the transparent foreground image should not produce an error")
+	UpdateDisplay(false)
+	layerEntry := commonResource.screenLayer
+	obtainedValue := layerEntry.GetBasicAnsiStringAsBase64()
+	UpdateMasterImages(false, IMAGE_TEST_SUITE_NAME, "TestTransparentImageOverImage", obtainedValue)
+	expectedValue := LoadMasterImage(IMAGE_TEST_SUITE_NAME, "TestTransparentImageOverImage")
+	obtainedValueBase64 := layerEntry.GetAnsiStringFromBase64(obtainedValue)
+	expectedValueBase64 := layerEntry.GetAnsiStringFromBase64(expectedValue)
+	if !assert.Equalf(test, expectedValue, obtainedValue, "The updated screen does not match the master original!") {
+		fmt.Println("Expected:\n", expectedValueBase64)
+		fmt.Println("Obtained:\n", obtainedValueBase64)
+	}
+}
+
+/*
 TestComplexGeometryImage is a test which allows you to verify that a complex geometry image can be rendered using the
 accurate block element style at a specific size and aspect ratio.
 
 Example:
-
-	Expected Inputs:
-	    IMAGE_GEOMETRY asset, 140x50 size, accurate block style.
-
-	Expected Outputs:
-	    The rendered image matches the master base64 string stored in the master images directory.
+    Expected Inputs:
+        Input: IMAGE_GEOMETRY asset, 140x50 size, accurate block style.
+    Expected Outputs:
+        The rendered image matches the master base64 string stored in the master images directory.
 */
 func TestComplexGeometryImage(test *testing.T) {
 	layer1, _, _, _ := CommonTestSetupHighResolutionImages()

@@ -15,8 +15,7 @@ following should be noted:
 - If the environment variable UPDATE_MASTER_IMAGES is set to true, it will always perform the update.
 
 Example:
-
-	isUpdated := UpdateMasterImages(false, "TestName", "base64data")
+    isUpdated := UpdateMasterImages(false, "TestName", "base64data")
 */
 func UpdateMasterImages(isUpdateRequested bool, testSuiteName string, testCaseName string, ansiBase64 string) bool {
 	if os.Getenv("UPDATE_MASTER_IMAGES") == "true" || isUpdateRequested {
@@ -35,8 +34,7 @@ func UpdateMasterImages(isUpdateRequested bool, testSuiteName string, testCaseNa
 LoadMasterImage is a method which allows you to load a master regression file for a test.
 
 Example:
-
-	expectedValue := LoadMasterImage("TestSuite", "TestCase")
+    expectedValue := LoadMasterImage("TestSuite", "TestCase")
 */
 func LoadMasterImage(testSuiteName string, testCaseName string) string {
 	expectedValueBytes, _ := os.ReadFile(constants.MasterImagesPath + testSuiteName + "/" + testCaseName + ".base64")
@@ -44,12 +42,11 @@ func LoadMasterImage(testSuiteName string, testCaseName string) string {
 }
 
 /*
-CommonTestSetup is a test which initializes a standard testing environment with multiple layers and a
+CommonTestSetup is a method which initializes a standard testing environment with multiple layers and a
 default TUI style.
 
 Example:
-
-	layer1, layer2, layer3, styleEntry := CommonTestSetup()
+    layer1, layer2, layer3, styleEntry := CommonTestSetup()
 */
 func CommonTestSetup() (*LayerInstanceType, *LayerInstanceType, *LayerInstanceType, types.TuiStyleEntryType) {
 	commonResource.isDebugEnabled = true
@@ -70,11 +67,10 @@ func CommonTestSetup() (*LayerInstanceType, *LayerInstanceType, *LayerInstanceTy
 }
 
 /*
-CommonTestSetupImages is a test which initializes a standard testing environment for image-related tests.
+CommonTestSetupImages is a method which initializes a standard testing environment for image-related tests.
 
 Example:
-
-	layer1, layer2, layer3, styleEntry := CommonTestSetupImages()
+    layer1, layer2, layer3, styleEntry := CommonTestSetupImages()
 */
 func CommonTestSetupImages() (*LayerInstanceType, *LayerInstanceType, *LayerInstanceType, types.TuiStyleEntryType) {
 	commonResource.isDebugEnabled = true
@@ -91,12 +87,11 @@ func CommonTestSetupImages() (*LayerInstanceType, *LayerInstanceType, *LayerInst
 }
 
 /*
-CommonTestSetupHighResolutionImages is a test which initializes a standard testing environment for high resolution
+CommonTestSetupHighResolutionImages is a method which initializes a standard testing environment for high resolution
 image tests.
 
 Example:
-
-	layer1, layer2, layer3, styleEntry := CommonTestSetupHighResolutionImages()
+    layer1, layer2, layer3, styleEntry := CommonTestSetupHighResolutionImages()
 */
 func CommonTestSetupHighResolutionImages() (*LayerInstanceType, *LayerInstanceType, *LayerInstanceType, types.TuiStyleEntryType) {
 	commonResource.isDebugEnabled = true

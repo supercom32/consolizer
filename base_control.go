@@ -10,8 +10,7 @@ BaseControlInstanceType is a structure which provides common functionality for a
 layer and control aliases and provides common methods that all controls share.
 
 Example:
-
-	var baseControl BaseControlInstanceType
+    var baseControl BaseControlInstanceType
 */
 type BaseControlInstanceType struct {
 	layerAlias   string
@@ -23,8 +22,7 @@ type BaseControlInstanceType struct {
 GetAlias is a method which allows you to obtain the alias associated with the control.
 
 Example:
-
-	alias := control.GetAlias()
+    alias := control.GetAlias()
 */
 func (shared *BaseControlInstanceType) GetAlias() string {
 	return shared.controlAlias
@@ -34,8 +32,7 @@ func (shared *BaseControlInstanceType) GetAlias() string {
 GetLayerAlias is a method which allows you to obtain the alias of the layer that the control is associated with.
 
 Example:
-
-	layerAlias := control.GetLayerAlias()
+    layerAlias := control.GetLayerAlias()
 */
 func (shared *BaseControlInstanceType) GetLayerAlias() string {
 	return shared.layerAlias
@@ -45,8 +42,7 @@ func (shared *BaseControlInstanceType) GetLayerAlias() string {
 getBaseControl is a method which allows you to retrieve the underlying base control type for the control instance.
 
 Example:
-
-	baseControl := shared.getBaseControl()
+    baseControl := shared.getBaseControl()
 */
 func (shared *BaseControlInstanceType) getBaseControl() *types.BaseControlType {
 	switch shared.controlType {
@@ -98,8 +94,7 @@ func (shared *BaseControlInstanceType) getBaseControl() *types.BaseControlType {
 GetBounds is a method which allows you to obtain the position and dimensions of the control.
 
 Example:
-
-	x, y, w, h := control.GetBounds()
+    x, y, w, h := control.GetBounds()
 */
 func (shared *BaseControlInstanceType) GetBounds() (int, int, int, int) {
 	if control := shared.getBaseControl(); control != nil {
@@ -112,8 +107,7 @@ func (shared *BaseControlInstanceType) GetBounds() (int, int, int, int) {
 SetPosition is a method which allows you to set the X and Y coordinates of the control.
 
 Example:
-
-	control.SetPosition(10, 5)
+    control.SetPosition(10, 5)
 */
 func (shared *BaseControlInstanceType) SetPosition(x, y int) *BaseControlInstanceType {
 	if control := shared.getBaseControl(); control != nil {
@@ -127,8 +121,7 @@ func (shared *BaseControlInstanceType) SetPosition(x, y int) *BaseControlInstanc
 GetPosition is a method which allows you to retrieve the current X and Y coordinates of the control.
 
 Example:
-
-	x, y := control.GetPosition()
+    x, y := control.GetPosition()
 */
 func (shared *BaseControlInstanceType) GetPosition() (int, int) {
 	if control := shared.getBaseControl(); control != nil {
@@ -141,8 +134,7 @@ func (shared *BaseControlInstanceType) GetPosition() (int, int) {
 GetSize is a method which allows you to retrieve the current width and height of the control.
 
 Example:
-
-	width, height := control.GetSize()
+    width, height := control.GetSize()
 */
 func (shared *BaseControlInstanceType) GetSize() (int, int) {
 	if control := shared.getBaseControl(); control != nil {
@@ -155,8 +147,7 @@ func (shared *BaseControlInstanceType) GetSize() (int, int) {
 SetSize is a method which allows you to set the width and height of the control.
 
 Example:
-
-	control.SetSize(20, 10)
+    control.SetSize(20, 10)
 */
 func (shared *BaseControlInstanceType) SetSize(width, height int) *BaseControlInstanceType {
 	if control := shared.getBaseControl(); control != nil {
@@ -170,8 +161,7 @@ func (shared *BaseControlInstanceType) SetSize(width, height int) *BaseControlIn
 SetVisible is a method which allows you to toggle the visibility of the control.
 
 Example:
-
-	control.SetVisible(true)
+    control.SetVisible(true)
 */
 func (shared *BaseControlInstanceType) SetVisible(visible bool) *BaseControlInstanceType {
 	if control := shared.getBaseControl(); control != nil {
@@ -184,8 +174,7 @@ func (shared *BaseControlInstanceType) SetVisible(visible bool) *BaseControlInst
 SetStyle is a method which allows you to apply a visual style to the control.
 
 Example:
-
-	control.SetStyle(newStyle)
+    control.SetStyle(newStyle)
 */
 func (shared *BaseControlInstanceType) SetStyle(style types.TuiStyleEntryType) *BaseControlInstanceType {
 	if control := shared.getBaseControl(); control != nil {
@@ -198,8 +187,7 @@ func (shared *BaseControlInstanceType) SetStyle(style types.TuiStyleEntryType) *
 SetEnabled is a method which allows you to enable or disable user interaction with the control.
 
 Example:
-
-	control.SetEnabled(false)
+    control.SetEnabled(false)
 */
 func (shared *BaseControlInstanceType) SetEnabled(enabled bool) *BaseControlInstanceType {
 	if control := shared.getBaseControl(); control != nil {
@@ -212,8 +200,7 @@ func (shared *BaseControlInstanceType) SetEnabled(enabled bool) *BaseControlInst
 SetLabel is a method which allows you to set the display text for the control's label.
 
 Example:
-
-	control.SetLabel("Click Me")
+    control.SetLabel("Click Me")
 */
 func (shared *BaseControlInstanceType) SetLabel(label string) *BaseControlInstanceType {
 	if control := shared.getBaseControl(); control != nil {
@@ -226,8 +213,7 @@ func (shared *BaseControlInstanceType) SetLabel(label string) *BaseControlInstan
 GetLabel is a method which allows you to retrieve the current label text of the control.
 
 Example:
-
-	labelText := control.GetLabel()
+    labelText := control.GetLabel()
 */
 func (shared *BaseControlInstanceType) GetLabel() string {
 	if control := shared.getBaseControl(); control != nil {
@@ -240,8 +226,7 @@ func (shared *BaseControlInstanceType) GetLabel() string {
 SetBorderDrawn is a method which allows you to specify whether a border should be drawn around the control.
 
 Example:
-
-	control.SetBorderDrawn(true)
+    control.SetBorderDrawn(true)
 */
 func (shared *BaseControlInstanceType) SetBorderDrawn(drawn bool) *BaseControlInstanceType {
 	if control := shared.getBaseControl(); control != nil {
@@ -254,8 +239,7 @@ func (shared *BaseControlInstanceType) SetBorderDrawn(drawn bool) *BaseControlIn
 IsBorderDrawn is a method which allows you to check if a border is currently being drawn around the control.
 
 Example:
-
-	isDrawn := control.IsBorderDrawn()
+    isDrawn := control.IsBorderDrawn()
 */
 func (shared *BaseControlInstanceType) IsBorderDrawn() bool {
 	if control := shared.getBaseControl(); control != nil {
@@ -268,8 +252,7 @@ func (shared *BaseControlInstanceType) IsBorderDrawn() bool {
 SetTooltip is a method which allows you to associate a tooltip with the control.
 
 Example:
-
-	control.SetTooltip("myTooltip")
+    control.SetTooltip("myTooltip")
 */
 func (shared *BaseControlInstanceType) SetTooltip(tooltipAlias string) *BaseControlInstanceType {
 	if control := shared.getBaseControl(); control != nil {
@@ -282,8 +265,7 @@ func (shared *BaseControlInstanceType) SetTooltip(tooltipAlias string) *BaseCont
 GetTooltip is a method which allows you to retrieve the alias of the tooltip associated with the control.
 
 Example:
-
-	tooltip := control.GetTooltip()
+    tooltip := control.GetTooltip()
 */
 func (shared *BaseControlInstanceType) GetTooltip() string {
 	if control := shared.getBaseControl(); control != nil {
@@ -296,8 +278,7 @@ func (shared *BaseControlInstanceType) GetTooltip() string {
 SetTooltipEnabled is a method which allows you to enable or disable the display of the control's tooltip.
 
 Example:
-
-	control.SetTooltipEnabled(true)
+    control.SetTooltipEnabled(true)
 */
 func (shared *BaseControlInstanceType) SetTooltipEnabled(enabled bool) *BaseControlInstanceType {
 	if control := shared.getBaseControl(); control != nil {
@@ -310,8 +291,7 @@ func (shared *BaseControlInstanceType) SetTooltipEnabled(enabled bool) *BaseCont
 IsTooltipEnabled is a method which allows you to check if the tooltip for the control is currently enabled.
 
 Example:
-
-	isEnabled := control.IsTooltipEnabled()
+    isEnabled := control.IsTooltipEnabled()
 */
 func (shared *BaseControlInstanceType) IsTooltipEnabled() bool {
 	if control := shared.getBaseControl(); control != nil {
@@ -324,8 +304,7 @@ func (shared *BaseControlInstanceType) IsTooltipEnabled() bool {
 IsVisible is a method which allows you to check if the control is currently set to be visible.
 
 Example:
-
-	isVisible := control.IsVisible()
+    isVisible := control.IsVisible()
 */
 func (shared *BaseControlInstanceType) IsVisible() bool {
 	if control := shared.getBaseControl(); control != nil {
@@ -338,8 +317,7 @@ func (shared *BaseControlInstanceType) IsVisible() bool {
 IsEnabled is a method which allows you to check if the control is currently enabled for user interaction.
 
 Example:
-
-	isEnabled := control.IsEnabled()
+    isEnabled := control.IsEnabled()
 */
 func (shared *BaseControlInstanceType) IsEnabled() bool {
 	if control := shared.getBaseControl(); control != nil {
@@ -352,8 +330,7 @@ func (shared *BaseControlInstanceType) IsEnabled() bool {
 GetStyle is a method which allows you to retrieve the current visual style of the control.
 
 Example:
-
-	style := control.GetStyle()
+    style := control.GetStyle()
 */
 func (shared *BaseControlInstanceType) GetStyle() types.TuiStyleEntryType {
 	if control := shared.getBaseControl(); control != nil {
@@ -371,8 +348,7 @@ noted:
 - All memory associated with the control will be freed.
 
 Example:
-
-	control.Delete()
+    control.Delete()
 */
 func (shared *BaseControlInstanceType) Delete() *BaseControlInstanceType {
 	switch shared.controlType {
@@ -432,8 +408,7 @@ func (shared *BaseControlInstanceType) Delete() *BaseControlInstanceType {
 GetFocus is a method which updates the event manager to set this control as the one currently in focus.
 
 Example:
-
-	control.GetFocus()
+    control.GetFocus()
 */
 func (shared *BaseControlInstanceType) GetFocus() *BaseControlInstanceType {
 	controlTypeInt := constants.NullControlType

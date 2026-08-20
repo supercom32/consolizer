@@ -13,12 +13,10 @@ const TEXT_FIELD_TEST_SUITE_NAME = "text_field"
 TestTextFieldDefaultText is a test which verifies that a text field with default text is rendered correctly.
 
 Example:
-
-	Expected Inputs:
-	    A text field with default text.
-
-	Expected Outputs:
-	    A rendered text field with the default text.
+    Expected Inputs:
+        A text field initialized with the default string "default".
+    Expected Outputs:
+        Screen content matches expected ANSI string (Base64 encoded) showing the default text.
 */
 func TestTextFieldDefaultText(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
@@ -41,12 +39,10 @@ func TestTextFieldDefaultText(test *testing.T) {
 TestTextFieldPasswordText is a test which verifies that a text field in password mode masks its text.
 
 Example:
-
-	Expected Inputs:
-	    A text field in password mode with some text.
-
-	Expected Outputs:
-	    A rendered text field where the text is replaced by masks.
+    Expected Inputs:
+        A text field with password protection enabled and default text "default".
+    Expected Outputs:
+        Screen content matches expected ANSI string (Base64 encoded) where "default" is replaced by masks.
 */
 func TestTextFieldPasswordText(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
@@ -69,12 +65,10 @@ func TestTextFieldPasswordText(test *testing.T) {
 TestTextFieldLongText is a test which verifies that a text field handles scrolling for long text correctly.
 
 Example:
-
-	Expected Inputs:
-	    A text field with text longer than its display width.
-
-	Expected Outputs:
-	    A rendered text field showing the scrolled portion of the text.
+    Expected Inputs:
+        A text field containing text significantly longer than its 20-character display width.
+    Expected Outputs:
+        Screen content matches expected ANSI string (Base64 encoded) showing the scrolled viewport.
 */
 func TestTextFieldLongText(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
@@ -98,12 +92,10 @@ func TestTextFieldLongText(test *testing.T) {
 TestTextFieldLongTypedText is a test which verifies that a text field correctly displays text typed by the user.
 
 Example:
-
-	Expected Inputs:
-	    A text field where a long string is typed.
-
-	Expected Outputs:
-	    A rendered text field showing the end portion of the typed text.
+    Expected Inputs:
+        A text field where the sequence "abcdefghijklmnopqrstuvwxyz" is programmatically typed.
+    Expected Outputs:
+        Screen content matches expected ANSI string (Base64 encoded) showing the end portion of the typed alphabet.
 */
 func TestTextFieldLongTypedText(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
@@ -127,12 +119,10 @@ func TestTextFieldLongTypedText(test *testing.T) {
 TestTextFieldHomeKey is a test which verifies that the Home key correctly moves the cursor to the beginning of the text field.
 
 Example:
-
-	Expected Inputs:
-	    A text field with typed text, followed by a Home key press.
-
-	Expected Outputs:
-	    A rendered text field with the cursor at the first character.
+    Expected Inputs:
+        A text field with full alphabet text followed by a "home" keystroke.
+    Expected Outputs:
+        The cursor is positioned at index 0 and the viewport scrolls back to the beginning.
 */
 func TestTextFieldHomeKey(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
@@ -157,12 +147,10 @@ func TestTextFieldHomeKey(test *testing.T) {
 TestTextFieldInsert is a test which verifies that text can be correctly inserted into an existing string.
 
 Example:
-
-	Expected Inputs:
-	    A text field with text, followed by inserting a new string at a specific position.
-
-	Expected Outputs:
-	    A rendered text field containing both the original and inserted text.
+    Expected Inputs:
+        Alphabet string followed by moving cursor to index 5 and inserting "_INSERTED_".
+    Expected Outputs:
+        Screen content shows the merged string at the correct cursor position.
 */
 func TestTextFieldInsert(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
@@ -189,12 +177,10 @@ func TestTextFieldInsert(test *testing.T) {
 TestTextFieldBackspace is a test which verifies that the Backspace key correctly removes characters from the text field.
 
 Example:
-
-	Expected Inputs:
-	    A text field with text, followed by multiple Backspace key presses.
-
-	Expected Outputs:
-	    A rendered text field with the corresponding characters removed.
+    Expected Inputs:
+        Alphabet string followed by moving cursor to index 5 and performing 4 backspaces.
+    Expected Outputs:
+        The characters preceding index 5 are removed and the string is collapsed.
 */
 func TestTextFieldBackspace(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
@@ -220,12 +206,10 @@ func TestTextFieldBackspace(test *testing.T) {
 TestTextFieldDelete is a test which verifies that the Delete key correctly removes characters following the cursor.
 
 Example:
-
-	Expected Inputs:
-	    A text field with text, followed by cursor movement and multiple Delete key presses.
-
-	Expected Outputs:
-	    A rendered text field with the corresponding characters removed.
+    Expected Inputs:
+        Alphabet string followed by moving cursor to index 5 and performing 4 deletes.
+    Expected Outputs:
+        The characters at and after index 5 are removed as expected.
 */
 func TestTextFieldDelete(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
@@ -251,12 +235,10 @@ func TestTextFieldDelete(test *testing.T) {
 TestTextFieldDeleteAtEnd is a test which verifies that the Delete key behaves correctly at the end of the text.
 
 Example:
-
-	Expected Inputs:
-	    A text field with text, followed by cursor movement to the end and multiple Delete key presses.
-
-	Expected Outputs:
-	    A rendered text field where Delete key presses at the end have no effect.
+    Expected Inputs:
+        Alphabet string with cursor moved to the final character followed by multiple delete commands.
+    Expected Outputs:
+        Delete commands at the end of the string have no visual or data effect.
 */
 func TestTextFieldDeleteAtEnd(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
@@ -282,12 +264,10 @@ func TestTextFieldDeleteAtEnd(test *testing.T) {
 TestTextFieldMaxFieldLimit is a test which verifies that the text field respects the maximum character limit.
 
 Example:
-
-	Expected Inputs:
-	    A text field with a set maximum character limit, followed by typing text exceeding that limit.
-
-	Expected Outputs:
-	    A rendered text field containing only the text up to the maximum limit.
+    Expected Inputs:
+        A text field with a 10-character limit where the full 26-character alphabet is typed.
+    Expected Outputs:
+        The field only contains the first 10 characters "abcdefghij".
 */
 func TestTextFieldMaxFieldLimit(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
@@ -311,12 +291,10 @@ func TestTextFieldMaxFieldLimit(test *testing.T) {
 TestTextFieldBackspaceStop is a test which verifies that the Backspace key correctly stops at the beginning of the text field.
 
 Example:
-
-	Expected Inputs:
-	    A text field with text, followed by cursor movement and more Backspace key presses than characters.
-
-	Expected Outputs:
-	    A rendered text field where excess Backspace key presses have no effect.
+    Expected Inputs:
+        Cursor moved to index 4 followed by 10 backspace commands.
+    Expected Outputs:
+        The cursor remains at index 0 and no data corruption occurs.
 */
 func TestTextFieldBackspaceStop(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()

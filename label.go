@@ -9,10 +9,16 @@ import (
 	"github.com/supercom32/consolizer/types"
 )
 
+/*
+LabelInstanceType is a structure which represents a specific instance of a label control on a layer.
+*/
 type LabelInstanceType struct {
 	BaseControlInstanceType
 }
 
+/*
+labelType is a structure which serves as a namespace for global label management methods.
+*/
 type labelType struct{}
 
 var Label labelType
@@ -26,8 +32,7 @@ var Labels = memory.NewControlMemoryManager[types.LabelEntryType]()
 AddToTabIndex is a method which allows you to add the label to the tab index of its parent layer.
 
 Example:
-
-	labelInstance.AddToTabIndex()
+    labelInstance.AddToTabIndex()
 */
 func (shared *LabelInstanceType) AddToTabIndex() {
 	addTabIndex(shared.layerAlias, shared.controlAlias, constants.CellTypeLabel)
@@ -37,8 +42,7 @@ func (shared *LabelInstanceType) AddToTabIndex() {
 SetIsTooltipEnabled is a method which allows you to enable or disable the tooltip associated with the label.
 
 Example:
-
-	labelInstance.SetIsTooltipEnabled(true)
+    labelInstance.SetIsTooltipEnabled(true)
 */
 func (shared *LabelInstanceType) SetIsTooltipEnabled(isEnabled bool) {
 	labelEntry := Labels.Get(shared.layerAlias, shared.controlAlias)
@@ -52,8 +56,7 @@ func (shared *LabelInstanceType) SetIsTooltipEnabled(isEnabled bool) {
 SetTooltipText is a method which allows you to update the text displayed in the label's tooltip.
 
 Example:
-
-	labelInstance.SetTooltipText("New tooltip text")
+    labelInstance.SetTooltipText("New tooltip text")
 */
 func (shared *LabelInstanceType) SetTooltipText(text string) {
 	labelEntry := Labels.Get(shared.layerAlias, shared.controlAlias)
@@ -65,8 +68,7 @@ func (shared *LabelInstanceType) SetTooltipText(text string) {
 Delete is a method which allows you to remove the label instance and its associated resources.
 
 Example:
-
-	labelInstance = labelInstance.Delete()
+    labelInstance = labelInstance.Delete()
 */
 func (shared *LabelInstanceType) Delete() *LabelInstanceType {
 	shared.BaseControlInstanceType.Delete()
@@ -77,8 +79,7 @@ func (shared *LabelInstanceType) Delete() *LabelInstanceType {
 Add is a method which allows you to create and add a new label to a specified layer.
 
 Example:
-
-	labelInstance := Label.Add("mainLayer", "myLabel", "Hello World", style, 10, 5, 20)
+    labelInstance := Label.Add("mainLayer", "myLabel", "Hello World", style, 10, 5, 20)
 */
 func (shared *labelType) Add(layerAlias string, labelAlias string, labelValue string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int) LabelInstanceType {
 	labelEntry := types.NewLabelEntry()
@@ -113,8 +114,7 @@ func (shared *labelType) Add(layerAlias string, labelAlias string, labelValue st
 Delete is a method which allows you to remove a label from a specific layer using its alias.
 
 Example:
-
-	Label.Delete("mainLayer", "myLabel")
+    Label.Delete("mainLayer", "myLabel")
 */
 func (shared *labelType) Delete(layerAlias string, labelAlias string) {
 	Labels.Remove(layerAlias, labelAlias)
@@ -124,8 +124,7 @@ func (shared *labelType) Delete(layerAlias string, labelAlias string) {
 DeleteAll is a method which allows you to remove all labels associated with a specific layer.
 
 Example:
-
-	Label.DeleteAll("mainLayer")
+    Label.DeleteAll("mainLayer")
 */
 func (shared *labelType) DeleteAll(layerAlias string) {
 	Labels.RemoveAll(layerAlias)
@@ -135,8 +134,7 @@ func (shared *labelType) DeleteAll(layerAlias string) {
 drawOnLayer is a method which allows you to draw all labels associated with a given layer entry.
 
 Example:
-
-	Label.drawOnLayer(layerEntry)
+    Label.drawOnLayer(layerEntry)
 */
 func (shared *labelType) drawOnLayer(layerEntry types.LayerEntryType) {
 	layerAlias := layerEntry.LayerAlias
@@ -150,8 +148,7 @@ func (shared *labelType) drawOnLayer(layerEntry types.LayerEntryType) {
 drawLabel is a method which allows you to draw a specific label onto a layer entry.
 
 Example:
-
-	drawLabel(&layerEntry, "myLabel", "Hello", style, 10, 5, 20)
+    drawLabel(&layerEntry, "myLabel", "Hello", style, 10, 5, 20)
 */
 func drawLabel(layerEntry *types.LayerEntryType, labelAlias string, labelValue string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int) {
 	attributeEntry := types.NewAttributeEntry()

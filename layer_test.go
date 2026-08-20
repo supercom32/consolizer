@@ -9,6 +9,12 @@ import (
 /*
 TestLayerInitialization is a test which verifies that the layer memory is correctly reinitialized and that
 the Layers manager is not nil after initialization.
+
+Example:
+    Expected Inputs:
+        Terminal initialized to 80x25.
+    Expected Outputs:
+        Layers manager is not nil, and no errors occur during initialization.
 */
 func TestLayerInitialization(t *testing.T) {
 	commonResource.isDebugEnabled = true
@@ -24,6 +30,12 @@ func TestLayerInitialization(t *testing.T) {
 /*
 TestLayerAdd is a test which verifies that layers can be correctly added to the system and that invalid
 dimensions correctly trigger a panic.
+
+Example:
+    Expected Inputs:
+        A valid layer with 10x10 dimensions and an invalid layer with 0 width.
+    Expected Outputs:
+        The valid layer exists in the system, and adding the invalid layer triggers a panic.
 */
 func TestLayerAdd(t *testing.T) {
 	commonResource.isDebugEnabled = true
@@ -49,6 +61,12 @@ func TestLayerAdd(t *testing.T) {
 /*
 TestLayerDelete is a test which verifies that layers can be correctly deleted and that deleting a child does
 not affect the parent.
+
+Example:
+    Expected Inputs:
+        A parent layer and a child layer.
+    Expected Outputs:
+        The child layer is successfully deleted while the parent layer remains.
 */
 func TestLayerDelete(t *testing.T) {
 	commonResource.isDebugEnabled = true
@@ -82,6 +100,12 @@ func TestLayerDelete(t *testing.T) {
 
 /*
 TestLayerParentChild is a test which verifies the hierarchical relationship between parent and child layers.
+
+Example:
+    Expected Inputs:
+        A parent layer and a child layer linked to it.
+    Expected Outputs:
+        The parent is correctly identified as a parent, and GetRootParentAlias returns the correct root.
 */
 func TestLayerParentChild(t *testing.T) {
 	commonResource.isDebugEnabled = true
@@ -111,6 +135,12 @@ func TestLayerParentChild(t *testing.T) {
 /*
 TestLayerZOrder is a test which verifies that layers are correctly sorted by their z-order rendering
 priority.
+
+Example:
+    Expected Inputs:
+        Three layers with z-orders 1, 2, and 3.
+    Expected Outputs:
+        The layers are returned in the correct z-order sequence, and SetHighestZOrderNumber correctly updates the topmost layer.
 */
 func TestLayerZOrder(t *testing.T) {
 	commonResource.isDebugEnabled = true
@@ -147,6 +177,12 @@ func TestLayerZOrder(t *testing.T) {
 /*
 TestLayerInstanceMethods is a test which verifies the behavior of various methods on a layer instance, such
 as visibility, movement, and deletion.
+
+Example:
+    Expected Inputs:
+        A layer instance subjected to Clear, SetIsVisible, and movement commands.
+    Expected Outputs:
+        The layer's state (visibility, position) matches the values specified in the commands.
 */
 func TestLayerInstanceMethods(t *testing.T) {
 	commonResource.isDebugEnabled = true
@@ -190,6 +226,12 @@ func TestLayerInstanceMethods(t *testing.T) {
 /*
 TestLayerDrawingMethods is a test which verifies that various drawing methods (borders, lines, frames,
 windows, etc.) on a layer instance can be called without errors.
+
+Example:
+    Expected Inputs:
+        A sequence of drawing commands (DrawBorder, DrawFrame, etc.) on a layer instance.
+    Expected Outputs:
+        All drawing commands complete without errors or panics.
 */
 func TestLayerDrawingMethods(t *testing.T) {
 	commonResource.isDebugEnabled = true
@@ -226,6 +268,12 @@ func TestLayerDrawingMethods(t *testing.T) {
 /*
 TestPrintMethod is a test which verifies that text printing, space preservation, markup handling, and word
 wrapping are all functioning correctly.
+
+Example:
+    Expected Inputs:
+        Strings containing markup tags, multiple spaces, and long sentences for wrapping.
+    Expected Outputs:
+        The character memory reflects the correctly rendered text with applied colors and proper line wrapping.
 */
 func TestPrintMethod(t *testing.T) {
 	commonResource.isDebugEnabled = true
@@ -329,6 +377,12 @@ func TestPrintMethod(t *testing.T) {
 /*
 TestLayerControlMethods is a test which verifies that various controls (buttons, checkboxes, labels, etc.)
 can be correctly added to a layer and assigned the correct layer alias.
+
+Example:
+    Expected Inputs:
+        A series of Add commands for different UI controls.
+    Expected Outputs:
+        The created controls contain the correct layer alias and match the input parameters.
 */
 func TestLayerControlMethods(t *testing.T) {
 	commonResource.isDebugEnabled = true
@@ -380,6 +434,12 @@ func TestLayerControlMethods(t *testing.T) {
 /*
 TestLayerGlobalMethods is a test which verifies the behavior of global layer management functions like
 AddLayer, MoveLayerByAbsoluteValue, MoveLayerByRelativeValue, and DeleteAllLayers.
+
+Example:
+    Expected Inputs:
+        Global commands for adding, moving, and deleting layers.
+    Expected Outputs:
+        The system-wide layer memory correctly reflects the addition, movement, and eventual clearing of all layers.
 */
 func TestLayerGlobalMethods(t *testing.T) {
 	commonResource.isDebugEnabled = true
@@ -433,6 +493,12 @@ func TestLayerGlobalMethods(t *testing.T) {
 /*
 TestComplexLayerHierarchy is a test which verifies that complex parent-child relationships between layers
 are correctly managed, especially during deletion of intermediate layers.
+
+Example:
+    Expected Inputs:
+        A deep hierarchy of root, child, and grandchild layers.
+    Expected Outputs:
+        Deleting an intermediate parent correctly removes all its descendants while leaving root and sibling branches intact.
 */
 func TestComplexLayerHierarchy(t *testing.T) {
 	commonResource.isDebugEnabled = true
@@ -539,6 +605,12 @@ func TestComplexLayerHierarchy(t *testing.T) {
 /*
 TestComplexControlManagement is a test which verifies that controls on different layers are correctly
 isolated and that deleting a layer correctly removes only its associated controls.
+
+Example:
+    Expected Inputs:
+        A hierarchy of layers each containing unique UI controls.
+    Expected Outputs:
+        Deleting a parent layer correctly cleans up all its child layers and their respective controls.
 */
 func TestComplexControlManagement(t *testing.T) {
 	commonResource.isDebugEnabled = true
@@ -642,6 +714,12 @@ func TestComplexControlManagement(t *testing.T) {
 /*
 TestLayerAndControlPropertyStability is a test which verifies that layer and control properties (enabled
 status, position, z-order) remain stable across various operations.
+
+Example:
+    Expected Inputs:
+        Modifier commands (SetEnabled, movement, z-order) on layers and controls.
+    Expected Outputs:
+        The properties are correctly maintained and correctly inherited by new layers after deletion and recreation.
 */
 func TestLayerAndControlPropertyStability(t *testing.T) {
 	commonResource.isDebugEnabled = true
@@ -718,6 +796,12 @@ func TestLayerAndControlPropertyStability(t *testing.T) {
 /*
 TestLayerAndControlMemoryLeaks is a test which verifies that layers and controls are properly cleaned up
 from memory after deletion, preventing memory leaks.
+
+Example:
+    Expected Inputs:
+        Creation and deletion of 100 root layers each with several controls and child layers.
+    Expected Outputs:
+        No layer or control entries remain in the global memory managers after all deletions.
 */
 func TestLayerAndControlMemoryLeaks(t *testing.T) {
 	commonResource.isDebugEnabled = true
@@ -791,6 +875,12 @@ func TestLayerAndControlMemoryLeaks(t *testing.T) {
 /*
 TestComplexInterleavedOperations is a test which verifies that multiple layers with unique styles and
 controls can be interleaved, moved, and deleted without affecting each other's state.
+
+Example:
+    Expected Inputs:
+        A complex series of interleaved layer creation, control assignment, movement, and selective deletion.
+    Expected Outputs:
+        Each branch of the layer hierarchy maintains its specific control properties and styles throughout the operations.
 */
 func TestComplexInterleavedOperations(t *testing.T) {
 	commonResource.isDebugEnabled = true

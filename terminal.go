@@ -8,6 +8,7 @@ import (
 	"github.com/supercom32/consolizer/types"
 	"os"
 	"os/signal"
+	"math/rand"
 	"runtime"
 	"sync"
 	"syscall"
@@ -38,10 +39,6 @@ type defaultValueType struct {
 
 /*
 commonResource is a variable which holds shared data that is accessed by this package.
-
-Example:
-
-	commonResource
 */
 var commonResource defaultValueType
 
@@ -49,8 +46,7 @@ var commonResource defaultValueType
 GetVersion is a method which allows you to obtain the current version of the consolizer library.
 
 Example:
-
-	version := GetVersion()
+    version := GetVersion()
 */
 func GetVersion() string {
 	return "1"
@@ -61,12 +57,11 @@ InitializeTerminal is a method which allows you to initialize consolizer for the
 first before any operations take place. The parameters width and height represent the display size of the terminal
 instance you wish to create. In addition, the following should be noted:
 
-  - If you pass in a zero or negative value for either width or height a panic will be generated to fail as fast as
-    possible.
+- If you pass in a zero or negative value for either width or height a panic will be generated to fail as fast as
+  possible.
 
 Example:
-
-	InitializeTerminal(80, 25)
+    InitializeTerminal(80, 25)
 */
 func InitializeTerminal(width int, height int) {
 	InitializeTimerMemory()
@@ -111,8 +106,7 @@ func InitializeTerminal(width int, height int) {
 setupPeriodicEventUpdater is a method which is a background method that updates periodic events.
 
 Example:
-
-	go setupPeriodicEventUpdater()
+    go setupPeriodicEventUpdater()
 */
 func setupPeriodicEventUpdater() {
 	for {
@@ -126,8 +120,7 @@ setupEventUpdater is a method which is a background method that monitors all eve
 When an event is detected, it is recorded and monitoring continues.
 
 Example:
-
-	go setupEventUpdater()
+    go setupEventUpdater()
 */
 func setupEventUpdater() {
 	for {
@@ -146,8 +139,7 @@ gracefully. This means all terminal settings should be reset back to normal if a
 or if the process is killed.
 
 Example:
-
-	setupCloseHandler()
+    setupCloseHandler()
 */
 func setupCloseHandler() {
 	channel := make(chan os.Signal)
@@ -166,8 +158,7 @@ This should be called once your application is finished using consolizer so that
 left in a bad state.
 
 Example:
-
-	RestoreTerminalSettings()
+    RestoreTerminalSettings()
 */
 func RestoreTerminalSettings() {
 	commonResource.updateDisplayChannel <- true
@@ -189,8 +180,7 @@ func RestoreTerminalSettings() {
 getOsType is a method which allows you to obtain the type of operating system currently running.
 
 Example:
-
-	osType := getOsType()
+    osType := getOsType()
 */
 func getOsType() int {
 	os := runtime.GOOS
@@ -211,8 +201,7 @@ func getOsType() int {
 GetTerminalSize is a method which allows you to obtain width and height of the current terminal characters.
 
 Example:
-
-	width, height := GetTerminalSize()
+    width, height := GetTerminalSize()
 */
 func GetTerminalSize() (int, int) {
 	return commonResource.screen.Size()
@@ -224,11 +213,10 @@ pressed or a keyword representing the special key pressed (for example: 'a', 'A'
 the following should be noted:
 
 - If more than one keystroke is recorded, it is stored sequentially in the input buffer and this method needs to be
-called repeatedly in order to read them.
+  called repeatedly in order to read them.
 
 Example:
-
-	keystroke := Inkey()
+    keystroke := Inkey()
 */
 func Inkey() []rune {
 	return KeyboardMemory.GetFromBuffer()
@@ -242,8 +230,7 @@ text attributes on the fly (color, bold, etc). In addition, the following should
 - This method expects you to pass in a textStyleEntry type obtained by calling consolizer.NewTextStyle.
 
 Example:
-
-	AddTextStyle("MyStyle", myStyleEntry)
+    AddTextStyle("MyStyle", myStyleEntry)
 */
 func AddTextStyle(textStyleAlias string, textStyleEntry types.TextCellStyleEntryType) {
 	TextStyles.Add(textStyleAlias, &textStyleEntry)
@@ -256,8 +243,7 @@ following should be noted:
 - If you attempt to delete an entry that does not exist, then no operation will be performed.
 
 Example:
-
-	DeleteTextStyle("MyStyle")
+    DeleteTextStyle("MyStyle")
 */
 func DeleteTextStyle(textStyleAlias string) {
 	validateTextStyleExists(textStyleAlias)
@@ -270,8 +256,7 @@ text. By configuring attributes for your text style entry and adding your entry 
 can be used to switch between dialog printing styles automatically.
 
 Example:
-
-	myTextStyleEntry := consolizer.NewTextStyle()
+    myTextStyleEntry := consolizer.NewTextStyle()
 */
 func NewTextStyle() types.TextCellStyleEntryType {
 	return types.NewTextCellStyleEntry()
@@ -281,11 +266,20 @@ func NewTextStyle() types.TextCellStyleEntryType {
 NewImageStyle is a constructor which allows you to obtain a new image style entry.
 
 Example:
-
-	myImageStyle := NewImageStyle()
+    myImageStyle := NewImageStyle()
 */
 func NewImageStyle() types.ImageStyleEntryType {
 	return types.NewImageStyleEntry()
+}
+
+/*
+NewTransitionStyle is a constructor which allows you to obtain a new transition style entry.
+
+Example:
+    myTransitionStyle := NewTransitionStyle()
+*/
+func NewTransitionStyle() types.TransitionStyleEntryType {
+	return types.NewTransitionStyleEntry()
 }
 
 /*
@@ -293,8 +287,7 @@ NewTuiStyleEntry is a constructor which allows you to obtain a new style entry w
 controls and other TUI drawing operations should occur.
 
 Example:
-
-	myTuiStyleEntry := consolizer.NewTuiStyleEntry()
+    myTuiStyleEntry := consolizer.NewTuiStyleEntry()
 */
 func NewTuiStyleEntry() types.TuiStyleEntryType {
 	return types.NewTuiStyleEntry()
@@ -305,8 +298,7 @@ NewSelectionEntry is a constructor which allows you to obtain an entry used for 
 available for a given menu prompt.
 
 Example:
-
-	selectionEntry := consolizer.NewSelectionEntry()
+    selectionEntry := consolizer.NewSelectionEntry()
 */
 func NewSelectionEntry() types.SelectionEntryType {
 	return types.NewSelectionEntry()
@@ -320,8 +312,7 @@ addition, the following should be noted:
 - An asset list can contain multiple asset types.
 
 Example:
-
-	assetList := consolizer.NewAssetList()
+    assetList := consolizer.NewAssetList()
 */
 func NewAssetList() types.AssetListType {
 	return types.NewAssetList()
@@ -338,8 +329,7 @@ should be noted:
 - In the event that two layers have the same priority, they will be drawn in random order.
 
 Example:
-
-	setLayerZOrderInstance(myLayer, 10)
+    setLayerZOrderInstance(myLayer, 10)
 */
 func setLayerZOrderInstance(layerInstance *LayerInstanceType, zOrder int) {
 	layerEntry := Layers.Get(layerInstance.layerAlias)
@@ -356,8 +346,7 @@ specified. In addition, the following should be noted:
 - If the percent change specified is outside of the RGB color range, then the color will simply bottom or max out.
 
 Example:
-
-	setLayerAlphaInstance(myLayer, 0.5)
+    setLayerAlphaInstance(myLayer, 0.5)
 */
 func setLayerAlphaInstance(layerInstance *LayerInstanceType, alphaValue float32) {
 	layerEntry := Layers.Get(layerInstance.layerAlias)
@@ -373,8 +362,7 @@ noted:
 - If you specify a color index less than 0 or greater than 15 a panic will be generated to fail as fast as possible.
 
 Example:
-
-	color := GetColor(1)
+    color := GetColor(1)
 */
 func GetColor(colorIndex int) constants.ColorType {
 	validateColorIndex(colorIndex)
@@ -386,11 +374,10 @@ GetRGBColor is a method which allows you to obtain a specific RGB color based on
 provided. In addition, the following should be noted:
 
 - If you specify a color channel index less than 0 or greater than 255 a panic will be generated to fail as fast as
-possible.
+  possible.
 
 Example:
-
-	color := GetRGBColor(255, 128, 0)
+    color := GetRGBColor(255, 128, 0)
 */
 func GetRGBColor(redColorIndex int32, greenColorIndex int32, blueColorIndex int32) constants.ColorType {
 	validateRGBColorIndex(redColorIndex, greenColorIndex, blueColorIndex)
@@ -402,8 +389,7 @@ colorLayerInstance is a method which allows you to set default colors on your sp
 index specified corresponds to the 16 color ANSI standard, where color 0 is Black and 15 is Bright White.
 
 Example:
-
-	colorLayerInstance(myLayer, 15, 0)
+    colorLayerInstance(myLayer, 15, 0)
 */
 func colorLayerInstance(layerInstance *LayerInstanceType, foregroundColorIndex int, backgroundColorIndex int) {
 	validateColorIndex(foregroundColorIndex)
@@ -418,8 +404,7 @@ colorLayerRGBInstance is a method which allows you to set default colors on your
 RGB values. This method allows you to specify colors using RGB color index values within the range of 0 to 255.
 
 Example:
-
-	colorLayerRGBInstance(myLayer, 255, 255, 255, 0, 0, 0)
+    colorLayerRGBInstance(myLayer, 255, 255, 255, 0, 0, 0)
 */
 func colorLayerRGBInstance(layerInstance *LayerInstanceType, foregroundRed int32, foregroundGreen int32, foregroundBlue int32, backgroundRed int32, backgroundGreen int32, backgroundBlue int32) {
 	foregroundColor := GetRGBColor(foregroundRed, foregroundGreen, foregroundBlue)
@@ -431,8 +416,7 @@ func colorLayerRGBInstance(layerInstance *LayerInstanceType, foregroundRed int32
 colorLayer24BitInstance is a method which allows you to color a specified layer using a 24-bit color expressed as an int32.
 
 Example:
-
-	colorLayer24BitInstance(myLayer, fgColor, bgColor)
+    colorLayer24BitInstance(myLayer, fgColor, bgColor)
 */
 func colorLayer24BitInstance(layerInstance *LayerInstanceType, foregroundColor constants.ColorType, backgroundColor constants.ColorType) {
 	layerEntry := Layers.Get(layerInstance.layerAlias)
@@ -445,11 +429,10 @@ locateLayerInstance is a method which allows you to set the default cursor locat
 with. In addition, the following should be noted:
 
 - If you pass in a location value that falls outside the dimensions of the specified text layer, a panic will be
-generated.
+  generated.
 
 Example:
-
-	locateLayerInstance(myLayer, 10, 5)
+    locateLayerInstance(myLayer, 10, 5)
 */
 func locateLayerInstance(layerInstance *LayerInstanceType, xLocation int, yLocation int) {
 	validateLayer(layerInstance.layerAlias)
@@ -465,12 +448,11 @@ noted:
 
 - When text is written to the text layer, the cursor position is also updated to reflect its new location.
 
-  - If the string to print ends up being too long to fit at its current location, then only the visible portion of your
-    text will be printed.
+- If the string to print ends up being too long to fit at its current location, then only the visible portion of your
+  text will be printed.
 
 Example:
-
-	printLayerInstance(myLayer, "Hello World")
+    printLayerInstance(myLayer, "Hello World")
 */
 func printLayerInstance(layerInstance *LayerInstanceType, textToPrint string) {
 	layerEntry := Layers.Get(layerInstance.layerAlias)
@@ -489,12 +471,11 @@ printLayer is a method which allows you to write text to a text layer directly. 
 want to write text to a text layer directly, without affecting user settings. In addition, the following should be
 noted:
 
-  - If the location to print falls outside the range of the text layer, then only the visible portion of your text will
-    be rendered.
+- If the location to print falls outside the range of the text layer, then only the visible portion of your text will
+  be rendered.
 
 Example:
-
-	printLayer(layerEntry, attr, 0, 0, runes)
+    printLayer(layerEntry, attr, 0, 0, runes)
 */
 func printLayer(layerEntry *types.LayerEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, textToPrint []rune) int {
 	layerWidth := layerEntry.Width
@@ -531,8 +512,7 @@ func printLayer(layerEntry *types.LayerEntryType, attributeEntry types.Attribute
 clearLayer is a method which allows you to empty the specified text layer of all its contents.
 
 Example:
-
-	clearLayer(layerEntry)
+    clearLayer(layerEntry)
 */
 func clearLayer(layerEntry *types.LayerEntryType) {
 	types.InitializeCharacterMemory(layerEntry)
@@ -543,8 +523,7 @@ GetCharacterOnScreen is a method which allows you to obtain the character curren
 specific location.
 
 Example:
-
-	char := GetCharacterOnScreen(10, 5)
+    char := GetCharacterOnScreen(10, 5)
 */
 func GetCharacterOnScreen(xLocation int, yLocation int) rune {
 	layerEntry := commonResource.screenLayer
@@ -561,8 +540,7 @@ following should be noted:
 - The new row created at the bottom of the text layer will be filled with spaces.
 
 Example:
-
-	scrollCharacterMemory(layerEntry)
+    scrollCharacterMemory(layerEntry)
 */
 func scrollCharacterMemory(layerEntry *types.LayerEntryType) [][]types.CharacterEntryType {
 	layerWidth := layerEntry.Width
@@ -587,8 +565,7 @@ In addition, the following should be noted:
 - If the location specified is outside the valid range, 0 is returned.
 
 Example:
-
-	char := getRuneOnLayer(layerEntry, 10, 5)
+    char := getRuneOnLayer(layerEntry, 10, 5)
 */
 func getRuneOnLayer(layerEntry *types.LayerEntryType, xLocation int, yLocation int) rune {
 	// validateLayerLocationByLayerEntry(layerEntry, xLocation, yLocation)
@@ -611,8 +588,7 @@ cursor. In addition, the following should be noted:
 - The cell ID returned will only reflect what is currently being displayed on the terminal display.
 
 Example:
-
-	cellId := GetCellIdUnderMouseLocation()
+    cellId := GetCellIdUnderMouseLocation()
 */
 func GetCellIdUnderMouseLocation() int {
 	mouseXLocation, mouseYLocation, _, _ := GetMouseStatus()
@@ -623,8 +599,7 @@ func GetCellIdUnderMouseLocation() int {
 getCellIdByLayerAlias is a method which allows you to obtain a cell ID from a given text layer by layer alias.
 
 Example:
-
-	cellId := getCellIdByLayerAlias("MyLayer", 10, 5)
+    cellId := getCellIdByLayerAlias("MyLayer", 10, 5)
 */
 func getCellIdByLayerAlias(layerAlias string, mouseXLocation int, mouseYLocation int) int {
 	validateLayer(layerAlias)
@@ -639,8 +614,7 @@ addition, the following should be noted:
 - If the location specified is outside the valid range of the text layer, then a value of -1 is returned.
 
 Example:
-
-	cellId := getCellIdByLayerEntry(layerEntry, 10, 5)
+    cellId := getCellIdByLayerEntry(layerEntry, 10, 5)
 */
 func getCellIdByLayerEntry(layerEntry *types.LayerEntryType, xLocation int, yLocation int) int {
 	returnValue := -1
@@ -664,8 +638,7 @@ In addition, the following should be noted:
 - Layers with the same z-order priority will appear in random display order.
 
 Example:
-
-	UpdateDisplay(false)
+    UpdateDisplay(false)
 */
 func UpdateDisplay(isRefreshForced bool) {
 	commonResource.displayUpdate.Lock()
@@ -674,7 +647,7 @@ func UpdateDisplay(isRefreshForced bool) {
 	}()
 	sortedLayerAliasSlice := layer.GetSortedLayerMemoryAliasSlice()
 	baseLayerEntry := types.NewLayerEntry("", "", commonResource.terminalWidth, commonResource.terminalHeight)
-	baseLayerEntry = renderLayers(&baseLayerEntry, sortedLayerAliasSlice)
+	baseLayerEntry = renderLayers(&baseLayerEntry, sortedLayerAliasSlice, true)
 	Tooltip.renderAll(baseLayerEntry)
 	DrawLayerToScreen(&baseLayerEntry, isRefreshForced)
 	commonResource.screenLayer = baseLayerEntry
@@ -684,8 +657,7 @@ func UpdateDisplay(isRefreshForced bool) {
 RefreshDisplay is a method which allows you to sync the terminal screen.
 
 Example:
-
-	RefreshDisplay()
+    RefreshDisplay()
 */
 func RefreshDisplay() {
 	commonResource.screen.Sync()
@@ -699,11 +671,14 @@ the following should be noted:
 
 - Any text layer which is marked as not visible will be ignored.
 
-Example:
+- The isFinalComposite flag should only be set when rendering to the final display, since it permits sub-cell block
+  element transparency resolution which consumes transparency flags. Recursive calls for child layers always render
+  intermediate results and therefore never mark themselves as final.
 
-	renderLayers(&rootLayer, aliases)
+Example:
+    renderLayers(&rootLayer, aliases, true)
 */
-func renderLayers(rootLayerEntry *types.LayerEntryType, sortedLayerAliasSlice LayerAliasZOrderPairList) types.LayerEntryType {
+func renderLayers(rootLayerEntry *types.LayerEntryType, sortedLayerAliasSlice LayerAliasZOrderPairList, isFinalComposite bool) types.LayerEntryType {
 	baseLayerEntry := types.NewLayerEntry("", "", 0, 0, rootLayerEntry)
 	isOpaque := true
 	for currentListIndex := 0; currentListIndex < len(sortedLayerAliasSlice); currentListIndex++ {
@@ -714,11 +689,11 @@ func renderLayers(rootLayerEntry *types.LayerEntryType, sortedLayerAliasSlice La
 		if currentLayerEntry.IsVisible {
 			renderControls(currentLayerEntry)
 			if currentLayerEntry.IsParent && (currentLayerEntry.LayerAlias != baseLayerEntry.LayerAlias && currentLayerEntry.ParentAlias == baseLayerEntry.LayerAlias) {
-				renderedLayer := renderLayers(&currentLayerEntry, sortedLayerAliasSlice)
-				overlayLayers(&renderedLayer, &baseLayerEntry, isOpaque)
+				renderedLayer := renderLayers(&currentLayerEntry, sortedLayerAliasSlice, false)
+				overlayLayers(&renderedLayer, &baseLayerEntry, isOpaque, isFinalComposite)
 			} else {
 				if currentLayerEntry.ParentAlias == baseLayerEntry.LayerAlias {
-					overlayLayers(&currentLayerEntry, &baseLayerEntry, isOpaque)
+					overlayLayers(&currentLayerEntry, &baseLayerEntry, isOpaque, isFinalComposite)
 				}
 			}
 		}
@@ -737,8 +712,7 @@ drawing matters, as complex controls are drawn first above basic controls. In ad
 - Tooltip hotspot zones must be drawn before FileMenu to prevent them from capturing clicks intended for file menu.
 
 Example:
-
-	renderControls(layerEntry)
+    renderControls(layerEntry)
 */
 func renderControls(currentLayerEntry types.LayerEntryType) {
 	Button.drawOnLayer(currentLayerEntry)
@@ -765,13 +739,12 @@ following should be noted:
 - This is useful when you do not have actual layer data and only know the alias.
 
 Example:
-
-	overlayLayersByLayerAlias("SrcLayer", &targetLayer)
+    overlayLayersByLayerAlias("SrcLayer", &targetLayer)
 */
 func overlayLayersByLayerAlias(sourceLayerAlias string, targetLayerEntry *types.LayerEntryType) {
 	validateLayer(sourceLayerAlias)
 	layerEntry := Layers.Get(sourceLayerAlias)
-	overlayLayers(layerEntry, targetLayerEntry, false)
+	overlayLayers(layerEntry, targetLayerEntry, false, false)
 }
 
 /*
@@ -781,8 +754,7 @@ memory. In addition, the following should be noted:
 - If the source character memory to be drawn is outside the target, then only the visible portion will be rendered.
 
 Example:
-
-	copyCharacterMemory(srcMem, targetMem, 0, 0, 10, 10)
+    copyCharacterMemory(srcMem, targetMem, 0, 0, 10, 10)
 */
 func copyCharacterMemory(sourceCharacterMemory [][]types.CharacterEntryType, targetCharacterMemory [][]types.CharacterEntryType, xLocation, yLocation, width, height int) {
 	sourceHeight := len(sourceCharacterMemory)
@@ -813,6 +785,188 @@ func copyCharacterMemory(sourceCharacterMemory [][]types.CharacterEntryType, tar
 }
 
 /*
+getEffectiveAlpha is a method which calculates the final transparency value of a cell by multiplying the layer's
+global alpha with the cell-specific or default attribute alpha. It ensures that transparency is applied
+hierarchically so that a semi-transparent layer correctly attenuates the opacity of its individual character cells.
+
+Example:
+    alpha := getEffectiveAlpha(0.5, 1.0, 0.8)
+*/
+func getEffectiveAlpha(layerAlpha float32, defaultAlpha float32, cellAlpha float32) float32 {
+	effectiveAlpha := layerAlpha
+	if cellAlpha < 1 {
+		effectiveAlpha *= cellAlpha
+	} else if defaultAlpha < 1 {
+		effectiveAlpha *= defaultAlpha
+	}
+	return effectiveAlpha
+}
+
+/*
+shouldShowSource is a method which determines if a character from the source layer should be drawn over the target
+layer based on its alpha value and a dithering strategy. It compares the effective alpha against either a random float
+for stochastic transparency or a pre-defined threshold from a Bayer matrix for patterned dithering, returning true if
+the character is visible. In addition, the following should be noted:
+
+- The stochastic strategy relies on the global random number generator which can affect reproducibility if not seeded.
+
+Example:
+    show := shouldShowSource(0.5, constants.TransparencyStrategyStochastic, 10, 5)
+*/
+func shouldShowSource(effectiveAlpha float32, strategy constants.TransparencyStrategy, x, y int) bool {
+	if effectiveAlpha >= 1 {
+		return true
+	}
+	// Add a small epsilon to ensure that values very close to 0 are treated as 0
+	if effectiveAlpha <= 0.0001 {
+		return false
+	}
+	switch strategy {
+	case constants.TransparencyStrategyStochastic:
+		return rand.Float32() < effectiveAlpha
+	case constants.TransparencyStrategy2x2Bayer:
+		return effectiveAlpha > constants.BayerMatrix2x2[y%2][x%2]
+	case constants.TransparencyStrategy4x4Bayer:
+		return effectiveAlpha > constants.BayerMatrix4x4[y%4][x%4]
+	case constants.TransparencyStrategy8x8Bayer:
+		return effectiveAlpha > constants.BayerMatrix8x8[y%8][x%8]
+	case constants.TransparencyStrategyDissolve:
+		return true
+	default:
+		return true
+	}
+}
+
+/*
+compositeCell is a method which blends the contents and attributes of a source cell with a target cell to produce a
+single rendered character entry. It calculates color transitions for foregrounds and backgrounds, handles special cell
+types like shadows and tooltips, and processes transparency flags to ensure layers are combined with visual accuracy.
+In addition, the following should be noted:
+
+- When isFinalComposite is set and a partially transparent block element cell is composited at full opacity, the
+  transparent portion is resolved with sub-cell accuracy so the true visual content of the underlying cell shows
+  through, rather than substituting the underlying cell's background color for the whole region. This resolution
+  consumes the cell's transparency flags because the revealed content is baked into the resulting glyph and colors.
+
+- Intermediate composites never resolve sub-cell transparency, since re-encoding a glyph while keeping its
+  transparency flags would break the correspondence between each flag and the pixel region it marks.
+
+Example:
+    result := compositeCell(&source, &target, 0.5, 0.5, 1.0, 1.0, false, false)
+*/
+func compositeCell(sourceEntry *types.CharacterEntryType, targetEntry *types.CharacterEntryType, effectiveAlpha float32, backgroundEffectiveAlpha float32, isOpaque bool, isBinaryAlpha bool, strategy constants.TransparencyStrategy, isFinalComposite bool) types.CharacterEntryType {
+	sourceAttributeEntry := sourceEntry.AttributeEntry
+	targetAttributeEntry := targetEntry.AttributeEntry
+
+	// For dithering strategies, we treat the layer as fully opaque if it's shown at all
+	blendAlpha := effectiveAlpha
+	if isBinaryAlpha {
+		blendAlpha = 1.0
+	}
+
+	// Handle NullRune (transparent) cells
+	if sourceEntry.Character == constants.NullRune {
+		resultEntry := *targetEntry
+		if sourceAttributeEntry.CellType == constants.CellTypeShadow {
+			// The cell's alpha value is already folded into blendAlpha/backgroundBlendAlpha once by getEffectiveAlpha,
+			// so it must not be multiplied in a second time. Binary alpha strategies force blendAlpha to 1 and
+			// express layer visibility by dropping cells instead, so the cell's own alpha value is the darkening
+			// factor there. Foreground and background alpha are tracked independently so a shadow cell can darken
+			// each channel by a different amount.
+			shadowAlpha := blendAlpha
+			backgroundShadowAlpha := backgroundEffectiveAlpha
+			if isBinaryAlpha {
+				shadowAlpha = sourceAttributeEntry.ForegroundAlphaValue
+				backgroundShadowAlpha = sourceAttributeEntry.BackgroundAlphaValue
+			}
+			if sourceAttributeEntry.ForegroundAlphaValue < 1 {
+				resultEntry.AttributeEntry.ForegroundColor = GetTransitionedColor(targetAttributeEntry.ForegroundColor, GetRGBColor(0, 0, 0), shadowAlpha)
+			}
+			if sourceAttributeEntry.BackgroundAlphaValue < 1 {
+				resultEntry.AttributeEntry.BackgroundColor = GetTransitionedColor(targetAttributeEntry.BackgroundColor, GetRGBColor(0, 0, 0), backgroundShadowAlpha)
+			}
+			resultEntry.AttributeEntry.CellType = constants.CellTypeShadow
+		}
+		if sourceAttributeEntry.CellType == constants.CellTypeTooltip {
+			resultEntry.AttributeEntry.CellType = constants.CellTypeTooltip
+			resultEntry.AttributeEntry.CellControlAlias = sourceAttributeEntry.CellControlAlias
+			resultEntry.LayerAlias = sourceEntry.LayerAlias
+		}
+		return resultEntry
+	}
+
+	resultEntry := *sourceEntry
+	newAttributeEntry := types.NewAttributeEntry(&sourceAttributeEntry)
+
+	// Copy layer and parent aliases if they exist
+	if sourceEntry.LayerAlias != "" {
+		resultEntry.LayerAlias = sourceEntry.LayerAlias
+	} else {
+		resultEntry.LayerAlias = targetEntry.LayerAlias
+	}
+	if sourceEntry.ParentAlias != "" {
+		resultEntry.ParentAlias = sourceEntry.ParentAlias
+	} else {
+		resultEntry.ParentAlias = targetEntry.ParentAlias
+	}
+
+	// --- Efficient transparency handling ---
+	if !isOpaque {
+		isSubCellResolved := false
+		if isFinalComposite && blendAlpha >= 1 && strategy != constants.TransparencyStrategyDissolve &&
+			(sourceAttributeEntry.IsForegroundTransparent || sourceAttributeEntry.IsBackgroundTransparent) {
+			if character, foregroundColor, backgroundColor, isComposited := compositeBlockElementCells(sourceEntry, targetEntry); isComposited {
+				resultEntry.Character = character
+				newAttributeEntry.ForegroundColor = foregroundColor
+				newAttributeEntry.BackgroundColor = backgroundColor
+				newAttributeEntry.IsForegroundTransparent = false
+				newAttributeEntry.IsBackgroundTransparent = false
+				isSubCellResolved = true
+			}
+		}
+		if !isSubCellResolved {
+			if sourceAttributeEntry.IsForegroundTransparent {
+				newAttributeEntry.ForegroundColor = targetAttributeEntry.ForegroundColor
+				newAttributeEntry.IsForegroundTransparent = true
+			}
+			if sourceAttributeEntry.IsBackgroundTransparent {
+				newAttributeEntry.BackgroundColor = targetAttributeEntry.BackgroundColor
+				newAttributeEntry.IsBackgroundTransparent = true
+			}
+		}
+	}
+
+	// Apply color transformations
+	if strategy == constants.TransparencyStrategyDissolve {
+		// For Dissolve, background always transitions smoothly
+		newAttributeEntry.BackgroundColor = GetTransitionedColor(targetAttributeEntry.BackgroundColor, sourceAttributeEntry.BackgroundColor, blendAlpha)
+		blendedBG := newAttributeEntry.BackgroundColor
+
+		if blendAlpha > 0.5 {
+			// Alpha 1.0 -> 0.5: Transition from source FG to blended BG
+			normalizedAlpha := (blendAlpha - 0.5) * 2
+			newAttributeEntry.ForegroundColor = GetTransitionedColor(blendedBG, sourceAttributeEntry.ForegroundColor, normalizedAlpha)
+			resultEntry.Character = sourceEntry.Character
+		} else {
+			// Alpha 0.5 -> 0.0: Transition from blended BG to target FG
+			normalizedAlpha := blendAlpha * 2
+			newAttributeEntry.ForegroundColor = GetTransitionedColor(targetAttributeEntry.ForegroundColor, blendedBG, normalizedAlpha)
+			resultEntry.Character = targetEntry.Character
+		}
+	} else {
+		if blendAlpha < 1 {
+			newAttributeEntry.ForegroundColor = GetTransitionedColor(targetAttributeEntry.ForegroundColor, sourceAttributeEntry.ForegroundColor, blendAlpha)
+		}
+		if blendAlpha < 1 {
+			newAttributeEntry.BackgroundColor = GetTransitionedColor(targetAttributeEntry.BackgroundColor, sourceAttributeEntry.BackgroundColor, blendAlpha)
+		}
+	}
+
+	resultEntry.AttributeEntry = newAttributeEntry
+	return resultEntry
+}
+
+/*
 overlayLayers is a method which allows you to overlay one text layer on top of another text layer. In addition, the
 following should be noted:
 
@@ -820,11 +974,14 @@ following should be noted:
 
 - If a transparent rune has a foreground or background alpha value set, then it will be drawn as a shadow.
 
-Example:
+- The isFinalComposite flag marks whether the target layer represents the final assembled display. Only final
+  composites are allowed to resolve block element transparency with sub-cell accuracy, since intermediate composites
+  must keep transparency flags and glyphs intact for later compositing passes.
 
-	overlayLayers(&srcLayer, &targetLayer, false)
+Example:
+    overlayLayers(&srcLayer, &targetLayer, false, false)
 */
-func overlayLayers(sourceLayerEntry *types.LayerEntryType, targetLayerEntry *types.LayerEntryType, isOpaque bool) {
+func overlayLayers(sourceLayerEntry *types.LayerEntryType, targetLayerEntry *types.LayerEntryType, isOpaque bool, isFinalComposite bool) {
 	// 1. Simplified Clipping Logic (Integer Math)
 	sourceStartX := 0
 	if sourceLayerEntry.ScreenXLocation < 0 {
@@ -868,6 +1025,13 @@ func overlayLayers(sourceLayerEntry *types.LayerEntryType, targetLayerEntry *typ
 	targetCharacterMemory := targetLayerEntry.CharacterMemory
 	defaultFgAlpha := sourceLayerEntry.DefaultAttribute.ForegroundAlphaValue
 	defaultBgAlpha := sourceLayerEntry.DefaultAttribute.BackgroundAlphaValue
+	layerAlpha := sourceLayerEntry.AlphaValue
+	transitionProgress := sourceLayerEntry.TransitionProgress
+	transitionStyle := sourceLayerEntry.TransitionStyle
+	strategy := sourceLayerEntry.TransparencyStrategy
+	isBinaryAlpha := strategy != constants.TransparencyStrategyNone && strategy != constants.TransparencyStrategyDissolve
+	sourceWidth := sourceLayerEntry.Width
+	sourceHeight := sourceLayerEntry.Height
 
 	// 3. Parallel Processing with Goroutines
 	var wg sync.WaitGroup
@@ -880,73 +1044,110 @@ func overlayLayers(sourceLayerEntry *types.LayerEntryType, targetLayerEntry *typ
 			targetRow := row + targetStartY
 
 			for currentColumn := 0; currentColumn < widthToCopy; currentColumn++ {
-				sourceCol := currentColumn + sourceStartX
 				targetCol := currentColumn + targetStartX
+				sourceCol := currentColumn + sourceStartX
 
-				sourceCharacterEntry := &sourceCharacterMemory[sourceRow][sourceCol]
-				targetCharacterEntry := &targetCharacterMemory[targetRow][targetCol]
-				sourceAttributeEntry := sourceCharacterEntry.AttributeEntry
-				targetAttributeEntry := targetCharacterEntry.AttributeEntry
+				sourceEntry := &sourceCharacterMemory[sourceRow][sourceCol]
+				targetEntry := &targetCharacterMemory[targetRow][targetCol]
 
-				// Handle NullRune (transparent) cells
-				if sourceCharacterEntry.Character == constants.NullRune {
-					if sourceAttributeEntry.CellType == constants.CellTypeShadow && sourceAttributeEntry.ForegroundAlphaValue < 1 {
-						targetCharacterEntry.AttributeEntry.ForegroundColor = GetTransitionedColor(targetAttributeEntry.ForegroundColor, GetRGBColor(0, 0, 0), sourceAttributeEntry.ForegroundAlphaValue)
+				// 1. Calculate Spatial Multiplier from Transition
+				spatialMultiplier := float32(1.0)
+				if transitionStyle.TransitionType != constants.TransitionTypeNone {
+					softEdgeWidth := transitionStyle.SoftEdgeWidth
+					if softEdgeWidth <= 0.001 {
+						softEdgeWidth = 0.001 // Prevent division by zero
 					}
-					if sourceAttributeEntry.CellType == constants.CellTypeShadow && sourceAttributeEntry.BackgroundAlphaValue < 1 {
-						targetCharacterEntry.AttributeEntry.BackgroundColor = GetTransitionedColor(targetAttributeEntry.BackgroundColor, GetRGBColor(0, 0, 0), sourceAttributeEntry.BackgroundAlphaValue)
+					normalizedPos := float32(0.0)
+
+					// Use (N-1) as denominator to ensure pos reaches exactly 1.0 for discrete cells.
+					// Guard against division by zero for layers with width/height of 1.
+					safeWidth := float32(sourceWidth - 1)
+					if safeWidth <= 0 {
+						safeWidth = 1.0
+					}
+					safeHeight := float32(sourceHeight - 1)
+					if safeHeight <= 0 {
+						safeHeight = 1.0
 					}
 
-					if sourceAttributeEntry.CellType == constants.CellTypeTooltip {
-						targetCharacterEntry.AttributeEntry.CellType = constants.CellTypeTooltip
-						targetCharacterEntry.AttributeEntry.CellControlAlias = sourceAttributeEntry.CellControlAlias
-						targetCharacterEntry.LayerAlias = sourceCharacterEntry.LayerAlias
+					// First, calculate a "forward" normalized position (0.0 to 1.0)
+					switch transitionStyle.Direction {
+					case constants.TransitionDirectionLeftToRight, constants.TransitionDirectionRightToLeft:
+						normalizedPos = float32(sourceCol) / safeWidth
+					case constants.TransitionDirectionTopToBottom, constants.TransitionDirectionBottomToTop:
+						normalizedPos = float32(sourceRow) / safeHeight
+					case constants.TransitionDirectionTopLeftToBottomRight, constants.TransitionDirectionBottomRightToTopLeft:
+						normalizedPos = (float32(sourceCol) + float32(sourceRow)) / (safeWidth + safeHeight)
+					case constants.TransitionDirectionTopRightToBottomLeft, constants.TransitionDirectionBottomLeftToTopRight:
+						normalizedPos = (float32(sourceWidth-1-sourceCol) + float32(sourceRow)) / (safeWidth + safeHeight)
 					}
-					if sourceAttributeEntry.CellType == constants.CellTypeShadow {
-						targetCharacterEntry.AttributeEntry.CellType = constants.CellTypeShadow
+
+					// Apply Blinds effect if active (turning the 0-1 range into a sawtooth 0-1 repeating pattern)
+					if transitionStyle.TransitionType == constants.TransitionTypeBlinds {
+						blindCount := float32(transitionStyle.BlindCount)
+						if blindCount <= 0 {
+							blindCount = 6
+						}
+						scaledPos := normalizedPos * blindCount
+						blindIndex := int(scaledPos)
+						if blindIndex >= int(blindCount) {
+							blindIndex = int(blindCount) - 1
+						}
+						normalizedPos = scaledPos - float32(blindIndex)
 					}
-					targetCharacterMemory[targetRow][targetCol] = *targetCharacterEntry
+
+					// Apply Interlaced effect if active
+					if transitionStyle.TransitionType == constants.TransitionTypeInterlaced {
+						isEvenLine := false
+						switch transitionStyle.Direction {
+						case constants.TransitionDirectionTopToBottom, constants.TransitionDirectionBottomToTop:
+							isEvenLine = sourceCol%2 == 0
+						default:
+							isEvenLine = sourceRow%2 == 0
+						}
+						if !isEvenLine {
+							normalizedPos = 1.0 - normalizedPos
+						}
+					}
+
+					// Now apply direction inversion for reverse directions
+					switch transitionStyle.Direction {
+					case constants.TransitionDirectionRightToLeft,
+						constants.TransitionDirectionBottomToTop,
+						constants.TransitionDirectionBottomRightToTopLeft,
+						constants.TransitionDirectionBottomLeftToTopRight:
+						normalizedPos = 1.0 - normalizedPos
+					}
+
+					// Clamp normalizedPos to [0, 1] to prevent overflow artifacts
+					if normalizedPos < 0 {
+						normalizedPos = 0
+					}
+					if normalizedPos > 1 {
+						normalizedPos = 1
+					}
+
+					spatialAlpha := (1.0 - transitionProgress) * (1.0 + softEdgeWidth)
+					if normalizedPos < spatialAlpha-softEdgeWidth {
+						spatialMultiplier = 0.0
+					} else if normalizedPos < spatialAlpha {
+						spatialMultiplier = (normalizedPos - (spatialAlpha - softEdgeWidth)) / softEdgeWidth
+					}
+				}
+
+				// 2. Calculate Final Effective Alpha for this cell
+				// Final Alpha = Global Alpha * Spatial Multiplier * Local Cell Alpha
+				effectiveAlpha := getEffectiveAlpha(layerAlpha, defaultFgAlpha, sourceEntry.AttributeEntry.ForegroundAlphaValue)
+				effectiveAlpha *= spatialMultiplier
+				backgroundEffectiveAlpha := getEffectiveAlpha(layerAlpha, defaultBgAlpha, sourceEntry.AttributeEntry.BackgroundAlphaValue)
+				backgroundEffectiveAlpha *= spatialMultiplier
+
+				if !shouldShowSource(effectiveAlpha, strategy, targetCol, targetRow) {
+					targetCharacterMemory[targetRow][targetCol] = *targetEntry
 					continue
 				}
 
-				// Copy layer and parent aliases
-				if sourceCharacterEntry.LayerAlias != "" {
-					targetCharacterEntry.LayerAlias = sourceCharacterEntry.LayerAlias
-				}
-				if sourceCharacterEntry.ParentAlias != "" {
-					targetCharacterEntry.ParentAlias = sourceCharacterEntry.ParentAlias
-				}
-
-				newAttributeEntry := types.NewAttributeEntry(&sourceAttributeEntry)
-				targetCharacterEntry.Character = sourceCharacterEntry.Character
-
-				// --- Efficient transparency handling ---
-				if !isOpaque {
-					if sourceAttributeEntry.IsForegroundTransparent {
-						newAttributeEntry.ForegroundColor = targetAttributeEntry.ForegroundColor
-						newAttributeEntry.IsForegroundTransparent = true
-					}
-					if sourceAttributeEntry.IsBackgroundTransparent {
-						newAttributeEntry.BackgroundColor = targetAttributeEntry.BackgroundColor
-						newAttributeEntry.IsBackgroundTransparent = true
-					}
-				}
-
-				// Apply color transformations
-				if sourceAttributeEntry.ForegroundAlphaValue < 1 {
-					newAttributeEntry.ForegroundColor = GetTransitionedColor(targetAttributeEntry.ForegroundColor, sourceAttributeEntry.ForegroundColor, sourceAttributeEntry.ForegroundAlphaValue)
-				} else if defaultFgAlpha < 1 {
-					newAttributeEntry.ForegroundColor = GetTransitionedColor(targetAttributeEntry.ForegroundColor, sourceAttributeEntry.ForegroundColor, defaultFgAlpha)
-				}
-
-				if sourceAttributeEntry.BackgroundAlphaValue < 1 {
-					newAttributeEntry.BackgroundColor = GetTransitionedColor(targetAttributeEntry.BackgroundColor, sourceAttributeEntry.BackgroundColor, sourceAttributeEntry.BackgroundAlphaValue)
-				} else if defaultBgAlpha < 1 {
-					newAttributeEntry.BackgroundColor = GetTransitionedColor(targetAttributeEntry.BackgroundColor, sourceAttributeEntry.BackgroundColor, defaultBgAlpha)
-				}
-
-				targetCharacterEntry.AttributeEntry = newAttributeEntry
-				targetCharacterMemory[targetRow][targetCol] = *targetCharacterEntry
+				targetCharacterMemory[targetRow][targetCol] = compositeCell(sourceEntry, targetEntry, effectiveAlpha, backgroundEffectiveAlpha, isOpaque, isBinaryAlpha, strategy, isFinalComposite)
 			}
 		}(currentRow)
 	}
@@ -960,8 +1161,7 @@ following should be noted:
 - If debug is enabled, this method does nothing since the terminal is virtual.
 
 Example:
-
-	DrawLayerToScreen(layerEntry, false)
+    DrawLayerToScreen(layerEntry, false)
 */
 func DrawLayerToScreen(layerEntry *types.LayerEntryType, isForcedRefreshRequired bool) {
 	if !commonResource.isDebugEnabled {
@@ -993,8 +1193,7 @@ func DrawLayerToScreen(layerEntry *types.LayerEntryType, isForcedRefreshRequired
 GetOs is a method which allows you to obtain the name of the operating system currently running.
 
 Example:
-
-	osName := GetOs()
+    osName := GetOs()
 */
 func GetOs() string {
 	switch runtime.GOOS {

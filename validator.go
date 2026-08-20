@@ -10,8 +10,7 @@ import (
 validateTextFieldWidth is a method which allows you to validate that a specified text field width is greater than zero.
 
 Example:
-
-	validateTextFieldWidth(20)
+    validateTextFieldWidth(20)
 */
 func validateTextFieldWidth(width int) {
 	if width <= 0 {
@@ -24,8 +23,7 @@ validateLayerLocationByLayerAlias is a method which allows you to validate that 
 the bounds of a layer, identified by its alias.
 
 Example:
-
-	validateLayerLocationByLayerAlias("mainLayer", 10, 5)
+    validateLayerLocationByLayerAlias("mainLayer", 10, 5)
 */
 func validateLayerLocationByLayerAlias(layerAlias string, xLocation int, yLocation int) {
 	validateLayer(layerAlias)
@@ -37,8 +35,7 @@ func validateLayerLocationByLayerAlias(layerAlias string, xLocation int, yLocati
 validateSelectionEntry is a method which allows you to validate that a selection entry is not empty.
 
 Example:
-
-	validateSelectionEntry(mySelection)
+    validateSelectionEntry(mySelection)
 */
 func validateSelectionEntry(selectionEntry types.SelectionEntryType) {
 	if len(selectionEntry.SelectionValue) == 0 {
@@ -51,8 +48,7 @@ validateLayerLocationByLayerEntry is a method which allows you to validate that 
 the bounds of a provided layer entry.
 
 Example:
-
-	validateLayerLocationByLayerEntry(myLayer, 10, 5)
+    validateLayerLocationByLayerEntry(myLayer, 10, 5)
 */
 func validateLayerLocationByLayerEntry(layerEntry *types.LayerEntryType, xLocation int, yLocation int) {
 	if xLocation < 0 || yLocation < 0 ||
@@ -66,8 +62,7 @@ validateRGBColorIndex is a method which allows you to validate that the provided
 valid range of 0 to 255.
 
 Example:
-
-	validateRGBColorIndex(255, 128, 0)
+    validateRGBColorIndex(255, 128, 0)
 */
 func validateRGBColorIndex(redColorIndex int32, greenColorIndex int32, blueColorIndex int32) {
 	if redColorIndex < 0 || redColorIndex > 255 || greenColorIndex < 0 || greenColorIndex > 255 ||
@@ -81,8 +76,7 @@ validateColorIndex is a method which allows you to validate that a color index i
 colors.
 
 Example:
-
-	validateColorIndex(7)
+    validateColorIndex(7)
 */
 func validateColorIndex(colorIndex int) {
 	if colorIndex < 0 || colorIndex > len(constants.AnsiColorByIndex) {
@@ -94,8 +88,7 @@ func validateColorIndex(colorIndex int) {
 validateTextStyleExists is a method which allows you to validate that a text style with the specified alias exists.
 
 Example:
-
-	validateTextStyleExists("boldStyle")
+    validateTextStyleExists("boldStyle")
 */
 func validateTextStyleExists(textStyleAlias string) {
 	if !IsTextStyleExists(textStyleAlias) {
@@ -108,8 +101,7 @@ validateTerminalWidthAndHeight is a method which allows you to validate that the
 greater than zero.
 
 Example:
-
-	validateTerminalWidthAndHeight(80, 24)
+    validateTerminalWidthAndHeight(80, 24)
 */
 func validateTerminalWidthAndHeight(width int, height int) {
 	if width <= 0 || height <= 0 {
@@ -121,8 +113,7 @@ func validateTerminalWidthAndHeight(width int, height int) {
 validateLayer is a method which allows you to validate that a layer with the specified alias exists.
 
 Example:
-
-	validateLayer("backgroundLayer")
+    validateLayer("backgroundLayer")
 */
 func validateLayer(layerAlias string) {
 	if !Layers.IsExists(layerAlias) {
@@ -135,8 +126,7 @@ validatorTextField is a method which allows you to validate that a text field wi
 given layer alias.
 
 Example:
-
-	validatorTextField("loginLayer", "usernameField")
+    validatorTextField("loginLayer", "usernameField")
 */
 func validatorTextField(layerAlias string, textFieldAlias string) {
 	if !(TextFields.IsExists(layerAlias, textFieldAlias)) {
@@ -149,8 +139,7 @@ validatorMenu is a method which allows you to validate that a menu selector with
 given layer alias.
 
 Example:
-
-	validatorMenu("mainLayer", "fileMenu")
+    validatorMenu("mainLayer", "fileMenu")
 */
 func validatorMenu(layerAlias string, menuAlias string) {
 	if !(Selectors.IsExists(layerAlias, menuAlias)) {
@@ -165,8 +154,7 @@ provided message. In addition, the following should be noted:
 - This is used to ensure the terminal is left in a usable state when a fatal error occurs.
 
 Example:
-
-	safeSttyPanic("A fatal error has occurred.")
+    safeSttyPanic("A fatal error has occurred.")
 */
 func safeSttyPanic(panicMessage interface{}) {
 	RestoreTerminalSettings()

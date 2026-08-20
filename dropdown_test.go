@@ -15,8 +15,10 @@ TestDropdownDefaultState is a test which allows you to verify that a dropdown co
 default state.
 
 Example:
-
-	TestDropdownDefaultState(test)
+    Expected Inputs:
+        A dropdown control added to a layer with three items.
+    Expected Outputs:
+        Screen content matches expected ANSI string (Base64 encoded) for the closed dropdown.
 */
 func TestDropdownDefaultState(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
@@ -42,8 +44,10 @@ TestDropdownWithDefaultSelection is a test which allows you to verify that a dro
 selected item upon initialization.
 
 Example:
-
-	TestDropdownWithDefaultSelection(test)
+    Expected Inputs:
+        A dropdown control initialized with the second item (index 1) pre-selected.
+    Expected Outputs:
+        Screen content matches expected ANSI string (Base64 encoded) and selected value is "Item 2".
 */
 func TestDropdownWithDefaultSelection(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
@@ -79,8 +83,10 @@ TestDropdownOpenState is a test which allows you to verify that a dropdown tray 
 when the dropdown is opened.
 
 Example:
-
-	TestDropdownOpenState(test)
+    Expected Inputs:
+        A focused dropdown control with its tray visibility manually set to true.
+    Expected Outputs:
+        Screen content matches expected ANSI string (Base64 encoded) showing the expanded selection tray.
 */
 func TestDropdownOpenState(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
@@ -118,8 +124,10 @@ TestDropdownChangeSelection is a test which allows you to verify that selecting 
 correctly updates the dropdown's value.
 
 Example:
-
-	TestDropdownChangeSelection(test)
+    Expected Inputs:
+        A manually opened dropdown where the selector index is changed from 0 to 2.
+    Expected Outputs:
+        Screen content matches expected ANSI string (Base64 encoded) and the dropdown value is updated to "Item 3".
 */
 func TestDropdownChangeSelection(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
@@ -170,8 +178,10 @@ TestDropdownWithManyItems is a test which allows you to verify that a dropdown c
 items, including the rendering of a scrollbar when the tray is opened.
 
 Example:
-
-	TestDropdownWithManyItems(test)
+    Expected Inputs:
+        A dropdown control added with six items and a tray height restricted to three.
+    Expected Outputs:
+        Screen content matches expected ANSI string (Base64 encoded) showing an open tray with a visible scrollbar.
 */
 func TestDropdownWithManyItems(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
@@ -213,8 +223,10 @@ TestDropdownScrolling is a test which allows you to verify that a dropdown tray 
 scrollbar interaction occurs.
 
 Example:
-
-	TestDropdownScrolling(test)
+    Expected Inputs:
+        An open dropdown tray with six items where the viewport position is programmatically set to 3.
+    Expected Outputs:
+        Screen content matches expected ANSI string (Base64 encoded) showing the scrolled list of items in the tray.
 */
 func TestDropdownScrolling(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
@@ -260,8 +272,10 @@ TestDropdownDelete is a test which allows you to verify that a dropdown control 
 parent layer.
 
 Example:
-
-	TestDropdownDelete(test)
+    Expected Inputs:
+        A layer containing one dropdown control which is سپس deleted.
+    Expected Outputs:
+        Screen content matches expected ANSI string (Base64 encoded) for an empty layer.
 */
 func TestDropdownDelete(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
@@ -292,8 +306,10 @@ TestDropdownDeleteAll is a test which allows you to verify that all dropdown con
 deleted at once.
 
 Example:
-
-	TestDropdownDeleteAll(test)
+    Expected Inputs:
+        A layer containing two dropdown controls followed by a DeleteAll call.
+    Expected Outputs:
+        Screen content matches expected ANSI string (Base64 encoded) for an empty layer after all controls are removed.
 */
 func TestDropdownDeleteAll(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
@@ -325,8 +341,10 @@ TestDropdownFocus is a test which allows you to verify that a dropdown control c
 renders accordingly.
 
 Example:
-
-	TestDropdownFocus(test)
+    Expected Inputs:
+        A layer containing a dropdown where focus is programmatically set to that dropdown control.
+    Expected Outputs:
+        Screen content matches expected ANSI string (Base64 encoded) showing the dropdown in its focused visual state.
 */
 func TestDropdownFocus(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()

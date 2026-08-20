@@ -13,12 +13,10 @@ const TOOLTIP_TEST_SUITE_NAME = "tooltip"
 TestTooltipThinLine is a test which verifies that a tooltip with a thin line border is rendered correctly.
 
 Example:
-
-	Expected Inputs:
-	    A tooltip with a thin line border.
-
-	Expected Outputs:
-	    A rendered tooltip with a thin line border.
+    Expected Inputs:
+        A tooltip with a thin line border added to a layer.
+    Expected Outputs:
+        Screen content matches expected ANSI string (Base64 encoded) showing the thin border and tooltip text.
 */
 func TestTooltipThinLine(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
@@ -46,12 +44,10 @@ func TestTooltipThinLine(test *testing.T) {
 TestTooltipNoBorder is a test which verifies that a tooltip with no border is rendered correctly.
 
 Example:
-
-	Expected Inputs:
-	    A tooltip with no border.
-
-	Expected Outputs:
-	    A rendered tooltip with no border.
+    Expected Inputs:
+        A tooltip with no border added to a layer.
+    Expected Outputs:
+        Screen content matches expected ANSI string (Base64 encoded) showing only the tooltip text background.
 */
 func TestTooltipNoBorder(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
@@ -79,12 +75,10 @@ func TestTooltipNoBorder(test *testing.T) {
 TestTooltipNoDelay is a test which verifies that a tooltip with no delay is rendered correctly.
 
 Example:
-
-	Expected Inputs:
-	    A tooltip with no delay.
-
-	Expected Outputs:
-	    A rendered tooltip with no delay.
+    Expected Inputs:
+        A tooltip with zero hover display delay.
+    Expected Outputs:
+        Screen content matches expected ANSI string (Base64 encoded) with the tooltip showing immediately.
 */
 func TestTooltipNoDelay(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
@@ -112,12 +106,10 @@ func TestTooltipNoDelay(test *testing.T) {
 TestTooltipWithDelay is a test which verifies that a tooltip with a delay is rendered correctly.
 
 Example:
-
-	Expected Inputs:
-	    A tooltip with a delay.
-
-	Expected Outputs:
-	    A rendered tooltip with a delay.
+    Expected Inputs:
+        A tooltip with a 2000ms display delay, checked before and after the delay elapsed.
+    Expected Outputs:
+        Tooltip is hidden initially and then becomes visible after the 2-second delay.
 */
 func TestTooltipWithDelay(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()

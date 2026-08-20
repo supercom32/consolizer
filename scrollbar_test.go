@@ -9,6 +9,16 @@ import (
 
 const SCROLLBAR_TEST_SUITE_NAME = "scrollbar"
 
+/*
+TestScrollbarDefaultState is a test which verifies that a scrollbar control is rendered correctly with its default
+(vertical) orientation and initial scroll value.
+
+Example:
+    Expected Inputs:
+        A vertical scrollbar added to a layer with length 10 and max scroll value 100.
+    Expected Outputs:
+        Screen content matches expected ANSI string (Base64 encoded) showing the track, arrows, and handle.
+*/
 func TestScrollbarDefaultState(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	layer1.AddScrollbar(styleEntry, 5, 2, 10, 100, 0, 1, false)
@@ -25,6 +35,16 @@ func TestScrollbarDefaultState(test *testing.T) {
 	}
 }
 
+/*
+TestScrollbarHorizontal is a test which verifies that a scrollbar control is rendered correctly with a horizontal
+orientation and a specific scroll value.
+
+Example:
+    Expected Inputs:
+        A horizontal scrollbar added with length 10 and current scroll value 70.
+    Expected Outputs:
+        Screen content matches expected ANSI string (Base64 encoded) showing the horizontal track and handle position.
+*/
 func TestScrollbarHorizontal(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	layer1.AddScrollbar(styleEntry, 2, 2, 10, 100, 70, 1, true)
@@ -41,6 +61,16 @@ func TestScrollbarHorizontal(test *testing.T) {
 	}
 }
 
+/*
+TestScrollbarWithValue is a test which verifies that a scrollbar initialized with a non-zero value reports that value
+correctly through its getter method.
+
+Example:
+    Expected Inputs:
+        A scrollbar initialized with a value of 50.
+    Expected Outputs:
+        The getScrollValue method returns exactly 50 and the handle is correctly positioned on screen.
+*/
 func TestScrollbarWithValue(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	scrollbarInstance := layer1.AddScrollbar(styleEntry, 2, 2, 10, 100, 50, 1, false)
@@ -62,6 +92,16 @@ func TestScrollbarWithValue(test *testing.T) {
 	}
 }
 
+/*
+TestScrollbarSetValue is a test which verifies that the current value of a scrollbar can be updated programmatically
+and that it renders at the new position.
+
+Example:
+    Expected Inputs:
+        A scrollbar updated from value 75 to 30 using setScrollValue.
+    Expected Outputs:
+        The scrollbar value becomes 30 and the handle moves to the corresponding track position.
+*/
 func TestScrollbarSetValue(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	scrollbarInstance := layer1.AddScrollbar(styleEntry, 2, 2, 10, 100, 75, 1, false)
@@ -84,6 +124,16 @@ func TestScrollbarSetValue(test *testing.T) {
 	}
 }
 
+/*
+TestScrollbarSetHandlePosition is a test which verifies that manually setting the handle position correctly updates
+the underlying scroll value.
+
+Example:
+    Expected Inputs:
+        A scrollbar where the handle position is explicitly set to index 5.
+    Expected Outputs:
+        The scrollbar value is automatically calculated and updated based on the new handle position.
+*/
 func TestScrollbarSetHandlePosition(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	scrollbarInstance := layer1.AddScrollbar(styleEntry, 2, 2, 10, 100, 0, 1, false)
@@ -104,6 +154,16 @@ func TestScrollbarSetHandlePosition(test *testing.T) {
 	}
 }
 
+/*
+TestScrollbarMaxValue is a test which verifies that the scrollbar correctly handles being set to its maximum value,
+clamping it to the valid range if necessary.
+
+Example:
+    Expected Inputs:
+        A scrollbar with max value 100 (range 0-99) where the value is set to 100.
+    Expected Outputs:
+        The scrollbar value is clamped to 99 and the handle is at the bottom-most position.
+*/
 func TestScrollbarMaxValue(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	scrollbarInstance := layer1.AddScrollbar(styleEntry, 2, 2, 10, 100, 0, 1, false)
@@ -129,6 +189,15 @@ func TestScrollbarMaxValue(test *testing.T) {
 	}
 }
 
+/*
+TestScrollbarMinValue is a test which verifies that the scrollbar correctly handles being set to its minimum value of 0.
+
+Example:
+    Expected Inputs:
+        A scrollbar at value 50 updated to value 0.
+    Expected Outputs:
+        The scrollbar value becomes 0 and the handle is at the top-most position.
+*/
 func TestScrollbarMinValue(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	scrollbarInstance := layer1.AddScrollbar(styleEntry, 2, 2, 10, 100, 50, 1, false)
@@ -154,6 +223,15 @@ func TestScrollbarMinValue(test *testing.T) {
 	}
 }
 
+/*
+TestScrollbarDelete is a test which verifies that a scrollbar control can be successfully removed from its parent layer.
+
+Example:
+    Expected Inputs:
+        A layer containing a scrollbar followed by a Delete call.
+    Expected Outputs:
+        Screen content matches expected ANSI string (Base64 encoded) for an empty layer.
+*/
 func TestScrollbarDelete(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	scrollbarInstance := layer1.AddScrollbar(styleEntry, 2, 2, 10, 100, 0, 1, false)
@@ -175,6 +253,15 @@ func TestScrollbarDelete(test *testing.T) {
 	}
 }
 
+/*
+TestScrollbarDeleteAll is a test which verifies that all scrollbar controls on a layer can be successfully removed at once.
+
+Example:
+    Expected Inputs:
+        A layer containing two scrollbars followed by a DeleteAll call.
+    Expected Outputs:
+        Screen content matches expected ANSI string (Base64 encoded) for an empty layer after all controls are removed.
+*/
 func TestScrollbarDeleteAll(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	layer1.AddScrollbar(styleEntry, 2, 2, 10, 100, 0, 1, false)
@@ -197,6 +284,15 @@ func TestScrollbarDeleteAll(test *testing.T) {
 	}
 }
 
+/*
+TestScrollbarFocus is a test which verifies that a scrollbar correctly handles gaining focus and renders its focused state.
+
+Example:
+    Expected Inputs:
+        A focused scrollbar control on a layer with another control.
+    Expected Outputs:
+        Screen content matches expected ANSI string (Base64 encoded) showing the scrollbar with focused highlighting.
+*/
 func TestScrollbarFocus(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	scrollbarInstance := layer1.AddScrollbar(styleEntry, 2, 2, 10, 100, 0, 1, false)
@@ -217,6 +313,15 @@ func TestScrollbarFocus(test *testing.T) {
 	}
 }
 
+/*
+TestScrollbarKeyboardEvent is a test which verifies that the scrollbar correctly reacts to keyboard navigation events.
+
+Example:
+    Expected Inputs:
+        A focused scrollbar at value 50 that receives two "up" keystrokes (increment 5).
+    Expected Outputs:
+        The scroll value decreases to 40 and the handle position is updated accordingly.
+*/
 func TestScrollbarKeyboardEvent(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup()
 	scrollbarInstance := layer1.AddScrollbar(styleEntry, 2, 2, 10, 100, 50, 5, false)

@@ -27,69 +27,74 @@ const (
 
 /*
 LayerEntryType is a structure which represents a layer entry.
-
-Example:
-
-	var layerEntry LayerEntryType
 */
 type LayerEntryType struct {
-	Width            int
-	Height           int
-	ScreenXLocation  int
-	ScreenYLocation  int
-	CursorXLocation  int
-	CursorYLocation  int
-	ZOrder           int
-	IsTopmost        bool
-	IsFocusable      bool
-	IsVisible        bool
-	LayerAlias       string
-	ParentAlias      string
-	IsParent         bool
-	DefaultAttribute AttributeEntryType
-	CharacterMemory  [][]CharacterEntryType
+	Width                int
+	Height               int
+	ScreenXLocation      int
+	ScreenYLocation      int
+	CursorXLocation      int
+	CursorYLocation      int
+	ZOrder               int
+	AlphaValue           float32
+	TransitionProgress   float32
+	TransitionStyle      TransitionStyleEntryType
+	TransparencyStrategy constants.TransparencyStrategy
+	IsTopmost            bool
+	IsFocusable          bool
+	IsVisible            bool
+	LayerAlias           string
+	ParentAlias          string
+	IsParent             bool
+	DefaultAttribute     AttributeEntryType
+	CharacterMemory      [][]CharacterEntryType
 }
 
 /*
 MarshalJSON is a method which serializes the layer entry to JSON.
 
 Example:
-
-	jsonData, err := instance.MarshalJSON()
+    jsonData, err := instance.MarshalJSON()
 */
 func (shared LayerEntryType) MarshalJSON() ([]byte, error) {
 	j, err := json.Marshal(struct {
-		Width            int
-		Height           int
-		ScreenXLocation  int
-		ScreenYLocation  int
-		CursorXLocation  int
-		CursorYLocation  int
-		ZOrder           int
-		IsTopmost        bool
-		IsFocusable      bool
-		IsVisible        bool
-		LayerAlias       string
-		ParentAlias      string
-		IsParent         bool
-		DefaultAttribute AttributeEntryType
-		CharacterMemory  [][]CharacterEntryType
+		Width                int
+		Height               int
+		ScreenXLocation      int
+		ScreenYLocation      int
+		CursorXLocation      int
+		CursorYLocation      int
+		ZOrder               int
+		AlphaValue           float32
+		TransitionProgress   float32
+		TransitionStyle      TransitionStyleEntryType
+		TransparencyStrategy constants.TransparencyStrategy
+		IsTopmost            bool
+		IsFocusable          bool
+		IsVisible            bool
+		LayerAlias           string
+		ParentAlias          string
+		IsParent             bool
+		DefaultAttribute     AttributeEntryType
+		CharacterMemory      [][]CharacterEntryType
 	}{
-		Width:            shared.Width,
-		Height:           shared.Height,
-		ScreenXLocation:  shared.ScreenXLocation,
-		ScreenYLocation:  shared.ScreenYLocation,
-		CursorXLocation:  shared.CursorXLocation,
-		CursorYLocation:  shared.CursorYLocation,
-		ZOrder:           shared.ZOrder,
-		IsTopmost:        shared.IsTopmost,
-		IsFocusable:      shared.IsFocusable,
-		IsVisible:        shared.IsVisible,
-		LayerAlias:       shared.LayerAlias,
-		ParentAlias:      shared.ParentAlias,
-		IsParent:         shared.IsParent,
-		DefaultAttribute: shared.DefaultAttribute,
-		CharacterMemory:  shared.CharacterMemory,
+		Width:                shared.Width,
+		Height:               shared.Height,
+		ScreenXLocation:      shared.ScreenXLocation,
+		ScreenYLocation:      shared.ScreenYLocation,
+		CursorXLocation:      shared.CursorXLocation,
+		CursorYLocation:      shared.CursorYLocation,
+		ZOrder:               shared.ZOrder,
+		AlphaValue:           shared.AlphaValue,
+		TransparencyStrategy: shared.TransparencyStrategy,
+		IsTopmost:            shared.IsTopmost,
+		IsFocusable:          shared.IsFocusable,
+		IsVisible:            shared.IsVisible,
+		LayerAlias:           shared.LayerAlias,
+		ParentAlias:          shared.ParentAlias,
+		IsParent:             shared.IsParent,
+		DefaultAttribute:     shared.DefaultAttribute,
+		CharacterMemory:      shared.CharacterMemory,
 	})
 	if err != nil {
 		return nil, err
@@ -101,8 +106,7 @@ func (shared LayerEntryType) MarshalJSON() ([]byte, error) {
 GetBasicAnsiString is a method which returns a basic ANSI string representation of the layer.
 
 Example:
-
-	ansiString := instance.GetBasicAnsiString()
+    ansiString := instance.GetBasicAnsiString()
 */
 func (shared LayerEntryType) GetBasicAnsiString() string {
 	var ansiString string
@@ -137,8 +141,7 @@ func (shared LayerEntryType) GetBasicAnsiString() string {
 GetBasicAnsiStringAsBase64 is a method which returns a basic ANSI string representation of the layer as a base64 string.
 
 Example:
-
-	base64String := instance.GetBasicAnsiStringAsBase64()
+    base64String := instance.GetBasicAnsiStringAsBase64()
 */
 func (shared LayerEntryType) GetBasicAnsiStringAsBase64() string {
 	ansiString := shared.GetBasicAnsiString()
@@ -153,8 +156,7 @@ func (shared LayerEntryType) GetBasicAnsiStringAsBase64() string {
 GetBasicAnsiStringAsBase642 is a method which returns a basic ANSI string representation of the layer as a base64 string.
 
 Example:
-
-	base64String := instance.GetBasicAnsiStringAsBase642()
+    base64String := instance.GetBasicAnsiStringAsBase642()
 */
 func (shared LayerEntryType) GetBasicAnsiStringAsBase642() string {
 	ansiString := shared.GetBasicAnsiString()
@@ -169,21 +171,20 @@ func (shared LayerEntryType) GetBasicAnsiStringAsBase642() string {
 GetAnsiStringFromBase64 is a method which returns an ANSI string from a base64 string.
 
 Example:
-
-	ansiString := instance.GetAnsiStringFromBase64(base64String)
+    ansiString := instance.GetAnsiStringFromBase64(base64String)
 */
 func (shared LayerEntryType) GetAnsiStringFromBase64(base64String string) string {
 	return stringformat.GetStringFromBase64(base64String)
 }
 
 /*
-WriteAnsiStringFromBase64 is a method which decodes a base64 string to ANSI and writes it to the specified file. In addition, the following should be noted:
+WriteAnsiStringFromBase64 is a method which decodes a base64 string to ANSI and writes it to the specified file. In
+addition, the following should be noted:
 
 - This is useful for comparing expected and actual values when tests fail.
 
 Example:
-
-	err := WriteAnsiStringFromBase64(base64String)
+    err := WriteAnsiStringFromBase64(base64String)
 */
 func WriteAnsiStringFromBase64(base64String string) error {
 	ansiString := stringformat.GetStringFromBase64(base64String)
@@ -194,8 +195,7 @@ func WriteAnsiStringFromBase64(base64String string) error {
 GetAnsiForegroundColorString is a method which returns an ANSI foreground color string.
 
 Example:
-
-	ansiString := instance.GetAnsiForegroundColorString(color)
+    ansiString := instance.GetAnsiForegroundColorString(color)
 */
 func (shared LayerEntryType) GetAnsiForegroundColorString(color constants.ColorType) string {
 	var ansiString string
@@ -208,8 +208,7 @@ func (shared LayerEntryType) GetAnsiForegroundColorString(color constants.ColorT
 GetAnsiBackgroundColorString is a method which returns an ANSI background color string.
 
 Example:
-
-	ansiString := instance.GetAnsiBackgroundColorString(color)
+    ansiString := instance.GetAnsiBackgroundColorString(color)
 */
 func (shared LayerEntryType) GetAnsiBackgroundColorString(color constants.ColorType) string {
 	var ansiString string
@@ -222,8 +221,7 @@ func (shared LayerEntryType) GetAnsiBackgroundColorString(color constants.ColorT
 GetAnsiLocateString is a method which returns an ANSI string to locate the cursor at a specific position.
 
 Example:
-
-	ansiString := instance.GetAnsiLocateString(xLocation, yLocation)
+    ansiString := instance.GetAnsiLocateString(xLocation, yLocation)
 */
 func (shared LayerEntryType) GetAnsiLocateString(xLocation int, yLocation int) string {
 	var ansiString string
@@ -242,8 +240,7 @@ func (shared LayerEntryType) GetAnsiLocateString(xLocation int, yLocation int) s
 GetEntryAsJsonDump is a method which returns a JSON string representation of the layer entry.
 
 Example:
-
-	jsonString := instance.GetEntryAsJsonDump()
+    jsonString := instance.GetEntryAsJsonDump()
 */
 func (shared LayerEntryType) GetEntryAsJsonDump() string {
 	j, err := json.Marshal(shared)
@@ -257,8 +254,7 @@ func (shared LayerEntryType) GetEntryAsJsonDump() string {
 GetRGBColorComponents is a method which returns the RGB color components of a given color.
 
 Example:
-
-	r, g, b := instance.GetRGBColorComponents(color)
+    r, g, b := instance.GetRGBColorComponents(color)
 */
 func (shared LayerEntryType) GetRGBColorComponents(color constants.ColorType) (int32, int32, int32) {
 	var redColorIndex int32
@@ -272,8 +268,7 @@ func (shared LayerEntryType) GetRGBColorComponents(color constants.ColorType) (i
 NewLayerEntry is a constructor which creates a new layer entry instance.
 
 Example:
-
-	layerEntry := NewLayerEntry(layerAlias, parentAlias, width, height, existingLayerEntry)
+    layerEntry := NewLayerEntry(layerAlias, parentAlias, width, height, existingLayerEntry)
 */
 func NewLayerEntry(layerAlias string, parentAlias string, width int, height int, existingLayerEntry ...*LayerEntryType) LayerEntryType {
 	var layerEntry LayerEntryType
@@ -286,6 +281,10 @@ func NewLayerEntry(layerAlias string, parentAlias string, width int, height int,
 		layerEntry.CursorXLocation = existingLayerEntry[0].CursorXLocation
 		layerEntry.CursorYLocation = existingLayerEntry[0].CursorYLocation
 		layerEntry.ZOrder = existingLayerEntry[0].ZOrder
+		layerEntry.AlphaValue = existingLayerEntry[0].AlphaValue
+		layerEntry.TransitionProgress = existingLayerEntry[0].TransitionProgress
+		layerEntry.TransitionStyle = existingLayerEntry[0].TransitionStyle
+		layerEntry.TransparencyStrategy = existingLayerEntry[0].TransparencyStrategy
 		layerEntry.IsVisible = existingLayerEntry[0].IsVisible
 		layerEntry.IsTopmost = existingLayerEntry[0].IsTopmost
 		layerEntry.IsFocusable = existingLayerEntry[0].IsFocusable
@@ -295,18 +294,17 @@ func NewLayerEntry(layerAlias string, parentAlias string, width int, height int,
 		layerEntry.DefaultAttribute = existingLayerEntry[0].DefaultAttribute
 		for currentRow := 0; currentRow < existingLayerEntry[0].Height; currentRow++ {
 			var characterObjectArray = make([]CharacterEntryType, existingLayerEntry[0].Width)
-			for currentCharacter := 0; currentCharacter < existingLayerEntry[0].Width; currentCharacter++ {
-				characterObjectArray[currentCharacter] = NewCharacterEntry()
-				characterObjectArray[currentCharacter].LayerAlias = layerAlias
-				characterObjectArray[currentCharacter].ParentAlias = parentAlias
-				characterObjectArray[currentCharacter] = existingLayerEntry[0].CharacterMemory[currentRow][currentCharacter]
-			}
+			copy(characterObjectArray, existingLayerEntry[0].CharacterMemory[currentRow])
 			layerEntry.CharacterMemory = append(layerEntry.CharacterMemory, characterObjectArray)
 		}
 	} else {
 		layerEntry.Width = width
 		layerEntry.Height = height
 		layerEntry.IsVisible = true
+		layerEntry.AlphaValue = 1.0
+		layerEntry.TransitionProgress = 1.0
+		layerEntry.TransitionStyle = NewTransitionStyleEntry()
+		layerEntry.TransparencyStrategy = constants.TransparencyStrategyNone
 		layerEntry.DefaultAttribute = NewAttributeEntry()
 		for currentRow := 0; currentRow < height; currentRow++ {
 			var characterObjectArray = make([]CharacterEntryType, width)
@@ -325,8 +323,7 @@ func NewLayerEntry(layerAlias string, parentAlias string, width int, height int,
 InitializeCharacterMemory is a method which initializes the character memory for a layer.
 
 Example:
-
-	InitializeCharacterMemory(layerEntry)
+    InitializeCharacterMemory(layerEntry)
 */
 func InitializeCharacterMemory(layerEntry *LayerEntryType) {
 	// This is used exclusively for clearing layer data.
@@ -346,8 +343,7 @@ func InitializeCharacterMemory(layerEntry *LayerEntryType) {
 SaveLayer is a method which writes the layer to a file with zstd compression.
 
 Example:
-
-	err := instance.SaveLayer(path)
+    err := instance.SaveLayer(path)
 */
 func (shared *LayerEntryType) SaveLayer(path string) error {
 	// Open file
@@ -385,6 +381,24 @@ func (shared *LayerEntryType) SaveLayer(path string) error {
 	}
 	if err := binary.Write(writer, binary.LittleEndian, height); err != nil {
 		return fmt.Errorf("failed to write height: %w", err)
+	}
+	if err := binary.Write(writer, binary.LittleEndian, shared.AlphaValue); err != nil {
+		return fmt.Errorf("failed to write alpha value: %w", err)
+	}
+	if err := binary.Write(writer, binary.LittleEndian, shared.TransitionProgress); err != nil {
+		return fmt.Errorf("failed to write transition progress: %w", err)
+	}
+	if err := binary.Write(writer, binary.LittleEndian, int32(shared.TransitionStyle.TransitionType)); err != nil {
+		return fmt.Errorf("failed to write transition type: %w", err)
+	}
+	if err := binary.Write(writer, binary.LittleEndian, int32(shared.TransitionStyle.Direction)); err != nil {
+		return fmt.Errorf("failed to write transition direction: %w", err)
+	}
+	if err := binary.Write(writer, binary.LittleEndian, shared.TransitionStyle.SoftEdgeWidth); err != nil {
+		return fmt.Errorf("failed to write transition soft edge: %w", err)
+	}
+	if err := binary.Write(writer, binary.LittleEndian, int32(shared.TransparencyStrategy)); err != nil {
+		return fmt.Errorf("failed to write transparency strategy: %w", err)
 	}
 
 	// --- Layer Data ---
@@ -431,8 +445,7 @@ func (shared *LayerEntryType) SaveLayer(path string) error {
 LoadLayer is a method which reads a layer from a file.
 
 Example:
-
-	err := instance.LoadLayer(path)
+    err := instance.LoadLayer(path)
 */
 func (shared *LayerEntryType) LoadLayer(path string) error {
 	data, err := os.ReadFile(path)
@@ -446,8 +459,7 @@ func (shared *LayerEntryType) LoadLayer(path string) error {
 LoadLayerFromBytes is a method which reads a layer from a byte slice.
 
 Example:
-
-	err := instance.LoadLayerFromBytes(data)
+    err := instance.LoadLayerFromBytes(data)
 */
 func (shared *LayerEntryType) LoadLayerFromBytes(data []byte) error {
 	reader := bytes.NewReader(data)
@@ -485,6 +497,36 @@ func (shared *LayerEntryType) LoadLayerFromBytes(data []byte) error {
 	if err := binary.Read(buffReader, binary.LittleEndian, &height); err != nil {
 		return fmt.Errorf("failed to read height: %w", err)
 	}
+
+	if err := binary.Read(buffReader, binary.LittleEndian, &shared.AlphaValue); err != nil {
+		return fmt.Errorf("failed to read alpha value: %w", err)
+	}
+
+	if err := binary.Read(buffReader, binary.LittleEndian, &shared.TransitionProgress); err != nil {
+		return fmt.Errorf("failed to read transition progress: %w", err)
+	}
+	var transType, transDir int32
+	if err := binary.Read(buffReader, binary.LittleEndian, &transType); err != nil {
+		return fmt.Errorf("failed to read transition type: %w", err)
+	}
+	if err := binary.Read(buffReader, binary.LittleEndian, &transDir); err != nil {
+		return fmt.Errorf("failed to read transition direction: %w", err)
+	}
+	var softEdge float32
+	if err := binary.Read(buffReader, binary.LittleEndian, &softEdge); err != nil {
+		return fmt.Errorf("failed to read transition soft edge: %w", err)
+	}
+	shared.TransitionStyle = TransitionStyleEntryType{
+		TransitionType: constants.TransitionType(transType),
+		Direction:      constants.TransitionDirection(transDir),
+		SoftEdgeWidth:  softEdge,
+	}
+
+	var strategy int32
+	if err := binary.Read(buffReader, binary.LittleEndian, &strategy); err != nil {
+		return fmt.Errorf("failed to read transparency strategy: %w", err)
+	}
+	shared.TransparencyStrategy = constants.TransparencyStrategy(strategy)
 
 	shared.Width = int(width)
 	shared.Height = int(height)
