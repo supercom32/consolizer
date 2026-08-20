@@ -294,12 +294,7 @@ func NewLayerEntry(layerAlias string, parentAlias string, width int, height int,
 		layerEntry.DefaultAttribute = existingLayerEntry[0].DefaultAttribute
 		for currentRow := 0; currentRow < existingLayerEntry[0].Height; currentRow++ {
 			var characterObjectArray = make([]CharacterEntryType, existingLayerEntry[0].Width)
-			for currentCharacter := 0; currentCharacter < existingLayerEntry[0].Width; currentCharacter++ {
-				characterObjectArray[currentCharacter] = NewCharacterEntry()
-				characterObjectArray[currentCharacter].LayerAlias = layerAlias
-				characterObjectArray[currentCharacter].ParentAlias = parentAlias
-				characterObjectArray[currentCharacter] = existingLayerEntry[0].CharacterMemory[currentRow][currentCharacter]
-			}
+			copy(characterObjectArray, existingLayerEntry[0].CharacterMemory[currentRow])
 			layerEntry.CharacterMemory = append(layerEntry.CharacterMemory, characterObjectArray)
 		}
 	} else {

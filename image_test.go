@@ -465,6 +465,38 @@ func TestTransparentImageAsciiStyleBlendedTransparency(test *testing.T) {
 }
 
 /*
+TestTransparentImageOverImage is a test which allows you to verify that a transparent image drawn on an upper layer
+correctly reveals another image rendered on the layer beneath it. The transparent edges of the circle must show the
+underlying image's block art with sub-cell accuracy rather than a substituted flat background color.
+
+Example:
+    Expected Inputs:
+        IMAGE_COMPLEX asset rendered with block element style on the bottom layer, with the IMAGE_TRANSPARENCY asset
+        rendered with block element style on the layer above it.
+    Expected Outputs:
+        Screen content matches the master ANSI string, with the underlying image visible through the transparent
+        regions and edges of the circle.
+*/
+func TestTransparentImageOverImage(test *testing.T) {
+	layer1, layer2, _, _, imageStyle := setupTest()
+	err := layer1.DrawImage(IMAGE_COMPLEX, imageStyle, 0, 0, 50, 20, 0)
+	assert.Nil(test, err, "Drawing the background image should not produce an error")
+	err = layer2.DrawImage(IMAGE_TRANSPARENCY, imageStyle, 1, 0, 40, 20, 0)
+	assert.Nil(test, err, "Drawing the transparent foreground image should not produce an error")
+	UpdateDisplay(false)
+	layerEntry := commonResource.screenLayer
+	obtainedValue := layerEntry.GetBasicAnsiStringAsBase64()
+	UpdateMasterImages(false, IMAGE_TEST_SUITE_NAME, "TestTransparentImageOverImage", obtainedValue)
+	expectedValue := LoadMasterImage(IMAGE_TEST_SUITE_NAME, "TestTransparentImageOverImage")
+	obtainedValueBase64 := layerEntry.GetAnsiStringFromBase64(obtainedValue)
+	expectedValueBase64 := layerEntry.GetAnsiStringFromBase64(expectedValue)
+	if !assert.Equalf(test, expectedValue, obtainedValue, "The updated screen does not match the master original!") {
+		fmt.Println("Expected:\n", expectedValueBase64)
+		fmt.Println("Obtained:\n", obtainedValueBase64)
+	}
+}
+
+/*
 TestComplexGeometryImage is a test which allows you to verify that a complex geometry image can be rendered using the
 accurate block element style at a specific size and aspect ratio.
 

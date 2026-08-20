@@ -647,7 +647,7 @@ func UpdateDisplay(isRefreshForced bool) {
 	}()
 	sortedLayerAliasSlice := layer.GetSortedLayerMemoryAliasSlice()
 	baseLayerEntry := types.NewLayerEntry("", "", commonResource.terminalWidth, commonResource.terminalHeight)
-	baseLayerEntry = renderLayers(&baseLayerEntry, sortedLayerAliasSlice)
+	baseLayerEntry = renderLayers(&baseLayerEntry, sortedLayerAliasSlice, true)
 	Tooltip.renderAll(baseLayerEntry)
 	DrawLayerToScreen(&baseLayerEntry, isRefreshForced)
 	commonResource.screenLayer = baseLayerEntry
@@ -671,10 +671,14 @@ the following should be noted:
 
 - Any text layer which is marked as not visible will be ignored.
 
+- The isFinalComposite flag should only be set when rendering to the final display, since it permits sub-cell block
+  element transparency resolution which consumes transparency flags. Recursive calls for child layers always render
+  intermediate results and therefore never mark themselves as final.
+
 Example:
-    renderLayers(&rootLayer, aliases)
+    renderLayers(&rootLayer, aliases, true)
 */
-func renderLayers(rootLayerEntry *types.LayerEntryType, sortedLayerAliasSlice LayerAliasZOrderPairList) types.LayerEntryType {
+func renderLayers(rootLayerEntry *types.LayerEntryType, sortedLayerAliasSlice LayerAliasZOrderPairList, isFinalComposite bool) types.LayerEntryType {
 	baseLayerEntry := types.NewLayerEntry("", "", 0, 0, rootLayerEntry)
 	isOpaque := true
 	for currentListIndex := 0; currentListIndex < len(sortedLayerAliasSlice); currentListIndex++ {
@@ -685,11 +689,11 @@ func renderLayers(rootLayerEntry *types.LayerEntryType, sortedLayerAliasSlice La
 		if currentLayerEntry.IsVisible {
 			renderControls(currentLayerEntry)
 			if currentLayerEntry.IsParent && (currentLayerEntry.LayerAlias != baseLayerEntry.LayerAlias && currentLayerEntry.ParentAlias == baseLayerEntry.LayerAlias) {
-				renderedLayer := renderLayers(&currentLayerEntry, sortedLayerAliasSlice)
-				overlayLayers(&renderedLayer, &baseLayerEntry, isOpaque)
+				renderedLayer := renderLayers(&currentLayerEntry, sortedLayerAliasSlice, false)
+				overlayLayers(&renderedLayer, &baseLayerEntry, isOpaque, isFinalComposite)
 			} else {
 				if currentLayerEntry.ParentAlias == baseLayerEntry.LayerAlias {
-					overlayLayers(&currentLayerEntry, &baseLayerEntry, isOpaque)
+					overlayLayers(&currentLayerEntry, &baseLayerEntry, isOpaque, isFinalComposite)
 				}
 			}
 		}
@@ -740,7 +744,7 @@ Example:
 func overlayLayersByLayerAlias(sourceLayerAlias string, targetLayerEntry *types.LayerEntryType) {
 	validateLayer(sourceLayerAlias)
 	layerEntry := Layers.Get(sourceLayerAlias)
-	overlayLayers(layerEntry, targetLayerEntry, false)
+	overlayLayers(layerEntry, targetLayerEntry, false, false)
 }
 
 /*
@@ -837,11 +841,20 @@ func shouldShowSource(effectiveAlpha float32, strategy constants.TransparencyStr
 compositeCell is a method which blends the contents and attributes of a source cell with a target cell to produce a
 single rendered character entry. It calculates color transitions for foregrounds and backgrounds, handles special cell
 types like shadows and tooltips, and processes transparency flags to ensure layers are combined with visual accuracy.
+In addition, the following should be noted:
+
+- When isFinalComposite is set and a partially transparent block element cell is composited at full opacity, the
+  transparent portion is resolved with sub-cell accuracy so the true visual content of the underlying cell shows
+  through, rather than substituting the underlying cell's background color for the whole region. This resolution
+  consumes the cell's transparency flags because the revealed content is baked into the resulting glyph and colors.
+
+- Intermediate composites never resolve sub-cell transparency, since re-encoding a glyph while keeping its
+  transparency flags would break the correspondence between each flag and the pixel region it marks.
 
 Example:
-    result := compositeCell(&source, &target, 0.5, 1.0, 1.0, false)
+    result := compositeCell(&source, &target, 0.5, 0.5, 1.0, 1.0, false, false)
 */
-func compositeCell(sourceEntry *types.CharacterEntryType, targetEntry *types.CharacterEntryType, effectiveAlpha float32, isOpaque bool, isBinaryAlpha bool, strategy constants.TransparencyStrategy) types.CharacterEntryType {
+func compositeCell(sourceEntry *types.CharacterEntryType, targetEntry *types.CharacterEntryType, effectiveAlpha float32, backgroundEffectiveAlpha float32, isOpaque bool, isBinaryAlpha bool, strategy constants.TransparencyStrategy, isFinalComposite bool) types.CharacterEntryType {
 	sourceAttributeEntry := sourceEntry.AttributeEntry
 	targetAttributeEntry := targetEntry.AttributeEntry
 
@@ -855,11 +868,22 @@ func compositeCell(sourceEntry *types.CharacterEntryType, targetEntry *types.Cha
 	if sourceEntry.Character == constants.NullRune {
 		resultEntry := *targetEntry
 		if sourceAttributeEntry.CellType == constants.CellTypeShadow {
+			// The cell's alpha value is already folded into blendAlpha/backgroundBlendAlpha once by getEffectiveAlpha,
+			// so it must not be multiplied in a second time. Binary alpha strategies force blendAlpha to 1 and
+			// express layer visibility by dropping cells instead, so the cell's own alpha value is the darkening
+			// factor there. Foreground and background alpha are tracked independently so a shadow cell can darken
+			// each channel by a different amount.
+			shadowAlpha := blendAlpha
+			backgroundShadowAlpha := backgroundEffectiveAlpha
+			if isBinaryAlpha {
+				shadowAlpha = sourceAttributeEntry.ForegroundAlphaValue
+				backgroundShadowAlpha = sourceAttributeEntry.BackgroundAlphaValue
+			}
 			if sourceAttributeEntry.ForegroundAlphaValue < 1 {
-				resultEntry.AttributeEntry.ForegroundColor = GetTransitionedColor(targetAttributeEntry.ForegroundColor, GetRGBColor(0, 0, 0), sourceAttributeEntry.ForegroundAlphaValue*blendAlpha)
+				resultEntry.AttributeEntry.ForegroundColor = GetTransitionedColor(targetAttributeEntry.ForegroundColor, GetRGBColor(0, 0, 0), shadowAlpha)
 			}
 			if sourceAttributeEntry.BackgroundAlphaValue < 1 {
-				resultEntry.AttributeEntry.BackgroundColor = GetTransitionedColor(targetAttributeEntry.BackgroundColor, GetRGBColor(0, 0, 0), sourceAttributeEntry.BackgroundAlphaValue*blendAlpha)
+				resultEntry.AttributeEntry.BackgroundColor = GetTransitionedColor(targetAttributeEntry.BackgroundColor, GetRGBColor(0, 0, 0), backgroundShadowAlpha)
 			}
 			resultEntry.AttributeEntry.CellType = constants.CellTypeShadow
 		}
@@ -888,13 +912,27 @@ func compositeCell(sourceEntry *types.CharacterEntryType, targetEntry *types.Cha
 
 	// --- Efficient transparency handling ---
 	if !isOpaque {
-		if sourceAttributeEntry.IsForegroundTransparent {
-			newAttributeEntry.ForegroundColor = targetAttributeEntry.ForegroundColor
-			newAttributeEntry.IsForegroundTransparent = true
+		isSubCellResolved := false
+		if isFinalComposite && blendAlpha >= 1 && strategy != constants.TransparencyStrategyDissolve &&
+			(sourceAttributeEntry.IsForegroundTransparent || sourceAttributeEntry.IsBackgroundTransparent) {
+			if character, foregroundColor, backgroundColor, isComposited := compositeBlockElementCells(sourceEntry, targetEntry); isComposited {
+				resultEntry.Character = character
+				newAttributeEntry.ForegroundColor = foregroundColor
+				newAttributeEntry.BackgroundColor = backgroundColor
+				newAttributeEntry.IsForegroundTransparent = false
+				newAttributeEntry.IsBackgroundTransparent = false
+				isSubCellResolved = true
+			}
 		}
-		if sourceAttributeEntry.IsBackgroundTransparent {
-			newAttributeEntry.BackgroundColor = targetAttributeEntry.BackgroundColor
-			newAttributeEntry.IsBackgroundTransparent = true
+		if !isSubCellResolved {
+			if sourceAttributeEntry.IsForegroundTransparent {
+				newAttributeEntry.ForegroundColor = targetAttributeEntry.ForegroundColor
+				newAttributeEntry.IsForegroundTransparent = true
+			}
+			if sourceAttributeEntry.IsBackgroundTransparent {
+				newAttributeEntry.BackgroundColor = targetAttributeEntry.BackgroundColor
+				newAttributeEntry.IsBackgroundTransparent = true
+			}
 		}
 	}
 
@@ -936,10 +974,14 @@ following should be noted:
 
 - If a transparent rune has a foreground or background alpha value set, then it will be drawn as a shadow.
 
+- The isFinalComposite flag marks whether the target layer represents the final assembled display. Only final
+  composites are allowed to resolve block element transparency with sub-cell accuracy, since intermediate composites
+  must keep transparency flags and glyphs intact for later compositing passes.
+
 Example:
-    overlayLayers(&srcLayer, &targetLayer, false)
+    overlayLayers(&srcLayer, &targetLayer, false, false)
 */
-func overlayLayers(sourceLayerEntry *types.LayerEntryType, targetLayerEntry *types.LayerEntryType, isOpaque bool) {
+func overlayLayers(sourceLayerEntry *types.LayerEntryType, targetLayerEntry *types.LayerEntryType, isOpaque bool, isFinalComposite bool) {
 	// 1. Simplified Clipping Logic (Integer Math)
 	sourceStartX := 0
 	if sourceLayerEntry.ScreenXLocation < 0 {
@@ -982,6 +1024,7 @@ func overlayLayers(sourceLayerEntry *types.LayerEntryType, targetLayerEntry *typ
 	sourceCharacterMemory := sourceLayerEntry.CharacterMemory
 	targetCharacterMemory := targetLayerEntry.CharacterMemory
 	defaultFgAlpha := sourceLayerEntry.DefaultAttribute.ForegroundAlphaValue
+	defaultBgAlpha := sourceLayerEntry.DefaultAttribute.BackgroundAlphaValue
 	layerAlpha := sourceLayerEntry.AlphaValue
 	transitionProgress := sourceLayerEntry.TransitionProgress
 	transitionStyle := sourceLayerEntry.TransitionStyle
@@ -1096,13 +1139,15 @@ func overlayLayers(sourceLayerEntry *types.LayerEntryType, targetLayerEntry *typ
 				// Final Alpha = Global Alpha * Spatial Multiplier * Local Cell Alpha
 				effectiveAlpha := getEffectiveAlpha(layerAlpha, defaultFgAlpha, sourceEntry.AttributeEntry.ForegroundAlphaValue)
 				effectiveAlpha *= spatialMultiplier
+				backgroundEffectiveAlpha := getEffectiveAlpha(layerAlpha, defaultBgAlpha, sourceEntry.AttributeEntry.BackgroundAlphaValue)
+				backgroundEffectiveAlpha *= spatialMultiplier
 
 				if !shouldShowSource(effectiveAlpha, strategy, targetCol, targetRow) {
 					targetCharacterMemory[targetRow][targetCol] = *targetEntry
 					continue
 				}
 
-				targetCharacterMemory[targetRow][targetCol] = compositeCell(sourceEntry, targetEntry, effectiveAlpha, isOpaque, isBinaryAlpha, strategy)
+				targetCharacterMemory[targetRow][targetCol] = compositeCell(sourceEntry, targetEntry, effectiveAlpha, backgroundEffectiveAlpha, isOpaque, isBinaryAlpha, strategy, isFinalComposite)
 			}
 		}(currentRow)
 	}

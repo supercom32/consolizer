@@ -1494,7 +1494,7 @@ Example:
 func drawImageToLayer(layerEntry *types.LayerEntryType, imageLayer types.LayerEntryType, xLocation int, yLocation int) {
 	imageLayer.ScreenXLocation = xLocation
 	imageLayer.ScreenYLocation = yLocation
-	overlayLayers(&imageLayer, layerEntry, false)
+	overlayLayers(&imageLayer, layerEntry, false, false)
 }
 
 /*
