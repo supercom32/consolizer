@@ -161,6 +161,9 @@ Example:
     RestoreTerminalSettings()
 */
 func RestoreTerminalSettings() {
+	if commonResource.screen != nil {
+		commonResource.screen.PostEvent(tcell.NewEventInterrupt(nil))
+	}
 	commonResource.updateDisplayChannel <- true
 	DeleteAllLayers()
 	if commonResource.screen == nil {
@@ -1052,7 +1055,10 @@ func overlayLayers(sourceLayerEntry *types.LayerEntryType, targetLayerEntry *typ
 
 				// 1. Calculate Spatial Multiplier from Transition
 				spatialMultiplier := float32(1.0)
-				if transitionStyle.TransitionType != constants.TransitionTypeNone {
+				if transitionStyle.TransitionType == constants.TransitionTypeFade {
+					// Fade applies uniformly to every cell, so position and direction play no part.
+					spatialMultiplier = transitionProgress
+				} else if transitionStyle.TransitionType != constants.TransitionTypeNone {
 					softEdgeWidth := transitionStyle.SoftEdgeWidth
 					if softEdgeWidth <= 0.001 {
 						softEdgeWidth = 0.001 // Prevent division by zero

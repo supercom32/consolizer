@@ -84,6 +84,7 @@ const (
 	TransitionTypeCurtainWipe
 	TransitionTypeBlinds
 	TransitionTypeInterlaced
+	TransitionTypeFade
 )
 
 /*
