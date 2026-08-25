@@ -540,9 +540,14 @@ Example:
     sortedLayers := layer.GetSortedLayerMemoryAliasSlice()
 */
 func (shared *layerType) GetSortedLayerMemoryAliasSlice() LayerAliasZOrderPairList {
-	pairList := make(LayerAliasZOrderPairList, len(Layers.GetAllEntries()))
+	// Both the slice's size and its contents must come from this single snapshot. Layers' underlying map can be
+	// mutated by another goroutine at any time, so sizing pairList from one call and iterating a second,
+	// separately-taken snapshot would risk the map growing in between, causing an out-of-range panic once the
+	// loop below writes past pairList's original length.
+	allLayerEntries := Layers.GetAllEntriesWithKeys()
+	pairList := make(LayerAliasZOrderPairList, len(allLayerEntries))
 	currentEntry := 0
-	for currentKey, currentValue := range Layers.GetAllEntriesWithKeys() {
+	for currentKey, currentValue := range allLayerEntries {
 		pairList[currentEntry].Key = currentKey
 		pairList[currentEntry].Value = currentValue.ZOrder
 		currentEntry++

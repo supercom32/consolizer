@@ -464,7 +464,7 @@ func GetFormattedRuneArray(arrayOfRunes []rune, desiredLengthOfArray int, textAl
 
 	formattedArrayOfRunes := []rune{}
 	if textAlignment == constants.AlignmentRight {
-		formattedArrayOfRunes = append(GetMaxCharactersThatFitInStringSize(arrayOfRunes, desiredLengthOfArray))
+		formattedArrayOfRunes = GetMaxCharactersThatFitInStringSize(arrayOfRunes, desiredLengthOfArray)
 		formattedArrayOfRunes = append(fullStringPadding, formattedArrayOfRunes...)
 	} else if textAlignment == constants.AlignmentCenter {
 		formattedArrayOfRunes = append(halfStringPadding, arrayOfRunes...)
@@ -477,7 +477,7 @@ func GetFormattedRuneArray(arrayOfRunes []rune, desiredLengthOfArray int, textAl
 		formattedArrayOfRunes = append(formattedArrayOfRunes, arrayOfRunes...)
 		formattedArrayOfRunes = append(formattedArrayOfRunes, ' ')
 	} else {
-		formattedArrayOfRunes = append(GetMaxCharactersThatFitInStringSize(arrayOfRunes, desiredLengthOfArray))
+		formattedArrayOfRunes = GetMaxCharactersThatFitInStringSize(arrayOfRunes, desiredLengthOfArray)
 		formattedArrayOfRunes = append(formattedArrayOfRunes, fullStringPadding...)
 	}
 	return formattedArrayOfRunes

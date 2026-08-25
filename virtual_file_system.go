@@ -378,7 +378,6 @@ func getFileDataFromRarArchive(fileName string) ([]byte, error) {
 			return fileData, err
 		}
 	}
-	return fileData, err
 }
 
 /*

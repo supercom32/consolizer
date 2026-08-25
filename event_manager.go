@@ -30,6 +30,15 @@ var eventStateMemory eventStateType
 var eventIntervalTime time.Time
 var lastMouseMoveTime time.Time
 
+// resizeDebounceDelay is how long EventResize handling waits for resizing to pause before doing its actual work
+// (terminal size update, Sync, and UpdateDisplay). A live drag-resize fires many EventResize events in rapid
+// succession, and handling each one immediately means a full layer recomposition on every single one of them.
+// resizeDebounceTimer is only ever touched from UpdateEventQueues's single dedicated event-polling goroutine, so
+// it needs no synchronization of its own.
+const resizeDebounceDelay = 150 * time.Millisecond
+
+var resizeDebounceTimer *time.Timer
+
 /*
 UpdatePeriodicEvents is a method which triggers periodic events such as tooltip updates and keyboard state clearing.
 
@@ -71,7 +80,27 @@ func UpdateEventQueues() {
 	event := commonResource.screen.PollEvent()
 	switch event := event.(type) {
 	case *tcell.EventResize:
-		commonResource.screen.Sync()
+		newWidth, newHeight := event.Size()
+		// Each new resize event cancels any pending one and reschedules, so the actual work below only runs
+		// once resizing has paused for resizeDebounceDelay, not on every intermediate tick of an active drag.
+		if resizeDebounceTimer != nil {
+			resizeDebounceTimer.Stop()
+		}
+		resizeDebounceTimer = time.AfterFunc(resizeDebounceDelay, func() {
+			// commonResource.displayUpdate is the same lock UpdateDisplay holds for its entire duration. Taking
+			// it here serializes this Sync() (and the terminalWidth/terminalHeight update below) against a
+			// concurrent UpdateDisplay call on another goroutine, which would otherwise let two goroutines drive
+			// the screen concurrently and corrupt terminal output.
+			commonResource.displayUpdate.Lock()
+			commonResource.terminalWidth = newWidth
+			commonResource.terminalHeight = newHeight
+			commonResource.screen.Sync()
+			commonResource.displayUpdate.Unlock()
+			// Called outside the lock above since sync.Mutex is not reentrant and UpdateDisplay acquires the
+			// same lock itself. Without this, the display would stay stale until whatever unrelated event
+			// happens to trigger the next UpdateDisplay call, such as a keypress.
+			UpdateDisplay(false)
+		})
 	case *tcell.EventKey:
 		isScreenUpdateRequired := false
 		isKeystrokeConsumed := false

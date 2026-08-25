@@ -110,8 +110,13 @@ Example:
 */
 func setupPeriodicEventUpdater() {
 	for {
-		UpdatePeriodicEvents()
-		time.Sleep(10 * time.Millisecond)
+		select {
+		case <-commonResource.updateDisplayChannel:
+			return
+		default:
+			UpdatePeriodicEvents()
+			time.Sleep(10 * time.Millisecond)
+		}
 	}
 }
 
@@ -142,7 +147,9 @@ Example:
     setupCloseHandler()
 */
 func setupCloseHandler() {
-	channel := make(chan os.Signal)
+	// signal.Notify does not block waiting to deliver: an unbuffered channel not ready to receive at the exact
+	// moment a signal arrives causes that signal to be dropped instead of queued, so it must be buffered.
+	channel := make(chan os.Signal, 1)
 	signal.Notify(channel, syscall.SIGTERM, syscall.SIGKILL, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGHUP)
 	go func() {
 		<-channel
@@ -164,7 +171,16 @@ func RestoreTerminalSettings() {
 	if commonResource.screen != nil {
 		commonResource.screen.PostEvent(tcell.NewEventInterrupt(nil))
 	}
-	commonResource.updateDisplayChannel <- true
+	// updateDisplayChannel is only created in InitializeTerminal's non-debug branch, so it is nil in debug mode
+	// and whenever this is called without a prior InitializeTerminal call. Sending on a nil channel blocks
+	// forever, so this must be skipped rather than attempted unconditionally. Closing rather than sending a
+	// single value is what lets both setupEventUpdater and setupPeriodicEventUpdater stop reliably: a single
+	// send on an unbuffered channel only ever wakes whichever one of them happens to be selecting on it at that
+	// instant, leaving the other looping forever, while a close is observed by every current and future
+	// receiver.
+	if commonResource.updateDisplayChannel != nil {
+		close(commonResource.updateDisplayChannel)
+	}
 	DeleteAllLayers()
 	if commonResource.screen == nil {
 		return
@@ -197,7 +213,6 @@ func getOsType() int {
 	default:
 		return OS_WINDOWS
 	}
-	return 0
 }
 
 /*

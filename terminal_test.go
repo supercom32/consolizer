@@ -10,6 +10,7 @@ import (
 	_ "math/rand"
 	_ "strconv"
 	"testing"
+	"time"
 )
 
 const TERMINAL_TEST_SUITE_NAME = "terminal"
@@ -562,4 +563,35 @@ func TestNewAssetList(test *testing.T) {
 	obtainedValue = recast.GetArrayOfInterfaces(len(imageFileList.PreloadedImageList))
 	expectedValue = recast.GetArrayOfInterfaces(0)
 	assert.Equalf(test, expectedValue, obtainedValue, "The number of file entries does not what was expected!")
+}
+
+/*
+TestRestoreTerminalSettingsDoesNotHangWithNilUpdateDisplayChannel is a test which verifies that
+RestoreTerminalSettings returns promptly instead of hanging forever when commonResource.updateDisplayChannel is
+nil, which is always the case in debug mode since InitializeTerminal only creates that channel in its non-debug
+branch. A send on a nil channel blocks forever, which is why this test calls RestoreTerminalSettings on a
+background goroutine and races it against a short timeout rather than calling it directly.
+
+Example:
+    Expected Inputs:
+        commonResource.isDebugEnabled true, InitializeTerminal already called, updateDisplayChannel left nil.
+    Expected Outputs:
+        RestoreTerminalSettings returns within the timeout rather than hanging.
+*/
+func TestRestoreTerminalSettingsDoesNotHangWithNilUpdateDisplayChannel(test *testing.T) {
+	commonResource.isDebugEnabled = true
+	InitializeTerminal(20, 20)
+	assert.Nil(test, commonResource.updateDisplayChannel, "Expected updateDisplayChannel to be nil in debug mode!")
+
+	finished := make(chan bool, 1)
+	go func() {
+		RestoreTerminalSettings()
+		finished <- true
+	}()
+
+	select {
+	case <-finished:
+	case <-time.After(2 * time.Second):
+		test.Fatal("RestoreTerminalSettings did not return within the timeout, indicating it hung on a nil channel send!")
+	}
 }

@@ -199,3 +199,24 @@ func TestGetFormattedString(test *testing.T) {
 	expectedSize = 38
 	assert.Equalf(test, expectedSize, obtainedSize, "The formatted string obtained was not the right size as expected.")
 }
+
+/*
+TestGetFormattedStringWithShortAsciiInput is a test which verifies that a plain ASCII string shorter than the
+desired length is padded correctly for left, right, and no-padding alignment.
+
+Example:
+    Expected Inputs:
+        "Hi", 5, Left/Right/NoPadding alignment.
+    Expected Outputs:
+        "Hi   ", "   Hi", " Hi ".
+*/
+func TestGetFormattedStringWithShortAsciiInput(test *testing.T) {
+	obtainedResult := GetFormattedString("Hi", 5, constants.AlignmentLeft)
+	assert.Equalf(test, "Hi   ", obtainedResult, "The formatted string obtained was not left aligned as expected.")
+
+	obtainedResult = GetFormattedString("Hi", 5, constants.AlignmentRight)
+	assert.Equalf(test, "   Hi", obtainedResult, "The formatted string obtained was not right aligned as expected.")
+
+	obtainedResult = GetFormattedString("Hi", 5, constants.AlignmentNoPadding)
+	assert.Equalf(test, " Hi ", obtainedResult, "The formatted string obtained was not formatted with no padding as expected.")
+}
