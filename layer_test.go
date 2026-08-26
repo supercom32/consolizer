@@ -133,6 +133,84 @@ func TestLayerParentChild(t *testing.T) {
 }
 
 /*
+TestLayerGetAbsoluteLocation is a test which verifies that layer.GetAbsoluteLocation correctly resolves a
+layer's screen position by summing its own offset with every ancestor's offset in the parent chain.
+
+Example:
+    Expected Inputs:
+        A three-level hierarchy (root, child, grandchild), each offset from its own parent.
+    Expected Outputs:
+        The root's absolute location equals its own offset, and each descendant's absolute location equals
+        the sum of its own offset plus every ancestor's offset.
+*/
+func TestLayerGetAbsoluteLocation(t *testing.T) {
+	commonResource.isDebugEnabled = true
+	InitializeTerminal(80, 25)
+	layer.ReInitializeScreenMemory()
+
+	layer.Add("root", 2, 3, 20, 20, 1, "")
+	layer.Add("child", 4, 5, 15, 15, 1, "root")
+	layer.Add("grandchild", 1, 1, 10, 10, 1, "child")
+
+	rootX, rootY := layer.GetAbsoluteLocation("root")
+	if rootX != 2 || rootY != 3 {
+		t.Errorf("Root absolute location should be (2, 3), got (%d, %d)", rootX, rootY)
+	}
+
+	childX, childY := layer.GetAbsoluteLocation("child")
+	if childX != 6 || childY != 8 {
+		t.Errorf("Child absolute location should be (6, 8), got (%d, %d)", childX, childY)
+	}
+
+	grandchildX, grandchildY := layer.GetAbsoluteLocation("grandchild")
+	if grandchildX != 7 || grandchildY != 9 {
+		t.Errorf("Grandchild absolute location should be (7, 9), got (%d, %d)", grandchildX, grandchildY)
+	}
+	DeleteAllLayers()
+}
+
+/*
+TestLayerInstanceLocationMethods is a test which verifies that GetRelativeLocation, GetAbsoluteLocation, and
+the deprecated GetLocation alias each return the correct coordinates for a nested layer instance.
+
+Example:
+    Expected Inputs:
+        A parent layer instance and a child layer instance offset from it.
+    Expected Outputs:
+        GetRelativeLocation returns the child's parent-local offset, GetAbsoluteLocation returns the child's
+        offset summed with the parent's offset, and GetLocation matches GetRelativeLocation.
+*/
+func TestLayerInstanceLocationMethods(t *testing.T) {
+	commonResource.isDebugEnabled = true
+	InitializeTerminal(80, 25)
+	layer.ReInitializeScreenMemory()
+
+	parentInstance := AddLayer(10, 5, 20, 20, 1, nil)
+	childInstance := AddLayer(3, 4, 10, 10, 1, parentInstance)
+
+	relativeX, relativeY := childInstance.GetRelativeLocation()
+	if relativeX != 3 || relativeY != 4 {
+		t.Errorf("Child relative location should be (3, 4), got (%d, %d)", relativeX, relativeY)
+	}
+
+	absoluteX, absoluteY := childInstance.GetAbsoluteLocation()
+	if absoluteX != 13 || absoluteY != 9 {
+		t.Errorf("Child absolute location should be (13, 9), got (%d, %d)", absoluteX, absoluteY)
+	}
+
+	legacyX, legacyY := childInstance.GetLocation()
+	if legacyX != relativeX || legacyY != relativeY {
+		t.Errorf("GetLocation should match GetRelativeLocation (%d, %d), got (%d, %d)", relativeX, relativeY, legacyX, legacyY)
+	}
+
+	parentAbsoluteX, parentAbsoluteY := parentInstance.GetAbsoluteLocation()
+	if parentAbsoluteX != 10 || parentAbsoluteY != 5 {
+		t.Errorf("Root parent absolute location should equal its own offset (10, 5), got (%d, %d)", parentAbsoluteX, parentAbsoluteY)
+	}
+	DeleteAllLayers()
+}
+
+/*
 TestLayerZOrder is a test which verifies that layers are correctly sorted by their z-order rendering
 priority.
 

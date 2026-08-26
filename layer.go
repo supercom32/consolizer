@@ -648,6 +648,30 @@ func (shared *layerType) GetRootParentAlias(layerAlias string, previousChildAlia
 	return layerAlias, previousChildAlias
 }
 
+/*
+GetAbsoluteLocation is a method which allows you to recursively resolve the absolute screen X and Y coordinates of a
+layer. In addition, the following should be noted:
+
+- This is the single source of truth for absolute position resolution. It walks up the ParentAlias chain, summing
+  each ancestor's parent-local ScreenXLocation and ScreenYLocation, so the result reflects where the layer will
+  actually render on the terminal display regardless of nesting depth.
+
+:param layerAlias: The alias of the layer to resolve the absolute location for.
+
+:return: The absolute X and Y coordinates of the layer on the terminal display.
+
+Example:
+    x, y := layer.GetAbsoluteLocation("grandchild")
+*/
+func (shared *layerType) GetAbsoluteLocation(layerAlias string) (int, int) {
+	layerEntry := Layers.Get(layerAlias)
+	if layerEntry.ParentAlias == "" {
+		return layerEntry.ScreenXLocation, layerEntry.ScreenYLocation
+	}
+	parentXLocation, parentYLocation := shared.GetAbsoluteLocation(layerEntry.ParentAlias)
+	return parentXLocation + layerEntry.ScreenXLocation, parentYLocation + layerEntry.ScreenYLocation
+}
+
 // ============================================================================
 // REGULAR ENTRY
 // ============================================================================
@@ -1508,15 +1532,52 @@ func (shared *LayerInstanceType) SetTopmost() {
 }
 
 /*
-GetLocation is a method which allows you to retrieve the current screen X and Y coordinates of the layer.
+GetLocation is a method which allows you to retrieve the current X and Y coordinates of the layer relative to its
+immediate parent layer. In addition, the following should be noted:
+
+- This method is a deprecated alias for GetRelativeLocation, retained for backward compatibility.
+
+:return: The X and Y coordinates of the layer relative to its immediate parent, or relative to the terminal display
+    if the layer has no parent.
 
 Example:
     x, y := layerInstance.GetLocation()
 */
 func (shared *LayerInstanceType) GetLocation() (int, int) {
+	return shared.GetRelativeLocation()
+}
+
+/*
+GetRelativeLocation is a method which allows you to retrieve the current X and Y coordinates of the layer relative to
+its immediate parent layer.
+
+:return: The X and Y coordinates of the layer relative to its immediate parent, or relative to the terminal display
+    if the layer has no parent.
+
+Example:
+    x, y := layerInstance.GetRelativeLocation()
+*/
+func (shared *LayerInstanceType) GetRelativeLocation() (int, int) {
 	validateLayer(shared.layerAlias)
 	layerEntry := Layers.Get(shared.layerAlias)
 	return layerEntry.ScreenXLocation, layerEntry.ScreenYLocation
+}
+
+/*
+GetAbsoluteLocation is a method which allows you to retrieve the absolute screen X and Y coordinates of the layer,
+resolved through the full chain of parent layers. In addition, the following should be noted:
+
+- Unlike GetRelativeLocation, this walks up every parent layer and sums each offset, so the result reflects where
+  the layer will actually render on the terminal display regardless of nesting depth.
+
+:return: The absolute X and Y coordinates of the layer on the terminal display.
+
+Example:
+    x, y := layerInstance.GetAbsoluteLocation()
+*/
+func (shared *LayerInstanceType) GetAbsoluteLocation() (int, int) {
+	validateLayer(shared.layerAlias)
+	return layer.GetAbsoluteLocation(shared.layerAlias)
 }
 
 /*
