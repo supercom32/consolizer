@@ -1,6 +1,7 @@
 package consolizer
 
 import (
+	"github.com/stretchr/testify/assert"
 	"github.com/supercom32/consolizer/constants"
 	"github.com/supercom32/consolizer/types"
 	"testing"
@@ -11,10 +12,11 @@ TestLayerInitialization is a test which verifies that the layer memory is correc
 the Layers manager is not nil after initialization.
 
 Example:
-    Expected Inputs:
-        Terminal initialized to 80x25.
-    Expected Outputs:
-        Layers manager is not nil, and no errors occur during initialization.
+
+	Expected Inputs:
+	    Terminal initialized to 80x25.
+	Expected Outputs:
+	    Layers manager is not nil, and no errors occur during initialization.
 */
 func TestLayerInitialization(t *testing.T) {
 	commonResource.isDebugEnabled = true
@@ -32,10 +34,11 @@ TestLayerAdd is a test which verifies that layers can be correctly added to the 
 dimensions correctly trigger a panic.
 
 Example:
-    Expected Inputs:
-        A valid layer with 10x10 dimensions and an invalid layer with 0 width.
-    Expected Outputs:
-        The valid layer exists in the system, and adding the invalid layer triggers a panic.
+
+	Expected Inputs:
+	    A valid layer with 10x10 dimensions and an invalid layer with 0 width.
+	Expected Outputs:
+	    The valid layer exists in the system, and adding the invalid layer triggers a panic.
 */
 func TestLayerAdd(t *testing.T) {
 	commonResource.isDebugEnabled = true
@@ -63,10 +66,11 @@ TestLayerDelete is a test which verifies that layers can be correctly deleted an
 not affect the parent.
 
 Example:
-    Expected Inputs:
-        A parent layer and a child layer.
-    Expected Outputs:
-        The child layer is successfully deleted while the parent layer remains.
+
+	Expected Inputs:
+	    A parent layer and a child layer.
+	Expected Outputs:
+	    The child layer is successfully deleted while the parent layer remains.
 */
 func TestLayerDelete(t *testing.T) {
 	commonResource.isDebugEnabled = true
@@ -102,10 +106,11 @@ func TestLayerDelete(t *testing.T) {
 TestLayerParentChild is a test which verifies the hierarchical relationship between parent and child layers.
 
 Example:
-    Expected Inputs:
-        A parent layer and a child layer linked to it.
-    Expected Outputs:
-        The parent is correctly identified as a parent, and GetRootParentAlias returns the correct root.
+
+	Expected Inputs:
+	    A parent layer and a child layer linked to it.
+	Expected Outputs:
+	    The parent is correctly identified as a parent, and GetRootParentAlias returns the correct root.
 */
 func TestLayerParentChild(t *testing.T) {
 	commonResource.isDebugEnabled = true
@@ -137,11 +142,12 @@ TestLayerGetAbsoluteLocation is a test which verifies that layer.GetAbsoluteLoca
 layer's screen position by summing its own offset with every ancestor's offset in the parent chain.
 
 Example:
-    Expected Inputs:
-        A three-level hierarchy (root, child, grandchild), each offset from its own parent.
-    Expected Outputs:
-        The root's absolute location equals its own offset, and each descendant's absolute location equals
-        the sum of its own offset plus every ancestor's offset.
+
+	Expected Inputs:
+	    A three-level hierarchy (root, child, grandchild), each offset from its own parent.
+	Expected Outputs:
+	    The root's absolute location equals its own offset, and each descendant's absolute location equals
+	    the sum of its own offset plus every ancestor's offset.
 */
 func TestLayerGetAbsoluteLocation(t *testing.T) {
 	commonResource.isDebugEnabled = true
@@ -174,11 +180,12 @@ TestLayerInstanceLocationMethods is a test which verifies that GetRelativeLocati
 the deprecated GetLocation alias each return the correct coordinates for a nested layer instance.
 
 Example:
-    Expected Inputs:
-        A parent layer instance and a child layer instance offset from it.
-    Expected Outputs:
-        GetRelativeLocation returns the child's parent-local offset, GetAbsoluteLocation returns the child's
-        offset summed with the parent's offset, and GetLocation matches GetRelativeLocation.
+
+	Expected Inputs:
+	    A parent layer instance and a child layer instance offset from it.
+	Expected Outputs:
+	    GetRelativeLocation returns the child's parent-local offset, GetAbsoluteLocation returns the child's
+	    offset summed with the parent's offset, and GetLocation matches GetRelativeLocation.
 */
 func TestLayerInstanceLocationMethods(t *testing.T) {
 	commonResource.isDebugEnabled = true
@@ -215,10 +222,11 @@ TestLayerZOrder is a test which verifies that layers are correctly sorted by the
 priority.
 
 Example:
-    Expected Inputs:
-        Three layers with z-orders 1, 2, and 3.
-    Expected Outputs:
-        The layers are returned in the correct z-order sequence, and SetHighestZOrderNumber correctly updates the topmost layer.
+
+	Expected Inputs:
+	    Three layers with z-orders 1, 2, and 3.
+	Expected Outputs:
+	    The layers are returned in the correct z-order sequence, and SetHighestZOrderNumber correctly updates the topmost layer.
 */
 func TestLayerZOrder(t *testing.T) {
 	commonResource.isDebugEnabled = true
@@ -257,10 +265,11 @@ TestLayerInstanceMethods is a test which verifies the behavior of various method
 as visibility, movement, and deletion.
 
 Example:
-    Expected Inputs:
-        A layer instance subjected to Clear, SetIsVisible, and movement commands.
-    Expected Outputs:
-        The layer's state (visibility, position) matches the values specified in the commands.
+
+	Expected Inputs:
+	    A layer instance subjected to Clear, SetIsVisible, and movement commands.
+	Expected Outputs:
+	    The layer's state (visibility, position) matches the values specified in the commands.
 */
 func TestLayerInstanceMethods(t *testing.T) {
 	commonResource.isDebugEnabled = true
@@ -306,10 +315,11 @@ TestLayerDrawingMethods is a test which verifies that various drawing methods (b
 windows, etc.) on a layer instance can be called without errors.
 
 Example:
-    Expected Inputs:
-        A sequence of drawing commands (DrawBorder, DrawFrame, etc.) on a layer instance.
-    Expected Outputs:
-        All drawing commands complete without errors or panics.
+
+	Expected Inputs:
+	    A sequence of drawing commands (DrawBorder, DrawFrame, etc.) on a layer instance.
+	Expected Outputs:
+	    All drawing commands complete without errors or panics.
 */
 func TestLayerDrawingMethods(t *testing.T) {
 	commonResource.isDebugEnabled = true
@@ -348,10 +358,11 @@ TestPrintMethod is a test which verifies that text printing, space preservation,
 wrapping are all functioning correctly.
 
 Example:
-    Expected Inputs:
-        Strings containing markup tags, multiple spaces, and long sentences for wrapping.
-    Expected Outputs:
-        The character memory reflects the correctly rendered text with applied colors and proper line wrapping.
+
+	Expected Inputs:
+	    Strings containing markup tags, multiple spaces, and long sentences for wrapping.
+	Expected Outputs:
+	    The character memory reflects the correctly rendered text with applied colors and proper line wrapping.
 */
 func TestPrintMethod(t *testing.T) {
 	commonResource.isDebugEnabled = true
@@ -457,10 +468,11 @@ TestLayerControlMethods is a test which verifies that various controls (buttons,
 can be correctly added to a layer and assigned the correct layer alias.
 
 Example:
-    Expected Inputs:
-        A series of Add commands for different UI controls.
-    Expected Outputs:
-        The created controls contain the correct layer alias and match the input parameters.
+
+	Expected Inputs:
+	    A series of Add commands for different UI controls.
+	Expected Outputs:
+	    The created controls contain the correct layer alias and match the input parameters.
 */
 func TestLayerControlMethods(t *testing.T) {
 	commonResource.isDebugEnabled = true
@@ -514,10 +526,11 @@ TestLayerGlobalMethods is a test which verifies the behavior of global layer man
 AddLayer, MoveLayerByAbsoluteValue, MoveLayerByRelativeValue, and DeleteAllLayers.
 
 Example:
-    Expected Inputs:
-        Global commands for adding, moving, and deleting layers.
-    Expected Outputs:
-        The system-wide layer memory correctly reflects the addition, movement, and eventual clearing of all layers.
+
+	Expected Inputs:
+	    Global commands for adding, moving, and deleting layers.
+	Expected Outputs:
+	    The system-wide layer memory correctly reflects the addition, movement, and eventual clearing of all layers.
 */
 func TestLayerGlobalMethods(t *testing.T) {
 	commonResource.isDebugEnabled = true
@@ -573,10 +586,11 @@ TestComplexLayerHierarchy is a test which verifies that complex parent-child rel
 are correctly managed, especially during deletion of intermediate layers.
 
 Example:
-    Expected Inputs:
-        A deep hierarchy of root, child, and grandchild layers.
-    Expected Outputs:
-        Deleting an intermediate parent correctly removes all its descendants while leaving root and sibling branches intact.
+
+	Expected Inputs:
+	    A deep hierarchy of root, child, and grandchild layers.
+	Expected Outputs:
+	    Deleting an intermediate parent correctly removes all its descendants while leaving root and sibling branches intact.
 */
 func TestComplexLayerHierarchy(t *testing.T) {
 	commonResource.isDebugEnabled = true
@@ -685,10 +699,11 @@ TestComplexControlManagement is a test which verifies that controls on different
 isolated and that deleting a layer correctly removes only its associated controls.
 
 Example:
-    Expected Inputs:
-        A hierarchy of layers each containing unique UI controls.
-    Expected Outputs:
-        Deleting a parent layer correctly cleans up all its child layers and their respective controls.
+
+	Expected Inputs:
+	    A hierarchy of layers each containing unique UI controls.
+	Expected Outputs:
+	    Deleting a parent layer correctly cleans up all its child layers and their respective controls.
 */
 func TestComplexControlManagement(t *testing.T) {
 	commonResource.isDebugEnabled = true
@@ -794,10 +809,11 @@ TestLayerAndControlPropertyStability is a test which verifies that layer and con
 status, position, z-order) remain stable across various operations.
 
 Example:
-    Expected Inputs:
-        Modifier commands (SetEnabled, movement, z-order) on layers and controls.
-    Expected Outputs:
-        The properties are correctly maintained and correctly inherited by new layers after deletion and recreation.
+
+	Expected Inputs:
+	    Modifier commands (SetEnabled, movement, z-order) on layers and controls.
+	Expected Outputs:
+	    The properties are correctly maintained and correctly inherited by new layers after deletion and recreation.
 */
 func TestLayerAndControlPropertyStability(t *testing.T) {
 	commonResource.isDebugEnabled = true
@@ -876,10 +892,11 @@ TestLayerAndControlMemoryLeaks is a test which verifies that layers and controls
 from memory after deletion, preventing memory leaks.
 
 Example:
-    Expected Inputs:
-        Creation and deletion of 100 root layers each with several controls and child layers.
-    Expected Outputs:
-        No layer or control entries remain in the global memory managers after all deletions.
+
+	Expected Inputs:
+	    Creation and deletion of 100 root layers each with several controls and child layers.
+	Expected Outputs:
+	    No layer or control entries remain in the global memory managers after all deletions.
 */
 func TestLayerAndControlMemoryLeaks(t *testing.T) {
 	commonResource.isDebugEnabled = true
@@ -955,10 +972,11 @@ TestComplexInterleavedOperations is a test which verifies that multiple layers w
 controls can be interleaved, moved, and deleted without affecting each other's state.
 
 Example:
-    Expected Inputs:
-        A complex series of interleaved layer creation, control assignment, movement, and selective deletion.
-    Expected Outputs:
-        Each branch of the layer hierarchy maintains its specific control properties and styles throughout the operations.
+
+	Expected Inputs:
+	    A complex series of interleaved layer creation, control assignment, movement, and selective deletion.
+	Expected Outputs:
+	    Each branch of the layer hierarchy maintains its specific control properties and styles throughout the operations.
 */
 func TestComplexInterleavedOperations(t *testing.T) {
 	commonResource.isDebugEnabled = true
@@ -1197,4 +1215,28 @@ func TestComplexInterleavedOperations(t *testing.T) {
 	}
 
 	DeleteAllLayers()
+}
+
+/*
+TestCalculateWordWidthWithRunes is a test which verifies that calculateWordWidth handles rune arrays
+containing multi-byte characters and markup correctly.
+
+Example:
+
+	Expected Inputs:
+	    Rune arrays containing Japanese characters and {{red}} markup tags.
+	Expected Outputs:
+	    Correct word width excluding markup tags, ensuring multi-byte characters are counted as single units.
+*/
+func TestCalculateWordWidthWithRunes(test *testing.T) {
+	input := []rune(" こんにちは {{red}}世界{{/}} test")
+
+	// Test width of "世界" starting from the space at index 6
+	width := calculateWordWidth(input, 6, true)
+	assert.Equal(test, 2, width, "calculateWordWidth failed to calculate correct width for '世界'")
+
+	// Test width without markup
+	inputNoMarkup := []rune(" Hello World")
+	widthNoMarkup := calculateWordWidth(inputNoMarkup, 6, false)
+	assert.Equal(test, 5, widthNoMarkup, "calculateWordWidth failed for standard ASCII")
 }
