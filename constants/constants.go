@@ -345,6 +345,10 @@ const FrameStyleNormal = 0
 const FrameStyleRaised = 1
 const FrameStyleSunken = 2
 
+const ButtonStyleBeveled = 0
+const ButtonStyleFlat = 1
+const ButtonStyleBorderless = 2
+
 const CellTypeButton = 1
 const CellTypeTextField = 2
 const CellTypeFrameTop = 3

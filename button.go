@@ -227,6 +227,11 @@ determined by the style entry passed in. In addition, the following should be no
 - If the button to be drawn falls outside the range of the provided layer, then only the visible portion of the
   button will be drawn.
 
+- styleEntry.Button.StyleMode selects the look: beveled (default, two-tone 3D frame that flips when pressed),
+  flat (single-colour frame, pressed state shown with the pressed colours), or borderless (no frame at all,
+  pressed state shown with the pressed colours). Flat and borderless keep the three-row minimum only for the
+  beveled and flat frames; a borderless button may be a single row.
+
 Example:
     Button.draw(&myLayer, "btn1", "OK", style, false, false, true, 0, 0, 10, 3)
 */
@@ -237,22 +242,50 @@ func (shared *buttonType) draw(layerEntry *types.LayerEntryType, buttonAlias str
 	attributeEntry.BackgroundColor = styleEntry.Button.BackgroundColor
 	attributeEntry.CellType = constants.CellTypeButton
 	attributeEntry.CellControlAlias = buttonAlias
-	if height < 3 {
-		height = 3
+
+	styleMode := styleEntry.Button.StyleMode
+	isBorderless := styleMode == constants.ButtonStyleBorderless
+
+	minimumHeight := 3
+	horizontalPadding := 2
+	if isBorderless {
+		minimumHeight = 1
+		horizontalPadding = 0
+	}
+	if height < minimumHeight {
+		height = minimumHeight
 	}
 	arrayOfRunes := stringformat.GetRunesFromString(buttonLabel)
 	labelWidth := stringformat.GetWidthOfRunesWhenPrinted(arrayOfRunes)
-	if width-2 <= labelWidth {
-		width = labelWidth + 2
+	if width-horizontalPadding <= labelWidth {
+		width = labelWidth + horizontalPadding
 	}
-	localStyleEntry.Window.LineDrawingTextForegroundColor = localStyleEntry.Button.RaisedColor
-	localStyleEntry.Window.LineDrawingTextBackgroundColor = localStyleEntry.Button.BackgroundColor
+
+	// A pressed flat or borderless button has no bevel to flip, so it signals the press through its colours.
+	if isPressed && styleMode != constants.ButtonStyleBeveled {
+		attributeEntry.ForegroundColor = styleEntry.Button.PressedForegroundColor
+		attributeEntry.BackgroundColor = styleEntry.Button.PressedBackgroundColor
+	}
+
 	fillArea(layerEntry, attributeEntry, " ", xLocation, yLocation, width, height, constants.NullCellControlLocation)
-	if isPressed {
-		drawFrame(layerEntry, localStyleEntry, attributeEntry, constants.FrameStyleSunken, xLocation, yLocation, width, height, false)
-	} else {
-		drawFrame(layerEntry, localStyleEntry, attributeEntry, constants.FrameStyleRaised, xLocation, yLocation, width, height, false)
+
+	switch styleMode {
+	case constants.ButtonStyleBorderless:
+		// No frame is drawn.
+	case constants.ButtonStyleFlat:
+		localStyleEntry.Window.LineDrawingTextForegroundColor = attributeEntry.ForegroundColor
+		localStyleEntry.Window.LineDrawingTextBackgroundColor = attributeEntry.BackgroundColor
+		drawFrame(layerEntry, localStyleEntry, attributeEntry, constants.FrameStyleNormal, xLocation, yLocation, width, height, false)
+	default:
+		localStyleEntry.Window.LineDrawingTextForegroundColor = localStyleEntry.Button.RaisedColor
+		localStyleEntry.Window.LineDrawingTextBackgroundColor = localStyleEntry.Button.BackgroundColor
+		if isPressed {
+			drawFrame(layerEntry, localStyleEntry, attributeEntry, constants.FrameStyleSunken, xLocation, yLocation, width, height, false)
+		} else {
+			drawFrame(layerEntry, localStyleEntry, attributeEntry, constants.FrameStyleRaised, xLocation, yLocation, width, height, false)
+		}
 	}
+
 	centerXLocation := (width - labelWidth) / 2
 	centerYLocation := height / 2
 	if isSelected {

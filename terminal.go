@@ -503,22 +503,17 @@ func printLayer(layerEntry *types.LayerEntryType, attributeEntry types.Attribute
 	characterMemory := layerEntry.CharacterMemory
 	for _, currentCharacter := range textToPrint {
 		if cursorXLocation >= 0 && cursorXLocation < layerWidth && cursorYLocation >= 0 && cursorYLocation < layerHeight {
-			originalBackgroundColor := characterMemory[cursorYLocation][cursorXLocation].AttributeEntry.BackgroundColor
-			characterMemory[cursorYLocation][cursorXLocation].AttributeEntry = types.NewAttributeEntry(&attributeEntry)
-			characterMemory[cursorYLocation][cursorXLocation].Character = currentCharacter
-			if stringformat.IsRuneCharacterWide(currentCharacter) {
+			columnsConsumed := putRune(characterMemory, cursorXLocation, cursorYLocation, currentCharacter, attributeEntry, layerWidth, layerHeight)
+			if columnsConsumed == 1 && stringformat.IsRuneCharacterWide(currentCharacter) {
+				// A wide rune whose placeholder would fall past the right edge: advance onto the clipped
+				// column and stop, exactly as the previous inline writer did.
 				cursorXLocation++
-				if cursorXLocation >= layerWidth {
-					return cursorXLocation - xLocation
-				}
-				characterMemory[cursorYLocation][cursorXLocation].AttributeEntry = types.NewAttributeEntry(&attributeEntry)
-				characterMemory[cursorYLocation][cursorXLocation].Character = ' '
+				return cursorXLocation - xLocation
 			}
-			if characterMemory[cursorYLocation][cursorXLocation].AttributeEntry.IsBackgroundTransparent {
-				characterMemory[cursorYLocation][cursorXLocation].AttributeEntry.BackgroundColor = originalBackgroundColor
-			}
+			cursorXLocation += columnsConsumed
+		} else {
+			cursorXLocation++
 		}
-		cursorXLocation++
 		if cursorXLocation >= layerWidth {
 			return cursorXLocation - xLocation
 		}
@@ -1188,6 +1183,9 @@ func DrawLayerToScreen(layerEntry *types.LayerEntryType, isForcedRefreshRequired
 	if !commonResource.isDebugEnabled {
 		width := layerEntry.Width
 		height := layerEntry.Height
+		// Every cell is blitted, including the blank placeholder cell that putRune writes after a wide rune.
+		// tcell dirty-tracks per column, so the placeholder must still reach SetContent or the column it
+		// occupies can be left showing stale content. Do not skip placeholder cells here.
 		for currentRow := 0; currentRow < height; currentRow++ {
 			for currentCharacter := 0; currentCharacter < width; currentCharacter++ {
 				style := tcell.StyleDefault

@@ -152,51 +152,57 @@ func TestGetStringFromBase64(test *testing.T) {
 }
 
 /*
-TestGetNumberOfWideCharacters is a test which verifies the counting of wide characters in a rune array.
+TestGetNumberOfWideCharacters is a test which verifies the counting of wide characters in a rune array. The U+2600
+symbol block ballot box glyph is counted as narrow because the width oracle now matches what tcell draws, so only
+the CJK ideographs, kana, and hangul in the sample are wide.
 
 Example:
     Expected Inputs:
-        Rune array containing mixed ASCII, CJK characters, and symbols.
+        "AL 读写汉字 ひらがな コンピュータワンワンローソク 보리밥보리밥☑  EX"
     Expected Outputs:
-        Correct count of 29 wide characters detected.
+        Correct count of 28 wide characters detected (4 CJK + 4 kana + 14 katakana + 6 hangul; the ☑ is narrow).
 */
 func TestGetNumberOfWideCharacters(test *testing.T) {
 	arrayOfRunes := GetRunesFromString("AL 读写汉字 ひらがな コンピュータワンワンローソク 보리밥보리밥☑  EX")
 	obtainedResult := GetNumberOfWideCharacters(arrayOfRunes)
-	expectedResult := 29
+	expectedResult := 28
 	assert.Equalf(test, expectedResult, obtainedResult, "The number of wide characters detected did not match what was expected!")
 }
 
 /*
 TestGetFormattedString is a test which verifies that a string is correctly formatted based on specified
-length and alignment.
+length and alignment. The source contains one hangul syllable (wide) and one ballot box glyph from the U+2600
+block which the corrected width oracle treats as narrow, so the printed content is 20 columns wide and the pad
+counts are one larger than under the old assume-wide oracle.
 
 Example:
     Expected Inputs:
-        "Formatted 밥☑ String", 40, Left/Right/Center alignment.
+        "Formatted 밥☑ String" (printed width 20), 40, Left/Right/Center alignment.
     Expected Outputs:
-        Correctly padded strings matching expected patterns for each alignment.
+        Left:   "Formatted 밥☑ String" followed by 20 spaces        (39 runes, printed width 40)
+        Right:  20 spaces followed by "Formatted 밥☑ String"        (39 runes, printed width 40)
+        Center: 10 spaces, "Formatted 밥☑ String", 10 spaces        (39 runes, printed width 40)
 */
 func TestGetFormattedString(test *testing.T) {
 	obtainedResult := GetFormattedString("Formatted 밥☑ String", 40, constants.AlignmentLeft)
-	expectedResult := "Formatted 밥☑ String                   "
+	expectedResult := "Formatted 밥☑ String                    "
 	assert.Equalf(test, expectedResult, obtainedResult, "The formatted string obtained was not left aligned as expected.")
 	obtainedSize := len(GetRunesFromString(obtainedResult))
-	expectedSize := 38
+	expectedSize := 39
 	assert.Equalf(test, expectedSize, obtainedSize, "The formatted string obtained was not the right size as expected.")
 
 	obtainedResult = GetFormattedString("Formatted 밥☑ String", 40, constants.AlignmentRight)
-	expectedResult = "                   Formatted 밥☑ String"
+	expectedResult = "                    Formatted 밥☑ String"
 	assert.Equalf(test, expectedResult, obtainedResult, "The formatted string obtained was not right aligned as expected.")
 	obtainedSize = len(GetRunesFromString(obtainedResult))
-	expectedSize = 38
+	expectedSize = 39
 	assert.Equalf(test, expectedSize, obtainedSize, "The formatted string obtained was not the right size as expected.")
 
 	obtainedResult = GetFormattedString("Formatted 밥☑ String", 40, constants.AlignmentCenter)
-	expectedResult = "         Formatted 밥☑ String          "
+	expectedResult = "          Formatted 밥☑ String          "
 	assert.Equalf(test, expectedResult, obtainedResult, "The formatted string obtained was not center aligned as expected.")
 	obtainedSize = len(GetRunesFromString(obtainedResult))
-	expectedSize = 38
+	expectedSize = 39
 	assert.Equalf(test, expectedSize, obtainedSize, "The formatted string obtained was not the right size as expected.")
 }
 

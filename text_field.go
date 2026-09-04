@@ -198,28 +198,33 @@ func (shared *textFieldType) drawInputString(layerEntry *types.LayerEntryType, s
 	attributeEntry.BackgroundColor = styleEntry.TextField.BackgroundColor
 	attributeEntry.CellType = constants.CellTypeTextField
 	attributeEntry.CellControlAlias = textFieldAlias
-	numberOfCharactersToSafelyPrint := stringformat.GetMaxCharactersThatFitInStringSize(inputValue[stringPosition:], width)
+	// Take a rune-boundary prefix that fits the field width in COLUMNS so a trailing wide rune is
+	// never split across the right edge.
+	runesToDraw, _ := stringformat.GetRunesThatFitInColumnCountFromStart(inputValue[stringPosition:], width)
 	textFieldEntry := TextFields.Get(layerEntry.LayerAlias, textFieldAlias)
 	focusedLayerAlias := eventStateMemory.currentlyFocusedControl.layerAlias
 	focusedControlAlias := eventStateMemory.currentlyFocusedControl.controlAlias
 	focusedControlType := eventStateMemory.currentlyFocusedControl.controlType
+	isFocused := focusedControlType == constants.CellTypeTextField && focusedLayerAlias == layerEntry.LayerAlias && focusedControlAlias == textFieldAlias
+	lastRuneIndex := len(textFieldEntry.CurrentValue) - 1
 	fillArea(layerEntry, attributeEntry, " ", xLocation, yLocation, width, 1, 0)
 	// Here we loop over each character to draw since we need to accommodate for unique
-	// cell IDs (if required for mouse location detection).
+	// cell IDs (if required for mouse location detection). The column offset advances by the
+	// printed width of each rune so wide runes stay aligned with the underlying cells.
 	xLocationOffset := 0
-	for currentRuneIndex := 0; currentRuneIndex < len(numberOfCharactersToSafelyPrint); currentRuneIndex++ {
+	for currentRuneIndex := 0; currentRuneIndex < len(runesToDraw); currentRuneIndex++ {
 		absolutePosition := stringPosition + currentRuneIndex
-		isFocused := focusedControlType == constants.CellTypeTextField && focusedLayerAlias == layerEntry.LayerAlias && focusedControlAlias == textFieldAlias
+		currentCharacter := inputValue[absolutePosition]
 
 		// Handle highlighting in both directions
 		isHighlighted := false
 		if textFieldEntry.IsHighlightActive {
-			start := textFieldEntry.HighlightStart
-			end := textFieldEntry.HighlightEnd
-			if start > end {
-				start, end = end, start
+			highlightStart := textFieldEntry.HighlightStart
+			highlightEnd := textFieldEntry.HighlightEnd
+			if highlightStart > highlightEnd {
+				highlightStart, highlightEnd = highlightEnd, highlightStart
 			}
-			isHighlighted = absolutePosition >= start && absolutePosition <= end
+			isHighlighted = absolutePosition >= highlightStart && absolutePosition <= highlightEnd
 		}
 
 		isCursor := isFocused && absolutePosition == textFieldEntry.CursorPosition
@@ -237,73 +242,63 @@ func (shared *textFieldType) drawInputString(layerEntry *types.LayerEntryType, s
 		}
 
 		attributeEntry.CellControlId = absolutePosition
-		if textFieldEntry.IsPasswordProtected {
-			// If the field is password protected, then do not print the terminating ' ' character with an *.
-			if xLocationOffset == len(textFieldEntry.CurrentValue)-1 {
-				layer.printLayer(layerEntry, attributeEntry, xLocation+xLocationOffset, yLocation, []rune{' '})
-			} else {
-				layer.printLayer(layerEntry, attributeEntry, xLocation+xLocationOffset, yLocation, []rune{'*'})
-			}
-		} else {
-			layer.printLayer(layerEntry, attributeEntry, xLocation+xLocationOffset, yLocation, []rune{inputValue[absolutePosition]})
+		characterToDraw := currentCharacter
+		isMaskedWideRune := false
+		if textFieldEntry.IsPasswordProtected && absolutePosition != lastRuneIndex {
+			// Every source rune, wide or narrow, is masked by exactly one '*'; the trailing
+			// sentinel blank is never masked.
+			characterToDraw = '*'
+			isMaskedWideRune = stringformat.GetWidthOfRuneWhenPrinted(currentCharacter) == 2
 		}
-		xLocationOffset++
-		if stringformat.IsRuneCharacterWide(inputValue[absolutePosition]) {
-			xLocationOffset++
-			if textFieldEntry.IsPasswordProtected {
-				// If the field is password protected, then do not print the terminating ' ' character with an *.
-				if xLocation+xLocationOffset == len(textFieldEntry.CurrentValue)-1 {
-					layer.printLayer(layerEntry, attributeEntry, xLocation+xLocationOffset, yLocation, []rune{' '})
-				} else {
-					layer.printLayer(layerEntry, attributeEntry, xLocation+xLocationOffset, yLocation, []rune{'*'})
-				}
-			} else {
-				layer.printLayer(layerEntry, attributeEntry, xLocation+xLocationOffset, yLocation, []rune{' '})
-			}
+		putRune(layerEntry.CharacterMemory, xLocation+xLocationOffset, yLocation, characterToDraw, attributeEntry, layerEntry.Width, layerEntry.Height)
+		if isMaskedWideRune {
+			// The narrow '*' that masks a wide rune leaves its second column empty, so pad it
+			// with a blank carrying the same attributes to keep the masked field column-aligned
+			// with the unmasked one.
+			putRune(layerEntry.CharacterMemory, xLocation+xLocationOffset+1, yLocation, ' ', attributeEntry, layerEntry.Width, layerEntry.Height)
 		}
+		xLocationOffset += stringformat.GetWidthOfRuneWhenPrinted(currentCharacter)
 	}
 }
 
 /*
-updateViewport is a method which updates the current viewport based on the current text and cursor location. In
-addition, the following should be noted:
+updateViewport is a method which updates the current viewport based on the current text and cursor location. The
+viewport is scrolled the minimum amount needed to keep the cursor column inside the field width, measuring every
+distance in printed columns so a run of wide runes cannot push the cursor off the visible edge. In addition, the
+following should be noted:
 
-- Adjusts the viewport to ensure the cursor remains visible within the text field's width.
+- ViewportPosition is a rune index; it is only ever moved to a rune boundary so a wide rune is never half shown.
 
-- Handles cases where the cursor moves outside the current viewport window.
+- When the cursor sits left of the viewport the viewport snaps to the cursor; when it sits at or past the right
+  edge the viewport is pulled forward so the cursor and everything that fits behind it in Width columns is shown.
 
-- Automatically scrolls the text left or right to keep the cursor in view.
-
-- Maintains proper text alignment and visibility when the cursor moves.
+- ViewportPosition is clamped into the closed range zero through len(CurrentValue) minus one.
 
 Example:
     TextField.updateViewport(textFieldEntry)
 */
 func (shared *textFieldType) updateViewport(textFieldEntry *types.TextFieldEntryType) {
-	// If cursor xLocation is lower than the viewport window
-	if textFieldEntry.CursorPosition <= textFieldEntry.ViewportPosition {
-		maxViewportWidthAvaliable := textFieldEntry.Width
-		if textFieldEntry.CursorPosition-textFieldEntry.Width < 0 {
-			maxViewportWidthAvaliable = textFieldEntry.CursorPosition
-		}
-		arrayOfRunesAvailableToPrint := textFieldEntry.CurrentValue[textFieldEntry.CursorPosition-maxViewportWidthAvaliable : textFieldEntry.CursorPosition]
-		numberOfRunesThatFitStringSize := stringformat.GetMaxCharactersThatFitInStringSizeReverse(arrayOfRunesAvailableToPrint, textFieldEntry.Width)
-		textFieldEntry.ViewportPosition = textFieldEntry.CursorPosition - numberOfRunesThatFitStringSize
+	lastRuneIndex := len(textFieldEntry.CurrentValue) - 1
+	if textFieldEntry.ViewportPosition < 0 {
+		textFieldEntry.ViewportPosition = 0
 	}
-	// Figure out how much displayable space is in our current viewport window.
-	arrayOfRunesAvailableToPrint := textFieldEntry.CurrentValue[textFieldEntry.ViewportPosition:]
-	arrayOfRunesThatFitStringSize := stringformat.GetMaxCharactersThatFitInStringSize(arrayOfRunesAvailableToPrint, textFieldEntry.Width)
-	// If the cursor xLocation is equal or greater than the visible viewport window width.
-	if textFieldEntry.CursorPosition >= textFieldEntry.ViewportPosition+len(arrayOfRunesThatFitStringSize) {
-		// Then make the viewport xLocation equal to the visible viewport width behind it.
-		maxViewportWidthAvaliable := textFieldEntry.Width
-		if textFieldEntry.CursorPosition-textFieldEntry.Width < 0 {
-			maxViewportWidthAvaliable = textFieldEntry.CursorPosition
-		}
-		arrayOfRunesAvailableToPrint = textFieldEntry.CurrentValue[textFieldEntry.CursorPosition-maxViewportWidthAvaliable : textFieldEntry.CursorPosition]
-		numberOfRunesThatFitStringSize := stringformat.GetMaxCharactersThatFitInStringSizeReverse(arrayOfRunesAvailableToPrint, textFieldEntry.Width)
-		// LogInfo(fmt.Sprintf("v: %d x: %d off: %d fit: %d, aval: %s", textFieldEntry.ViewportPosition, textFieldEntry.CursorPosition, maxViewportWidthAvaliable, numberOfRunesThatFitStringSize, string(arrayOfRunesAvailableToPrint)))
-		textFieldEntry.ViewportPosition = textFieldEntry.CursorPosition - numberOfRunesThatFitStringSize + 1
+	if textFieldEntry.ViewportPosition > lastRuneIndex {
+		textFieldEntry.ViewportPosition = lastRuneIndex
+	}
+	visibleRunes := textFieldEntry.CurrentValue[textFieldEntry.ViewportPosition:]
+	visiblePrefix, _ := stringformat.GetRunesThatFitInColumnCountFromStart(visibleRunes, textFieldEntry.Width)
+	cursorColumn := stringformat.GetColumnIndexBasedOnRuneIndex(visibleRunes, textFieldEntry.CursorPosition-textFieldEntry.ViewportPosition)
+	if textFieldEntry.CursorPosition < textFieldEntry.ViewportPosition {
+		textFieldEntry.ViewportPosition = textFieldEntry.CursorPosition
+	} else if textFieldEntry.CursorPosition >= textFieldEntry.ViewportPosition+len(visiblePrefix) || cursorColumn >= textFieldEntry.Width {
+		trailingSuffix, _ := stringformat.GetRunesThatFitInColumnCountFromEnd(textFieldEntry.CurrentValue[:textFieldEntry.CursorPosition+1], textFieldEntry.Width)
+		textFieldEntry.ViewportPosition = textFieldEntry.CursorPosition + 1 - len(trailingSuffix)
+	}
+	if textFieldEntry.ViewportPosition < 0 {
+		textFieldEntry.ViewportPosition = 0
+	}
+	if textFieldEntry.ViewportPosition > lastRuneIndex {
+		textFieldEntry.ViewportPosition = lastRuneIndex
 	}
 }
 

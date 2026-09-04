@@ -169,6 +169,13 @@ type ButtonStyle struct {
 	ForegroundColor    constants.ColorType
 	BackgroundColor    constants.ColorType
 	LabelDisabledColor constants.ColorType
+	// StyleMode selects the rendering: constants.ButtonStyleBeveled (default, two-tone 3D frame),
+	// constants.ButtonStyleFlat (single-colour frame, no bevel), or constants.ButtonStyleBorderless (no frame).
+	StyleMode int
+	// PressedForegroundColor and PressedBackgroundColor are used only by the flat and borderless modes, which
+	// have no bevel to flip, to signal the pressed state.
+	PressedForegroundColor constants.ColorType
+	PressedBackgroundColor constants.ColorType
 }
 
 /*
@@ -381,6 +388,9 @@ func NewTuiStyleEntry(existingStyleEntry ...*TuiStyleEntryType) TuiStyleEntryTyp
 		styleEntry.Button.ForegroundColor = constants.AnsiColorByIndex[0]
 		styleEntry.Button.BackgroundColor = constants.AnsiColorByIndex[7]
 		styleEntry.Button.LabelDisabledColor = constants.AnsiColorByIndex[15]
+		styleEntry.Button.StyleMode = constants.ButtonStyleBeveled
+		styleEntry.Button.PressedForegroundColor = constants.AnsiColorByIndex[15]
+		styleEntry.Button.PressedBackgroundColor = constants.AnsiColorByIndex[0]
 
 		styleEntry.Tooltip.ForegroundColor = constants.AnsiColorByIndex[15]
 		styleEntry.Tooltip.BackgroundColor = constants.AnsiColorByIndex[0]

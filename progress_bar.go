@@ -288,11 +288,35 @@ func getVerticalPartialFillChar(partialFill float64) rune {
 }
 
 /*
+drawProgressBarLabelRune is a method which allows you to draw one rune of a progress bar label into a single cell.
+When the label background is transparent the background is set explicitly to whatever colour the bar already
+painted into that cell, so the label reads as the filled colour where the fill has reached and the unfilled
+colour beyond it, across both halves of a wide rune. Otherwise the supplied attributes are used unchanged.
+
+Example:
+
+	drawProgressBarLabelRune(&layerEntry, attributeEntry, 10, 5, '进', true)
+*/
+func drawProgressBarLabelRune(layerEntry *types.LayerEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, character rune, isBackgroundTransparent bool) {
+	if isBackgroundTransparent {
+		attributeEntry.IsBackgroundTransparent = false
+		if yLocation >= 0 && yLocation < len(layerEntry.CharacterMemory) &&
+			xLocation >= 0 && xLocation < len(layerEntry.CharacterMemory[yLocation]) {
+			attributeEntry.BackgroundColor = layerEntry.CharacterMemory[yLocation][xLocation].AttributeEntry.BackgroundColor
+		}
+	}
+	layer.printLayer(layerEntry, attributeEntry, xLocation, yLocation, []rune{character})
+}
+
+/*
 drawProgressBar is a method which renders a progress bar onto a layer. In addition, the following should be noted:
 
 - The progress bar can be rendered horizontally or vertically.
 
 - Labels are automatically centered and truncated if they exceed the available dimensions.
+
+- When isBackgroundTransparent is set the label is drawn one cell at a time so each cell keeps the bar
+  background already painted beneath it, filled colour on the reached side and unfilled colour on the other.
 
 Example:
     drawProgressBar(&layerEntry, "Progress1", "Loading", style, 0, 0, 20, 1, 50, 100, false, false)
@@ -418,8 +442,16 @@ func drawProgressBar(layerEntry *types.LayerEntryType, progressBarAlias string, 
 		}
 		// Center the label for horizontal progress bars
 		centerXLocation := (width - labelWidth) / 2
-		centerYLocation := height / 2
-		layer.printLayer(layerEntry, attributeEntry, xLocation+centerXLocation, yLocation+centerYLocation, arrayOfRunes)
+		labelRowYLocation := yLocation + height/2
+		if isBackgroundTransparent {
+			currentXOffset := 0
+			for _, currentCharacter := range arrayOfRunes {
+				drawProgressBarLabelRune(layerEntry, attributeEntry, xLocation+centerXLocation+currentXOffset, labelRowYLocation, currentCharacter, true)
+				currentXOffset += stringformat.GetWidthOfRuneWhenPrinted(currentCharacter)
+			}
+		} else {
+			layer.printLayer(layerEntry, attributeEntry, xLocation+centerXLocation, labelRowYLocation, arrayOfRunes)
+		}
 	} else {
 		// For vertical progress bars, check if label is too long for height
 		numberOfRunes := len(arrayOfRunes)
@@ -434,7 +466,7 @@ func drawProgressBar(layerEntry *types.LayerEntryType, progressBarAlias string, 
 
 		// Print each character of the label vertically
 		for i, char := range arrayOfRunes {
-			layer.printLayer(layerEntry, attributeEntry, xLocation+centerXLocation, yLocation+centerYLocation+i, []rune{char})
+			drawProgressBarLabelRune(layerEntry, attributeEntry, xLocation+centerXLocation, yLocation+centerYLocation+i, char, isBackgroundTransparent)
 		}
 	}
 }

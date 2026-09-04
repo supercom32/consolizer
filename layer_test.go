@@ -1,10 +1,13 @@
 package consolizer
 
 import (
+	"math/rand"
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/supercom32/consolizer/constants"
+	"github.com/supercom32/consolizer/stringformat"
 	"github.com/supercom32/consolizer/types"
-	"testing"
 )
 
 /*
@@ -1218,25 +1221,227 @@ func TestComplexInterleavedOperations(t *testing.T) {
 }
 
 /*
-TestCalculateWordWidthWithRunes is a test which verifies that calculateWordWidth handles rune arrays
-containing multi-byte characters and markup correctly.
+TestCalculateWordWidthWithRunes is a test which verifies that calculateWordWidth measures a word in printed
+COLUMNS, skipping markup tags, so a word of wide runes reports two columns per rune.
 
 Example:
 
 	Expected Inputs:
 	    Rune arrays containing Japanese characters and {{red}} markup tags.
 	Expected Outputs:
-	    Correct word width excluding markup tags, ensuring multi-byte characters are counted as single units.
+	    The word "世界" (two wide runes wrapped in {{red}}...{{/}}) reports width 4; the ASCII word "World"
+	    reports width 5.
 */
 func TestCalculateWordWidthWithRunes(test *testing.T) {
 	input := []rune(" こんにちは {{red}}世界{{/}} test")
 
-	// Test width of "世界" starting from the space at index 6
+	// "世界" is two wide runes, so its printed width is four columns.
 	width := calculateWordWidth(input, 6, true)
-	assert.Equal(test, 2, width, "calculateWordWidth failed to calculate correct width for '世界'")
+	assert.Equal(test, 4, width, "calculateWordWidth failed to calculate correct column width for '世界'")
 
 	// Test width without markup
 	inputNoMarkup := []rune(" Hello World")
 	widthNoMarkup := calculateWordWidth(inputNoMarkup, 6, false)
 	assert.Equal(test, 5, widthNoMarkup, "calculateWordWidth failed for standard ASCII")
+}
+
+/*
+TestPutRuneNarrow is a test which verifies that putRune writes a single narrow rune into the character grid,
+applies the supplied attributes to that cell, reports one column consumed, and leaves the following cell
+untouched.
+
+Example:
+
+	Expected Inputs:
+	    A 10x3 grid; putRune at (2,1) with 'A' and an attribute whose CellControlId is 7.
+	Expected Outputs:
+	    Return value 1; cell (2,1) holds 'A' with CellControlId 7; cell (3,1) still holds the zero rune.
+*/
+func TestPutRuneNarrow(test *testing.T) {
+	layerEntry := types.NewLayerEntry("test", "", 10, 3)
+	attributeEntry := types.NewAttributeEntry()
+	attributeEntry.CellControlId = 7
+	attributeEntry.CellType = constants.CellTypeTextbox
+
+	columnsConsumed := putRune(layerEntry.CharacterMemory, 2, 1, 'A', attributeEntry, layerEntry.Width, layerEntry.Height)
+
+	assert.Equal(test, 1, columnsConsumed, "A narrow rune must consume exactly one column.")
+	assert.Equal(test, rune('A'), layerEntry.CharacterMemory[1][2].Character, "The lead cell must hold the written rune.")
+	assert.Equal(test, 7, layerEntry.CharacterMemory[1][2].AttributeEntry.CellControlId, "The lead cell must carry the supplied attributes.")
+	assert.Equal(test, rune(0), layerEntry.CharacterMemory[1][3].Character, "The following cell must be left untouched.")
+}
+
+/*
+TestPutRuneWide is a test which verifies that putRune writes a wide rune plus a trailing blank placeholder cell,
+reports two columns consumed, and gives the placeholder its own copy of the same attribute values as the lead
+cell so a hit test on either half resolves alike.
+
+Example:
+
+	Expected Inputs:
+	    A 10x3 grid; putRune at (2,1) with '中' and an attribute whose CellControlId is 5, CellType is textbox.
+	Expected Outputs:
+	    Return value 2; cell (2,1) holds '中'; cell (3,1) holds ' '; both cells share CellControlId 5,
+	    the same foreground and background colour, and the same CellType.
+*/
+func TestPutRuneWide(test *testing.T) {
+	layerEntry := types.NewLayerEntry("test", "", 10, 3)
+	attributeEntry := types.NewAttributeEntry()
+	attributeEntry.CellControlId = 5
+	attributeEntry.CellType = constants.CellTypeTextbox
+	attributeEntry.ForegroundColor = constants.ColorType(1234)
+	attributeEntry.BackgroundColor = constants.ColorType(5678)
+
+	columnsConsumed := putRune(layerEntry.CharacterMemory, 2, 1, '中', attributeEntry, layerEntry.Width, layerEntry.Height)
+
+	assert.Equal(test, 2, columnsConsumed, "A wide rune whose placeholder fits must consume two columns.")
+	leadCell := layerEntry.CharacterMemory[1][2]
+	placeholderCell := layerEntry.CharacterMemory[1][3]
+	assert.Equal(test, rune('中'), leadCell.Character, "The lead cell must hold the wide rune.")
+	assert.Equal(test, rune(' '), placeholderCell.Character, "The placeholder cell must hold a blank space.")
+	assert.Equal(test, leadCell.AttributeEntry.CellControlId, placeholderCell.AttributeEntry.CellControlId, "The placeholder must share the lead cell's CellControlId.")
+	assert.Equal(test, leadCell.AttributeEntry.ForegroundColor, placeholderCell.AttributeEntry.ForegroundColor, "The placeholder must share the lead cell's foreground colour.")
+	assert.Equal(test, leadCell.AttributeEntry.BackgroundColor, placeholderCell.AttributeEntry.BackgroundColor, "The placeholder must share the lead cell's background colour.")
+	assert.Equal(test, leadCell.AttributeEntry.CellType, placeholderCell.AttributeEntry.CellType, "The placeholder must share the lead cell's CellType.")
+}
+
+/*
+TestPutRuneWideRightEdgeClip is a test which verifies that when a wide rune is written to the final column its
+placeholder is dropped rather than written past the right edge, only the lead cell is set, and one column is
+reported as consumed.
+
+Example:
+
+	Expected Inputs:
+	    A 4x2 grid; putRune at (3,0) with '中'.
+	Expected Outputs:
+	    Return value 1; cell (3,0) holds '中'; the grid keeps its 4x2 shape and nothing is written past it.
+*/
+func TestPutRuneWideRightEdgeClip(test *testing.T) {
+	layerEntry := types.NewLayerEntry("test", "", 4, 2)
+	attributeEntry := types.NewAttributeEntry()
+
+	columnsConsumed := putRune(layerEntry.CharacterMemory, 3, 0, '中', attributeEntry, layerEntry.Width, layerEntry.Height)
+
+	assert.Equal(test, 1, columnsConsumed, "A wide rune clipped by the right edge must report one column consumed.")
+	assert.Equal(test, rune('中'), layerEntry.CharacterMemory[0][3].Character, "The lead cell must still hold the wide rune.")
+	assert.Len(test, layerEntry.CharacterMemory[0], 4, "The row must keep its original width.")
+}
+
+/*
+TestPutRuneOutOfBounds is a test which verifies that putRune writes nothing and reports zero columns consumed
+when the target position lies outside the grid.
+
+Example:
+
+	Expected Inputs:
+	    A 5x5 grid; putRune calls at (5,0), (-1,0), (0,5) and (0,-1).
+	Expected Outputs:
+	    Every call returns 0 and the grid is left entirely as zero runes.
+*/
+func TestPutRuneOutOfBounds(test *testing.T) {
+	layerEntry := types.NewLayerEntry("test", "", 5, 5)
+	attributeEntry := types.NewAttributeEntry()
+
+	for _, position := range [][2]int{{5, 0}, {-1, 0}, {0, 5}, {0, -1}} {
+		columnsConsumed := putRune(layerEntry.CharacterMemory, position[0], position[1], 'A', attributeEntry, layerEntry.Width, layerEntry.Height)
+		assert.Equalf(test, 0, columnsConsumed, "An out-of-bounds write at (%d,%d) must consume no columns.", position[0], position[1])
+	}
+	for _, row := range layerEntry.CharacterMemory {
+		for _, cell := range row {
+			assert.Equal(test, rune(0), cell.Character, "No cell may be modified by an out-of-bounds write.")
+		}
+	}
+}
+
+/*
+TestPutRuneOverWidePlaceholderDestroysLead is a test which verifies that when a later write lands on the
+placeholder cell of a wide rune, putRune blanks that rune's now-orphaned lead cell to a space so no corrupted
+half-wide rune is left in the grid.
+
+Example:
+
+	Expected Inputs:
+	    A 10x3 grid; putRune at (2,1) with '中' (consumes columns 2 and 3), then putRune at (3,1) with 'A'.
+	Expected Outputs:
+	    The second call returns 1; cell (2,1) holds ' '; cell (3,1) holds 'A'.
+*/
+func TestPutRuneOverWidePlaceholderDestroysLead(test *testing.T) {
+	layerEntry := types.NewLayerEntry("test", "", 10, 3)
+	attributeEntry := types.NewAttributeEntry()
+
+	putRune(layerEntry.CharacterMemory, 2, 1, '中', attributeEntry, layerEntry.Width, layerEntry.Height)
+	columnsConsumed := putRune(layerEntry.CharacterMemory, 3, 1, 'A', attributeEntry, layerEntry.Width, layerEntry.Height)
+
+	assert.Equal(test, 1, columnsConsumed, "The overwriting narrow rune must consume exactly one column.")
+	assert.Equal(test, rune(' '), layerEntry.CharacterMemory[1][2].Character, "The orphaned wide-rune lead cell must be blanked to a space.")
+	assert.Equal(test, rune('A'), layerEntry.CharacterMemory[1][3].Character, "The target cell must hold the newly written rune.")
+}
+
+/*
+TestNoLayerOverflowFuzz is a test which drives putRune with randomised runes, positions and grid sizes drawn
+from an ASCII pool and a CJK pool and checks two invariants on every iteration: the grid never changes shape
+(an out-of-range write would panic first), and a wide rune whose placeholder fits is always followed by a blank
+placeholder cell carrying the same CellControlId, colours and CellType as the lead cell.
+
+Example:
+
+	Expected Inputs:
+	    2000 iterations, grid width 1..40, grid height 1..5, start x in 0..width+1, runes from
+	    "Hello, World! 0123456789 abcXYZ" and "中文字漢字あいうえおカタカナ한국어".
+	Expected Outputs:
+	    Out-of-range start x returns 0; an in-range narrow rune returns 1; an in-range wide rune with room
+	    returns 2 and its placeholder matches the lead cell's id, colours and CellType.
+*/
+func TestNoLayerOverflowFuzz(test *testing.T) {
+	asciiPool := []rune("Hello, World! 0123456789 abcXYZ")
+	cjkPool := []rune("中文字漢字あいうえおカタカナ한국어")
+	randomSource := rand.New(rand.NewSource(1))
+
+	for iteration := 0; iteration < 2000; iteration++ {
+		layerWidth := 1 + randomSource.Intn(40)
+		layerHeight := 1 + randomSource.Intn(5)
+		layerEntry := types.NewLayerEntry("fuzz", "", layerWidth, layerHeight)
+
+		attributeEntry := types.NewAttributeEntry()
+		attributeEntry.CellControlId = randomSource.Intn(1000)
+		attributeEntry.CellType = constants.CellTypeTextbox
+		attributeEntry.ForegroundColor = constants.ColorType(randomSource.Int63())
+		attributeEntry.BackgroundColor = constants.ColorType(randomSource.Int63())
+
+		xLocation := randomSource.Intn(layerWidth + 2)
+		yLocation := randomSource.Intn(layerHeight)
+		var character rune
+		if randomSource.Intn(2) == 0 {
+			character = asciiPool[randomSource.Intn(len(asciiPool))]
+		} else {
+			character = cjkPool[randomSource.Intn(len(cjkPool))]
+		}
+
+		columnsConsumed := putRune(layerEntry.CharacterMemory, xLocation, yLocation, character, attributeEntry, layerWidth, layerHeight)
+
+		assert.Len(test, layerEntry.CharacterMemory, layerHeight, "The grid height must never change.")
+		for _, row := range layerEntry.CharacterMemory {
+			assert.Len(test, row, layerWidth, "The grid width must never change.")
+		}
+
+		if xLocation >= layerWidth {
+			assert.Equal(test, 0, columnsConsumed, "A start column past the right edge must consume no columns.")
+			continue
+		}
+
+		leadCell := layerEntry.CharacterMemory[yLocation][xLocation]
+		assert.Equal(test, character, leadCell.Character, "The lead cell must hold the written rune.")
+		if stringformat.GetWidthOfRuneWhenPrinted(character) == 2 && xLocation+1 < layerWidth {
+			assert.Equal(test, 2, columnsConsumed, "A wide rune with room for its placeholder must consume two columns.")
+			placeholderCell := layerEntry.CharacterMemory[yLocation][xLocation+1]
+			assert.Equal(test, rune(' '), placeholderCell.Character, "The placeholder cell must be a blank space.")
+			assert.Equal(test, leadCell.AttributeEntry.CellControlId, placeholderCell.AttributeEntry.CellControlId, "The placeholder must share the lead cell's CellControlId.")
+			assert.Equal(test, leadCell.AttributeEntry.ForegroundColor, placeholderCell.AttributeEntry.ForegroundColor, "The placeholder must share the lead cell's foreground colour.")
+			assert.Equal(test, leadCell.AttributeEntry.BackgroundColor, placeholderCell.AttributeEntry.BackgroundColor, "The placeholder must share the lead cell's background colour.")
+			assert.Equal(test, leadCell.AttributeEntry.CellType, placeholderCell.AttributeEntry.CellType, "The placeholder must share the lead cell's CellType.")
+		} else {
+			assert.Equal(test, 1, columnsConsumed, "A narrow rune, or a wide rune clipped by the right edge, must consume one column.")
+		}
+	}
 }
