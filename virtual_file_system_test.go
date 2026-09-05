@@ -3,6 +3,7 @@ package consolizer
 import (
 	"archive/zip"
 	"github.com/stretchr/testify/assert"
+	"io"
 	"os"
 	"path/filepath"
 	"testing"
@@ -273,4 +274,95 @@ Example:
 func TestGetTextFromFileSystem(test *testing.T) {
 	_, err := getTextFromFileSystem(BASE_DIRECTORY + "text_file.txt")
 	assert.NoErrorf(test, err, "Did not expect an error reading a text file that should exist!")
+}
+
+/*
+TestGetFileData is a test which verifies that the public GetFileData method can read the bytes of an arbitrary file
+type from both the local file system and a mounted archive, using the same union and shadowing rules as every other
+virtual file system accessor.
+
+Example:
+    Expected Inputs:
+        The local text file "text_file.txt", and a ZIP archive mounted with the entry "data/save.dat" containing the
+        bytes "SAVE-DATA-V1".
+    Expected Outputs:
+        Both reads succeed and the archive read returns exactly "SAVE-DATA-V1".
+*/
+func TestGetFileData(test *testing.T) {
+	defer UnmountVirtualFileSystem()
+	_, err := GetFileData(BASE_DIRECTORY + "text_file.txt")
+	assert.NoErrorf(test, err, "Did not expect an error reading an arbitrary file from the local file system.")
+
+	temporaryDirectory := test.TempDir()
+	archivePath := writeTestZipArchive(test, temporaryDirectory, "arbitrary.zip", map[string]string{
+		"data/save.dat": "SAVE-DATA-V1",
+	})
+	assert.NoErrorf(test, MountVirtualFileSystem(archivePath, "", ""), "Failed to mount the archive.")
+
+	fileData, err := GetFileData("data/save.dat")
+	assert.NoErrorf(test, err, "Failed to read an arbitrary file type from the mounted virtual file system.")
+	assert.Equalf(test, "SAVE-DATA-V1", string(fileData), "The arbitrary file data did not match what was expected.")
+
+	_, err = GetFileData("data/missing.dat")
+	assert.Errorf(test, err, "Expected an error reading a file that does not exist in the mounted archive.")
+}
+
+/*
+TestGetTextFileData is a test which verifies that the public GetTextFileData method returns the string contents of an
+arbitrary file from both the local file system and a mounted archive.
+
+Example:
+    Expected Inputs:
+        The local text file "text_file.txt", and a ZIP archive mounted with the entry "config/settings.ini"
+        containing "key=value".
+    Expected Outputs:
+        Both reads succeed and the archive read returns exactly "key=value".
+*/
+func TestGetTextFileData(test *testing.T) {
+	defer UnmountVirtualFileSystem()
+	_, err := GetTextFileData(BASE_DIRECTORY + "text_file.txt")
+	assert.NoErrorf(test, err, "Did not expect an error reading an arbitrary text file from the local file system.")
+
+	temporaryDirectory := test.TempDir()
+	archivePath := writeTestZipArchive(test, temporaryDirectory, "arbitrary.zip", map[string]string{
+		"config/settings.ini": "key=value",
+	})
+	assert.NoErrorf(test, MountVirtualFileSystem(archivePath, "", ""), "Failed to mount the archive.")
+
+	textContent, err := GetTextFileData("config/settings.ini")
+	assert.NoErrorf(test, err, "Failed to read arbitrary text content from the mounted virtual file system.")
+	assert.Equalf(test, "key=value", textContent, "The arbitrary text content did not match what was expected.")
+}
+
+/*
+TestGetFileReader is a test which verifies that the public GetFileReader method returns a readable stream of an
+arbitrary file's contents from both the local file system and a mounted archive, and that the caller is responsible
+for closing it.
+
+Example:
+    Expected Inputs:
+        The local text file "text_file.txt", and a ZIP archive mounted with the entry "audio/click.raw" containing
+        the bytes "RAW-AUDIO-BYTES".
+    Expected Outputs:
+        Both readers open without error, and reading the archive entry to completion yields exactly
+        "RAW-AUDIO-BYTES".
+*/
+func TestGetFileReader(test *testing.T) {
+	defer UnmountVirtualFileSystem()
+	localReader, err := GetFileReader(BASE_DIRECTORY + "text_file.txt")
+	assert.NoErrorf(test, err, "Did not expect an error opening a reader for a local file.")
+	assert.NoErrorf(test, localReader.Close(), "Failed to close the local file reader.")
+
+	temporaryDirectory := test.TempDir()
+	archivePath := writeTestZipArchive(test, temporaryDirectory, "arbitrary.zip", map[string]string{
+		"audio/click.raw": "RAW-AUDIO-BYTES",
+	})
+	assert.NoErrorf(test, MountVirtualFileSystem(archivePath, "", ""), "Failed to mount the archive.")
+
+	archiveReader, err := GetFileReader("audio/click.raw")
+	assert.NoErrorf(test, err, "Failed to open a reader for an arbitrary file in the mounted virtual file system.")
+	streamedData, err := io.ReadAll(archiveReader)
+	assert.NoErrorf(test, err, "Failed to read the full contents of the streamed file.")
+	assert.NoErrorf(test, archiveReader.Close(), "Failed to close the archive file reader.")
+	assert.Equalf(test, "RAW-AUDIO-BYTES", string(streamedData), "The streamed file data did not match what was expected.")
 }

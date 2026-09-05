@@ -416,6 +416,56 @@ func UnmountVirtualFileSystemArchive(archivePath string) error {
 }
 
 /*
+GetFileData is a method which allows you to read the raw bytes of any file through the virtual file system. This is
+the general purpose entry point for loading file types the virtual file system has no dedicated loader for, such as
+audio clips, save data, or configuration files, using the exact same mount and shadowing rules that back images and
+fonts. In addition, the following should be noted:
+
+  - When one or more archives or embedded file systems are mounted, only the virtual file system is consulted. A path
+    that is not found in any mount returns an error even if it exists on the local file system.
+
+  - When nothing is mounted, the file is read directly from the local file system, so this method behaves identically
+    with or without a virtual file system in place.
+
+Example:
+
+	data, err := GetFileData("sounds/click.wav")
+*/
+func GetFileData(filePath string) ([]byte, error) {
+	return getFileDataFromFileSystem(filePath)
+}
+
+/*
+GetTextFileData is a method which allows you to read the contents of any file through the virtual file system as a
+string. This is useful for loading arbitrary text based file formats, such as configuration files, scripts, or save
+data, through the same mount and shadowing rules that back images and fonts.
+
+Example:
+
+	content, err := GetTextFileData("config/settings.json")
+*/
+func GetTextFileData(filePath string) (string, error) {
+	return getTextFromFileSystem(filePath)
+}
+
+/*
+GetFileReader is a method which allows you to obtain a streaming reader for any file through the virtual file system.
+This lets your own loaders consume arbitrary file formats without first deciding whether to read the whole file into
+memory. In addition, the following should be noted:
+
+  - The returned reader serves an in memory copy of the file contents rather than a live handle into the archive, so
+    it remains valid even after the owning mount is later released with UnmountVirtualFileSystem.
+
+Example:
+
+	reader, err := GetFileReader("data/save.bin")
+	defer reader.Close()
+*/
+func GetFileReader(filePath string) (io.ReadCloser, error) {
+	return getFileReaderFromFileSystem(filePath)
+}
+
+/*
 getImageFromFileSystem is a method which allows you to obtain image data from a file from the default file system. In
 addition, the following should be noted:
 
