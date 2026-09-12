@@ -92,8 +92,13 @@ func UpdateEventQueues() {
 			// concurrent UpdateDisplay call on another goroutine, which would otherwise let two goroutines drive
 			// the screen concurrently and corrupt terminal output.
 			commonResource.displayUpdate.Lock()
-			commonResource.terminalWidth = newWidth
-			commonResource.terminalHeight = newHeight
+			// Only auto-size sessions track the physical terminal's size. A session initialized with an explicit
+			// fixed width and height must keep rendering, mouse hit testing, and layer bounds pinned to that size
+			// even after the physical terminal is resized around it.
+			if commonResource.isAutoSizeEnabled {
+				commonResource.terminalWidth = newWidth
+				commonResource.terminalHeight = newHeight
+			}
 			commonResource.screen.Sync()
 			commonResource.displayUpdate.Unlock()
 			// Called outside the lock above since sync.Mutex is not reentrant and UpdateDisplay acquires the

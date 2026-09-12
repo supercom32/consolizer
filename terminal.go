@@ -30,6 +30,7 @@ type defaultValueType struct {
 	screen               tcell.Screen
 	terminalWidth        int
 	terminalHeight       int
+	isAutoSizeEnabled    bool
 	screenLayer          types.LayerEntryType
 	debugDirectory       string
 	isDebugEnabled       bool
@@ -57,8 +58,14 @@ InitializeTerminal is a method which allows you to initialize consolizer for the
 first before any operations take place. The parameters width and height represent the display size of the terminal
 instance you wish to create. In addition, the following should be noted:
 
-- If you pass in a zero or negative value for either width or height a panic will be generated to fail as fast as
-  possible.
+- If you pass in a negative value for either width or height, or a value of zero while the physical terminal size
+  cannot be detected, a panic will be generated to fail as fast as possible.
+
+- Passing zero for both width and height enables auto size mode, where the logical drawing area starts at the
+  detected physical terminal size and is re-synchronized to match it on every later resize.
+
+- Passing explicit nonzero values pins the logical drawing area to that fixed size for the life of the session, so
+  later physical terminal resizes are ignored for drawing, mouse hit testing, and layer bounds purposes.
 
 Example:
     InitializeTerminal(80, 25)
@@ -95,6 +102,7 @@ func InitializeTerminal(width int, height int) {
 	} else {
 		commonResource.terminalHeight = height
 	}
+	commonResource.isAutoSizeEnabled = width == 0 && height == 0
 	commonResource.debugDirectory = "/tmp/"
 	validateTerminalWidthAndHeight(commonResource.terminalWidth, commonResource.terminalHeight)
 	DeleteAllLayers()
