@@ -78,24 +78,15 @@ func printDialog(layerEntry *types.LayerEntryType, attributeEntry types.Attribut
 
 		// Print the character
 		if cursorXLocation >= 0 && cursorXLocation < layerEntry.Width && cursorYLocation >= 0 && cursorYLocation < layerEntry.Height {
-			originalBackgroundColor := characterMemory[cursorYLocation][cursorXLocation].AttributeEntry.BackgroundColor
-
-			characterMemory[cursorYLocation][cursorXLocation].AttributeEntry = types.NewAttributeEntry(&currentAttributeEntry)
-			characterMemory[cursorYLocation][cursorXLocation].Character = currentCharacter
-
-			if stringformat.IsRuneCharacterWide(currentCharacter) {
+			columnsConsumed := putRune(characterMemory, cursorXLocation, cursorYLocation, currentCharacter, currentAttributeEntry, layerEntry.Width, layerEntry.Height)
+			if columnsConsumed == 1 && stringformat.IsRuneCharacterWide(currentCharacter) {
+				// A wide rune whose placeholder would fall past the right edge.
 				cursorXLocation++
-				if cursorXLocation >= layerEntry.Width {
-					if widthOfLineInCharacters > 0 {
-						continue
-					}
+				if widthOfLineInCharacters > 0 {
+					continue
 				}
-				characterMemory[cursorYLocation][cursorXLocation].AttributeEntry = types.NewAttributeEntry(&currentAttributeEntry)
-				characterMemory[cursorYLocation][cursorXLocation].Character = ' '
-			}
-
-			if characterMemory[cursorYLocation][cursorXLocation].AttributeEntry.IsBackgroundTransparent {
-				characterMemory[cursorYLocation][cursorXLocation].AttributeEntry.BackgroundColor = originalBackgroundColor
+			} else {
+				cursorXLocation += columnsConsumed - 1
 			}
 		}
 

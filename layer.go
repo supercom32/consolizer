@@ -172,9 +172,73 @@ func (shared *layerType) isWithinHorizontalBounds(x, width int) bool {
 }
 
 /*
-renderCharacter is a method which allows you to render a character at the specified position with the given attributes. In addition, the following should be noted:
+putRune is a method which allows you to write a single rune, plus its trailing placeholder cell when the rune is
+wide, into a layer's character memory grid and report how many columns were consumed. It is the one wide-aware
+cell writer that every character-drawing path in the package routes through, so wide-rune handling lives in exactly
+one place. The returned value is 0 when the target position is out of bounds, 1 for a narrow rune or a wide rune
+whose placeholder would fall past the right edge, and 2 for a wide rune whose placeholder fits. In addition, the
+following should be noted:
 
-- It handles wide characters and background transparency.
+- The grid is mutated in place; nothing is returned to the caller except the consumed column count.
+
+- A wide rune's placeholder cell is written with its own copy of the same attribute values as the lead cell, so
+  it shares the lead cell's CellControlId, colours and CellType and a hit test on either half resolves alike.
+
+- If the target cell is the trailing half of a wide rune sitting to its left, that rune's now-orphaned lead cell
+  is blanked to a space in the same call, so the write can never leave a corrupted half-wide rune behind.
+
+- When the resolved cell has a transparent background, its background colour is restored to whatever the cell held
+  before the write, matching the historical renderCharacter behaviour.
+
+:param characterMemory: The layer character grid to write into, indexed as characterMemory[y][x].
+:param xLocation: The column index of the lead cell.
+:param yLocation: The row index of the lead cell.
+:param character: The rune to write.
+:param attributeEntry: The attributes to apply to the lead cell and, for a wide rune, its placeholder.
+:param layerWidth: The grid width in columns, used for bounds and right-edge clipping.
+:param layerHeight: The grid height in rows, used for bounds checking.
+:return: The number of columns consumed: 0, 1, or 2.
+
+Example:
+    columnsConsumed := putRune(layerEntry.CharacterMemory, 10, 5, '中', attributeEntry, layerEntry.Width, layerEntry.Height)
+*/
+func putRune(characterMemory [][]types.CharacterEntryType, xLocation int, yLocation int, character rune, attributeEntry types.AttributeEntryType, layerWidth int, layerHeight int) int {
+	if xLocation < 0 || xLocation >= layerWidth || yLocation < 0 || yLocation >= layerHeight {
+		return 0
+	}
+
+	if xLocation-1 >= 0 && stringformat.GetWidthOfRuneWhenPrinted(characterMemory[yLocation][xLocation-1].Character) == 2 {
+		characterMemory[yLocation][xLocation-1].Character = ' '
+	}
+
+	originalBackgroundColor := characterMemory[yLocation][xLocation].AttributeEntry.BackgroundColor
+	characterMemory[yLocation][xLocation].AttributeEntry = types.NewAttributeEntry(&attributeEntry)
+	characterMemory[yLocation][xLocation].Character = character
+
+	columnsConsumed := 1
+	transparencyCellXLocation := xLocation
+	if stringformat.GetWidthOfRuneWhenPrinted(character) == 2 {
+		placeholderXLocation := xLocation + 1
+		if placeholderXLocation < layerWidth {
+			characterMemory[yLocation][placeholderXLocation].AttributeEntry = types.NewAttributeEntry(&attributeEntry)
+			characterMemory[yLocation][placeholderXLocation].Character = ' '
+			transparencyCellXLocation = placeholderXLocation
+			columnsConsumed = 2
+		}
+	}
+
+	if characterMemory[yLocation][transparencyCellXLocation].AttributeEntry.IsBackgroundTransparent {
+		characterMemory[yLocation][transparencyCellXLocation].AttributeEntry.BackgroundColor = originalBackgroundColor
+	}
+	return columnsConsumed
+}
+
+/*
+renderCharacter is a method which allows you to render a character at the specified position with the given
+attributes. It is a thin wrapper over putRune, retained so existing callers keep their signature. In addition, the
+following should be noted:
+
+- It handles wide characters and background transparency by delegating to putRune.
 
 - For wide characters, it occupies two character cells.
 
@@ -184,27 +248,13 @@ Example:
     layer.renderCharacter(memory, 10, 5, 'A', attr)
 */
 func (shared *layerType) renderCharacter(characterMemory [][]types.CharacterEntryType, cursorX, cursorY int, character rune, attributeEntry types.AttributeEntryType) {
-	originalBackgroundColor := characterMemory[cursorY][cursorX].AttributeEntry.BackgroundColor
-
-	characterMemory[cursorY][cursorX].AttributeEntry = types.NewAttributeEntry(&attributeEntry)
-	characterMemory[cursorY][cursorX].Character = character
-
-	// Handle wide characters
-	if stringformat.IsRuneCharacterWide(character) {
-		cursorX++
-		if cursorX < len(characterMemory[0]) {
-			characterMemory[cursorY][cursorX].AttributeEntry = types.NewAttributeEntry(&attributeEntry)
-			characterMemory[cursorY][cursorX].Character = ' '
-		}
-	}
-
-	if characterMemory[cursorY][cursorX].AttributeEntry.IsBackgroundTransparent {
-		characterMemory[cursorY][cursorX].AttributeEntry.BackgroundColor = originalBackgroundColor
-	}
+	putRune(characterMemory, cursorX, cursorY, character, attributeEntry, len(characterMemory[0]), len(characterMemory))
 }
 
 /*
-advanceCursor is a method which allows you to move the cursor position after rendering a character. In addition, the following should be noted:
+advanceCursor is a method which allows you to move the cursor position after rendering a character. The cursor
+advances by columnWidth columns, which is one for a narrow rune and two for a wide (double-cell) rune, so a run of
+wide runes no longer overwrites its own placeholder cells. In addition, the following should be noted:
 
 - It handles line wrapping when the cursor reaches the end of a line.
 
@@ -213,10 +263,10 @@ advanceCursor is a method which allows you to move the cursor position after ren
 - When word wrapping is disabled, stops at the layer width.
 
 Example:
-    newX, newY := layer.advanceCursor(10, 5, 0, 80, 20)
+    newX, newY := layer.advanceCursor(10, 5, 0, 80, 20, 2)
 */
-func (shared *layerType) advanceCursor(cursorX, cursorY, xLocation, layerWidth, wordWrapWidth int) (int, int) {
-	cursorX++
+func (shared *layerType) advanceCursor(cursorX, cursorY, xLocation, layerWidth, wordWrapWidth, columnWidth int) (int, int) {
+	cursorX += columnWidth
 
 	if cursorX >= layerWidth {
 		if wordWrapWidth > 0 {
@@ -278,9 +328,12 @@ func (shared *layerType) print(layerEntry *types.LayerEntryType, attributeEntry 
 			}
 		}
 
+		// Number of columns this rune occupies on screen: one for narrow, two for wide.
+		columnWidth := stringformat.GetWidthOfRuneWhenPrinted(currentCharacter)
+
 		// Skip if character is off-screen (vertically)
 		if !shared.isWithinVerticalBounds(cursorYLocation, layerHeight) {
-			cursorXLocation, cursorYLocation = shared.advanceCursor(cursorXLocation, cursorYLocation, xLocation, layerWidth, wordWrapWidth)
+			cursorXLocation, cursorYLocation = shared.advanceCursor(cursorXLocation, cursorYLocation, xLocation, layerWidth, wordWrapWidth, columnWidth)
 			if !shared.isWithinVerticalBounds(cursorYLocation, layerHeight) {
 				return cursorXLocation - xLocation
 			}
@@ -297,7 +350,7 @@ func (shared *layerType) print(layerEntry *types.LayerEntryType, attributeEntry 
 		}
 
 		// Advance cursor
-		cursorXLocation, cursorYLocation = shared.advanceCursor(cursorXLocation, cursorYLocation, xLocation, layerWidth, wordWrapWidth)
+		cursorXLocation, cursorYLocation = shared.advanceCursor(cursorXLocation, cursorYLocation, xLocation, layerWidth, wordWrapWidth, columnWidth)
 		if !shared.isWithinVerticalBounds(cursorYLocation, layerHeight) {
 			return cursorXLocation - xLocation
 		}
@@ -341,7 +394,7 @@ func calculateWordWidth(textToPrint []rune, start int, useMarkup bool) int {
 			if textWithoutMarkupRunes[i] == ' ' {
 				return wordWidth
 			}
-			wordWidth++
+			wordWidth += stringformat.GetWidthOfRuneWhenPrinted(textWithoutMarkupRunes[i])
 		}
 		return wordWidth
 	}
@@ -352,7 +405,7 @@ func calculateWordWidth(textToPrint []rune, start int, useMarkup bool) int {
 		if textToPrint[i] == ' ' {
 			break
 		}
-		wordWidth++
+		wordWidth += stringformat.GetWidthOfRuneWhenPrinted(textToPrint[i])
 	}
 	return wordWidth
 }

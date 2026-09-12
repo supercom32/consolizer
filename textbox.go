@@ -5,7 +5,6 @@ import (
 	"github.com/atotto/clipboard"
 	"github.com/supercom32/consolizer/memory"
 	"github.com/supercom32/consolizer/stringformat"
-	"math"
 	"strings"
 	"unicode"
 
@@ -112,6 +111,9 @@ operation takes place. In addition, the following should be noted:
 
 - Text can be broken up into multiple lines by using the '\n' escape sequence.
 
+- Each line is stored with a trailing blank sentinel rune, matching lines produced by typing, so the caret can
+  rest past the last character and editing (delete, backspace, insert) behaves the same on set and typed text.
+
 Example:
     textbox.SetText("Hello\nWorld")
 */
@@ -119,8 +121,8 @@ func (shared *TextboxInstanceType) SetText(text string) *TextboxInstanceType {
 	if Textboxes.IsExists(shared.layerAlias, shared.controlAlias) {
 		textData := strings.Split(text, "\n")
 		textboxEntry := Textboxes.Get(shared.layerAlias, shared.controlAlias)
-		for _, text := range textData {
-			textboxEntry.TextData = append(textboxEntry.TextData, stringformat.GetRunesFromString(text))
+		for _, currentLine := range textData {
+			textboxEntry.TextData = append(textboxEntry.TextData, append(stringformat.GetRunesFromString(currentLine), ' '))
 		}
 		textbox.setTextboxMaxScrollBarValues(shared.layerAlias, shared.controlAlias)
 	}
@@ -218,25 +220,6 @@ func (shared *TextboxInstanceType) SetAutoIndent(enabled bool) *TextboxInstanceT
 		textboxEntry.IsAutoIndentEnabled = enabled
 	}
 	return shared
-}
-
-/*
-getTextboxClickCoordinates is a method which allows you to convert a cell ID to x and y coordinates within a textbox.
-In addition, the following should be noted:
-
-- x coordinate is calculated as cellId modulo tableWidth.
-
-- y coordinate is calculated as cellId divided by tableWidth (rounded down).
-
-- This function is primarily used to determine cursor position from mouse clicks within a textbox.
-
-Example:
-    x, y := textbox.getTextboxClickCoordinates(10, 5)
-*/
-func (shared *textboxType) getTextboxClickCoordinates(cellId int, tableWidth int) (int, int) {
-	xLocation := cellId % tableWidth
-	yLocation := math.Floor(float64(cellId) / float64(tableWidth))
-	return xLocation, int(yLocation)
 }
 
 /*
@@ -497,14 +480,9 @@ func (shared *textboxType) updateScrollbarBasedOnTextboxViewport(layerAlias stri
 }
 
 /*
-getMaxHorizontalTextValue is a method which allows you to retrieve the maximum line length in a textbox. In addition,
-the following should be noted:
-
-- Calculates the maximum width of any line in the textbox.
-
-- Takes into account wide characters that take up multiple spaces.
-
-- Used to determine horizontal scrollbar limits.
+getMaxHorizontalTextValue is a method which allows you to retrieve the widest line in a textbox measured in printed
+columns. Wide runes count as two columns, so the value is the exact number of terminal cells the longest line
+occupies and is used directly as the ceiling for the horizontal scrollbar.
 
 Example:
     maxWidth := textbox.getMaxHorizontalTextValue("layer1", "textbox1")
@@ -523,9 +501,8 @@ func (shared *textboxType) getMaxHorizontalTextValue(layerAlias string, textboxA
 	maxHorizontalValue := 0
 	for _, currentLine := range textboxEntry.TextData {
 		lengthOfLine := stringformat.GetWidthOfRunesWhenPrinted(currentLine)
-		over := lengthOfLine - len(currentLine)
 		if lengthOfLine > maxHorizontalValue {
-			maxHorizontalValue = lengthOfLine - (over / 2)
+			maxHorizontalValue = lengthOfLine
 		}
 	}
 	return maxHorizontalValue
@@ -555,8 +532,15 @@ func (shared *textboxType) setTextboxMaxScrollBarValues(layerAlias string, textb
 		textboxEntry.TextData = [][]rune{[]rune{' '}}
 	}
 
-	maxVerticalValue := len(textboxEntry.TextData)
-	maxHorizontalValue := shared.getMaxHorizontalTextValue(layerAlias, textboxAlias)
+	// Scrollbar values live in the same DISPLAY space the viewport does: the vertical ceiling is the wrapped-row
+	// count and the horizontal ceiling is the widest row's printed column count. Word wrap removes horizontal
+	// scrolling entirely.
+	wrappedRows := shared.getWrappedRows(textboxEntry.TextData, textboxEntry.Width, textboxEntry.IsWordWrapEnabled)
+	maxVerticalValue := len(wrappedRows)
+	maxHorizontalValue := 0
+	if !textboxEntry.IsWordWrapEnabled {
+		maxHorizontalValue = shared.getMaxHorizontalTextValue(layerAlias, textboxAlias)
+	}
 
 	// Check if horizontal scrollbar exists
 	if !ScrollBars.IsExists(layerAlias, textboxEntry.HorizontalScrollbarAlias) {
@@ -724,74 +708,181 @@ func (shared *textboxType) drawOnLayer(layerEntry types.LayerEntryType) {
 }
 
 /*
-wrapTextToWidth is a method which allows you to wrap text to fit within a specified width. In addition, the following
-should be noted:
+wrappedRowEntryType is a class which describes one visible row of a textbox after word wrap has been applied. It
+records which logical TextData line the row came from and the rune offset within that logical line at which the
+row's first shown rune sits, so a display coordinate can always be mapped back to a logical one and the other way
+round.
+*/
+type wrappedRowEntryType struct {
+	logicalLineIndex int
+	startRuneIndex   int
+	runes            []rune
+}
 
-- It breaks lines at word boundaries when possible.
+/*
+getWrappedRows is a method which allows you to expand a textbox's logical lines into the visible rows that will
+actually be drawn, together with the mapping back to logical coordinates. When word wrap is disabled it returns
+one row per logical line unchanged. When word wrap is enabled each logical line is split into rune-boundary
+segments no wider than the column budget, a wide rune is never split across two rows, a break is preferred just
+after a space that falls within the last quarter of the budget, and the spaces consumed at a break are dropped
+from the start of the following row. In addition, the following should be noted:
+
+  - Each returned row's runes slice aliases the logical line; callers must treat it as read only.
+
+  - An empty text set yields a single empty row so callers never index an empty result.
 
 Example:
-    wrappedText := textbox.wrapTextToWidth(text, 20)
+
+	rows := textbox.getWrappedRows(textboxEntry.TextData, textboxEntry.Width, textboxEntry.IsWordWrapEnabled)
 */
-func (shared *textboxType) wrapTextToWidth(text [][]rune, width int) [][]rune {
-	if width <= 0 {
-		return text
+func (shared *textboxType) getWrappedRows(text [][]rune, width int, isWordWrapEnabled bool) []wrappedRowEntryType {
+	wrappedRows := make([]wrappedRowEntryType, 0, len(text))
+	if len(text) == 0 {
+		return []wrappedRowEntryType{{logicalLineIndex: 0, startRuneIndex: 0, runes: []rune{}}}
 	}
-
-	result := make([][]rune, 0)
-
-	for _, line := range text {
-		if len(line) <= width {
-			// Line fits, no wrapping needed
-			result = append(result, line)
+	for logicalLineIndex, line := range text {
+		if !isWordWrapEnabled || width <= 0 || stringformat.GetWidthOfRunesWhenPrinted(line) <= width {
+			wrappedRows = append(wrappedRows, wrappedRowEntryType{logicalLineIndex: logicalLineIndex, startRuneIndex: 0, runes: line})
 			continue
 		}
-
-		// Line needs wrapping
 		currentPos := 0
 		for currentPos < len(line) {
-			// Determine end position for this segment
-			endPos := currentPos + width
-			if endPos > len(line) {
-				endPos = len(line)
-			} else {
-				// Try to break at word boundary
-				for endPos > currentPos && !unicode.IsSpace(line[endPos-1]) {
-					// Look for a space to break at
-					foundSpace := false
-					for i := endPos - 1; i > currentPos && i > endPos-width/4; i-- {
-						if unicode.IsSpace(line[i]) {
-							endPos = i + 1 // Break after the space
-							foundSpace = true
-							break
-						}
-					}
-					if foundSpace {
-						break
-					} else {
-						// If no good break point, just use the full width
-						endPos = currentPos + width
-						if endPos > len(line) {
-							endPos = len(line)
+			// Widest rune-boundary prefix of the remaining text that fits the column budget.
+			prefix, _ := stringformat.GetRunesThatFitInColumnCountFromStart(line[currentPos:], width)
+			endPos := currentPos + len(prefix)
+			if endPos <= currentPos {
+				// A single wide rune wider than the whole budget still has to advance by one rune.
+				endPos = currentPos + 1
+			}
+			if endPos < len(line) && !unicode.IsSpace(line[endPos-1]) && !unicode.IsSpace(line[endPos]) {
+				// Search backwards for a space to break after, but do not give back more than a
+				// quarter of the budget doing so.
+				columnFloor := width - width/4
+				for searchIndex := endPos - 1; searchIndex > currentPos; searchIndex-- {
+					if unicode.IsSpace(line[searchIndex]) {
+						if stringformat.GetWidthOfRunesWhenPrinted(line[currentPos:searchIndex+1]) >= columnFloor {
+							endPos = searchIndex + 1
 						}
 						break
 					}
 				}
 			}
-
-			// Add this segment as a new line
-			segment := make([]rune, endPos-currentPos)
-			copy(segment, line[currentPos:endPos])
-			result = append(result, segment)
-
-			// Move to next segment, skipping spaces at the beginning
+			wrappedRows = append(wrappedRows, wrappedRowEntryType{
+				logicalLineIndex: logicalLineIndex,
+				startRuneIndex:   currentPos,
+				runes:            line[currentPos:endPos],
+			})
+			// Move to the next segment, skipping spaces at the beginning.
 			currentPos = endPos
 			for currentPos < len(line) && unicode.IsSpace(line[currentPos]) {
 				currentPos++
 			}
 		}
 	}
+	return wrappedRows
+}
 
+/*
+wrapTextToWidth is a method which allows you to wrap text so every produced line fits within a column budget. The
+budget is measured in printed columns, so a line of wide runes wraps as soon as it would occupy more than width
+cells rather than more than width runes, and a wide rune is never split across two wrapped lines. Leading spaces
+on a continuation segment are dropped. This is a thin view over getWrappedRows kept for callers that only need the
+rune slices.
+
+Example:
+
+	wrappedText := textbox.wrapTextToWidth(text, 20)
+*/
+func (shared *textboxType) wrapTextToWidth(text [][]rune, width int) [][]rune {
+	if width <= 0 {
+		return text
+	}
+	wrappedRows := shared.getWrappedRows(text, width, true)
+	result := make([][]rune, len(wrappedRows))
+	for currentIndex, wrappedRow := range wrappedRows {
+		result[currentIndex] = wrappedRow.runes
+	}
 	return result
+}
+
+/*
+getCursorDisplayCoordinates is a method which allows you to convert a logical cursor position, a TextData line
+index and a rune index within it, into the display row and printed column where that position is drawn once word
+wrap has been applied. A rune index sitting on a space that word wrap consumed at a break resolves to the end of
+the row that precedes the gap.
+
+Example:
+
+	displayRow, displayColumn := textbox.getCursorDisplayCoordinates(wrappedRows, cursorYLocation, cursorXLocation)
+*/
+func (shared *textboxType) getCursorDisplayCoordinates(wrappedRows []wrappedRowEntryType, logicalLineIndex int, runeIndex int) (int, int) {
+	displayRow := 0
+	for currentRow := range wrappedRows {
+		if wrappedRows[currentRow].logicalLineIndex != logicalLineIndex {
+			continue
+		}
+		if runeIndex >= wrappedRows[currentRow].startRuneIndex {
+			displayRow = currentRow
+		}
+	}
+	offsetWithinRow := runeIndex - wrappedRows[displayRow].startRuneIndex
+	if offsetWithinRow < 0 {
+		offsetWithinRow = 0
+	}
+	if offsetWithinRow > len(wrappedRows[displayRow].runes) {
+		offsetWithinRow = len(wrappedRows[displayRow].runes)
+	}
+	return displayRow, stringformat.GetWidthOfRunesWhenPrinted(wrappedRows[displayRow].runes[:offsetWithinRow])
+}
+
+/*
+getLogicalCoordinatesFromDisplay is a method which allows you to convert a display row and printed column, such as
+the cell a mouse click landed on, back into a logical TextData line index and rune index. A column past the end of
+the row's text resolves to the last rune of that row, and a display row past the end of the wrapped text resolves
+to the end of the final logical line.
+
+Example:
+
+	logicalLine, logicalRune := textbox.getLogicalCoordinatesFromDisplay(wrappedRows, displayRow, displayColumn)
+*/
+func (shared *textboxType) getLogicalCoordinatesFromDisplay(wrappedRows []wrappedRowEntryType, displayRow int, displayColumn int) (int, int) {
+	if displayRow < 0 {
+		displayRow = 0
+	}
+	if displayRow >= len(wrappedRows) {
+		lastRow := wrappedRows[len(wrappedRows)-1]
+		return lastRow.logicalLineIndex, lastRow.startRuneIndex + len(lastRow.runes)
+	}
+	targetRow := wrappedRows[displayRow]
+	runeOffset := stringformat.GetRuneIndexBasedOnColumnIndex(targetRow.runes, displayColumn)
+	if runeOffset >= len(targetRow.runes) && len(targetRow.runes) > 0 {
+		runeOffset = len(targetRow.runes) - 1
+	}
+	return targetRow.logicalLineIndex, targetRow.startRuneIndex + runeOffset
+}
+
+/*
+moveCursorByDisplayRows is a method which allows you to move the textbox cursor up or down by a number of VISIBLE
+rows, so it steps through the continuation rows of a word-wrapped line rather than jumping a whole logical line
+at a time. The cursor keeps its printed column where the destination row is long enough and otherwise lands on
+that row's last rune. When word wrap is off a visible row is exactly a logical line, so a delta of minus one or
+plus one behaves identically to the previous CursorYLocation decrement or increment.
+
+Example:
+
+	textbox.moveCursorByDisplayRows(textboxEntry, -1)
+*/
+func (shared *textboxType) moveCursorByDisplayRows(textboxEntry *types.TextboxEntryType, rowDelta int) {
+	wrappedRows := shared.getWrappedRows(textboxEntry.TextData, textboxEntry.Width, textboxEntry.IsWordWrapEnabled)
+	currentDisplayRow, currentDisplayColumn := shared.getCursorDisplayCoordinates(wrappedRows, textboxEntry.CursorYLocation, textboxEntry.CursorXLocation)
+	targetDisplayRow := currentDisplayRow + rowDelta
+	if targetDisplayRow < 0 {
+		targetDisplayRow = 0
+	}
+	if targetDisplayRow > len(wrappedRows)-1 {
+		targetDisplayRow = len(wrappedRows) - 1
+	}
+	textboxEntry.CursorYLocation, textboxEntry.CursorXLocation = shared.getLogicalCoordinatesFromDisplay(wrappedRows, targetDisplayRow, currentDisplayColumn)
 }
 
 /*
@@ -821,40 +912,34 @@ func (shared *textboxType) draw(layerEntry *types.LayerEntryType, textboxAlias s
 	fillArea(layerEntry, attributeEntry, " ", textboxEntry.XLocation, textboxEntry.YLocation, textboxEntry.Width, textboxEntry.Height, textboxEntry.ViewportYLocation)
 	attributeEntry.CellControlAlias = textboxAlias
 
-	// Apply word wrapping if enabled
-	var displayText [][]rune
-	if textboxEntry.IsWordWrapEnabled {
-		displayText = shared.wrapTextToWidth(textboxEntry.TextData, textboxEntry.Width)
-	} else {
-		displayText = textboxEntry.TextData
+	// The textbox draws in DISPLAY coordinates: ViewportYLocation is an index into the wrapped rows and
+	// ViewportXLocation is a printed-column offset. Both cursor coordinates stay LOGICAL (TextData line, rune
+	// index); getWrappedRows carries the mapping between the two spaces.
+	wrappedRows := shared.getWrappedRows(textboxEntry.TextData, textboxEntry.Width, textboxEntry.IsWordWrapEnabled)
+	horizontalColumnOffset := textboxEntry.ViewportXLocation
+	if textboxEntry.IsWordWrapEnabled || horizontalColumnOffset < 0 {
+		horizontalColumnOffset = 0
 	}
 
-	for currentLine := 0; currentLine < textboxEntry.Height; currentLine++ {
-		var arrayOfRunes []rune
-		if textboxEntry.ViewportYLocation+currentLine < len(displayText) && textboxEntry.ViewportYLocation+currentLine >= 0 {
-			arrayOfRunes = displayText[textboxEntry.ViewportYLocation+currentLine]
-			if !textboxEntry.IsWordWrapEnabled {
-				// Only apply horizontal scrolling if word wrap is disabled
-				if textboxEntry.ViewportXLocation < len(arrayOfRunes) && textboxEntry.ViewportXLocation >= 0 {
-					if textboxEntry.ViewportXLocation+textboxEntry.Width < len(arrayOfRunes) {
-						arrayOfRunes = arrayOfRunes[textboxEntry.ViewportXLocation : textboxEntry.ViewportXLocation+textboxEntry.Width]
-					} else {
-						arrayOfRunes = arrayOfRunes[textboxEntry.ViewportXLocation:]
-					}
-				} else {
-					// If scrolled too far right and there are no column text to print, just show blanks.
-					// If scrolled too far left (negative value) then show blanks. Note: This case should never happen really.
-					arrayOfRunes = []rune{}
-				}
-			}
-
-			arrayOfRunes = stringformat.GetMaxCharactersThatFitInStringSize(arrayOfRunes, textboxEntry.Width)
-			shared.printControlText(layerEntry, textboxAlias, textboxEntry.StyleEntry, attributeEntry, textboxEntry.XLocation, textboxEntry.YLocation+currentLine, arrayOfRunes, textboxEntry.ViewportYLocation+currentLine, textboxEntry.ViewportXLocation, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
-		} else {
-			// If scrolled too far down and there are no more rows to print, just show blanks.
-			// If scrolled too far up and there are no rows to print, just print blanks. Note: This case should never happen really.
-			shared.printControlText(layerEntry, textboxAlias, textboxEntry.StyleEntry, attributeEntry, textboxEntry.XLocation, textboxEntry.YLocation+currentLine, arrayOfRunes, textboxEntry.ViewportYLocation+currentLine, textboxEntry.ViewportXLocation, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
+	for currentRow := 0; currentRow < textboxEntry.Height; currentRow++ {
+		displayRowIndex := textboxEntry.ViewportYLocation + currentRow
+		if displayRowIndex < 0 || displayRowIndex >= len(wrappedRows) {
+			shared.printControlText(layerEntry, textboxAlias, textboxEntry.StyleEntry, attributeEntry, textboxEntry.XLocation, textboxEntry.YLocation+currentRow, nil, -1, 0, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
+			continue
 		}
+		currentWrappedRow := wrappedRows[displayRowIndex]
+		windowStartRuneIndex := stringformat.GetRuneIndexBasedOnColumnIndex(currentWrappedRow.runes, horizontalColumnOffset)
+		// A column offset that lands on the trailing half of a wide rune advances to the next whole rune rather
+		// than clipping it, so the window always begins on a rune boundary.
+		if stringformat.GetColumnIndexBasedOnRuneIndex(currentWrappedRow.runes, windowStartRuneIndex) < horizontalColumnOffset {
+			windowStartRuneIndex++
+		}
+		if windowStartRuneIndex > len(currentWrappedRow.runes) {
+			windowStartRuneIndex = len(currentWrappedRow.runes)
+		}
+		visibleRunes, _ := stringformat.GetRunesThatFitInColumnCountFromStart(currentWrappedRow.runes[windowStartRuneIndex:], textboxEntry.Width)
+		logicalStartRuneIndex := currentWrappedRow.startRuneIndex + windowStartRuneIndex
+		shared.printControlText(layerEntry, textboxAlias, textboxEntry.StyleEntry, attributeEntry, textboxEntry.XLocation, textboxEntry.YLocation+currentRow, visibleRunes, currentWrappedRow.logicalLineIndex, logicalStartRuneIndex, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
 	}
 	scrollbar.drawOnLayerByAlias(layerEntry, textboxEntry.HorizontalScrollbarAlias)
 	scrollbar.drawOnLayerByAlias(layerEntry, textboxEntry.VerticalScrollbarAlias)
@@ -1011,24 +1096,29 @@ func (shared *textboxType) drawScrollbarArrows(layerEntry *types.LayerEntryType,
 }
 
 /*
-printControlText is a method which allows you to print text with control IDs. In addition, the following should be
-noted:
+printControlText is a method which allows you to print one visible textbox row and stamp every cell it writes
+with the LOGICAL coordinate it represents, so a later mouse click on that cell resolves straight back to a
+TextData line and rune index. In addition, the following should be noted:
 
-- Prints each character with its associated control ID.
+  - currentControlId starts at logicalStartRuneIndex and advances one per rune, so it is the rune index within
+    logicalLineIndex regardless of horizontal scroll or word wrap.
 
-- Handles wide characters that take up multiple spaces.
+  - The wide-rune placeholder written by putRune inherits the lead cell's attributes, so a click on either half
+    of a wide rune resolves to the same logical coordinate.
 
-- Manages cursor and highlight rendering.
+  - The cursor and highlight are painted by comparing these logical cell coordinates against the textbox's
+    logical cursor and highlight bounds.
 
 Example:
-    textbox.printControlText(layerEntry, "textbox1", style, attribute, 10, 10, runes, 0, 0, 0, 0)
+
+	textbox.printControlText(layerEntry, "textbox1", style, attribute, 10, 10, runes, 0, 0, 0, 0)
 */
-func (shared *textboxType) printControlText(layerEntry *types.LayerEntryType, textboxAlias string, styleEntry types.TuiStyleEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, arrayOfRunes []rune, controlYLocation int, startingControlId int, cursorXLocation int, cursorYLocation int) {
-	currentControlId := startingControlId
+func (shared *textboxType) printControlText(layerEntry *types.LayerEntryType, textboxAlias string, styleEntry types.TuiStyleEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, arrayOfRunes []rune, logicalLineIndex int, logicalStartRuneIndex int, cursorXLocation int, cursorYLocation int) {
+	currentControlId := logicalStartRuneIndex
 	currentXOffset := 0
 	for _, currentCharacter := range arrayOfRunes {
 		attributeEntry.CellControlId = currentControlId
-		attributeEntry.CellControlLocation = controlYLocation
+		attributeEntry.CellControlLocation = logicalLineIndex
 		// If the textbox being drawn is focused, render the cursor as well.
 		if isControlCurrentlyFocused(layerEntry.LayerAlias, textboxAlias, constants.CellTypeTextbox) {
 			textboxEntry := Textboxes.Get(layerEntry.LayerAlias, textboxAlias)
@@ -1057,14 +1147,14 @@ func (shared *textboxType) printControlText(layerEntry *types.LayerEntryType, te
 				}
 
 				// Check if the current position is within the highlight range
-				if controlYLocation >= highlightStartY && controlYLocation <= highlightEndY {
-					if controlYLocation == highlightStartY && controlYLocation == highlightEndY {
+				if logicalLineIndex >= highlightStartY && logicalLineIndex <= highlightEndY {
+					if logicalLineIndex == highlightStartY && logicalLineIndex == highlightEndY {
 						// Same line highlight
 						isHighlighted = currentControlId >= highlightStartX && currentControlId <= highlightEndX
-					} else if controlYLocation == highlightStartY {
+					} else if logicalLineIndex == highlightStartY {
 						// First line of multi-line highlight
 						isHighlighted = currentControlId >= highlightStartX
-					} else if controlYLocation == highlightEndY {
+					} else if logicalLineIndex == highlightEndY {
 						// Last line of multi-line highlight
 						isHighlighted = currentControlId <= highlightEndX
 					} else {
@@ -1076,14 +1166,14 @@ func (shared *textboxType) printControlText(layerEntry *types.LayerEntryType, te
 				if isHighlighted {
 					attributeEntry.ForegroundColor = styleEntry.Textbox.HighlightForegroundColor
 					attributeEntry.BackgroundColor = styleEntry.Textbox.HighlightBackgroundColor
-				} else if cursorXLocation == currentControlId && cursorYLocation == controlYLocation {
+				} else if cursorXLocation == currentControlId && cursorYLocation == logicalLineIndex {
 					attributeEntry.ForegroundColor = styleEntry.Textbox.CursorForegroundColor
 					attributeEntry.BackgroundColor = styleEntry.Textbox.CursorBackgroundColor
 				} else {
 					attributeEntry.ForegroundColor = styleEntry.Textbox.ForegroundColor
 					attributeEntry.BackgroundColor = styleEntry.Textbox.BackgroundColor
 				}
-			} else if cursorXLocation == currentControlId && cursorYLocation == controlYLocation {
+			} else if cursorXLocation == currentControlId && cursorYLocation == logicalLineIndex {
 				attributeEntry.ForegroundColor = styleEntry.Textbox.CursorForegroundColor
 				attributeEntry.BackgroundColor = styleEntry.Textbox.CursorBackgroundColor
 			} else {
@@ -1091,13 +1181,11 @@ func (shared *textboxType) printControlText(layerEntry *types.LayerEntryType, te
 				attributeEntry.BackgroundColor = styleEntry.Textbox.BackgroundColor
 			}
 		}
-		layer.printLayer(layerEntry, attributeEntry, xLocation+currentXOffset, yLocation, []rune{currentCharacter})
+		// putRune writes the wide-rune placeholder itself, with the same attributes (and therefore the same
+		// CellControlId) as the lead cell, so a click on either half of a wide rune resolves to this id.
+		putRune(layerEntry.CharacterMemory, xLocation+currentXOffset, yLocation, currentCharacter, attributeEntry, layerEntry.Width, layerEntry.Height)
 		if stringformat.IsRuneCharacterWide(currentCharacter) {
-			// If we find a wide character, we add a blank space with the same ID as the previous
-			// character so the next printed character doesn't get covered by the wide one.
-			currentXOffset++
-			layer.printLayer(layerEntry, attributeEntry, xLocation+currentXOffset, yLocation, []rune{' '})
-			currentXOffset++
+			currentXOffset += 2
 		} else {
 			currentXOffset++
 		}
@@ -1171,92 +1259,74 @@ func (shared *textboxType) updateViewport(textboxEntry *types.TextboxEntryType) 
 		textboxEntry.CursorXLocation = 0
 	}
 
-	// Ensure the current line has at least one character
-	if textboxEntry.CursorYLocation < len(textboxEntry.TextData) && len(textboxEntry.TextData[textboxEntry.CursorYLocation]) == 0 {
-		textboxEntry.TextData[textboxEntry.CursorYLocation] = []rune{' '}
-	}
-
-	// If cursor yLocation is higher than the viewport window, move the window to make the cursor appear at the end.
-	if textboxEntry.CursorYLocation >= textboxEntry.ViewportYLocation+textboxEntry.Height {
-		textboxEntry.ViewportYLocation = textboxEntry.CursorYLocation - textboxEntry.Height + 1
-	}
-	// If cursor yLocation is lower than viewport window, make the viewport window start at yLocation.
-	if textboxEntry.CursorYLocation < textboxEntry.ViewportYLocation {
-		textboxEntry.ViewportYLocation = textboxEntry.CursorYLocation
-	}
-	// If cursor yLocation is less than 0 (Out of range), just set viewport window to 0.
-	if textboxEntry.CursorYLocation <= 0 {
-		textboxEntry.ViewportYLocation = 0
-	}
-
-	// If cursor xLocation is lower than the viewport window
-	if textboxEntry.CursorXLocation < textboxEntry.ViewportXLocation {
-		// LogInfo("YES1 " + fmt.Sprintf("%d", time.Now().Unix()))
-		isCursorJumped := false
-		// Detect if the cursor xLocation was jumped or if it was scrolled.
-		if textboxEntry.ViewportXLocation-textboxEntry.CursorXLocation > 2 || textboxEntry.CursorXLocation-textboxEntry.ViewportXLocation > 2 {
-			isCursorJumped = true
-		}
-		// If the cursor xLocation is less than the size of our viewport and was jumped, just set the viewport to 0.
-		if isCursorJumped && textboxEntry.CursorXLocation-textboxEntry.Width < 0 {
-			textboxEntry.ViewportXLocation = 0
-		} else {
-			// Otherwise, this is a normal backwards scroll so make viewport equal to our cursor location.
-			textboxEntry.ViewportXLocation = textboxEntry.CursorXLocation
-		}
-	}
-
-	// Ensure cursor is within valid bounds
-	if textboxEntry.CursorYLocation >= len(textboxEntry.TextData) {
-		textboxEntry.CursorYLocation = len(textboxEntry.TextData) - 1
-	}
+	// Keep the logical cursor in bounds before it is mapped into display space.
 	if textboxEntry.CursorYLocation < 0 {
 		textboxEntry.CursorYLocation = 0
 	}
+	if textboxEntry.CursorYLocation > len(textboxEntry.TextData)-1 {
+		textboxEntry.CursorYLocation = len(textboxEntry.TextData) - 1
+	}
+	if len(textboxEntry.TextData[textboxEntry.CursorYLocation]) == 0 {
+		textboxEntry.TextData[textboxEntry.CursorYLocation] = []rune{' '}
+	}
+	if textboxEntry.CursorXLocation < 0 {
+		textboxEntry.CursorXLocation = 0
+	}
+	if textboxEntry.CursorXLocation > len(textboxEntry.TextData[textboxEntry.CursorYLocation])-1 {
+		textboxEntry.CursorXLocation = len(textboxEntry.TextData[textboxEntry.CursorYLocation]) - 1
+	}
 
-	// Ensure ViewportXLocation is valid
+	// ViewportYLocation is a wrapped-row index and ViewportXLocation a printed-column offset. Map the logical
+	// cursor into the same display space, then scroll each axis the minimum amount that keeps the cursor's own
+	// cell fully inside the window.
+	wrappedRows := shared.getWrappedRows(textboxEntry.TextData, textboxEntry.Width, textboxEntry.IsWordWrapEnabled)
+	cursorDisplayRow, cursorDisplayColumn := shared.getCursorDisplayCoordinates(wrappedRows, textboxEntry.CursorYLocation, textboxEntry.CursorXLocation)
+
+	cursorRuneWidth := 1
+	if textboxEntry.CursorXLocation < len(textboxEntry.TextData[textboxEntry.CursorYLocation]) {
+		cursorRuneWidth = stringformat.GetWidthOfRuneWhenPrinted(textboxEntry.TextData[textboxEntry.CursorYLocation][textboxEntry.CursorXLocation])
+	}
+
+	if cursorDisplayRow < textboxEntry.ViewportYLocation {
+		textboxEntry.ViewportYLocation = cursorDisplayRow
+	}
+	if cursorDisplayRow >= textboxEntry.ViewportYLocation+textboxEntry.Height {
+		textboxEntry.ViewportYLocation = cursorDisplayRow - textboxEntry.Height + 1
+	}
+	maximumViewportRow := len(wrappedRows) - textboxEntry.Height
+	if maximumViewportRow < 0 {
+		maximumViewportRow = 0
+	}
+	if textboxEntry.ViewportYLocation > maximumViewportRow {
+		textboxEntry.ViewportYLocation = maximumViewportRow
+	}
+	if textboxEntry.ViewportYLocation < 0 {
+		textboxEntry.ViewportYLocation = 0
+	}
+
+	if textboxEntry.IsWordWrapEnabled {
+		// Word wrap has no horizontal scroll; every row already fits the width.
+		textboxEntry.ViewportXLocation = 0
+		return
+	}
+
+	if cursorDisplayColumn < textboxEntry.ViewportXLocation {
+		textboxEntry.ViewportXLocation = cursorDisplayColumn
+	}
+	if cursorDisplayColumn+cursorRuneWidth > textboxEntry.ViewportXLocation+textboxEntry.Width {
+		textboxEntry.ViewportXLocation = cursorDisplayColumn + cursorRuneWidth - textboxEntry.Width
+	}
+	// The viewport may sit anywhere up to the last content column (so shrinking a line by editing does not snap
+	// the view back), but never past it.
+	maximumViewportColumn := stringformat.GetWidthOfRunesWhenPrinted(wrappedRows[cursorDisplayRow].runes) - 1
+	if maximumViewportColumn < 0 {
+		maximumViewportColumn = 0
+	}
+	if textboxEntry.ViewportXLocation > maximumViewportColumn {
+		textboxEntry.ViewportXLocation = maximumViewportColumn
+	}
 	if textboxEntry.ViewportXLocation < 0 {
 		textboxEntry.ViewportXLocation = 0
-	}
-
-	// Ensure ViewportXLocation doesn't exceed the line length
-	if textboxEntry.ViewportXLocation >= len(textboxEntry.TextData[textboxEntry.CursorYLocation]) {
-		textboxEntry.ViewportXLocation = len(textboxEntry.TextData[textboxEntry.CursorYLocation]) - 1
-		if textboxEntry.ViewportXLocation < 0 {
-			textboxEntry.ViewportXLocation = 0
-		}
-	}
-
-	// Figure out how much displayable space is in our current viewport window.
-	arrayOfRunesAvailableToPrint := textboxEntry.TextData[textboxEntry.CursorYLocation][textboxEntry.ViewportXLocation:]
-	arrayOfRunesThatFitStringSize := stringformat.GetMaxCharactersThatFitInStringSize(arrayOfRunesAvailableToPrint, textboxEntry.Width)
-
-	// If the cursor xLocation is equal or greater than the visible viewport window width.
-	if textboxEntry.CursorXLocation >= textboxEntry.ViewportXLocation+len(arrayOfRunesThatFitStringSize) {
-		// Then make the viewport xLocation equal to the visible viewport width behind it.
-		maxViewportWidthAvaliable := textboxEntry.Width
-		if textboxEntry.CursorXLocation-textboxEntry.Width < 0 {
-			maxViewportWidthAvaliable = textboxEntry.CursorXLocation
-		}
-
-		// Ensure we don't go out of bounds
-		startIndex := textboxEntry.CursorXLocation - maxViewportWidthAvaliable
-		if startIndex < 0 {
-			startIndex = 0
-		}
-
-		if startIndex < len(textboxEntry.TextData[textboxEntry.CursorYLocation]) &&
-			textboxEntry.CursorXLocation <= len(textboxEntry.TextData[textboxEntry.CursorYLocation]) {
-			arrayOfRunesAvailableToPrint = textboxEntry.TextData[textboxEntry.CursorYLocation][startIndex:textboxEntry.CursorXLocation]
-			numberOfRunesThatFitStringSize := stringformat.GetMaxCharactersThatFitInStringSizeReverse(arrayOfRunesAvailableToPrint, textboxEntry.Width)
-			// LogInfo(fmt.Sprintf("v: %d x: %d off: %d fit: %d, aval: %s", textboxEntry.ViewportXLocation, textboxEntry.CursorXLocation, maxViewportWidthAvaliable, numberOfRunesThatFitStringSize, string(arrayOfRunesAvailableToPrint)))
-			textboxEntry.ViewportXLocation = textboxEntry.CursorXLocation - numberOfRunesThatFitStringSize + 1
-
-			// Ensure ViewportXLocation is not negative
-			if textboxEntry.ViewportXLocation < 0 {
-				textboxEntry.ViewportXLocation = 0
-			}
-		}
 	}
 }
 
@@ -1486,13 +1556,7 @@ func (shared *textboxType) UpdateKeyboardEventManually(layerAlias string, textbo
 		if textboxEntry.IsHighlightModeToggled == false {
 			textboxEntry.IsHighlightActive = false
 		}
-		textboxEntry.CursorYLocation--
-		if textboxEntry.CursorYLocation < 0 {
-			textboxEntry.CursorYLocation = 0
-		}
-		if textboxEntry.CursorXLocation >= len(textboxEntry.TextData[textboxEntry.CursorYLocation]) {
-			textboxEntry.CursorXLocation = len(textboxEntry.TextData[textboxEntry.CursorYLocation]) - 1
-		}
+		shared.moveCursorByDisplayRows(textboxEntry, -1)
 		isScreenUpdateRequired = true
 		isKeystrokeConsumed = true
 
@@ -1500,13 +1564,7 @@ func (shared *textboxType) UpdateKeyboardEventManually(layerAlias string, textbo
 		if textboxEntry.IsHighlightModeToggled == false {
 			textboxEntry.IsHighlightActive = false
 		}
-		textboxEntry.CursorYLocation++
-		if textboxEntry.CursorYLocation >= len(textboxEntry.TextData) {
-			textboxEntry.CursorYLocation = len(textboxEntry.TextData) - 1
-		}
-		if textboxEntry.CursorXLocation >= len(textboxEntry.TextData[textboxEntry.CursorYLocation]) {
-			textboxEntry.CursorXLocation = len(textboxEntry.TextData[textboxEntry.CursorYLocation]) - 1
-		}
+		shared.moveCursorByDisplayRows(textboxEntry, 1)
 		isScreenUpdateRequired = true
 		isKeystrokeConsumed = true
 
@@ -1571,10 +1629,7 @@ func (shared *textboxType) UpdateKeyboardEventManually(layerAlias string, textbo
 		if textboxEntry.IsHighlightModeToggled == false {
 			textboxEntry.IsHighlightActive = false
 		}
-		textboxEntry.CursorYLocation = textboxEntry.CursorYLocation - textboxEntry.Height
-		if textboxEntry.CursorYLocation < 0 {
-			textboxEntry.CursorYLocation = 0
-		}
+		shared.moveCursorByDisplayRows(textboxEntry, -textboxEntry.Height)
 		isScreenUpdateRequired = true
 		isKeystrokeConsumed = true
 
@@ -1582,10 +1637,7 @@ func (shared *textboxType) UpdateKeyboardEventManually(layerAlias string, textbo
 		if textboxEntry.IsHighlightModeToggled == false {
 			textboxEntry.IsHighlightActive = false
 		}
-		textboxEntry.CursorYLocation = textboxEntry.CursorYLocation + textboxEntry.Height
-		if textboxEntry.CursorYLocation >= len(textboxEntry.TextData) {
-			textboxEntry.CursorYLocation = len(textboxEntry.TextData) - 1
-		}
+		shared.moveCursorByDisplayRows(textboxEntry, textboxEntry.Height)
 		isScreenUpdateRequired = true
 		isKeystrokeConsumed = true
 
@@ -1907,7 +1959,16 @@ func (shared *textboxType) updateMouseEvent() bool {
 			textboxEntry.TextData = [][]rune{[]rune{' '}}
 		}
 
-		shared.updateCursor(textboxEntry, characterEntry.AttributeEntry.CellControlId, characterEntry.AttributeEntry.CellControlLocation)
+		// A text cell carries its logical (line, rune) coordinate directly. A blank fill cell past the end of a
+		// row carries only its display row, so resolve it to the end of that row through the wrap map.
+		clickedLogicalLine := characterEntry.AttributeEntry.CellControlLocation
+		clickedLogicalRune := characterEntry.AttributeEntry.CellControlId
+		if clickedLogicalRune == constants.NullCellControlId {
+			wrappedRows := shared.getWrappedRows(textboxEntry.TextData, textboxEntry.Width, textboxEntry.IsWordWrapEnabled)
+			endOfRowColumn := 1 << 30
+			clickedLogicalLine, clickedLogicalRune = shared.getLogicalCoordinatesFromDisplay(wrappedRows, characterEntry.AttributeEntry.CellControlLocation, endOfRowColumn)
+		}
+		shared.updateCursor(textboxEntry, clickedLogicalRune, clickedLogicalLine)
 		shared.updateViewport(textboxEntry)
 		shared.setTextboxMaxScrollBarValues(layerAlias, characterEntry.AttributeEntry.CellControlAlias)
 		shared.updateScrollbarBasedOnTextboxViewport(layerAlias, characterEntry.AttributeEntry.CellControlAlias)

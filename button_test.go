@@ -267,3 +267,184 @@ func TestButtonFocus(test *testing.T) {
 		fmt.Println("Obtained:\n", obtainedValueBase64)
 	}
 }
+
+/*
+TestButtonFlatStyle is a test which verifies that a flat button renders its frame without the two-tone bevel.
+
+Example:
+    Expected Inputs:
+        styleEntry.Button.StyleMode set to constants.ButtonStyleFlat; a button "Test" at (2,2) width 10.
+
+    Expected Outputs:
+        Screen content matches the committed master image; the frame is a single uniform colour.
+*/
+func TestButtonFlatStyle(test *testing.T) {
+	layer1, _, _, styleEntry := CommonTestSetup()
+	styleEntry.Button.StyleMode = constants.ButtonStyleFlat
+	layer1.AddButton("Test", styleEntry, 2, 2, 10, 3, true)
+	UpdateDisplay(false)
+	layerEntry := commonResource.screenLayer
+	obtainedValue := layerEntry.GetBasicAnsiStringAsBase64()
+	UpdateMasterImages(false, BUTTON_TEST_SUITE_NAME, "TestButtonFlatStyle", obtainedValue)
+	expectedValue := LoadMasterImage(BUTTON_TEST_SUITE_NAME, "TestButtonFlatStyle")
+	if !assert.Equalf(test, expectedValue, obtainedValue, "The updated screen does not match the master original!") {
+		fmt.Println("Expected:\n", layerEntry.GetAnsiStringFromBase64(expectedValue))
+		fmt.Println("Obtained:\n", layerEntry.GetAnsiStringFromBase64(obtainedValue))
+	}
+}
+
+/*
+TestButtonFlatFrameHasNoBevel is a test which verifies that a flat button's opposite frame corners share one
+foreground colour, so there is no raised or sunken bevel, and that the colour is the button foreground.
+
+Example:
+    Expected Inputs:
+        A flat button at (2,2) width 10 height 3 with a distinct grey Button.ForegroundColor.
+
+    Expected Outputs:
+        The top-left corner cell (2,2) and the bottom-right corner cell (11,4) both carry that grey foreground
+        colour.
+*/
+func TestButtonFlatFrameHasNoBevel(test *testing.T) {
+	layer1, _, _, styleEntry := CommonTestSetup()
+	frameColor := GetRGBColor(210, 210, 210)
+	styleEntry.Button.StyleMode = constants.ButtonStyleFlat
+	styleEntry.Button.ForegroundColor = frameColor
+	layer1.AddButton("Test", styleEntry, 2, 2, 10, 3, true)
+	UpdateDisplay(false)
+	characterMemory := commonResource.screenLayer.CharacterMemory
+
+	topLeftForeground := characterMemory[2][2].AttributeEntry.ForegroundColor
+	bottomRightForeground := characterMemory[4][11].AttributeEntry.ForegroundColor
+	assert.Equal(test, topLeftForeground, bottomRightForeground, "a flat frame has no bevel, so opposite corners match")
+	assert.Equal(test, frameColor, topLeftForeground)
+}
+
+/*
+TestButtonFlatPressedUsesPressedColors is a test which verifies that a pressed flat button, which has no bevel to
+flip, shows the press through Button.PressedBackgroundColor on its cells.
+
+Example:
+    Expected Inputs:
+        A flat button at (2,2) width 10 with Button.PressedBackgroundColor a distinct green; its entry
+        IsPressed is set to true before drawing.
+
+    Expected Outputs:
+        A fill cell inside the button (3,3) carries the green pressed background colour.
+*/
+func TestButtonFlatPressedUsesPressedColors(test *testing.T) {
+	layer1, _, _, styleEntry := CommonTestSetup()
+	pressedBackgroundColor := GetRGBColor(0, 150, 0)
+	styleEntry.Button.StyleMode = constants.ButtonStyleFlat
+	styleEntry.Button.PressedBackgroundColor = pressedBackgroundColor
+	buttonInstance := layer1.AddButton("Test", styleEntry, 2, 2, 10, 3, true)
+	buttonEntry := Buttons.Get(buttonInstance.layerAlias, buttonInstance.controlAlias)
+	buttonEntry.IsPressed = true
+	UpdateDisplay(false)
+	characterMemory := commonResource.screenLayer.CharacterMemory
+
+	assert.Equal(test, pressedBackgroundColor, characterMemory[3][3].AttributeEntry.BackgroundColor)
+}
+
+/*
+TestButtonBorderlessStyle is a test which verifies that a borderless button renders its label with no frame at
+all.
+
+Example:
+    Expected Inputs:
+        styleEntry.Button.StyleMode set to constants.ButtonStyleBorderless; a button "Test" at (2,2) width 10.
+
+    Expected Outputs:
+        Screen content matches the committed master image.
+*/
+func TestButtonBorderlessStyle(test *testing.T) {
+	layer1, _, _, styleEntry := CommonTestSetup()
+	styleEntry.Button.StyleMode = constants.ButtonStyleBorderless
+	layer1.AddButton("Test", styleEntry, 2, 2, 10, 3, true)
+	UpdateDisplay(false)
+	layerEntry := commonResource.screenLayer
+	obtainedValue := layerEntry.GetBasicAnsiStringAsBase64()
+	UpdateMasterImages(false, BUTTON_TEST_SUITE_NAME, "TestButtonBorderlessStyle", obtainedValue)
+	expectedValue := LoadMasterImage(BUTTON_TEST_SUITE_NAME, "TestButtonBorderlessStyle")
+	if !assert.Equalf(test, expectedValue, obtainedValue, "The updated screen does not match the master original!") {
+		fmt.Println("Expected:\n", layerEntry.GetAnsiStringFromBase64(expectedValue))
+		fmt.Println("Obtained:\n", layerEntry.GetAnsiStringFromBase64(obtainedValue))
+	}
+}
+
+/*
+TestButtonBorderlessHasNoFrame is a test which verifies that a borderless button draws no box-drawing characters
+anywhere in its rectangle and still centres its label.
+
+Example:
+    Expected Inputs:
+        A borderless button "Test" at (2,2) width 10 height 3.
+
+    Expected Outputs:
+        No cell in rows 2..4, columns 2..11 holds a box-drawing rune; the centred label "Test" starts at
+        column 5 of row 3.
+*/
+func TestButtonBorderlessHasNoFrame(test *testing.T) {
+	layer1, _, _, styleEntry := CommonTestSetup()
+	styleEntry.Button.StyleMode = constants.ButtonStyleBorderless
+	layer1.AddButton("Test", styleEntry, 2, 2, 10, 3, true)
+	UpdateDisplay(false)
+	characterMemory := commonResource.screenLayer.CharacterMemory
+
+	boxDrawingRunes := "┌┐└┘─│├┤┬┴┼╔╗╚╝═║"
+	for rowIndex := 2; rowIndex <= 4; rowIndex++ {
+		for columnIndex := 2; columnIndex <= 11; columnIndex++ {
+			currentRune := characterMemory[rowIndex][columnIndex].Character
+			assert.NotContainsf(test, boxDrawingRunes, string(currentRune), "borderless button drew a frame rune at (%d,%d)", columnIndex, rowIndex)
+		}
+	}
+	assert.Equal(test, []rune("Test"), []rune{characterMemory[3][5].Character, characterMemory[3][6].Character, characterMemory[3][7].Character, characterMemory[3][8].Character})
+}
+
+/*
+TestButtonBorderlessPressedUsesPressedColors is a test which verifies that a pressed borderless button shows the
+press through Button.PressedBackgroundColor.
+
+Example:
+    Expected Inputs:
+        A borderless button "Test" at (2,2) width 10 with a distinct green Button.PressedBackgroundColor; its
+        entry IsPressed is set to true before drawing.
+
+    Expected Outputs:
+        A fill cell inside the button (3,3) carries the green pressed background colour.
+*/
+func TestButtonBorderlessPressedUsesPressedColors(test *testing.T) {
+	layer1, _, _, styleEntry := CommonTestSetup()
+	pressedBackgroundColor := GetRGBColor(0, 150, 0)
+	styleEntry.Button.StyleMode = constants.ButtonStyleBorderless
+	styleEntry.Button.PressedBackgroundColor = pressedBackgroundColor
+	buttonInstance := layer1.AddButton("Test", styleEntry, 2, 2, 10, 3, true)
+	buttonEntry := Buttons.Get(buttonInstance.layerAlias, buttonInstance.controlAlias)
+	buttonEntry.IsPressed = true
+	UpdateDisplay(false)
+	characterMemory := commonResource.screenLayer.CharacterMemory
+
+	assert.Equal(test, pressedBackgroundColor, characterMemory[3][3].AttributeEntry.BackgroundColor)
+}
+
+/*
+TestButtonBorderlessAllowsSingleRow is a test which verifies that a borderless button is not forced to the
+three-row minimum that the framed styles need.
+
+Example:
+    Expected Inputs:
+        A borderless button "Test" at (2,2) with a requested height of 1.
+
+    Expected Outputs:
+        Row 2 in the button's column range carries the button cell type; row 3 does not.
+*/
+func TestButtonBorderlessAllowsSingleRow(test *testing.T) {
+	layer1, _, _, styleEntry := CommonTestSetup()
+	styleEntry.Button.StyleMode = constants.ButtonStyleBorderless
+	layer1.AddButton("Test", styleEntry, 2, 2, 10, 1, true)
+	UpdateDisplay(false)
+	characterMemory := commonResource.screenLayer.CharacterMemory
+
+	assert.Equal(test, constants.CellTypeButton, characterMemory[2][3].AttributeEntry.CellType)
+	assert.NotEqual(test, constants.CellTypeButton, characterMemory[3][3].AttributeEntry.CellType)
+}

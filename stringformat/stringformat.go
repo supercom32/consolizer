@@ -7,135 +7,25 @@ import (
 	"github.com/supercom32/consolizer/constants"
 	"github.com/supercom32/consolizer/recast"
 	"github.com/supercom32/filesystem"
-	"golang.org/x/text/width"
 	"time"
 )
 
-var isUnicodeWide map[int]bool
-
 const maxLen = 4096
-const nullRune = '\x00'
-const leftAligned = 0
 
 /*
-InitializeUnicodeWidthMemory is a method which initializes the unicode width memory table with default values and
-overrides.
+IsRuneCharacterWide is a method which allows you to determine whether a rune occupies two terminal cells when
+printed. It is a thin convenience wrapper defined entirely in terms of the width oracle, returning true exactly
+when GetWidthOfRuneWhenPrinted reports a width of 2. It therefore never disagrees with what tcell draws and
+carries no width rules of its own.
 
-Example:
-    InitializeUnicodeWidthMemory()
-*/
-func InitializeUnicodeWidthMemory() {
-	isUnicodeWide = make(map[int]bool)
-	setUnicodeRangeWidth('\u2500', '\u257F', false) // Box Drawing
-	setUnicodeRangeWidth('\u2580', '\u259F', false) // Block Elements
-	setUnicodeRangeWidth('\u2600', '\u26FF', true)  // Misc Symbols
-	setUnicodeGeometricShapeWidth()
-}
-
-/*
-setUnicodeRangeWidth is a method which sets the width property for a range of unicode characters. In addition, the
-following should be noted:
-
-- This method modifies the global isUnicodeWide map.
-
-Example:
-    setUnicodeRangeWidth(0x2500, 0x257F, false)
-*/
-func setUnicodeRangeWidth(startingIndex int, endingIndex int, isWide bool) {
-	offset := startingIndex
-	for currentIndex := 0; currentIndex <= endingIndex-startingIndex; currentIndex++ {
-		isUnicodeWide[offset+currentIndex] = isWide
-	}
-}
-
-/*
-setUnicodeGeometricShapeWidth is a method which sets the width property for specific unicode geometric shapes. In
-addition, the following should be noted:
-
-- This method modifies the global isUnicodeWide map.
-
-Example:
-    setUnicodeGeometricShapeWidth()
-*/
-func setUnicodeGeometricShapeWidth() {
-	setUnicodeRangeWidth(9632, 9727, true) // Symbols
-
-	// Small arrows
-	isUnicodeWide['\u25B4'] = false
-	isUnicodeWide['\u25B5'] = false
-	isUnicodeWide['\u25B8'] = false
-	isUnicodeWide['\u25B9'] = false
-	isUnicodeWide['\u25BE'] = false
-	isUnicodeWide['\u25BF'] = false
-	isUnicodeWide['\u25C2'] = false
-	isUnicodeWide['\u25C3'] = false
-
-	// Triangles (all directions)
-	isUnicodeWide['\u25B2'] = false // BLACK UP-POINTING TRIANGLE
-	isUnicodeWide['\u25B3'] = false // WHITE UP-POINTING TRIANGLE
-	isUnicodeWide['\u25B6'] = false // BLACK RIGHT-POINTING TRIANGLE
-	isUnicodeWide['\u25B7'] = false // WHITE RIGHT-POINTING TRIANGLE
-	isUnicodeWide['\u25BC'] = false // BLACK DOWN-POINTING TRIANGLE
-	isUnicodeWide['\u25BD'] = false // WHITE DOWN-POINTING TRIANGLE
-	isUnicodeWide['\u25C0'] = false // BLACK LEFT-POINTING TRIANGLE
-	isUnicodeWide['\u25C1'] = false // WHITE LEFT-POINTING TRIANGLE
-
-	isUnicodeWide['\u25C4'] = false // BLACK LEFT-POINTING TRIANGLE (bold variant)
-	isUnicodeWide['\u25C5'] = false // WHITE LEFT-POINTING TRIANGLE (bold variant)
-	isUnicodeWide['\u25BA'] = false // BLACK RIGHT-POINTING POINTER (bold variant)
-	isUnicodeWide['\u25BB'] = false // WHITE RIGHT-POINTING POINTER (bold variant)
-
-	// Circle pieces
-	isUnicodeWide['\u25DC'] = false
-	isUnicodeWide['\u25DD'] = false
-	isUnicodeWide['\u25DE'] = false
-	isUnicodeWide['\u25DF'] = false
-
-	// Additional circles
-	isUnicodeWide['\u25CF'] = false // BLACK CIRCLE
-	isUnicodeWide['\u25CB'] = false // WHITE CIRCLE
-	isUnicodeWide['\u25C9'] = false // FISHEYE
-	isUnicodeWide['\u25CE'] = false // BULLSEYE
-	isUnicodeWide['\u25EF'] = false // LARGE CIRCLE
-	isUnicodeWide['\u25CD'] = false // CIRCLE WITH VERTICAL FILL
-	isUnicodeWide['\u25CC'] = false // DOTTED CIRCLE
-	isUnicodeWide['\u25D0'] = false // CIRCLE WITH LEFT HALF BLACK
-	isUnicodeWide['\u25D1'] = false // CIRCLE WITH RIGHT HALF BLACK
-	isUnicodeWide['\u25D2'] = false // CIRCLE WITH LOWER HALF BLACK
-	isUnicodeWide['\u25D3'] = false // CIRCLE WITH UPPER HALF BLACK
-
-	// Extra medium circles from Misc Symbols block
-	isUnicodeWide['\u26AA'] = false // MEDIUM WHITE CIRCLE
-	isUnicodeWide['\u26AB'] = false // MEDIUM BLACK CIRCLE
-}
-
-/*
-IsRuneCharacterWide is a method which determines if a rune character is wide.
+:param character: The rune whose printed width is being tested.
+:return: True when the rune is wide (occupies two cells), false otherwise.
 
 Example:
     isWide := IsRuneCharacterWide('读')
 */
 func IsRuneCharacterWide(character rune) bool {
-	if isUnicodeWide == nil {
-		InitializeUnicodeWidthMemory()
-	}
-
-	properties := width.LookupRune(character)
-	// If Asian font which is detected as wide, return true.
-	if properties.Kind() == width.EastAsianWide || properties.Kind() == width.EastAsianFullwidth {
-		return true
-	}
-	// If not multi-byte, then return false.
-	_, numberOfBytes := width.LookupString(string(character))
-	if numberOfBytes == 1 {
-		return false
-	}
-	// If a specific override value is found in table memory, return that value
-	if isWide, exists := isUnicodeWide[int(character)]; exists {
-		return isWide
-	}
-	// Otherwise, by default assume character is wide.
-	return true
+	return GetWidthOfRuneWhenPrinted(character) == 2
 }
 
 /*
@@ -284,6 +174,136 @@ func GetStringFromBase64(inputString string) string {
 }
 
 /*
+GetColumnIndexBasedOnRuneIndex is a method which allows you to convert a rune index within an array into the
+printed column offset at which that rune begins. The column offset is the sum of the printed widths of every rune
+before the given index, so a leading run of narrow runes maps one to one while each preceding wide rune adds two.
+The rune index is clamped to the closed range from zero to the array length, and passing the array length
+returns the total printed width.
+
+:param arrayOfRunes: The rune array being measured.
+:param runeIndex: The rune index to locate, clamped to zero through len(arrayOfRunes).
+:return: The zero-based printed column at which the rune at runeIndex begins.
+
+Example:
+    column := GetColumnIndexBasedOnRuneIndex([]rune("a中b"), 2)
+*/
+func GetColumnIndexBasedOnRuneIndex(arrayOfRunes []rune, runeIndex int) int {
+	if runeIndex < 0 {
+		runeIndex = 0
+	}
+	if runeIndex > len(arrayOfRunes) {
+		runeIndex = len(arrayOfRunes)
+	}
+	column := 0
+	for currentIndex := 0; currentIndex < runeIndex; currentIndex++ {
+		column += GetWidthOfRuneWhenPrinted(arrayOfRunes[currentIndex])
+	}
+	return column
+}
+
+/*
+GetRuneIndexBasedOnColumnIndex is a method which allows you to convert a printed column offset into the index of
+the rune that occupies that column. A column that lands on the trailing half of a wide rune resolves to that
+rune's index, and a column greater than or equal to the total printed width resolves to the array length. A
+negative column resolves to zero. It is the inverse of GetColumnIndexBasedOnRuneIndex for arrays that contain no
+zero-width runes.
+
+:param arrayOfRunes: The rune array being indexed.
+:param columnIndex: The printed column offset to resolve.
+:return: The rune index covering the given column, or len(arrayOfRunes) when the column is past the end.
+
+Example:
+    runeIndex := GetRuneIndexBasedOnColumnIndex([]rune("a中b"), 2)
+*/
+func GetRuneIndexBasedOnColumnIndex(arrayOfRunes []rune, columnIndex int) int {
+	if columnIndex < 0 {
+		columnIndex = 0
+	}
+	consumedColumns := 0
+	for currentIndex := 0; currentIndex < len(arrayOfRunes); currentIndex++ {
+		widthOfRune := GetWidthOfRuneWhenPrinted(arrayOfRunes[currentIndex])
+		if columnIndex < consumedColumns+widthOfRune {
+			return currentIndex
+		}
+		consumedColumns += widthOfRune
+	}
+	return len(arrayOfRunes)
+}
+
+/*
+GetRunesThatFitInColumnCountFromStart is a method which allows you to take the longest prefix of a rune array
+whose printed width does not exceed a column budget. It never splits a wide rune, so when only a single column of
+budget remains and the next rune is wide it stops without consuming it and without emitting any padding. Padding
+a straddling boundary is the caller's responsibility via GetRunesPaddedToColumnWidth.
+
+:param arrayOfRunes: The rune array to take a prefix from.
+:param maxColumns: The maximum printed width the returned prefix may occupy.
+:return: The prefix rune slice and the exact number of columns it occupies.
+
+Example:
+    prefix, columnsUsed := GetRunesThatFitInColumnCountFromStart([]rune("A中B"), 2)
+*/
+func GetRunesThatFitInColumnCountFromStart(arrayOfRunes []rune, maxColumns int) ([]rune, int) {
+	columnsUsed := 0
+	for currentIndex := 0; currentIndex < len(arrayOfRunes); currentIndex++ {
+		widthOfRune := GetWidthOfRuneWhenPrinted(arrayOfRunes[currentIndex])
+		if columnsUsed+widthOfRune > maxColumns {
+			return GetRuneArrayCopy(arrayOfRunes[:currentIndex]), columnsUsed
+		}
+		columnsUsed += widthOfRune
+	}
+	return GetRuneArrayCopy(arrayOfRunes), columnsUsed
+}
+
+/*
+GetRunesThatFitInColumnCountFromEnd is a method which allows you to take the longest suffix of a rune array whose
+printed width does not exceed a column budget. It is the width inverse of GetRunesThatFitInColumnCountFromStart:
+it never splits a wide rune, so when only a single column of budget remains and the preceding rune is wide it
+stops without consuming it.
+
+:param arrayOfRunes: The rune array to take a suffix from.
+:param maxColumns: The maximum printed width the returned suffix may occupy.
+:return: The suffix rune slice and the exact number of columns it occupies.
+
+Example:
+    suffix, columnsUsed := GetRunesThatFitInColumnCountFromEnd([]rune("A中B"), 2)
+*/
+func GetRunesThatFitInColumnCountFromEnd(arrayOfRunes []rune, maxColumns int) ([]rune, int) {
+	columnsUsed := 0
+	for currentIndex := len(arrayOfRunes) - 1; currentIndex >= 0; currentIndex-- {
+		widthOfRune := GetWidthOfRuneWhenPrinted(arrayOfRunes[currentIndex])
+		if columnsUsed+widthOfRune > maxColumns {
+			return GetRuneArrayCopy(arrayOfRunes[currentIndex+1:]), columnsUsed
+		}
+		columnsUsed += widthOfRune
+	}
+	return GetRuneArrayCopy(arrayOfRunes), columnsUsed
+}
+
+/*
+GetRunesPaddedToColumnWidth is a method which allows you to right pad a rune array with blank spaces until its
+printed width reaches a minimum column count. When the array already meets or exceeds the requested width it is
+returned unchanged, so this method never truncates. In addition, the following should be noted:
+
+- The returned slice is always a fresh copy; the input array is not mutated.
+
+:param arrayOfRunes: The rune array to pad.
+:param columns: The minimum printed width the result must occupy.
+:return: A new rune slice whose printed width is at least the requested column count.
+
+Example:
+    padded := GetRunesPaddedToColumnWidth([]rune("中"), 4)
+*/
+func GetRunesPaddedToColumnWidth(arrayOfRunes []rune, columns int) []rune {
+	result := GetRuneArrayCopy(arrayOfRunes)
+	paddingColumns := columns - GetWidthOfRunesWhenPrinted(arrayOfRunes)
+	for currentIndex := 0; currentIndex < paddingColumns; currentIndex++ {
+		result = append(result, ' ')
+	}
+	return result
+}
+
+/*
 GetNumberOfWideCharacters is a method which gets the number of wide characters in an array of runes.
 
 Example:
@@ -300,14 +320,21 @@ func GetNumberOfWideCharacters(arrayOfRunes []rune) int {
 }
 
 /*
-GetMaxCharactersThatFitInStringSize is a method which gets an array of runes that will fit inside a specified string
-size, accounting for markup.
+GetMaxCharactersThatFitInStringSize is a method which gets the longest prefix of a rune array that fits inside a
+given column budget, accounting for markup. It walks the array keeping a running column count from
+GetWidthOfRuneWhenPrinted; complete markup tags are copied verbatim and count zero columns, and a wide rune that
+would straddle the end of the budget is dropped and replaced by a single blank so callers that measure the
+result by rune count still see the slice filled to the requested width.
+
+:param arrayOfRunes: The rune array to take a prefix from, markup included.
+:param maxLengthOfString: The column budget the returned prefix must fit within.
+:return: The prefix rune array, its printed width at most maxLengthOfString.
 
 Example:
-    runes := GetMaxCharactersThatFitInStringSize(rune("{{red}}test{{/}}"), 2)
+    runes := GetMaxCharactersThatFitInStringSize([]rune("{{red}}test{{/}}"), 2)
 */
 func GetMaxCharactersThatFitInStringSize(arrayOfRunes []rune, maxLengthOfString int) []rune {
-	numberOfCharactersUsed := 0
+	numberOfColumnsUsed := 0
 	formattedArray := []rune{}
 
 	// Process the runes, handling markup tags
@@ -339,20 +366,20 @@ func GetMaxCharactersThatFitInStringSize(arrayOfRunes []rune, maxLengthOfString 
 
 		// Regular character (or incomplete markup)
 		currentRune := arrayOfRunes[i]
-		if IsRuneCharacterWide(currentRune) {
-			numberOfCharactersUsed = numberOfCharactersUsed + 2
-			if numberOfCharactersUsed > maxLengthOfString {
-				// If you added a wide character and it won't fit (needs two free spaces),
-				// we just add a blank space to pad it out.
+		if GetWidthOfRuneWhenPrinted(currentRune) == 2 {
+			numberOfColumnsUsed = numberOfColumnsUsed + 2
+			if numberOfColumnsUsed > maxLengthOfString {
+				// A wide rune straddling the end is dropped and padded with one blank so the slice still
+				// measures the requested column width by rune count.
 				formattedArray = append(formattedArray, ' ')
 				return formattedArray
 			}
 		} else {
-			numberOfCharactersUsed++
+			numberOfColumnsUsed++
 		}
 
 		formattedArray = append(formattedArray, currentRune)
-		if numberOfCharactersUsed == maxLengthOfString {
+		if numberOfColumnsUsed == maxLengthOfString {
 			return formattedArray
 		}
 
@@ -363,44 +390,22 @@ func GetMaxCharactersThatFitInStringSize(arrayOfRunes []rune, maxLengthOfString 
 }
 
 /*
-GetMaxCharactersThatFitInStringSizeReverse is a method which calculates the number of characters from the end of an
-array that fit within a specified length.
+GetMaxCharactersThatFitInStringSizeReverse is a method which calculates how many runes from the end of an array
+fit within a given column budget once markup has been stripped. It is the exact width inverse of the forward fit:
+the count is the length of the suffix GetRunesThatFitInColumnCountFromEnd would return, so a trailing wide rune is
+only counted when its full two columns fit and is never partially admitted.
+
+:param arrayOfRunes: The rune array to measure from its end, markup included.
+:param maxLengthOfString: The column budget the counted suffix must fit within.
+:return: The number of trailing runes that fit within the column budget.
 
 Example:
-    count := GetMaxCharactersThatFitInStringSizeReverse(rune("test"), 2)
+    count := GetMaxCharactersThatFitInStringSizeReverse([]rune("a中b"), 3)
 */
 func GetMaxCharactersThatFitInStringSizeReverse(arrayOfRunes []rune, maxLengthOfString int) int {
-	// Convert to string for easier markup handling
-	textString := string(arrayOfRunes)
-
-	// Remove markup tags
-	textWithoutMarkup := GetTextWithoutMarkup(textString)
-	runesWithoutMarkup := []rune(textWithoutMarkup)
-
-	// Calculate how many characters from the end will fit
-	numberOfCharactersUsed := 0
-	charactersToInclude := 0
-
-	for i := len(runesWithoutMarkup) - 1; i >= 0; i-- {
-		currentRune := runesWithoutMarkup[i]
-
-		if IsRuneCharacterWide(currentRune) {
-			numberOfCharactersUsed += 2
-		} else {
-			numberOfCharactersUsed++
-		}
-
-		charactersToInclude++
-
-		if numberOfCharactersUsed >= maxLengthOfString {
-			break
-		}
-	}
-
-	// Now we need to map this back to the original string with markup
-	// This is a simplified approach - we'll just return the number of characters
-	// that would fit if we were to process from the end
-	return charactersToInclude
+	runesWithoutMarkup := []rune(GetTextWithoutMarkup(string(arrayOfRunes)))
+	suffix, _ := GetRunesThatFitInColumnCountFromEnd(runesWithoutMarkup, maxLengthOfString)
+	return len(suffix)
 }
 
 /*
@@ -437,41 +442,45 @@ func GetFormattedString(stringToFormat string, lengthOfString int, position int)
 }
 
 /*
-GetFormattedRuneArray is a method which gets a formatted rune array based on desired length and alignment.
+GetFormattedRuneArray is a method which gets a formatted rune array padded to a desired printed width according to
+the requested alignment. The pad amount is the difference between the desired width and the array's printed width
+with markup excluded, and it is always distributed in COLUMNS rather than rune counts so wide runes stay aligned.
+When the content is already at least the desired width it is truncated to fit on a rune boundary and returned
+without padding. In addition, the following should be noted:
+
+- Centre alignment places the odd leftover column on the RIGHT side of the content.
+
+:param arrayOfRunes: The content runes to format, markup included.
+:param desiredLengthOfArray: The printed width the result should occupy.
+:param textAlignment: One of the constants.Alignment values selecting how the pad is distributed.
+:return: A new rune array padded or truncated to the desired printed width.
 
 Example:
-    fmtRunes := GetFormattedRuneArray(rune("test"), 10, constants.AlignmentLeft)
+    fmtRunes := GetFormattedRuneArray([]rune("test"), 10, constants.AlignmentLeft)
 */
 func GetFormattedRuneArray(arrayOfRunes []rune, desiredLengthOfArray int, textAlignment int) []rune {
 	if len(arrayOfRunes) == 0 {
 		return GetRunesFromString(GetFilledString(desiredLengthOfArray, " "))
 	}
-	// Use GetWidthOfRunesWhenPrintedWithoutMarkup to exclude markup characters from the width calculation
+	// Exclude markup characters from the width calculation so pad is measured against printed columns.
 	widthOfRunesWhenPrinted := GetWidthOfRunesWhenPrintedWithoutMarkup(arrayOfRunes)
 	paddingSize := desiredLengthOfArray - widthOfRunesWhenPrinted
 	if paddingSize <= 0 {
-		paddingSize = 0
 		return GetMaxCharactersThatFitInStringSize(arrayOfRunes, desiredLengthOfArray)
 	}
 
-	// If you're viewing the end of a long string (so you need padding) and some characters are wide,
-	// you need to add padding to compensate for the missing width.
-	// paddingSize = paddingSize + GetNumberOfWideCharacters(arrayOfRunes)
-
-	// stringPaddingInRunes := GetRunesFromString(GetFilledString(paddingSize, " "))
 	fullStringPadding := GetFilledRuneArray(paddingSize, ' ')
-	halfStringPadding := GetFilledRuneArray(paddingSize/2, ' ')
 
 	formattedArrayOfRunes := []rune{}
 	if textAlignment == constants.AlignmentRight {
 		formattedArrayOfRunes = GetMaxCharactersThatFitInStringSize(arrayOfRunes, desiredLengthOfArray)
 		formattedArrayOfRunes = append(fullStringPadding, formattedArrayOfRunes...)
 	} else if textAlignment == constants.AlignmentCenter {
-		formattedArrayOfRunes = append(halfStringPadding, arrayOfRunes...)
-		formattedArrayOfRunes = append(formattedArrayOfRunes, halfStringPadding...)
-		if len(formattedArrayOfRunes) < desiredLengthOfArray {
-			formattedArrayOfRunes = append(formattedArrayOfRunes, ' ')
-		}
+		leftPaddingSize := paddingSize / 2
+		rightPaddingSize := paddingSize - leftPaddingSize
+		formattedArrayOfRunes = append(formattedArrayOfRunes, GetFilledRuneArray(leftPaddingSize, ' ')...)
+		formattedArrayOfRunes = append(formattedArrayOfRunes, arrayOfRunes...)
+		formattedArrayOfRunes = append(formattedArrayOfRunes, GetFilledRuneArray(rightPaddingSize, ' ')...)
 	} else if textAlignment == constants.AlignmentNoPadding {
 		formattedArrayOfRunes = append(formattedArrayOfRunes, ' ')
 		formattedArrayOfRunes = append(formattedArrayOfRunes, arrayOfRunes...)

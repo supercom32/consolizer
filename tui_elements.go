@@ -604,9 +604,9 @@ func fillArea(layerEntry *types.LayerEntryType, attributeEntry types.AttributeEn
 		for currentCharacter := 0; currentCharacter < width; currentCharacter++ {
 			if yLocation >= 0 && yLocation < layerEntry.Height && xLocation+currentCharacter >= 0 && xLocation+currentCharacter < layerEntry.Width {
 				if len(arrayOfRunes) == 0 {
-					layer.printLayer(layerEntry, attributeEntry, xLocation+currentCharacter, yLocation+currentRow, []rune{0})
+					putRune(layerEntry.CharacterMemory, xLocation+currentCharacter, yLocation+currentRow, 0, attributeEntry, layerEntry.Width, layerEntry.Height)
 				} else {
-					layer.printLayer(layerEntry, attributeEntry, xLocation+currentCharacter, yLocation+currentRow, []rune{arrayOfRunes[currentFillCharacterIndex]})
+					putRune(layerEntry.CharacterMemory, xLocation+currentCharacter, yLocation+currentRow, arrayOfRunes[currentFillCharacterIndex], attributeEntry, layerEntry.Width, layerEntry.Height)
 					// Double HotspotWidth characters advance by 2 spaces. But what happens to characters between? GetLayer lost?
 					if stringformat.IsRuneCharacterWide(arrayOfRunes[currentFillCharacterIndex]) {
 						currentCharacter++
