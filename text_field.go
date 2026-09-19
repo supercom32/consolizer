@@ -719,15 +719,18 @@ func (shared *textFieldType) updateKeyboardEventManually(layerAlias string, text
 }
 
 /*
-updateKeyboardEvent is a method which updates the state of all text fields according to the current keystroke event. In
-addition, the following should be noted:
+updateKeyboardEvent is a method which updates the state of the currently focused text field according to the current
+keystroke event. Only the currently focused text field will process the event. In addition, the following should be
+noted:
 
-- Handles all keyboard input for text fields.
-
-- Only the currently focused text field will process the event.
+  - If the focused field has an OnValueChanged hook set, the hook is invoked with the field's trimmed current value
+    after the keystroke has been processed, and if it returns a different value, CurrentValue is replaced and the
+    cursor is re-clamped before this method returns, so the correction is drawn in the same screen update as the
+    keystroke.
 
 Example:
-    updateRequired, consumed := TextField.updateKeyboardEvent(rune("a"))
+
+	updateRequired, consumed := TextField.updateKeyboardEvent([]rune("a"))
 */
 func (shared *textFieldType) updateKeyboardEvent(keystroke []rune) (bool, bool) {
 	focusedLayerAlias := eventStateMemory.currentlyFocusedControl.layerAlias
@@ -736,7 +739,23 @@ func (shared *textFieldType) updateKeyboardEvent(keystroke []rune) (bool, bool) 
 	if focusedControlType != constants.CellTypeTextField || !TextFields.IsExists(focusedLayerAlias, focusedControlAlias) {
 		return false, false
 	}
-	return shared.updateKeyboardEventManually(focusedLayerAlias, focusedControlAlias, keystroke)
+	isScreenUpdateRequired, isKeystrokeConsumed := shared.updateKeyboardEventManually(focusedLayerAlias, focusedControlAlias, keystroke)
+	textFieldEntry := TextFields.Get(focusedLayerAlias, focusedControlAlias)
+	if textFieldEntry.OnValueChanged != nil {
+		currentValue := textFieldEntry.CurrentValue
+		if len(currentValue) > 0 {
+			currentValue = currentValue[:len(currentValue)-1]
+		}
+		currentValueAsString := string(currentValue)
+		correctedValue := textFieldEntry.OnValueChanged(currentValueAsString)
+		if correctedValue != currentValueAsString {
+			textFieldEntry.CurrentValue = []rune(correctedValue + " ")
+			shared.updateCursor(textFieldEntry)
+			shared.updateViewport(textFieldEntry)
+			isScreenUpdateRequired = true
+		}
+	}
+	return isScreenUpdateRequired, isKeystrokeConsumed
 }
 
 /*
@@ -890,6 +909,33 @@ func (shared *TextFieldInstanceType) SetPasswordProtected(isProtected bool) *Tex
 		validatorTextField(shared.layerAlias, shared.controlAlias)
 		textFieldEntry := TextFields.Get(shared.layerAlias, shared.controlAlias)
 		textFieldEntry.IsPasswordProtected = isProtected
+	}
+	return shared
+}
+
+/*
+SetOnValueChanged is a method which sets a hook that is invoked synchronously whenever the text field processes a
+keystroke, allowing a caller to correct the field's value before the pending screen update is drawn. The hook
+receives the field's current value in its trimmed form, the same form GetValue returns, and must return the value
+the field should actually hold; returning the same value is a no-op. In addition, the following should be noted:
+
+  - The hook runs inside the same keystroke handling call that changed the value, so any correction it returns
+    replaces CurrentValue and is drawn in the same screen update as the keystroke, eliminating the one-frame flicker
+    that would otherwise occur if the correction were applied on a later frame.
+
+  - Passing nil removes any previously set hook.
+
+Example:
+
+	textField.SetOnValueChanged(func(current string) string {
+		return current
+	})
+*/
+func (shared *TextFieldInstanceType) SetOnValueChanged(fn func(current string) string) *TextFieldInstanceType {
+	if TextFields.IsExists(shared.layerAlias, shared.controlAlias) {
+		validatorTextField(shared.layerAlias, shared.controlAlias)
+		textFieldEntry := TextFields.Get(shared.layerAlias, shared.controlAlias)
+		textFieldEntry.OnValueChanged = fn
 	}
 	return shared
 }

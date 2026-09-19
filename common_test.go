@@ -6,6 +6,7 @@ import (
 	"github.com/supercom32/consolizer/constants"
 	"github.com/supercom32/consolizer/types"
 	"os"
+	"testing"
 )
 
 /*
@@ -43,12 +44,17 @@ func LoadMasterImage(testSuiteName string, testCaseName string) string {
 
 /*
 CommonTestSetup is a method which initializes a standard testing environment with multiple layers and a
-default TUI style.
+default TUI style. In addition, the following should be noted:
+
+- Registers RestoreTerminalSettings as a cleanup on test, so the terminal session this call starts is always torn
+  down when the calling test finishes, even on a failure or panic. Without this, the background goroutines
+  InitializeTerminal starts keep running into later tests and racing their own terminal state.
 
 Example:
-    layer1, layer2, layer3, styleEntry := CommonTestSetup()
+    layer1, layer2, layer3, styleEntry := CommonTestSetup(test)
 */
-func CommonTestSetup() (*LayerInstanceType, *LayerInstanceType, *LayerInstanceType, types.TuiStyleEntryType) {
+func CommonTestSetup(test testing.TB) (*LayerInstanceType, *LayerInstanceType, *LayerInstanceType, types.TuiStyleEntryType) {
+	test.Helper()
 	commonResource.isDebugEnabled = true
 	layerWidth := 40
 	layerHeight := 20
@@ -56,6 +62,7 @@ func CommonTestSetup() (*LayerInstanceType, *LayerInstanceType, *LayerInstanceTy
 	styleEntry.Window.LineDrawingTextForegroundColor = GetRGBColor(255, 0, 255)
 	styleEntry.Window.LineDrawingTextBackgroundColor = GetRGBColor(0, 0, 255)
 	InitializeTerminal(layerWidth, layerHeight)
+	test.Cleanup(RestoreTerminalSettings)
 	layer1 := AddLayer(0, 0, layerWidth, layerHeight, 1, nil)
 	layer2 := AddLayer(3, 10, layerWidth, layerHeight, 2, nil)
 	layer3 := AddLayer(0, 0, layerWidth, layerHeight, 3, nil)
@@ -67,12 +74,18 @@ func CommonTestSetup() (*LayerInstanceType, *LayerInstanceType, *LayerInstanceTy
 }
 
 /*
-CommonTestSetupImages is a method which initializes a standard testing environment for image-related tests.
+CommonTestSetupImages is a method which initializes a standard testing environment for image-related tests. In
+addition, the following should be noted:
+
+- Registers RestoreTerminalSettings as a cleanup on test, so the terminal session this call starts is always torn
+  down when the calling test finishes, even on a failure or panic. Without this, the background goroutines
+  InitializeTerminal starts keep running into later tests and racing their own terminal state.
 
 Example:
-    layer1, layer2, layer3, styleEntry := CommonTestSetupImages()
+    layer1, layer2, layer3, styleEntry := CommonTestSetupImages(test)
 */
-func CommonTestSetupImages() (*LayerInstanceType, *LayerInstanceType, *LayerInstanceType, types.TuiStyleEntryType) {
+func CommonTestSetupImages(test testing.TB) (*LayerInstanceType, *LayerInstanceType, *LayerInstanceType, types.TuiStyleEntryType) {
+	test.Helper()
 	commonResource.isDebugEnabled = true
 	layerWidth := 50
 	layerHeight := 20
@@ -80,6 +93,7 @@ func CommonTestSetupImages() (*LayerInstanceType, *LayerInstanceType, *LayerInst
 	styleEntry.Window.LineDrawingTextForegroundColor = GetRGBColor(255, 0, 255)
 	styleEntry.Window.LineDrawingTextBackgroundColor = GetRGBColor(0, 0, 255)
 	InitializeTerminal(layerWidth, layerHeight)
+	test.Cleanup(RestoreTerminalSettings)
 	layer1 := AddLayer(0, 0, layerWidth, layerHeight, 1, nil)
 	layer2 := AddLayer(0, 0, layerWidth, layerHeight, 2, nil)
 	layer3 := AddLayer(0, 0, layerWidth, layerHeight, 3, nil)
@@ -88,12 +102,17 @@ func CommonTestSetupImages() (*LayerInstanceType, *LayerInstanceType, *LayerInst
 
 /*
 CommonTestSetupHighResolutionImages is a method which initializes a standard testing environment for high resolution
-image tests.
+image tests. In addition, the following should be noted:
+
+- Registers RestoreTerminalSettings as a cleanup on test, so the terminal session this call starts is always torn
+  down when the calling test finishes, even on a failure or panic. Without this, the background goroutines
+  InitializeTerminal starts keep running into later tests and racing their own terminal state.
 
 Example:
-    layer1, layer2, layer3, styleEntry := CommonTestSetupHighResolutionImages()
+    layer1, layer2, layer3, styleEntry := CommonTestSetupHighResolutionImages(test)
 */
-func CommonTestSetupHighResolutionImages() (*LayerInstanceType, *LayerInstanceType, *LayerInstanceType, types.TuiStyleEntryType) {
+func CommonTestSetupHighResolutionImages(test testing.TB) (*LayerInstanceType, *LayerInstanceType, *LayerInstanceType, types.TuiStyleEntryType) {
+	test.Helper()
 	commonResource.isDebugEnabled = true
 	layerWidth := 140
 	layerHeight := 50
@@ -101,6 +120,7 @@ func CommonTestSetupHighResolutionImages() (*LayerInstanceType, *LayerInstanceTy
 	styleEntry.Window.LineDrawingTextForegroundColor = GetRGBColor(255, 0, 255)
 	styleEntry.Window.LineDrawingTextBackgroundColor = GetRGBColor(0, 0, 255)
 	InitializeTerminal(layerWidth, layerHeight)
+	test.Cleanup(RestoreTerminalSettings)
 	layer1 := AddLayer(0, 0, layerWidth, layerHeight, 1, nil)
 	layer2 := AddLayer(0, 0, layerWidth, layerHeight, 2, nil)
 	layer3 := AddLayer(0, 0, layerWidth, layerHeight, 3, nil)

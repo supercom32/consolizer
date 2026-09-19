@@ -20,7 +20,7 @@ Example:
         Screen content matches expected ANSI string (Base64 encoded) showing the selected item highlighted.
 */
 func TestSelectorRandomSelection(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	selectionEntry := NewSelectionEntry()
 	selectionEntry.Add("Selection Alias 1", "Selection Text 1")
 	selectionEntry.Add("Selection Alias 2", "Selection Text 2")
@@ -52,7 +52,7 @@ Example:
         Screen content matches expected ANSI string (Base64 encoded) showing a subset of items and a scrollbar.
 */
 func TestSelectorLongList(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	selectionEntry := NewSelectionEntry()
 	selectionEntry.Add("Selection Alias 1", "Selection Text 1")
 	selectionEntry.Add("Selection Alias 2", "Selection Text 2")
@@ -88,7 +88,7 @@ Example:
         The returned alias and value slices exactly match the expected input collections.
 */
 func TestGetAllItems(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	selectionEntry := NewSelectionEntry()
 
 	// Add some items to the selection entry
@@ -134,7 +134,7 @@ func TestSelectorLongListWithColors(test *testing.T) {
 	attributeEntry := NewTextStyle()
 	attributeEntry.ForegroundColor = GetRGBColor(255, 0, 0)
 	AddTextStyle(textStyleAlias, attributeEntry)
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	selectionEntry := NewSelectionEntry()
 	selectionEntry.Add("Selection Alias 1", "Selection Text 1")
 	selectionEntry.Add("Selection Alias 2", "Selection Text 2")
@@ -171,7 +171,7 @@ Example:
 */
 func TestFocusSelectionInitialPosition(test *testing.T) {
 	// Setup
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	selectionEntry := NewSelectionEntry()
 
 	// Create a selector with many items to ensure scrolling is necessary
@@ -216,7 +216,7 @@ Example:
 */
 func TestFocusSelectionMiddleItem(test *testing.T) {
 	// Setup
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	selectionEntry := NewSelectionEntry()
 
 	// Create a selector with many items to ensure scrolling is necessary
@@ -268,7 +268,7 @@ Example:
 */
 func TestFocusSelectionEndItem(test *testing.T) {
 	// Setup
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	selectionEntry := NewSelectionEntry()
 
 	// Create a selector with many items to ensure scrolling is necessary
@@ -320,7 +320,7 @@ Example:
 */
 func TestFocusSelectionBeginningItem(test *testing.T) {
 	// Setup
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	selectionEntry := NewSelectionEntry()
 
 	// Create a selector with many items to ensure scrolling is necessary
@@ -370,7 +370,7 @@ Example:
 */
 func TestFocusSelectionNonExistentItem(test *testing.T) {
 	// Setup
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	selectionEntry := NewSelectionEntry()
 
 	// Create a selector with many items to ensure scrolling is necessary

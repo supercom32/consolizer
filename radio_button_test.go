@@ -20,7 +20,7 @@ Example:
         Screen content matches expected ANSI string (Base64 encoded) showing the unselected character.
 */
 func TestRadioButtonDefaultState(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	radioButton.Add(layer1.layerAlias, "testRadioButton", "Test Radio Button", styleEntry, 2, 2, 1, false)
 	UpdateDisplay(false)
 	layerEntry := commonResource.screenLayer
@@ -46,7 +46,7 @@ Example:
         Screen content matches expected ANSI string (Base64 encoded) showing the selected character.
 */
 func TestRadioButtonSelectedState(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	radioButton.Add(layer1.layerAlias, "testRadioButton", "Test Radio Button", styleEntry, 2, 2, 1, true)
 	UpdateDisplay(false)
 	layerEntry := commonResource.screenLayer
@@ -72,7 +72,7 @@ Example:
         Only the first radio button is reported as selected, and the others are false.
 */
 func TestRadioButtonGroup(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	radioButtonInstance1 := radioButton.Add(layer1.layerAlias, "testRadioButton1", "Radio Button 1", styleEntry, 2, 2, 1, true)
 	radioButtonInstance2 := radioButton.Add(layer1.layerAlias, "testRadioButton2", "Radio Button 2", styleEntry, 2, 4, 1, false)
 	radioButtonInstance3 := radioButton.Add(layer1.layerAlias, "testRadioButton3", "Radio Button 3", styleEntry, 2, 6, 1, false)
@@ -113,7 +113,7 @@ Example:
         One button in each group can be selected simultaneously without affecting the other group.
 */
 func TestRadioButtonMultipleGroups(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	radioButtonInstance1 := radioButton.Add(layer1.layerAlias, "testRadioButton1", "Group 1 - Button 1", styleEntry, 2, 2, 1, true)
 	radioButtonInstance2 := radioButton.Add(layer1.layerAlias, "testRadioButton2", "Group 1 - Button 2", styleEntry, 2, 4, 1, false)
 	radioButtonInstance3 := radioButton.Add(layer1.layerAlias, "testRadioButton3", "Group 2 - Button 1", styleEntry, 2, 6, 2, true)
@@ -160,7 +160,7 @@ Example:
         The first button becomes unselected and the second button becomes selected.
 */
 func TestRadioButtonChangeSelection(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	radioButtonInstance1 := radioButton.Add(layer1.layerAlias, "testRadioButton1", "Radio Button 1", styleEntry, 2, 2, 1, true)
 	radioButtonInstance2 := radioButton.Add(layer1.layerAlias, "testRadioButton2", "Radio Button 2", styleEntry, 2, 4, 1, false)
 
@@ -209,7 +209,7 @@ Example:
         GetSelected returns the alias of the first radio button.
 */
 func TestRadioButtonGetSelected(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	radioButtonInstance1 := radioButton.Add(layer1.layerAlias, "testRadioButton1", "Radio Button 1", styleEntry, 2, 2, 1, true)
 	radioButton.Add(layer1.layerAlias, "testRadioButton2", "Radio Button 2", styleEntry, 2, 4, 1, false)
 
@@ -245,7 +245,7 @@ Example:
         Screen content matches expected ANSI string (Base64 encoded) for an empty layer.
 */
 func TestRadioButtonDelete(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	radioButtonInstance := radioButton.Add(layer1.layerAlias, "testRadioButton", "Test Radio Button", styleEntry, 2, 2, 1, true)
 	UpdateDisplay(false)
 
@@ -276,7 +276,7 @@ Example:
         Screen content matches expected ANSI string (Base64 encoded) for an empty layer after all controls are removed.
 */
 func TestRadioButtonDeleteAll(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	radioButton.Add(layer1.layerAlias, "testRadioButton1", "Radio Button 1", styleEntry, 2, 2, 1, true)
 	radioButton.Add(layer1.layerAlias, "testRadioButton2", "Radio Button 2", styleEntry, 2, 4, 1, false)
 	radioButton.Add(layer1.layerAlias, "testRadioButton3", "Radio Button 3", styleEntry, 2, 6, 2, true)
@@ -309,7 +309,7 @@ Example:
         Screen content matches expected ANSI string (Base64 encoded) showing the radio button in its focused visual state.
 */
 func TestRadioButtonFocus(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	radioButton.Add(layer1.layerAlias, "testRadioButton", "Test Radio Button", styleEntry, 2, 2, 1, true)
 
 	// Set focus to the radio button
@@ -339,7 +339,7 @@ Example:
         Screen content matches expected ANSI string (Base64 encoded) and no panics occur during rendering.
 */
 func TestRadioButtonLongLabel(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	// We color this at 1,1,1 because intellij has a color bug which makes black transparent.
 	styleEntry.RadioButton.BackgroundColor = GetRGBColor(1, 1, 1)
 	radioButton.Add(layer1.layerAlias, "testRadioButton", "This is a very long radio button label to test text wrapping", styleEntry, -10, 2, 1, true)

@@ -21,7 +21,7 @@ Example:
         Screen content matches expected ANSI string (Base64 encoded) for the closed dropdown.
 */
 func TestDropdownDefaultState(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	selectionEntry := types.NewSelectionEntry()
 	selectionEntry.SelectionAlias = []string{"item1", "item2", "item3"}
 	selectionEntry.SelectionValue = []string{"Item 1", "Item 2", "Item 3"}
@@ -50,7 +50,7 @@ Example:
         Screen content matches expected ANSI string (Base64 encoded) and selected value is "Item 2".
 */
 func TestDropdownWithDefaultSelection(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	selectionEntry := types.NewSelectionEntry()
 	selectionEntry.SelectionAlias = []string{"item1", "item2", "item3"}
 	selectionEntry.SelectionValue = []string{"Item 1", "Item 2", "Item 3"}
@@ -89,7 +89,7 @@ Example:
         Screen content matches expected ANSI string (Base64 encoded) showing the expanded selection tray.
 */
 func TestDropdownOpenState(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	selectionEntry := types.NewSelectionEntry()
 	selectionEntry.SelectionAlias = []string{"item1", "item2", "item3"}
 	selectionEntry.SelectionValue = []string{"Item 1", "Item 2", "Item 3"}
@@ -130,7 +130,7 @@ Example:
         Screen content matches expected ANSI string (Base64 encoded) and the dropdown value is updated to "Item 3".
 */
 func TestDropdownChangeSelection(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	selectionEntry := types.NewSelectionEntry()
 	selectionEntry.SelectionAlias = []string{"item1", "item2", "item3"}
 	selectionEntry.SelectionValue = []string{"Item 1", "Item 2", "Item 3"}
@@ -184,7 +184,7 @@ Example:
         Screen content matches expected ANSI string (Base64 encoded) showing an open tray with a visible scrollbar.
 */
 func TestDropdownWithManyItems(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	selectionEntry := types.NewSelectionEntry()
 	selectionEntry.SelectionAlias = []string{"item1", "item2", "item3", "item4", "item5", "item6"}
 	selectionEntry.SelectionValue = []string{"Item 1", "Item 2", "Item 3", "Item 4", "Item 5", "Item 6"}
@@ -229,7 +229,7 @@ Example:
         Screen content matches expected ANSI string (Base64 encoded) showing the scrolled list of items in the tray.
 */
 func TestDropdownScrolling(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	selectionEntry := types.NewSelectionEntry()
 	selectionEntry.SelectionAlias = []string{"item1", "item2", "item3", "item4", "item5", "item6"}
 	selectionEntry.SelectionValue = []string{"Item 1", "Item 2", "Item 3", "Item 4", "Item 5", "Item 6"}
@@ -278,7 +278,7 @@ Example:
         Screen content matches expected ANSI string (Base64 encoded) for an empty layer.
 */
 func TestDropdownDelete(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	selectionEntry := types.NewSelectionEntry()
 	selectionEntry.SelectionAlias = []string{"item1", "item2", "item3"}
 	selectionEntry.SelectionValue = []string{"Item 1", "Item 2", "Item 3"}
@@ -312,7 +312,7 @@ Example:
         Screen content matches expected ANSI string (Base64 encoded) for an empty layer after all controls are removed.
 */
 func TestDropdownDeleteAll(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	selectionEntry := types.NewSelectionEntry()
 	selectionEntry.SelectionAlias = []string{"item1", "item2", "item3"}
 	selectionEntry.SelectionValue = []string{"Item 1", "Item 2", "Item 3"}
@@ -347,7 +347,7 @@ Example:
         Screen content matches expected ANSI string (Base64 encoded) showing the dropdown in its focused visual state.
 */
 func TestDropdownFocus(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	selectionEntry := types.NewSelectionEntry()
 	selectionEntry.SelectionAlias = []string{"item1", "item2", "item3"}
 	selectionEntry.SelectionValue = []string{"Item 1", "Item 2", "Item 3"}

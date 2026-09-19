@@ -23,7 +23,7 @@ Example:
         text background.
 */
 func TestProgressBarTransparentLabelBackgroundFollowsFill(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	filledBackgroundColor := GetRGBColor(0, 200, 0)
 	unfilledBackgroundColor := GetRGBColor(90, 90, 90)
 	fixedTextBackgroundColor := GetRGBColor(0, 0, 200)
@@ -62,7 +62,7 @@ Example:
         fixed text background colour, not the filled or unfilled bar colours.
 */
 func TestProgressBarOpaqueLabelBackgroundUnchanged(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	filledBackgroundColor := GetRGBColor(0, 200, 0)
 	unfilledBackgroundColor := GetRGBColor(90, 90, 90)
 	fixedTextBackgroundColor := GetRGBColor(0, 0, 200)

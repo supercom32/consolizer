@@ -169,21 +169,28 @@ func IsMouseInBoundingBox(xLocation int, yLocation int, width int, height int) b
 GetLayerUnderMouseCursor is a method which retrieves the instance of the layer under the current mouse cursor position.
 In addition, the following should be noted:
 
-- We create a new instance of the layer so the user can interact with it.
+  - We create a new instance of the layer so the user can interact with it.
 
-- This is a new instance, so any changes to the instance itself will not be reflected in the original layer system.
+  - This is a new instance, so any changes to the instance itself will not be reflected in the original layer system.
 
-- Methods called on this instance will affect the original layer.
+  - Methods called on this instance will affect the original layer.
+
+  - The shared screen snapshot is copied out under a read lock before use, so a concurrent UpdateDisplay call on
+    another goroutine can never be observed mid-write.
 
 Example:
-    layer := GetLayerUnderMouseCursor()
+
+	layer := GetLayerUnderMouseCursor()
 */
 func GetLayerUnderMouseCursor() *LayerInstanceType {
 	mouseX, mouseY, _, _ := GetMouseStatus()
 	if mouseX < 0 || mouseX >= commonResource.terminalWidth || mouseY < 0 || mouseY >= commonResource.terminalHeight {
 		return nil
 	}
-	layerAlias := commonResource.screenLayer.CharacterMemory[mouseY][mouseX].LayerAlias
+	commonResource.displayUpdate.RLock()
+	screenLayerEntry := commonResource.screenLayer
+	commonResource.displayUpdate.RUnlock()
+	layerAlias := screenLayerEntry.CharacterMemory[mouseY][mouseX].LayerAlias
 	if layerAlias == "" {
 		return nil
 	}

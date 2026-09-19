@@ -24,6 +24,7 @@ Example:
 func TestLayerInitialization(t *testing.T) {
 	commonResource.isDebugEnabled = true
 	InitializeTerminal(80, 25)
+	defer RestoreTerminalSettings()
 	// Test initialization
 	layer.ReInitializeScreenMemory()
 	if Layers == nil {
@@ -46,6 +47,7 @@ Example:
 func TestLayerAdd(t *testing.T) {
 	commonResource.isDebugEnabled = true
 	InitializeTerminal(80, 25)
+	defer RestoreTerminalSettings()
 	// Test valid layer creation
 	layer.ReInitializeScreenMemory()
 	layer.Add("testLayer", 0, 0, 10, 10, 1, "")
@@ -78,6 +80,7 @@ Example:
 func TestLayerDelete(t *testing.T) {
 	commonResource.isDebugEnabled = true
 	InitializeTerminal(80, 25)
+	defer RestoreTerminalSettings()
 	layer.ReInitializeScreenMemory()
 
 	// Create test layers
@@ -118,6 +121,7 @@ Example:
 func TestLayerParentChild(t *testing.T) {
 	commonResource.isDebugEnabled = true
 	InitializeTerminal(80, 25)
+	defer RestoreTerminalSettings()
 	layer.ReInitializeScreenMemory()
 
 	// Create parent-child relationship
@@ -155,6 +159,7 @@ Example:
 func TestLayerGetAbsoluteLocation(t *testing.T) {
 	commonResource.isDebugEnabled = true
 	InitializeTerminal(80, 25)
+	defer RestoreTerminalSettings()
 	layer.ReInitializeScreenMemory()
 
 	layer.Add("root", 2, 3, 20, 20, 1, "")
@@ -193,6 +198,7 @@ Example:
 func TestLayerInstanceLocationMethods(t *testing.T) {
 	commonResource.isDebugEnabled = true
 	InitializeTerminal(80, 25)
+	defer RestoreTerminalSettings()
 	layer.ReInitializeScreenMemory()
 
 	parentInstance := AddLayer(10, 5, 20, 20, 1, nil)
@@ -234,6 +240,7 @@ Example:
 func TestLayerZOrder(t *testing.T) {
 	commonResource.isDebugEnabled = true
 	InitializeTerminal(80, 25)
+	defer RestoreTerminalSettings()
 	layer.ReInitializeScreenMemory()
 
 	// Create layers with different z-orders
@@ -277,6 +284,7 @@ Example:
 func TestLayerInstanceMethods(t *testing.T) {
 	commonResource.isDebugEnabled = true
 	InitializeTerminal(80, 25)
+	defer RestoreTerminalSettings()
 	layer.ReInitializeScreenMemory()
 
 	// Create a test layer
@@ -327,6 +335,7 @@ Example:
 func TestLayerDrawingMethods(t *testing.T) {
 	commonResource.isDebugEnabled = true
 	InitializeTerminal(80, 25)
+	defer RestoreTerminalSettings()
 	layer.ReInitializeScreenMemory()
 
 	// Create a test layer
@@ -370,6 +379,7 @@ Example:
 func TestPrintMethod(t *testing.T) {
 	commonResource.isDebugEnabled = true
 	InitializeTerminal(80, 25)
+	defer RestoreTerminalSettings()
 	layer.ReInitializeScreenMemory()
 
 	// Create a test layer
@@ -480,6 +490,7 @@ Example:
 func TestLayerControlMethods(t *testing.T) {
 	commonResource.isDebugEnabled = true
 	InitializeTerminal(80, 25)
+	defer RestoreTerminalSettings()
 	layer.ReInitializeScreenMemory()
 
 	// Create a test layer
@@ -538,6 +549,7 @@ Example:
 func TestLayerGlobalMethods(t *testing.T) {
 	commonResource.isDebugEnabled = true
 	InitializeTerminal(80, 25)
+	defer RestoreTerminalSettings()
 	layer.ReInitializeScreenMemory()
 	// Test AddLayer
 	layerInstance := AddLayer(0, 0, 10, 10, 1, nil)
@@ -598,6 +610,7 @@ Example:
 func TestComplexLayerHierarchy(t *testing.T) {
 	commonResource.isDebugEnabled = true
 	InitializeTerminal(80, 25)
+	defer RestoreTerminalSettings()
 	layer.ReInitializeScreenMemory()
 
 	// Create a complex layer hierarchy:
@@ -711,6 +724,7 @@ Example:
 func TestComplexControlManagement(t *testing.T) {
 	commonResource.isDebugEnabled = true
 	InitializeTerminal(80, 25)
+	defer RestoreTerminalSettings()
 	layer.ReInitializeScreenMemory()
 
 	// Create a layer hierarchy
@@ -821,6 +835,7 @@ Example:
 func TestLayerAndControlPropertyStability(t *testing.T) {
 	commonResource.isDebugEnabled = true
 	InitializeTerminal(80, 25)
+	defer RestoreTerminalSettings()
 	layer.ReInitializeScreenMemory()
 
 	// Create a layer hierarchy
@@ -904,6 +919,7 @@ Example:
 func TestLayerAndControlMemoryLeaks(t *testing.T) {
 	commonResource.isDebugEnabled = true
 	InitializeTerminal(80, 25)
+	defer RestoreTerminalSettings()
 	layer.ReInitializeScreenMemory()
 
 	// Create a large number of layers and controls
@@ -984,6 +1000,7 @@ Example:
 func TestComplexInterleavedOperations(t *testing.T) {
 	commonResource.isDebugEnabled = true
 	InitializeTerminal(80, 25)
+	defer RestoreTerminalSettings()
 	layer.ReInitializeScreenMemory()
 
 	// Create a layer hierarchy

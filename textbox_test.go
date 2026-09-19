@@ -20,7 +20,7 @@ Example:
         Screen content matches expected ANSI string (Base64 encoded) showing multiple lines of rendered text.
 */
 func TestTextboxMultiline(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	textboxInstance := layer1.AddTextbox(styleEntry, 2, 2, 20, 4, false)
 	setFocusedControl(layer1.layerAlias, textboxInstance.controlAlias, constants.CellTypeTextbox)
 	textbox.UpdateKeyboardEventTextboxWithString("abcdefghijklmnop")
@@ -53,7 +53,7 @@ Example:
         Screen content matches expected ANSI string (Base64 encoded) showing horizontally scrolled or truncated text.
 */
 func TestTextboxLongLine(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	textboxInstance := layer1.AddTextbox(styleEntry, 2, 2, 20, 4, false)
 	setFocusedControl(layer1.layerAlias, textboxInstance.controlAlias, constants.CellTypeTextbox)
 	textbox.UpdateKeyboardEventTextboxWithString("abcdefghijklmnop")
@@ -86,7 +86,7 @@ Example:
         Screen content matches expected ANSI string (Base64 encoded) showing vertically scrolled text.
 */
 func TestTextboxTallLine(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	textboxInstance := layer1.AddTextbox(styleEntry, 2, 2, 20, 4, false)
 	setFocusedControl(layer1.layerAlias, textboxInstance.controlAlias, constants.CellTypeTextbox)
 	textbox.UpdateKeyboardEventTextboxWithString("abcdefghijklmnop")
@@ -122,7 +122,7 @@ Example:
         Screen content matches expected ANSI string (Base64 encoded) showing both horizontal and vertical scrolling.
 */
 func TestTextboxLongAndTall(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	textboxInstance := layer1.AddTextbox(styleEntry, 2, 2, 20, 4, false)
 	setFocusedControl(layer1.layerAlias, textboxInstance.controlAlias, constants.CellTypeTextbox)
 	textbox.UpdateKeyboardEventTextboxWithString("abcdefghijklmnop")
@@ -157,7 +157,7 @@ Example:
         Screen content matches expected ANSI string (Base64 encoded) showing a new line inserted at the cursor.
 */
 func TestTextboxLineBreak(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	textboxInstance := layer1.AddTextbox(styleEntry, 2, 2, 20, 4, false)
 	setFocusedControl(layer1.layerAlias, textboxInstance.controlAlias, constants.CellTypeTextbox)
 	textbox.UpdateKeyboardEventTextboxWithString("abcdefghijklmnop")
@@ -195,7 +195,7 @@ Example:
         Screen content matches expected ANSI string (Base64 encoded) with characters removed as expected.
 */
 func TestTextboxDeleting(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	textboxInstance := layer1.AddTextbox(styleEntry, 2, 2, 20, 4, false)
 	setFocusedControl(layer1.layerAlias, textboxInstance.controlAlias, constants.CellTypeTextbox)
 	textbox.UpdateKeyboardEventTextboxWithString("abcdefghijklmnop")
@@ -228,7 +228,7 @@ Example:
         Screen content matches expected ANSI string (Base64 encoded) showing the cursor at column 0.
 */
 func TestTextboxHome(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	textboxInstance := layer1.AddTextbox(styleEntry, 2, 2, 20, 4, false)
 	setFocusedControl(layer1.layerAlias, textboxInstance.controlAlias, constants.CellTypeTextbox)
 	textbox.UpdateKeyboardEventTextboxWithString("abcdefghijklmnop")
@@ -267,7 +267,7 @@ Example:
         After "end": CursorXLocation 12, ViewportXLocation 3, and the rendered screen matches the master image.
 */
 func TestTextboxAsciiCharacterization(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	textboxInstance := layer1.AddTextbox(styleEntry, 2, 2, 10, 3, false)
 	setFocusedControl(layer1.layerAlias, textboxInstance.controlAlias, constants.CellTypeTextbox)
 	textboxEntry := Textboxes.Get(textboxInstance.layerAlias, textboxInstance.controlAlias)
@@ -317,7 +317,7 @@ Example:
         After "home" then "delete": the leading 字 on line 2 is removed, leaving [中 文 space] and [space].
 */
 func TestTextboxCjkInsertDeleteBackspace(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	textboxInstance := layer1.AddTextbox(styleEntry, 2, 2, 12, 4, false)
 	setFocusedControl(layer1.layerAlias, textboxInstance.controlAlias, constants.CellTypeTextbox)
 	textboxEntry := Textboxes.Get(textboxInstance.layerAlias, textboxInstance.controlAlias)
@@ -359,7 +359,7 @@ Example:
 	    The last drawn cell is never a wide-rune lead.
 */
 func TestTextboxCjkHorizontalWindow(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	textboxInstance := layer1.AddTextbox(styleEntry, 2, 2, 6, 4, false)
 	setFocusedControl(layer1.layerAlias, textboxInstance.controlAlias, constants.CellTypeTextbox)
 	textboxEntry := Textboxes.Get(textboxInstance.layerAlias, textboxInstance.controlAlias)
@@ -403,7 +403,7 @@ Example:
         wrapped line's non-space runes preserves the original non-space runes in order.
 */
 func TestTextboxCjkWordWrap(test *testing.T) {
-	_, _, _, _ = CommonTestSetup()
+	_, _, _, _ = CommonTestSetup(test)
 	source := [][]rune{[]rune("中文 中文中文 中文中文中文")}
 	wrapped := textbox.wrapTextToWidth(source, 10)
 	assert.Greater(test, len(wrapped), 1)
@@ -441,7 +441,7 @@ Example:
         click clamps CursorXLocation to 3 (len(line) minus one).
 */
 func TestTextboxCjkClickCoordinates(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	textboxInstance := layer1.AddTextbox(styleEntry, 2, 2, 10, 4, false)
 	setFocusedControl(layer1.layerAlias, textboxInstance.controlAlias, constants.CellTypeTextbox)
 	textboxEntry := Textboxes.Get(textboxInstance.layerAlias, textboxInstance.controlAlias)
@@ -479,7 +479,7 @@ Example:
         The vertical scrollbar MaxScrollValue equals len(TextData) minus Height, which is 4.
 */
 func TestTextboxCjkVerticalScrollUnaffected(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	textboxInstance := layer1.AddTextbox(styleEntry, 2, 2, 6, 4, false)
 	setFocusedControl(layer1.layerAlias, textboxInstance.controlAlias, constants.CellTypeTextbox)
 	textboxEntry := Textboxes.Get(textboxInstance.layerAlias, textboxInstance.controlAlias)
@@ -507,7 +507,7 @@ Example:
         cursor foreground and background colours.
 */
 func TestTextboxCjkCursorRendering(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	textboxInstance := layer1.AddTextbox(styleEntry, 2, 2, 10, 4, false)
 	setFocusedControl(layer1.layerAlias, textboxInstance.controlAlias, constants.CellTypeTextbox)
 	textboxEntry := Textboxes.Get(textboxInstance.layerAlias, textboxInstance.controlAlias)
@@ -538,7 +538,7 @@ Example:
 	    {line 0, start 21, "tuv wxyz "}, {line 0, start 30, "0123456789"}, {line 1, start 0, "short"}.
 */
 func TestTextboxGetWrappedRows(test *testing.T) {
-	_, _, _, _ = CommonTestSetup()
+	_, _, _, _ = CommonTestSetup(test)
 	textData := [][]rune{[]rune("abcdefghij klmnop qrstuv wxyz 0123456789"), []rune("short")}
 	wrappedRows := textbox.getWrappedRows(textData, 10, true)
 
@@ -587,7 +587,7 @@ Example:
 	    CursorYLocation 0 and CursorXLocation 23, the logical index of 'v'.
 */
 func TestTextboxWordWrapClickPlacesCursor(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	textboxInstance := layer1.AddTextbox(styleEntry, 2, 2, 10, 4, false)
 	setFocusedControl(layer1.layerAlias, textboxInstance.controlAlias, constants.CellTypeTextbox)
 	textboxEntry := Textboxes.Get(textboxInstance.layerAlias, textboxInstance.controlAlias)
@@ -623,7 +623,7 @@ Example:
 	    cursor background colour is present in the drawn area.
 */
 func TestTextboxWordWrapCursorStaysVisible(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	textboxInstance := layer1.AddTextbox(styleEntry, 2, 2, 10, 2, false)
 	setFocusedControl(layer1.layerAlias, textboxInstance.controlAlias, constants.CellTypeTextbox)
 	textboxEntry := Textboxes.Get(textboxInstance.layerAlias, textboxInstance.controlAlias)
@@ -664,7 +664,7 @@ Example:
 	    enabled.
 */
 func TestTextboxWordWrapScrollbarUnits(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	textboxInstance := layer1.AddTextbox(styleEntry, 2, 2, 10, 2, false)
 	setFocusedControl(layer1.layerAlias, textboxInstance.controlAlias, constants.CellTypeTextbox)
 	textboxEntry := Textboxes.Get(textboxInstance.layerAlias, textboxInstance.controlAlias)
@@ -693,7 +693,7 @@ Example:
 	    TextData[0] rune 13 is 'X', CursorXLocation is 14, and the cursor's display row is within the viewport.
 */
 func TestTextboxWordWrapInsertKeepsCursorOnRune(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	textboxInstance := layer1.AddTextbox(styleEntry, 2, 2, 10, 3, false)
 	setFocusedControl(layer1.layerAlias, textboxInstance.controlAlias, constants.CellTypeTextbox)
 	textboxEntry := Textboxes.Get(textboxInstance.layerAlias, textboxInstance.controlAlias)
@@ -727,7 +727,7 @@ Example:
 	    cell yields the same line and rune index it was stamped with.
 */
 func TestTextboxWrapDisabledCoordinatesUnchanged(test *testing.T) {
-	_, _, _, _ = CommonTestSetup()
+	_, _, _, _ = CommonTestSetup(test)
 	textData := [][]rune{[]rune("first line here"), []rune("second"), []rune("third line of text")}
 	wrappedRows := textbox.getWrappedRows(textData, 8, false)
 
@@ -757,7 +757,7 @@ Example:
 	    cursor row is inside the two-row window.
 */
 func TestTextboxWordWrapArrowDownStepsWrappedRows(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	textboxInstance := layer1.AddTextbox(styleEntry, 2, 2, 10, 2, false)
 	setFocusedControl(layer1.layerAlias, textboxInstance.controlAlias, constants.CellTypeTextbox)
 	textboxEntry := Textboxes.Get(textboxInstance.layerAlias, textboxInstance.controlAlias)
@@ -797,7 +797,7 @@ Example:
 	    stays at rune 4 on lines that are long enough.
 */
 func TestTextboxArrowDownWrapOffMovesLogicalLine(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	textboxInstance := layer1.AddTextbox(styleEntry, 2, 2, 20, 4, false)
 	setFocusedControl(layer1.layerAlias, textboxInstance.controlAlias, constants.CellTypeTextbox)
 	textboxEntry := Textboxes.Get(textboxInstance.layerAlias, textboxInstance.controlAlias)
@@ -826,7 +826,7 @@ Example:
 	    The two non-seed lines are the rune slices [a b c space] and [d e space].
 */
 func TestTextboxSetTextLinesEndWithSentinel(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	textboxInstance := layer1.AddTextbox(styleEntry, 2, 2, 20, 4, false)
 	textboxInstance.SetText("abc\nde")
 	textboxEntry := Textboxes.Get(textboxInstance.layerAlias, textboxInstance.controlAlias)
@@ -852,7 +852,7 @@ Example:
 	    After typing 'Y': the line is [Y space] and CursorXLocation is 1.
 */
 func TestTextboxDeleteLastCharacterThenType(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	textboxInstance := layer1.AddTextbox(styleEntry, 2, 2, 20, 4, false)
 	setFocusedControl(layer1.layerAlias, textboxInstance.controlAlias, constants.CellTypeTextbox)
 	textboxInstance.SetText("X")

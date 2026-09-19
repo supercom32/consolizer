@@ -26,6 +26,7 @@ func TestPrintDialogWithTextStyles(test *testing.T) {
 	layerHeight := 10
 	textStyleAlias := "redColor"
 	InitializeTerminal(layerWidth, layerHeight)
+	defer RestoreTerminalSettings()
 	layerAlias1 := AddLayer(0, 0, layerWidth, layerHeight, 1, nil)
 	layerAlias1.Color(4, 6)
 	layerAlias1.FillLayer("a1a2a3a4a5")

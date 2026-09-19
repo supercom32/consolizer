@@ -2,9 +2,12 @@ package consolizer
 
 import (
 	"fmt"
+	"github.com/atotto/clipboard"
 	"github.com/stretchr/testify/assert"
 	"github.com/supercom32/consolizer/constants"
 	"github.com/supercom32/consolizer/stringformat"
+	"strconv"
+	"strings"
 	"testing"
 )
 
@@ -20,7 +23,7 @@ Example:
         Screen content matches expected ANSI string (Base64 encoded) showing the default text.
 */
 func TestTextFieldDefaultText(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 20, 10, false, "default", true)
 	setFocusedControl(layer1.layerAlias, textFieldInstance.controlAlias, constants.CellTypeTextField)
 	UpdateDisplay(false)
@@ -46,7 +49,7 @@ Example:
         Screen content matches expected ANSI string (Base64 encoded) where "default" is replaced by masks.
 */
 func TestTextFieldPasswordText(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 20, 10, true, "default", true)
 	setFocusedControl(layer1.layerAlias, textFieldInstance.controlAlias, constants.CellTypeTextField)
 	UpdateDisplay(false)
@@ -72,7 +75,7 @@ Example:
         Screen content matches expected ANSI string (Base64 encoded) showing the scrolled viewport.
 */
 func TestTextFieldLongText(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 20, 10, false, "this is a long string of text which i know is long.", true)
 	setFocusedControl(layer1.layerAlias, textFieldInstance.controlAlias, constants.CellTypeTextField)
 	TextField.updateKeyboardEvent([]rune("end"))
@@ -99,7 +102,7 @@ Example:
         Screen content matches expected ANSI string (Base64 encoded) showing the end portion of the typed alphabet.
 */
 func TestTextFieldLongTypedText(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 20, 30, false, "", true)
 	setFocusedControl(layer1.layerAlias, textFieldInstance.controlAlias, constants.CellTypeTextField)
 	TextField.updateKeyboardEventTextboxWithString("abcdefghijklmnopqrstuvwxyz")
@@ -126,7 +129,7 @@ Example:
         The cursor is positioned at index 0 and the viewport scrolls back to the beginning.
 */
 func TestTextFieldHomeKey(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 20, 30, false, "", true)
 	setFocusedControl(layer1.layerAlias, textFieldInstance.controlAlias, constants.CellTypeTextField)
 	TextField.updateKeyboardEventTextboxWithString("abcdefghijklmnopqrstuvwxyz")
@@ -154,7 +157,7 @@ Example:
         Screen content shows the merged string at the correct cursor position.
 */
 func TestTextFieldInsert(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 20, 50, false, "", true)
 	setFocusedControl(layer1.layerAlias, textFieldInstance.controlAlias, constants.CellTypeTextField)
 	TextField.updateKeyboardEventTextboxWithString("abcdefghijklmnopqrstuvwxyz")
@@ -184,7 +187,7 @@ Example:
         The characters preceding index 5 are removed and the string is collapsed.
 */
 func TestTextFieldBackspace(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 20, 90, false, "", true)
 	setFocusedControl(layer1.layerAlias, textFieldInstance.controlAlias, constants.CellTypeTextField)
 	TextField.updateKeyboardEventTextboxWithString("abcdefghijklmnopqrstuvwxyz")
@@ -213,7 +216,7 @@ Example:
         The characters at and after index 5 are removed as expected.
 */
 func TestTextFieldDelete(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 20, 90, false, "", true)
 	setFocusedControl(layer1.layerAlias, textFieldInstance.controlAlias, constants.CellTypeTextField)
 	TextField.updateKeyboardEventTextboxWithString("abcdefghijklmnopqrstuvwxyz")
@@ -242,7 +245,7 @@ Example:
         Delete commands at the end of the string have no visual or data effect.
 */
 func TestTextFieldDeleteAtEnd(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 20, 90, false, "", true)
 	setFocusedControl(layer1.layerAlias, textFieldInstance.controlAlias, constants.CellTypeTextField)
 	TextField.updateKeyboardEventTextboxWithString("abcdefghijklmnopqrstuvwxyz")
@@ -271,7 +274,7 @@ Example:
         The field only contains the first 10 characters "abcdefghij".
 */
 func TestTextFieldMaxFieldLimit(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 20, 10, false, "", true)
 	setFocusedControl(layer1.layerAlias, textFieldInstance.controlAlias, constants.CellTypeTextField)
 	TextField.updateKeyboardEventTextboxWithString("abcdefghijklmnopqrstuvwxyz")
@@ -298,7 +301,7 @@ Example:
         The cursor remains at index 0 and no data corruption occurs.
 */
 func TestTextFieldBackspaceStop(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 20, 70, false, "", true)
 	setFocusedControl(layer1.layerAlias, textFieldInstance.controlAlias, constants.CellTypeTextField)
 	TextField.updateKeyboardEventTextboxWithString("abcdefghijklmnopqrstuvwxyz")
@@ -335,7 +338,7 @@ Example:
         matches the committed master image.
 */
 func TestTextFieldAsciiCharacterization(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 6, 20, false, "", true)
 	setFocusedControl(layer1.layerAlias, textFieldInstance.controlAlias, constants.CellTypeTextField)
 	textFieldEntry := TextFields.Get(textFieldInstance.layerAlias, textFieldInstance.controlAlias)
@@ -385,7 +388,7 @@ Example:
         screen matches the committed master image (the two ideographs occupy four columns plus the cursor cell).
 */
 func TestTextFieldCjkInsert(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 6, 20, false, "", true)
 	setFocusedControl(layer1.layerAlias, textFieldInstance.controlAlias, constants.CellTypeTextField)
 	textFieldEntry := TextFields.Get(textFieldInstance.layerAlias, textFieldInstance.controlAlias)
@@ -417,7 +420,7 @@ Example:
         CurrentValue is the rune slice [中 space], CursorPosition 1, ViewportPosition 0.
 */
 func TestTextFieldCjkBackspace(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 6, 20, false, "", true)
 	setFocusedControl(layer1.layerAlias, textFieldInstance.controlAlias, constants.CellTypeTextField)
 	textFieldEntry := TextFields.Get(textFieldInstance.layerAlias, textFieldInstance.controlAlias)
@@ -441,7 +444,7 @@ Example:
         The narrow 'A' at rune index 1 is removed, leaving CurrentValue [中 文 space] with CursorPosition 1.
 */
 func TestTextFieldCjkDeleteMidString(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 6, 20, false, "", true)
 	setFocusedControl(layer1.layerAlias, textFieldInstance.controlAlias, constants.CellTypeTextField)
 	textFieldEntry := TextFields.Get(textFieldInstance.layerAlias, textFieldInstance.controlAlias)
@@ -466,7 +469,7 @@ Example:
         width is at most 6 columns and the caret column relative to the viewport is strictly less than 6.
 */
 func TestTextFieldCjkViewportScrollRight(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 6, 20, false, "", true)
 	setFocusedControl(layer1.layerAlias, textFieldInstance.controlAlias, constants.CellTypeTextField)
 	textFieldEntry := TextFields.Get(textFieldInstance.layerAlias, textFieldInstance.controlAlias)
@@ -495,7 +498,7 @@ Example:
         cell holds 中 and the placeholder cell holds a blank).
 */
 func TestTextFieldCjkViewportScrollLeftHome(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 6, 20, false, "", true)
 	setFocusedControl(layer1.layerAlias, textFieldInstance.controlAlias, constants.CellTypeTextField)
 	textFieldEntry := TextFields.Get(textFieldInstance.layerAlias, textFieldInstance.controlAlias)
@@ -525,7 +528,7 @@ Example:
         CursorPosition 1.
 */
 func TestTextFieldCjkClickRightHalf(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 6, 20, false, "中文", true)
 	setFocusedControl(layer1.layerAlias, textFieldInstance.controlAlias, constants.CellTypeTextField)
 	textFieldEntry := TextFields.Get(textFieldInstance.layerAlias, textFieldInstance.controlAlias)
@@ -560,7 +563,7 @@ Example:
         HighlightStart 0, HighlightEnd 1, IsHighlightActive true.
 */
 func TestTextFieldCjkHighlightDrag(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 6, 20, false, "中文", true)
 	setFocusedControl(layer1.layerAlias, textFieldInstance.controlAlias, constants.CellTypeTextField)
 	textFieldEntry := TextFields.Get(textFieldInstance.layerAlias, textFieldInstance.controlAlias)
@@ -593,7 +596,7 @@ Example:
         committed master image.
 */
 func TestTextFieldCjkPasswordAlignment(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 6, 20, true, "中文", true)
 	setFocusedControl(layer1.layerAlias, textFieldInstance.controlAlias, constants.CellTypeTextField)
 	UpdateDisplay(false)
@@ -624,7 +627,7 @@ Example:
         Only the first three ideographs are stored: CurrentValue is the rune slice [中 文 字 space] of length 4.
 */
 func TestTextFieldMaxLengthIsRunes(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 10, 3, false, "", true)
 	setFocusedControl(layer1.layerAlias, textFieldInstance.controlAlias, constants.CellTypeTextField)
 	textFieldEntry := TextFields.Get(textFieldInstance.layerAlias, textFieldInstance.controlAlias)
@@ -645,7 +648,7 @@ Example:
         The last rune of CurrentValue is always a blank space after every edit.
 */
 func TestTextFieldSentinelPreserved(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 6, 20, false, "", true)
 	setFocusedControl(layer1.layerAlias, textFieldInstance.controlAlias, constants.CellTypeTextField)
 	textFieldEntry := TextFields.Get(textFieldInstance.layerAlias, textFieldInstance.controlAlias)
@@ -663,4 +666,148 @@ func TestTextFieldSentinelPreserved(test *testing.T) {
 	assert.True(test, lastRuneIsBlank())
 	TextField.updateKeyboardEventTextboxWithString("字")
 	assert.True(test, lastRuneIsBlank())
+}
+
+/*
+digitsOnlyClampedTo is a method which allows you to build an OnValueChanged hook that strips every non-digit rune
+from a text field's value and clamps the remaining number down to a maximum, mirroring the sanitize-then-clamp
+logic a caller such as a gold-to-spend prompt would run on every keystroke.
+
+Example:
+
+	textField.SetOnValueChanged(digitsOnlyClampedTo(100))
+*/
+func digitsOnlyClampedTo(maxValue int) func(string) string {
+	return func(current string) string {
+		var digitsOnly strings.Builder
+		for _, currentRune := range current {
+			if currentRune >= '0' && currentRune <= '9' {
+				digitsOnly.WriteRune(currentRune)
+			}
+		}
+		sanitizedValue := digitsOnly.String()
+		if sanitizedValue == "" {
+			return sanitizedValue
+		}
+		numericValue, err := strconv.Atoi(sanitizedValue)
+		if err != nil || numericValue <= maxValue {
+			return sanitizedValue
+		}
+		return strconv.Itoa(maxValue)
+	}
+}
+
+/*
+TestTextFieldOnValueChangedClampsExcessDigit is a test which verifies that typing a digit which would push a text
+field's numeric value past a caller-defined ceiling is clamped back down to that ceiling within the same keystroke
+update, so CurrentValue never holds the raw, over-ceiling digit even for a single frame.
+
+Example:
+    Expected Inputs:
+        A text field with an OnValueChanged hook clamping to 100, into which "9", then "9", then "9" are typed one
+        keystroke at a time.
+    Expected Outputs:
+        After the first two keystrokes CurrentValue is "9 " then "99 ". After the third keystroke, which would
+        otherwise produce "999", CurrentValue is clamped to "100 " with CursorPosition 3.
+*/
+func TestTextFieldOnValueChangedClampsExcessDigit(test *testing.T) {
+	layer1, _, _, styleEntry := CommonTestSetup(test)
+	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 10, 10, false, "", true)
+	setFocusedControl(layer1.layerAlias, textFieldInstance.controlAlias, constants.CellTypeTextField)
+	textFieldEntry := TextFields.Get(textFieldInstance.layerAlias, textFieldInstance.controlAlias)
+	textFieldInstance.SetOnValueChanged(digitsOnlyClampedTo(100))
+
+	TextField.updateKeyboardEvent([]rune("9"))
+	assert.Equal(test, "9 ", string(textFieldEntry.CurrentValue))
+
+	TextField.updateKeyboardEvent([]rune("9"))
+	assert.Equal(test, "99 ", string(textFieldEntry.CurrentValue))
+
+	TextField.updateKeyboardEvent([]rune("9"))
+	assert.Equal(test, "100 ", string(textFieldEntry.CurrentValue))
+	assert.Equal(test, 3, textFieldEntry.CursorPosition)
+}
+
+/*
+TestTextFieldOnValueChangedStripsNonDigit is a test which verifies that typing a non-digit character into a
+digits-only text field is stripped out within the same keystroke update, so CurrentValue never holds the raw
+non-digit character even for a single frame.
+
+Example:
+    Expected Inputs:
+        A text field with an OnValueChanged hook clamping to 1000, into which "1", "2", "a" are typed one keystroke
+        at a time.
+    Expected Outputs:
+        After "1" and "2", CurrentValue is "1 " then "12 ". After "a", the non-digit is stripped so CurrentValue
+        remains "12 " with CursorPosition re-clamped to 2.
+*/
+func TestTextFieldOnValueChangedStripsNonDigit(test *testing.T) {
+	layer1, _, _, styleEntry := CommonTestSetup(test)
+	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 10, 10, false, "", true)
+	setFocusedControl(layer1.layerAlias, textFieldInstance.controlAlias, constants.CellTypeTextField)
+	textFieldEntry := TextFields.Get(textFieldInstance.layerAlias, textFieldInstance.controlAlias)
+	textFieldInstance.SetOnValueChanged(digitsOnlyClampedTo(1000))
+
+	TextField.updateKeyboardEvent([]rune("1"))
+	assert.Equal(test, "1 ", string(textFieldEntry.CurrentValue))
+
+	TextField.updateKeyboardEvent([]rune("2"))
+	assert.Equal(test, "12 ", string(textFieldEntry.CurrentValue))
+
+	TextField.updateKeyboardEvent([]rune("a"))
+	assert.Equal(test, "12 ", string(textFieldEntry.CurrentValue))
+	assert.Equal(test, 2, textFieldEntry.CursorPosition)
+}
+
+/*
+TestTextFieldOnValueChangedPasteClamped is a test which verifies that pasting a numeric string past a
+caller-defined ceiling is clamped within the same paste keystroke update, proving the OnValueChanged hook covers
+the paste code path through the same call site used for typed characters rather than needing a second hook call
+site. In addition, the following should be noted:
+
+  - The test skips itself when no system clipboard utility is available to back the paste, which is the case in
+    this sandbox, rather than failing on an environment limitation unrelated to the hook's correctness.
+
+Example:
+    Expected Inputs:
+        A text field with an OnValueChanged hook clamping to 100, with clipboard content "9999" pasted via
+        "ctrl+v".
+    Expected Outputs:
+        CurrentValue is clamped to "100 " with CursorPosition 3.
+*/
+func TestTextFieldOnValueChangedPasteClamped(test *testing.T) {
+	if err := clipboard.WriteAll("9999"); err != nil {
+		test.Skipf("skipping paste test: no system clipboard utility is available in this environment: %v", err)
+	}
+	layer1, _, _, styleEntry := CommonTestSetup(test)
+	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 10, 10, false, "", true)
+	setFocusedControl(layer1.layerAlias, textFieldInstance.controlAlias, constants.CellTypeTextField)
+	textFieldEntry := TextFields.Get(textFieldInstance.layerAlias, textFieldInstance.controlAlias)
+	textFieldInstance.SetOnValueChanged(digitsOnlyClampedTo(100))
+
+	TextField.updateKeyboardEvent([]rune("ctrl+v"))
+	assert.Equal(test, "100 ", string(textFieldEntry.CurrentValue))
+	assert.Equal(test, 3, textFieldEntry.CursorPosition)
+}
+
+/*
+TestTextFieldOnValueChangedUnsetPreservesPriorBehavior is a test which verifies that a text field with no
+OnValueChanged hook configured behaves exactly as it did before the hook existed, accepting digits past what a
+hook would otherwise clamp to and never stripping non-digit characters.
+
+Example:
+    Expected Inputs:
+        A text field with no OnValueChanged hook, into which "9", "9", "9", "a" are typed one keystroke at a time.
+    Expected Outputs:
+        CurrentValue accumulates every typed character unmodified, ending as "999a ".
+*/
+func TestTextFieldOnValueChangedUnsetPreservesPriorBehavior(test *testing.T) {
+	layer1, _, _, styleEntry := CommonTestSetup(test)
+	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 10, 10, false, "", true)
+	setFocusedControl(layer1.layerAlias, textFieldInstance.controlAlias, constants.CellTypeTextField)
+	textFieldEntry := TextFields.Get(textFieldInstance.layerAlias, textFieldInstance.controlAlias)
+
+	TextField.updateKeyboardEventTextboxWithString("999a")
+	assert.Equal(test, "999a ", string(textFieldEntry.CurrentValue))
+	assert.Nil(test, textFieldEntry.OnValueChanged)
 }

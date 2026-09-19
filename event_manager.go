@@ -92,6 +92,13 @@ func UpdateEventQueues() {
 			// concurrent UpdateDisplay call on another goroutine, which would otherwise let two goroutines drive
 			// the screen concurrently and corrupt terminal output.
 			commonResource.displayUpdate.Lock()
+			// A timer scheduled before shutdown can still fire after RestoreTerminalSettings has already torn the
+			// screen down, since stopping this timer is not part of that shutdown sequence. Bail out before Sync
+			// touches the freed screen; the UpdateDisplay call below is skipped too since it would no-op anyway.
+			if commonResource.isTerminated {
+				commonResource.displayUpdate.Unlock()
+				return
+			}
 			// Only auto-size sessions track the physical terminal's size. A session initialized with an explicit
 			// fixed width and height must keep rendering, mouse hit testing, and layer bounds pinned to that size
 			// even after the physical terminal is resized around it.
@@ -101,7 +108,7 @@ func UpdateEventQueues() {
 			}
 			commonResource.screen.Sync()
 			commonResource.displayUpdate.Unlock()
-			// Called outside the lock above since sync.Mutex is not reentrant and UpdateDisplay acquires the
+			// Called outside the lock above since the write lock is not reentrant and UpdateDisplay acquires the
 			// same lock itself. Without this, the display would stay stale until whatever unrelated event
 			// happens to trigger the next UpdateDisplay call, such as a keypress.
 			UpdateDisplay(false)
@@ -442,14 +449,22 @@ func isInteractiveLayerOffscreen(layerAlias string) bool {
 
 /*
 getCellInformationUnderMouseCursor is a method which obtains the layer alias and the buttonType alias for the text cell
-currently under the mouse cursor. This is useful for determining which buttonType the user has clicked (if any).
+currently under the mouse cursor. This is useful for determining which buttonType the user has clicked (if any). In
+addition, the following should be noted:
+
+  - The shared screen snapshot is copied out under a read lock before use, so a concurrent UpdateDisplay call on
+    another goroutine, such as the one driving the periodic mouse hit-test that calls this method, can never be
+    observed mid-write.
 
 Example:
-    getCellInformationUnderMouseCursor(10, 20)
+
+	getCellInformationUnderMouseCursor(10, 20)
 */
 func getCellInformationUnderMouseCursor(mouseXLocation int, mouseYLocation int) types.CharacterEntryType {
 	var characterEntry types.CharacterEntryType
+	commonResource.displayUpdate.RLock()
 	layerEntry := commonResource.screenLayer
+	commonResource.displayUpdate.RUnlock()
 	mouseYLocationOnLayer := mouseYLocation - layerEntry.ScreenYLocation
 	mouseXLocationOnLayer := mouseXLocation - layerEntry.ScreenXLocation
 	if mouseYLocationOnLayer >= 0 && mouseXLocationOnLayer >= 0 &&

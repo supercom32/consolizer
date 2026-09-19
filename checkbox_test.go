@@ -20,7 +20,7 @@ Example:
         Checkbox is rendered at (2,2) with label "Test Checkbox" and unselected.
 */
 func TestCheckboxDefaultState(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	Checkbox.Add(layer1.layerAlias, "testCheckbox", "Test Checkbox", styleEntry, 2, 2, false, true)
 	UpdateDisplay(false)
 	layerEntry := commonResource.screenLayer
@@ -47,7 +47,7 @@ Example:
         Expects checkbox to be rendered with its selected character.
 */
 func TestCheckboxSelectedState(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	Checkbox.Add(layer1.layerAlias, "testCheckbox", "Test Checkbox", styleEntry, 2, 2, true, true)
 	UpdateDisplay(false)
 	layerEntry := commonResource.screenLayer
@@ -74,7 +74,7 @@ Example:
         Expects checkbox to be rendered with its disabled state appearance.
 */
 func TestCheckboxDisabledState(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	Checkbox.Add(layer1.layerAlias, "testCheckbox", "Test Checkbox", styleEntry, 2, 2, false, false)
 	UpdateDisplay(false)
 	layerEntry := commonResource.screenLayer
@@ -100,7 +100,7 @@ Example:
         Expects checkbox selection state to change after a simulated interaction.
 */
 func TestCheckboxToggleState(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	checkboxInstance := Checkbox.Add(layer1.layerAlias, "testCheckbox", "Test Checkbox", styleEntry, 2, 2, false, true)
 
 	// Simulate a checkbox click by directly setting the checkbox state
@@ -137,7 +137,7 @@ Example:
         Expects multiple checkboxes with different states to be rendered correctly.
 */
 func TestCheckboxMultiple(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	Checkbox.Add(layer1.layerAlias, "testCheckbox1", "Checkbox 1", styleEntry, 2, 2, false, true)
 	Checkbox.Add(layer1.layerAlias, "testCheckbox2", "Checkbox 2", styleEntry, 2, 4, true, true)
 	UpdateDisplay(false)
@@ -165,7 +165,7 @@ Example:
         Expects checkbox to be absent from the rendered output after deletion.
 */
 func TestCheckboxDelete(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	checkboxInstance := Checkbox.Add(layer1.layerAlias, "testCheckbox", "Test Checkbox", styleEntry, 2, 2, false, true)
 	UpdateDisplay(false)
 
@@ -196,7 +196,7 @@ Example:
         Expects all checkboxes to be absent from the rendered output after calling DeleteAllCheckboxes.
 */
 func TestCheckboxDeleteAll(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	Checkbox.Add(layer1.layerAlias, "testCheckbox1", "Checkbox 1", styleEntry, 2, 2, false, true)
 	Checkbox.Add(layer1.layerAlias, "testCheckbox2", "Checkbox 2", styleEntry, 2, 4, true, true)
 	UpdateDisplay(false)
@@ -228,7 +228,7 @@ Example:
         Expects checkbox focus state to be reflected in the system.
 */
 func TestCheckboxFocus(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	Checkbox.Add(layer1.layerAlias, "testCheckbox", "Test Checkbox", styleEntry, 2, 2, false, true)
 
 	// Set focus to the checkbox
@@ -259,7 +259,7 @@ Example:
         Expects checkbox label to be rendered without breaking the layout.
 */
 func TestCheckboxLongLabel(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	Checkbox.Add(layer1.layerAlias, "testCheckbox", "This is a very long checkbox label to test text wrapping", styleEntry, 2, 2, false, true)
 	UpdateDisplay(false)
 	layerEntry := commonResource.screenLayer

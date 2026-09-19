@@ -10,7 +10,13 @@ import (
 const TOOLTIP_TEST_SUITE_NAME = "tooltip"
 
 /*
-TestTooltipThinLine is a test which verifies that a tooltip with a thin line border is rendered correctly.
+TestTooltipThinLine is a test which verifies that a tooltip with a thin line border is rendered correctly. In
+addition, the following should be noted:
+
+- Calls Tooltip.updateMouseEvent directly instead of going through the throttled UpdatePeriodicEvents, so this test
+  drives the hover state machine's two required calls (arm, then reveal) deterministically. CommonTestSetup starts
+  a background goroutine that also calls UpdatePeriodicEvents on its own 10ms schedule, and going through that same
+  throttled path here would race it on the tooltip's unsynchronized HoverStartTime and IsDrawn fields.
 
 Example:
     Expected Inputs:
@@ -19,15 +25,13 @@ Example:
         Screen content matches expected ANSI string (Base64 encoded) showing the thin border and tooltip text.
 */
 func TestTooltipThinLine(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	layer1.AddTooltip("This is a tooltip!", styleEntry, 0, 0, 20, 5, 3, 3, 25, 1, false, false, 0)
 	SetMouseStatus(0, 0, 0, "")
+	Tooltip.updateMouseEvent()
 	time.Sleep(1 * time.Second)
+	Tooltip.updateMouseEvent()
 	UpdateDisplay(false)
-	UpdatePeriodicEvents()
-	time.Sleep(1 * time.Second)
-	UpdateDisplay(false)
-	UpdatePeriodicEvents()
 	layerEntry := commonResource.screenLayer
 	obtainedValue := layerEntry.GetBasicAnsiStringAsBase64()
 	UpdateMasterImages(false, TOOLTIP_TEST_SUITE_NAME, "TestTooltipThinLine", obtainedValue)
@@ -41,7 +45,13 @@ func TestTooltipThinLine(test *testing.T) {
 }
 
 /*
-TestTooltipNoBorder is a test which verifies that a tooltip with no border is rendered correctly.
+TestTooltipNoBorder is a test which verifies that a tooltip with no border is rendered correctly. In addition, the
+following should be noted:
+
+- Calls Tooltip.updateMouseEvent directly instead of going through the throttled UpdatePeriodicEvents, so this test
+  drives the hover state machine's two required calls (arm, then reveal) deterministically. CommonTestSetup starts
+  a background goroutine that also calls UpdatePeriodicEvents on its own 10ms schedule, and going through that same
+  throttled path here would race it on the tooltip's unsynchronized HoverStartTime and IsDrawn fields.
 
 Example:
     Expected Inputs:
@@ -50,15 +60,13 @@ Example:
         Screen content matches expected ANSI string (Base64 encoded) showing only the tooltip text background.
 */
 func TestTooltipNoBorder(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	layer1.AddTooltip("This is a tooltip and this works great!", styleEntry, 0, 0, 20, 5, 3, 3, 15, 10, false, false, 0)
 	SetMouseStatus(0, 0, 0, "")
+	Tooltip.updateMouseEvent()
 	time.Sleep(1 * time.Second)
+	Tooltip.updateMouseEvent()
 	UpdateDisplay(false)
-	UpdatePeriodicEvents()
-	time.Sleep(1 * time.Second)
-	UpdateDisplay(false)
-	UpdatePeriodicEvents()
 	layerEntry := commonResource.screenLayer
 	obtainedValue := layerEntry.GetBasicAnsiStringAsBase64()
 	UpdateMasterImages(false, TOOLTIP_TEST_SUITE_NAME, "TestTooltipNoBorder", obtainedValue)
@@ -72,7 +80,13 @@ func TestTooltipNoBorder(test *testing.T) {
 }
 
 /*
-TestTooltipNoDelay is a test which verifies that a tooltip with no delay is rendered correctly.
+TestTooltipNoDelay is a test which verifies that a tooltip with no delay is rendered correctly. In addition, the
+following should be noted:
+
+- Calls Tooltip.updateMouseEvent directly instead of going through the throttled UpdatePeriodicEvents, so this test
+  drives the hover state machine's two required calls (arm, then reveal) deterministically. CommonTestSetup starts
+  a background goroutine that also calls UpdatePeriodicEvents on its own 10ms schedule, and going through that same
+  throttled path here would race it on the tooltip's unsynchronized HoverStartTime and IsDrawn fields.
 
 Example:
     Expected Inputs:
@@ -81,15 +95,13 @@ Example:
         Screen content matches expected ANSI string (Base64 encoded) with the tooltip showing immediately.
 */
 func TestTooltipNoDelay(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	layer1.AddTooltip("This is a tooltip and this works great!", styleEntry, 0, 0, 20, 5, 3, 3, 15, 10, false, true, 0)
 	SetMouseStatus(0, 0, 0, "")
+	Tooltip.updateMouseEvent()
 	time.Sleep(1 * time.Second)
+	Tooltip.updateMouseEvent()
 	UpdateDisplay(false)
-	UpdatePeriodicEvents()
-	time.Sleep(1 * time.Second)
-	UpdateDisplay(false)
-	UpdatePeriodicEvents()
 	layerEntry := commonResource.screenLayer
 	obtainedValue := layerEntry.GetBasicAnsiStringAsBase64()
 	UpdateMasterImages(false, TOOLTIP_TEST_SUITE_NAME, "TestTooltipNoDelay", obtainedValue)
@@ -103,7 +115,14 @@ func TestTooltipNoDelay(test *testing.T) {
 }
 
 /*
-TestTooltipWithDelay is a test which verifies that a tooltip with a delay is rendered correctly.
+TestTooltipWithDelay is a test which verifies that a tooltip with a delay is rendered correctly. In addition, the
+following should be noted:
+
+- Calls Tooltip.updateMouseEvent directly instead of going through the throttled UpdatePeriodicEvents, so this test
+  drives the hover state machine's calls (arm, then check before and after the delay) deterministically.
+  CommonTestSetup starts a background goroutine that also calls UpdatePeriodicEvents on its own 10ms schedule, and
+  going through that same throttled path here would race it on the tooltip's unsynchronized HoverStartTime and
+  IsDrawn fields.
 
 Example:
     Expected Inputs:
@@ -112,14 +131,13 @@ Example:
         Tooltip is hidden initially and then becomes visible after the 2-second delay.
 */
 func TestTooltipWithDelay(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	layer1.AddTooltip("This is a tooltip and this works great!", styleEntry, 0, 0, 20, 5, 3, 3, 15, 10, false, true, 2000)
 	SetMouseStatus(0, 0, 0, "")
-	UpdateDisplay(false)
-	UpdatePeriodicEvents()
+	Tooltip.updateMouseEvent()
 	time.Sleep(1 * time.Second)
+	Tooltip.updateMouseEvent()
 	UpdateDisplay(false)
-	UpdatePeriodicEvents()
 	layerEntry := commonResource.screenLayer
 	obtainedValue := layerEntry.GetBasicAnsiStringAsBase64()
 	UpdateMasterImages(false, TOOLTIP_TEST_SUITE_NAME, "TestTooltipWithDelay", obtainedValue)
@@ -131,8 +149,8 @@ func TestTooltipWithDelay(test *testing.T) {
 		fmt.Println("Obtained:\n", obtainedValueBase64)
 	}
 	time.Sleep(2 * time.Second)
+	Tooltip.updateMouseEvent()
 	UpdateDisplay(false)
-	UpdatePeriodicEvents()
 	layerEntry = commonResource.screenLayer
 	obtainedValue = layerEntry.GetBasicAnsiStringAsBase64()
 	UpdateMasterImages(false, TOOLTIP_TEST_SUITE_NAME, "TestTooltipWithDelay_Showing", obtainedValue)

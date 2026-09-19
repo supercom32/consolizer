@@ -27,6 +27,10 @@ type TextFieldEntryType struct {
 	HighlightEnd           int
 	IsHighlightActive      bool
 	IsHighlightModeToggled bool
+	// OnValueChanged, when set, is invoked synchronously with the field's trimmed current value
+	// after every keystroke that reaches this field, and any different value it returns replaces
+	// CurrentValue before the pending screen update is drawn.
+	OnValueChanged func(current string) string
 }
 
 /*

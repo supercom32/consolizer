@@ -20,7 +20,7 @@ Example:
         Button is rendered at (2,2) with label "Test" and width 10.
 */
 func TestButtonDefaultState(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	layer1.AddButton("Test", styleEntry, 2, 2, 10, 3, true)
 	UpdateDisplay(false)
 	layerEntry := commonResource.screenLayer
@@ -46,7 +46,7 @@ Example:
         Button is rendered with a disabled label color.
 */
 func TestButtonDisabledState(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	layer1.AddButton("Test", styleEntry, 2, 2, 10, 3, false)
 	UpdateDisplay(false)
 	layerEntry := commonResource.screenLayer
@@ -72,7 +72,7 @@ Example:
         Button is rendered with a sunken frame style.
 */
 func TestButtonPressedState(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	buttonObject := layer1.AddButton("Test", styleEntry, 2, 2, 10, 3, true)
 
 	// Simulate a button press by directly setting the button state
@@ -103,7 +103,7 @@ Example:
         Button label is underlined.
 */
 func TestButtonSelectedState(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	buttonObject := layer1.AddButton("Test", styleEntry, 2, 2, 10, 3, true)
 
 	// Simulate a button selection by directly setting the button state
@@ -134,7 +134,7 @@ Example:
         Button is rendered with width 15 and height 5.
 */
 func TestButtonCustomDimensions(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	layer1.AddButton("Test", styleEntry, 2, 2, 15, 5, true)
 	UpdateDisplay(false)
 	layerEntry := commonResource.screenLayer
@@ -160,7 +160,7 @@ Example:
         Button width expands to fit the long label.
 */
 func TestButtonLongLabel(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	layer1.AddButton("This is a long button label", styleEntry, 2, 2, 10, 3, true)
 	UpdateDisplay(false)
 	layerEntry := commonResource.screenLayer
@@ -186,7 +186,7 @@ Example:
         Button is absent from the rendered output after deletion.
 */
 func TestButtonDelete(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	buttonInstance := layer1.AddButton("Test", styleEntry, 2, 2, 10, 3, true)
 	UpdateDisplay(false)
 
@@ -217,7 +217,7 @@ Example:
         All buttons are absent from the rendered output after calling DeleteAllButtons.
 */
 func TestButtonDeleteAll(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	layer1.AddButton("Test 1", styleEntry, 2, 2, 10, 3, true)
 	layer1.AddButton("Test 2", styleEntry, 2, 6, 10, 3, true)
 	UpdateDisplay(false)
@@ -249,7 +249,7 @@ Example:
         Button focus state is reflected in the system.
 */
 func TestButtonFocus(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	layer1.AddButton("Test", styleEntry, 2, 2, 10, 3, true)
 
 	// Set focus to the button
@@ -279,7 +279,7 @@ Example:
         Screen content matches the committed master image; the frame is a single uniform colour.
 */
 func TestButtonFlatStyle(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	styleEntry.Button.StyleMode = constants.ButtonStyleFlat
 	layer1.AddButton("Test", styleEntry, 2, 2, 10, 3, true)
 	UpdateDisplay(false)
@@ -306,7 +306,7 @@ Example:
         colour.
 */
 func TestButtonFlatFrameHasNoBevel(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	frameColor := GetRGBColor(210, 210, 210)
 	styleEntry.Button.StyleMode = constants.ButtonStyleFlat
 	styleEntry.Button.ForegroundColor = frameColor
@@ -333,7 +333,7 @@ Example:
         A fill cell inside the button (3,3) carries the green pressed background colour.
 */
 func TestButtonFlatPressedUsesPressedColors(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	pressedBackgroundColor := GetRGBColor(0, 150, 0)
 	styleEntry.Button.StyleMode = constants.ButtonStyleFlat
 	styleEntry.Button.PressedBackgroundColor = pressedBackgroundColor
@@ -358,7 +358,7 @@ Example:
         Screen content matches the committed master image.
 */
 func TestButtonBorderlessStyle(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	styleEntry.Button.StyleMode = constants.ButtonStyleBorderless
 	layer1.AddButton("Test", styleEntry, 2, 2, 10, 3, true)
 	UpdateDisplay(false)
@@ -385,7 +385,7 @@ Example:
         column 5 of row 3.
 */
 func TestButtonBorderlessHasNoFrame(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	styleEntry.Button.StyleMode = constants.ButtonStyleBorderless
 	layer1.AddButton("Test", styleEntry, 2, 2, 10, 3, true)
 	UpdateDisplay(false)
@@ -414,7 +414,7 @@ Example:
         A fill cell inside the button (3,3) carries the green pressed background colour.
 */
 func TestButtonBorderlessPressedUsesPressedColors(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	pressedBackgroundColor := GetRGBColor(0, 150, 0)
 	styleEntry.Button.StyleMode = constants.ButtonStyleBorderless
 	styleEntry.Button.PressedBackgroundColor = pressedBackgroundColor
@@ -439,7 +439,7 @@ Example:
         Row 2 in the button's column range carries the button cell type; row 3 does not.
 */
 func TestButtonBorderlessAllowsSingleRow(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	styleEntry.Button.StyleMode = constants.ButtonStyleBorderless
 	layer1.AddButton("Test", styleEntry, 2, 2, 10, 1, true)
 	UpdateDisplay(false)

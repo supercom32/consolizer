@@ -194,8 +194,5 @@ func TestTransparencyVisualDemo(test *testing.T) {
 		demoSleep(2000 * time.Millisecond)
 	}
 
-	DeleteAllLayers()
-	if commonResource.screen != nil {
-		commonResource.screen.Fini()
-	}
+	RestoreTerminalSettings()
 }

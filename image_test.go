@@ -17,12 +17,16 @@ const (
 
 /*
 setupTest is a method which allows you to initialize the testing environment by clearing image entries and setting up
-standard styles and layers.
+standard styles and layers. In addition, the following should be noted:
+
+- Forwards test to CommonTestSetupImages, which registers RestoreTerminalSettings as a cleanup on test, so the
+  terminal session this call starts is always torn down when the calling test finishes.
 
 Example:
-    layer1, layer2, layer3, tuiStyle, imageStyle := setupTest()
+    layer1, layer2, layer3, tuiStyle, imageStyle := setupTest(test)
 */
-func setupTest() (*LayerInstanceType, *LayerInstanceType, *LayerInstanceType, types.TuiStyleEntryType, types.ImageStyleEntryType) {
+func setupTest(test testing.TB) (*LayerInstanceType, *LayerInstanceType, *LayerInstanceType, types.TuiStyleEntryType, types.ImageStyleEntryType) {
+	test.Helper()
 	ClearAllImages()
 	imageStyle := NewImageStyle()
 	imageStyle.DrawingStyle = constants.ImageStyleBlockElementsAccurate
@@ -33,7 +37,7 @@ func setupTest() (*LayerInstanceType, *LayerInstanceType, *LayerInstanceType, ty
 	imageStyle.TransparentForegroundPenalty = 5000 // Strongly penalize foreground on transparent pixels
 	imageStyle.AggressiveErrorThreshold = 0.8      // Only very well-fitting blocks survive
 	imageStyle.AggressiveCoverageThreshold = 0.5   // Cells must be at least 50% filled to survive
-	layer1, layer2, layer3, tuiStyleEntry := CommonTestSetupImages()
+	layer1, layer2, layer3, tuiStyleEntry := CommonTestSetupImages(test)
 	layer1.Color24Bit(GetRGBColor(255, 0, 0), GetRGBColor(0, 0, 255))
 	layer1.FillLayer("$")
 	return layer1, layer2, layer3, tuiStyleEntry, imageStyle
@@ -50,7 +54,7 @@ Example:
         Image is successfully loaded into memory and IsImageExists returns true.
 */
 func TestAddAndIsImageExists(test *testing.T) {
-	setupTest()
+	setupTest(test)
 	// We can't directly add an image anymore, so we need to load it.
 	// For this test, we'll create a dummy image file.
 	// In a real test, you'd likely have test assets.
@@ -70,7 +74,7 @@ Example:
         Image is removed from memory and IsImageExists returns false.
 */
 func TestDeleteImage(t *testing.T) {
-	setupTest()
+	setupTest(t)
 	err := LoadImage(IMAGE_COMPLEX)
 	assert.Nil(t, err, "Loading image should not produce an error")
 	UnloadImage(IMAGE_COMPLEX)
@@ -88,7 +92,7 @@ Example:
         True for the loaded image and False for the non-existent alias.
 */
 func TestIsImageExists(test *testing.T) {
-	setupTest()
+	setupTest(test)
 	err := LoadImage(IMAGE_COMPLEX)
 	assert.Nil(test, err, "Loading image should not produce an error")
 	assert.True(test, IsImageExists(IMAGE_COMPLEX), "Image should exist after being added")
@@ -106,7 +110,7 @@ Example:
         Image is removed from memory and is no longer available for use.
 */
 func TestUnloadImage(test *testing.T) {
-	setupTest()
+	setupTest(test)
 	err := LoadImage(IMAGE_COMPLEX)
 	assert.Nil(test, err, "Loading image should not produce an error")
 	UnloadImage(IMAGE_COMPLEX)
@@ -124,7 +128,7 @@ Example:
         Function completes without errors and IsImageExists remains false.
 */
 func TestUnloadNonExistentImage(test *testing.T) {
-	setupTest()
+	setupTest(test)
 	nonExistentImageAlias := "nonExistentImage"
 	UnloadImage(nonExistentImageAlias)
 	assert.False(test, IsImageExists(nonExistentImageAlias))
@@ -142,7 +146,7 @@ Example:
         Screen content matches the master ANSI string showing transparent background regions.
 */
 func TestTransparentImageBlockStyleBackgroundTransparency(test *testing.T) {
-	layer1, _, _, _, imageStyle := setupTest()
+	layer1, _, _, _, imageStyle := setupTest(test)
 	layer1.DrawImage(IMAGE_TRANSPARENCY, imageStyle, 1, 0, 40, 20, 0)
 	UpdateDisplay(false)
 	layerEntry := commonResource.screenLayer
@@ -169,7 +173,7 @@ Example:
         Screen content matches the master ANSI string showing correctly handled foreground transparency.
 */
 func TestTransparentImageBlockStyleForegroundTransparency(test *testing.T) {
-	_, layer2, _, _, imageStyle := setupTest()
+	_, layer2, _, _, imageStyle := setupTest(test)
 	layer2.DrawImage(IMAGE_TRANSPARENCY, imageStyle, 1, 0, 40, 20, 0)
 	UpdateDisplay(false)
 	layerEntry := commonResource.screenLayer
@@ -195,7 +199,7 @@ Example:
         Screen content matches the master ANSI string with correct color blending in semi-transparent regions.
 */
 func TestTransparentImageBlockStyleBlendedTransparency(test *testing.T) {
-	_, layer2, _, _, imageStyle := setupTest()
+	_, layer2, _, _, imageStyle := setupTest(test)
 	layer2.DrawImage(IMAGE_TRANSPARENCY, imageStyle, 1, 0, 40, 20, 0)
 	UpdateDisplay(false)
 	layerEntry := commonResource.screenLayer
@@ -222,7 +226,7 @@ Example:
         Screen content matches the master ANSI string showing correctly handled background transparency in half-block resolution.
 */
 func TestTransparentImageMediumResolutionStyleBackgroundTransparency(test *testing.T) {
-	layer1, _, _, _, imageStyle := setupTest()
+	layer1, _, _, _, imageStyle := setupTest(test)
 	imageStyle.DrawingStyle = constants.ImageStyleHalfBlock
 	layer1.DrawImage(IMAGE_TRANSPARENCY, imageStyle, 1, 0, 40, 20, 0)
 	UpdateDisplay(false)
@@ -250,7 +254,7 @@ Example:
         Screen content matches the master ANSI string showing correctly handled foreground transparency in half-block resolution.
 */
 func TestTransparentImageMediumResolutionStyleForegroundTransparency(test *testing.T) {
-	layer1, _, _, _, imageStyle := setupTest()
+	layer1, _, _, _, imageStyle := setupTest(test)
 	imageStyle.DrawingStyle = constants.ImageStyleHalfBlock
 	layer1.DrawImage(IMAGE_TRANSPARENCY, imageStyle, 1, 0, 40, 20, 0)
 	UpdateDisplay(false)
@@ -278,7 +282,7 @@ Example:
         Screen content matches the master ANSI string with correct pixel color blending in half-block resolution.
 */
 func TestTransparentImageMediumResolutionStyleBlendedTransparency(test *testing.T) {
-	layer1, _, _, _, imageStyle := setupTest()
+	layer1, _, _, _, imageStyle := setupTest(test)
 	imageStyle.DrawingStyle = constants.ImageStyleHalfBlock
 	layer1.DrawImage(IMAGE_TRANSPARENCY, imageStyle, 1, 0, 40, 20, 0)
 	UpdateDisplay(false)
@@ -306,7 +310,7 @@ Example:
         Screen content matches the master ANSI string showing correctly handled transparency in Braille resolution.
 */
 func TestTransparentImageBrailleStyleBackgroundTransparency(test *testing.T) {
-	layer1, _, _, _, imageStyle := setupTest()
+	layer1, _, _, _, imageStyle := setupTest(test)
 	imageStyle.DrawingStyle = constants.ImageStyleBraille
 	layer1.DrawImage(IMAGE_TRANSPARENCY, imageStyle, 1, 0, 40, 20, 0)
 	UpdateDisplay(false)
@@ -334,7 +338,7 @@ Example:
         Screen content matches the master ANSI string showing correctly handled foreground transparency in Braille resolution.
 */
 func TestTransparentImageBrailleStyleForegroundTransparency(test *testing.T) {
-	layer1, _, _, _, imageStyle := setupTest()
+	layer1, _, _, _, imageStyle := setupTest(test)
 	imageStyle.DrawingStyle = constants.ImageStyleBraille
 	layer1.DrawImage(IMAGE_TRANSPARENCY, imageStyle, 1, 0, 40, 20, 0)
 	UpdateDisplay(false)
@@ -362,7 +366,7 @@ Example:
         Screen content matches the master ANSI string with correct dot patterns and color blending in semi-transparent regions.
 */
 func TestTransparentImageBrailleStyleBlendedTransparency(test *testing.T) {
-	layer1, _, _, _, imageStyle := setupTest()
+	layer1, _, _, _, imageStyle := setupTest(test)
 	imageStyle.DrawingStyle = constants.ImageStyleBraille
 	layer1.DrawImage(IMAGE_TRANSPARENCY, imageStyle, 1, 0, 40, 20, 0)
 	UpdateDisplay(false)
@@ -390,7 +394,7 @@ Example:
         Screen content matches the master ANSI string showing correctly handled transparency in ASCII character resolution.
 */
 func TestTransparentImageAsciiStyleBackgroundTransparency(test *testing.T) {
-	_, layer2, _, _, imageStyle := setupTest()
+	_, layer2, _, _, imageStyle := setupTest(test)
 	imageStyle.DrawingStyle = constants.ImageStyleCharacters
 	imageStyle.RandomSeed = 1
 	layer2.DrawImage(IMAGE_TRANSPARENCY, imageStyle, 1, 0, 40, 20, 0)
@@ -419,7 +423,7 @@ Example:
         Screen content matches the master ANSI string showing correctly handled foreground transparency in ASCII character resolution.
 */
 func TestTransparentImageAsciiStyleForegroundTransparency(test *testing.T) {
-	_, layer2, _, _, imageStyle := setupTest()
+	_, layer2, _, _, imageStyle := setupTest(test)
 	imageStyle.DrawingStyle = constants.ImageStyleCharacters
 	imageStyle.RandomSeed = 1
 	layer2.DrawImage(IMAGE_TRANSPARENCY, imageStyle, 1, 0, 40, 20, 0)
@@ -447,7 +451,7 @@ Example:
         Screen content matches the master ANSI string with correct character selection and color blending.
 */
 func TestTransparentImageAsciiStyleBlendedTransparency(test *testing.T) {
-	_, layer2, _, _, imageStyle := setupTest()
+	_, layer2, _, _, imageStyle := setupTest(test)
 	imageStyle.DrawingStyle = constants.ImageStyleCharacters
 	imageStyle.RandomSeed = 1
 	layer2.DrawImage(IMAGE_TRANSPARENCY, imageStyle, 1, 0, 40, 20, 0)
@@ -478,7 +482,7 @@ Example:
         regions and edges of the circle.
 */
 func TestTransparentImageOverImage(test *testing.T) {
-	layer1, layer2, _, _, imageStyle := setupTest()
+	layer1, layer2, _, _, imageStyle := setupTest(test)
 	err := layer1.DrawImage(IMAGE_COMPLEX, imageStyle, 0, 0, 50, 20, 0)
 	assert.Nil(test, err, "Drawing the background image should not produce an error")
 	err = layer2.DrawImage(IMAGE_TRANSPARENCY, imageStyle, 1, 0, 40, 20, 0)
@@ -507,7 +511,7 @@ Example:
         The rendered image matches the master base64 string stored in the master images directory.
 */
 func TestComplexGeometryImage(test *testing.T) {
-	layer1, _, _, _ := CommonTestSetupHighResolutionImages()
+	layer1, _, _, _ := CommonTestSetupHighResolutionImages(test)
 	ClearAllImages()
 	imageStyle := NewImageStyle()
 	imageStyle.DrawingStyle = constants.ImageStyleBlockElementsAccurate

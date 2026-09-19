@@ -27,15 +27,22 @@ defaultValueType is a structure which holds common information about the current
 shared.
 */
 type defaultValueType struct {
-	screen               tcell.Screen
-	terminalWidth        int
-	terminalHeight       int
-	isAutoSizeEnabled    bool
-	screenLayer          types.LayerEntryType
-	debugDirectory       string
-	isDebugEnabled       bool
-	displayUpdate        sync.Mutex
-	updateDisplayChannel chan bool
+	screen                  tcell.Screen
+	terminalWidth           int
+	terminalHeight          int
+	isAutoSizeEnabled       bool
+	screenLayer             types.LayerEntryType
+	debugDirectory          string
+	isDebugEnabled          bool
+	displayUpdate           sync.RWMutex
+	updateDisplayChannel    chan bool
+	eventGoroutines         sync.WaitGroup
+	eventGoroutinesStopOnce sync.Once
+	// isTerminated is set once RestoreTerminalSettings has torn the screen down, and is only ever read or written
+	// while holding displayUpdate. Every function that touches the screen checks it first so that a caller who
+	// keeps drawing after shutdown (or from a goroutine RestoreTerminalSettings has no way to know about) gets a
+	// harmless no-op instead of racing tcell's own teardown, which frees its internal buffers without a lock.
+	isTerminated bool
 }
 
 /*
@@ -72,10 +79,24 @@ Example:
 */
 func InitializeTerminal(width int, height int) {
 	InitializeTimerMemory()
+	// Reset in case a prior session was torn down by RestoreTerminalSettings: without this, every screen-touching
+	// function would keep treating the new session as already terminated and silently refuse to draw.
+	commonResource.isTerminated = false
+	// eventGoroutinesStopOnce must also be reset here, not just isTerminated: sync.Once only ever runs its
+	// function once for the life of the value, so without a fresh Once, a second stopEventGoroutines call in this
+	// same process (for example a later RestoreTerminalSettings call after a prior Initialize/Restore cycle) would
+	// silently skip waiting for this session's own setupEventUpdater and setupPeriodicEventUpdater, leaving them
+	// to keep running against whatever screen and channel this call is about to install.
+	commonResource.eventGoroutinesStopOnce = sync.Once{}
 	// Set the mouse location off screen so it won't trigger events at 0,0 which the user never moved to.
 	SetMouseStatus(-1, -1, 0, "")
 	var detectedWidth int
 	var detectedHeight int
+	// Created unconditionally, unlike the real screen below: setupEventUpdater and setupPeriodicEventUpdater are
+	// spawned unconditionally too, and this channel is the only signal stopEventGoroutines has to stop them,
+	// debug mode or not. It is a plain Go channel with no relation to tcell, so creating it here does not give
+	// debug mode any terminal dependency it did not already have.
+	commonResource.updateDisplayChannel = make(chan bool)
 	if !commonResource.isDebugEnabled {
 		screen, err := tcell.NewScreen()
 		if err != nil {
@@ -88,7 +109,6 @@ func InitializeTerminal(width int, height int) {
 		}
 		commonResource.screen = screen
 		commonResource.screen.EnableMouse()
-		commonResource.updateDisplayChannel = make(chan bool)
 		setupCloseHandler()
 		detectedWidth, detectedHeight = GetTerminalSize()
 	}
@@ -106,6 +126,7 @@ func InitializeTerminal(width int, height int) {
 	commonResource.debugDirectory = "/tmp/"
 	validateTerminalWidthAndHeight(commonResource.terminalWidth, commonResource.terminalHeight)
 	DeleteAllLayers()
+	commonResource.eventGoroutines.Add(2)
 	go setupEventUpdater()
 	go setupPeriodicEventUpdater()
 }
@@ -117,6 +138,7 @@ Example:
     go setupPeriodicEventUpdater()
 */
 func setupPeriodicEventUpdater() {
+	defer commonResource.eventGoroutines.Done()
 	for {
 		select {
 		case <-commonResource.updateDisplayChannel:
@@ -136,6 +158,7 @@ Example:
     go setupEventUpdater()
 */
 func setupEventUpdater() {
+	defer commonResource.eventGoroutines.Done()
 	for {
 		select {
 		case <-commonResource.updateDisplayChannel:
@@ -161,38 +184,71 @@ func setupCloseHandler() {
 	signal.Notify(channel, syscall.SIGTERM, syscall.SIGKILL, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGHUP)
 	go func() {
 		<-channel
-		commonResource.screen.Fini()
+		RestoreTerminalSettings()
 		os.Exit(1)
 	}()
 
 }
 
 /*
+stopEventGoroutines is a method which allows you to signal the background goroutines started by InitializeTerminal
+to stop, and blocks until both have actually exited. This must be called before the screen is torn down via Fini,
+since setupEventUpdater and setupPeriodicEventUpdater call into the screen (SetContent, Show) on every key, mouse,
+and periodic tick, and Fini frees the screen's internal buffers without their knowledge, so a still-running redraw
+racing that teardown can crash inside tcell with an out-of-range index. In addition, the following should be noted:
+
+- This does real work in debug mode too, not just with a real screen: InitializeTerminal creates updateDisplayChannel
+  unconditionally and spawns both background goroutines unconditionally, so a debug-mode session left un-restored
+  would otherwise leak them into whatever runs next in the same process.
+
+- Safe to call more than once, for example once from RestoreTerminalSettings and once from the signal handler
+  installed by setupCloseHandler: later callers simply block until the first call's shutdown has completed.
+
+Example:
+    stopEventGoroutines()
+*/
+func stopEventGoroutines() {
+	commonResource.eventGoroutinesStopOnce.Do(func() {
+		if commonResource.screen != nil {
+			commonResource.screen.PostEvent(tcell.NewEventInterrupt(nil))
+		}
+		// updateDisplayChannel is nil only when this runs without a prior InitializeTerminal call in this process,
+		// since InitializeTerminal is now the sole place that assigns it, unconditionally. Sending on a nil
+		// channel blocks forever, so this must be skipped rather than attempted unconditionally. Closing rather
+		// than sending a single value is what lets both goroutines stop reliably: a single send on an unbuffered
+		// channel only ever wakes whichever one of them happens to be selecting on it at that instant, leaving
+		// the other looping forever, while a close is observed by every current and future receiver.
+		if commonResource.updateDisplayChannel == nil {
+			return
+		}
+		close(commonResource.updateDisplayChannel)
+		commonResource.eventGoroutines.Wait()
+	})
+}
+
+/*
 RestoreTerminalSettings is a method which allows the user to gracefully return the terminal back to its normal settings.
 This should be called once your application is finished using consolizer so that the users terminal environment is not
-left in a bad state.
+left in a bad state. In addition, the following should be noted:
+
+- Safe to call more than once, and safe to call concurrently with itself, with the signal handler installed by
+  setupCloseHandler, or with any other goroutine still calling UpdateDisplay, RefreshDisplay, or DrawLayerToScreen: the
+  teardown below runs under displayUpdate, the same lock those methods take, and marks the session terminated before
+  releasing it, so only the first caller ever reaches Fini and every screen-touching call after it becomes a no-op
+  instead of racing tcell's teardown.
 
 Example:
     RestoreTerminalSettings()
 */
 func RestoreTerminalSettings() {
-	if commonResource.screen != nil {
-		commonResource.screen.PostEvent(tcell.NewEventInterrupt(nil))
-	}
-	// updateDisplayChannel is only created in InitializeTerminal's non-debug branch, so it is nil in debug mode
-	// and whenever this is called without a prior InitializeTerminal call. Sending on a nil channel blocks
-	// forever, so this must be skipped rather than attempted unconditionally. Closing rather than sending a
-	// single value is what lets both setupEventUpdater and setupPeriodicEventUpdater stop reliably: a single
-	// send on an unbuffered channel only ever wakes whichever one of them happens to be selecting on it at that
-	// instant, leaving the other looping forever, while a close is observed by every current and future
-	// receiver.
-	if commonResource.updateDisplayChannel != nil {
-		close(commonResource.updateDisplayChannel)
-	}
+	stopEventGoroutines()
 	DeleteAllLayers()
-	if commonResource.screen == nil {
+	commonResource.displayUpdate.Lock()
+	defer commonResource.displayUpdate.Unlock()
+	if commonResource.isTerminated || commonResource.screen == nil {
 		return
 	}
+	commonResource.isTerminated = true
 	commonResource.screen.DisableMouse()
 	commonResource.screen.Clear()
 	commonResource.screen.Sync()
@@ -541,13 +597,19 @@ func clearLayer(layerEntry *types.LayerEntryType) {
 
 /*
 GetCharacterOnScreen is a method which allows you to obtain the character currently being displayed on the screen at a
-specific location.
+specific location. In addition, the following should be noted:
+
+  - The shared screen snapshot is copied out under a read lock before use, so a concurrent UpdateDisplay call on
+    another goroutine can never be observed mid-write.
 
 Example:
-    char := GetCharacterOnScreen(10, 5)
+
+	char := GetCharacterOnScreen(10, 5)
 */
 func GetCharacterOnScreen(xLocation int, yLocation int) rune {
+	commonResource.displayUpdate.RLock()
 	layerEntry := commonResource.screenLayer
+	commonResource.displayUpdate.RUnlock()
 	validateLayerLocationByLayerEntry(&layerEntry, xLocation, yLocation)
 	return layerEntry.CharacterMemory[xLocation][yLocation].Character
 }
@@ -604,16 +666,23 @@ func getRuneOnLayer(layerEntry *types.LayerEntryType, xLocation int, yLocation i
 GetCellIdUnderMouseLocation is a method which allows you to obtain the cell ID for the text directly under your mouse
 cursor. In addition, the following should be noted:
 
-- If multiple text layers are being displayed, the cell ID returned will be from the top-most visible text cell.
+  - If multiple text layers are being displayed, the cell ID returned will be from the top-most visible text cell.
 
-- The cell ID returned will only reflect what is currently being displayed on the terminal display.
+  - The cell ID returned will only reflect what is currently being displayed on the terminal display.
+
+  - The shared screen snapshot is copied out under a read lock before use, so a concurrent UpdateDisplay call on
+    another goroutine can never be observed mid-write.
 
 Example:
-    cellId := GetCellIdUnderMouseLocation()
+
+	cellId := GetCellIdUnderMouseLocation()
 */
 func GetCellIdUnderMouseLocation() int {
 	mouseXLocation, mouseYLocation, _, _ := GetMouseStatus()
-	return getCellIdByLayerEntry(&commonResource.screenLayer, mouseXLocation, mouseYLocation)
+	commonResource.displayUpdate.RLock()
+	layerEntry := commonResource.screenLayer
+	commonResource.displayUpdate.RUnlock()
+	return getCellIdByLayerEntry(&layerEntry, mouseXLocation, mouseYLocation)
 }
 
 /*
@@ -658,6 +727,9 @@ In addition, the following should be noted:
 
 - Layers with the same z-order priority will appear in random display order.
 
+- Once RestoreTerminalSettings has torn the screen down, this becomes a silent no-op instead of touching the freed
+  screen, so it remains safe to call from a goroutine that outlives shutdown.
+
 Example:
     UpdateDisplay(false)
 */
@@ -666,21 +738,32 @@ func UpdateDisplay(isRefreshForced bool) {
 	defer func() {
 		commonResource.displayUpdate.Unlock()
 	}()
+	if commonResource.isTerminated {
+		return
+	}
 	sortedLayerAliasSlice := layer.GetSortedLayerMemoryAliasSlice()
 	baseLayerEntry := types.NewLayerEntry("", "", commonResource.terminalWidth, commonResource.terminalHeight)
 	baseLayerEntry = renderLayers(&baseLayerEntry, sortedLayerAliasSlice, true)
 	Tooltip.renderAll(baseLayerEntry)
-	DrawLayerToScreen(&baseLayerEntry, isRefreshForced)
+	drawLayerToScreen(&baseLayerEntry, isRefreshForced)
 	commonResource.screenLayer = baseLayerEntry
 }
 
 /*
-RefreshDisplay is a method which allows you to sync the terminal screen.
+RefreshDisplay is a method which allows you to sync the terminal screen. In addition, the following should be noted:
+
+- Once RestoreTerminalSettings has torn the screen down, this becomes a silent no-op instead of touching the freed
+  screen, so it remains safe to call from a goroutine that outlives shutdown.
 
 Example:
     RefreshDisplay()
 */
 func RefreshDisplay() {
+	commonResource.displayUpdate.Lock()
+	defer commonResource.displayUpdate.Unlock()
+	if commonResource.isTerminated || commonResource.screen == nil {
+		return
+	}
 	commonResource.screen.Sync()
 }
 
@@ -1184,10 +1267,37 @@ following should be noted:
 
 - If debug is enabled, this method does nothing since the terminal is virtual.
 
+- Once RestoreTerminalSettings has torn the screen down, this becomes a silent no-op instead of touching the freed
+  screen, so it remains safe to call directly from a goroutine that outlives shutdown.
+
 Example:
     DrawLayerToScreen(layerEntry, false)
 */
 func DrawLayerToScreen(layerEntry *types.LayerEntryType, isForcedRefreshRequired bool) {
+	commonResource.displayUpdate.Lock()
+	defer commonResource.displayUpdate.Unlock()
+	if commonResource.isTerminated {
+		return
+	}
+	drawLayerToScreen(layerEntry, isForcedRefreshRequired)
+}
+
+/*
+drawLayerToScreen is a method which allows you to render a text layer to the visible terminal screen without acquiring
+displayUpdate itself. In addition, the following should be noted:
+
+- Callers must already hold commonResource.displayUpdate and must have already confirmed commonResource.isTerminated
+  is false, since this method assumes both and performs neither check itself. It exists only so that UpdateDisplay,
+  which already holds the lock for the duration of a full render pass, and the exported DrawLayerToScreen, which
+  acquires it fresh for direct callers, can share one implementation without one of them deadlocking on a re-entrant
+  Lock call.
+
+- If debug is enabled, this method does nothing since the terminal is virtual.
+
+Example:
+    drawLayerToScreen(layerEntry, false)
+*/
+func drawLayerToScreen(layerEntry *types.LayerEntryType, isForcedRefreshRequired bool) {
 	if !commonResource.isDebugEnabled {
 		width := layerEntry.Width
 		height := layerEntry.Height

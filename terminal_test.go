@@ -9,6 +9,7 @@ import (
 	"github.com/supercom32/consolizer/types"
 	_ "math/rand"
 	_ "strconv"
+	"sync"
 	"testing"
 	"time"
 )
@@ -28,6 +29,7 @@ Example:
 func TestTerminalAddLayer(test *testing.T) {
 	commonResource.isDebugEnabled = true
 	InitializeTerminal(20, 20)
+	defer RestoreTerminalSettings()
 	layer1 := AddLayer(0, 0, 20, 20, 1, nil)
 	layer2 := AddLayer(0, 0, 20, 20, 2, layer1)
 	layer3 := AddLayer(0, 0, 20, 20, 3, nil)
@@ -52,6 +54,7 @@ Example:
 func TestTerminalSetAlpha(test *testing.T) {
 	commonResource.isDebugEnabled = true
 	InitializeTerminal(20, 20)
+	defer RestoreTerminalSettings()
 	layer1 := AddLayer(0, 0, 20, 20, 1, nil)
 	layer1.SetAlpha(50.0)
 	layerEntry := Layers.Get(layer1.layerAlias)
@@ -91,6 +94,7 @@ Example:
 func TestTerminalGetRGBColor(test *testing.T) {
 	commonResource.isDebugEnabled = true
 	InitializeTerminal(20, 20)
+	defer RestoreTerminalSettings()
 	inputRedIndex := int32(0)
 	inputGreenIndex := int32(0)
 	inputBlueIndex := int32(0)
@@ -127,6 +131,7 @@ Example:
 func TestTerminalColor(test *testing.T) {
 	commonResource.isDebugEnabled = true
 	InitializeTerminal(20, 20)
+	defer RestoreTerminalSettings()
 	layer1 := AddLayer(0, 0, 20, 20, 1, nil)
 	layer1.Color(3, 12)
 	layerEntry := Layers.Get(layer1.layerAlias)
@@ -148,6 +153,7 @@ Example:
 func TestTerminalColorRGB(test *testing.T) {
 	commonResource.isDebugEnabled = true
 	InitializeTerminal(20, 20)
+	defer RestoreTerminalSettings()
 	foregroundRedIndex := int32(75)
 	foregroundGreenIndex := int32(101)
 	foregroundBlueIndex := int32(249)
@@ -175,6 +181,7 @@ Example:
 func TestTerminalMoveLayerByAbsoluteValue(test *testing.T) {
 	commonResource.isDebugEnabled = true
 	InitializeTerminal(20, 20)
+	defer RestoreTerminalSettings()
 	layer1 := AddLayer(0, 0, 20, 20, 1, nil)
 	xLocation := 9
 	yLocation := 8
@@ -204,6 +211,7 @@ Example:
 func TestTerminalMoveLayerByRelativeValue(test *testing.T) {
 	commonResource.isDebugEnabled = true
 	InitializeTerminal(20, 20)
+	defer RestoreTerminalSettings()
 	layer1 := AddLayer(0, 0, 20, 20, 1, nil)
 	xLocation := 9
 	yLocation := -8
@@ -235,6 +243,7 @@ func TestTerminalLocate(test *testing.T) {
 	xLocation := 9
 	yLocation := 10
 	InitializeTerminal(20, 20)
+	defer RestoreTerminalSettings()
 	layer1 := AddLayer(0, 0, 20, 20, 1, nil)
 	layer1.Locate(xLocation, yLocation)
 	layerEntry := Layers.Get(layer1.layerAlias)
@@ -264,6 +273,7 @@ func TestTerminalPrint(test *testing.T) {
 	layerWidth := 20
 	layerHeight := 8
 	InitializeTerminal(layerWidth, layerHeight)
+	defer RestoreTerminalSettings()
 	layer1 := AddLayer(0, 0, layerWidth, layerHeight, 1, nil)
 	layer1.Color(10, 7)
 	layer1.Print("This is a test print on the first line!") // This line will be intentionally scrolled off
@@ -301,6 +311,7 @@ func TestTerminalClear(test *testing.T) {
 	layerWidth := 14
 	layerHeight := 8
 	InitializeTerminal(layerWidth, layerHeight)
+	defer RestoreTerminalSettings()
 	layer1 := AddLayer(0, 0, layerWidth, layerHeight, 1, nil)
 	layer1.Color(13, 14)
 	layer1.FillLayer("0123456789")
@@ -342,6 +353,7 @@ func TestTerminalScrollCharacterMemory(test *testing.T) {
 	layerWidth := 40
 	layerHeight := 8
 	InitializeTerminal(layerWidth, layerHeight)
+	defer RestoreTerminalSettings()
 	layer1 := AddLayer(0, 0, layerWidth, layerHeight, 1, nil)
 	layer1.Color(10, 7)
 	for lineIndex := 0; lineIndex < 13; lineIndex++ {
@@ -374,6 +386,7 @@ func TestTerminalGetRuneOnLayer(test *testing.T) {
 	layerWidth := 40
 	layerHeight := 8
 	InitializeTerminal(layerWidth, layerHeight)
+	defer RestoreTerminalSettings()
 	layer1 := AddLayer(0, 0, layerWidth, layerHeight, 1, nil)
 	layer1.Color(10, 7)
 	layerEntry := Layers.Get(layer1.layerAlias)
@@ -407,6 +420,7 @@ func TestTerminalUpdateDisplay(test *testing.T) {
 	layerWidth := 40
 	layerHeight := 8
 	InitializeTerminal(layerWidth, layerHeight)
+	defer RestoreTerminalSettings()
 	layer1 := AddLayer(0, 0, layerWidth, layerHeight, 1, nil)
 	layer2 := AddLayer(3, 2, layerWidth, layerHeight, 2, nil)
 	layer3 := AddLayer(6, 4, layerWidth, layerHeight, 3, nil)
@@ -445,6 +459,7 @@ func TestTerminalRenderParentLayer(test *testing.T) {
 	layerWidth := 80
 	layerHeight := 20
 	InitializeTerminal(layerWidth, layerHeight)
+	defer RestoreTerminalSettings()
 	// First set of nested text layers.
 	layer1 := AddLayer(0, 0, layerWidth, layerHeight, 1, nil)
 	layer2 := AddLayer(3, 2, 15, 15, 2, layer1)
@@ -507,6 +522,7 @@ func TestDeleteLayer(test *testing.T) {
 	layerWidth := 20
 	layerHeight := 20
 	InitializeTerminal(layerWidth, layerHeight)
+	defer RestoreTerminalSettings()
 	p1 := AddLayer(0, 0, layerWidth, layerHeight, 1, nil)
 	AddLayer(0, 0, layerWidth, layerHeight, 1, nil)
 	p3 := AddLayer(0, 0, layerWidth, layerHeight, 1, nil)
@@ -566,22 +582,28 @@ func TestNewAssetList(test *testing.T) {
 }
 
 /*
-TestRestoreTerminalSettingsDoesNotHangWithNilUpdateDisplayChannel is a test which verifies that
-RestoreTerminalSettings returns promptly instead of hanging forever when commonResource.updateDisplayChannel is
-nil, which is always the case in debug mode since InitializeTerminal only creates that channel in its non-debug
-branch. A send on a nil channel blocks forever, which is why this test calls RestoreTerminalSettings on a
-background goroutine and races it against a short timeout rather than calling it directly.
+TestRestoreTerminalSettingsDoesNotHangWithNilUpdateDisplayChannel is a test which verifies that RestoreTerminalSettings
+returns promptly instead of hanging forever when commonResource.updateDisplayChannel is nil. InitializeTerminal is now
+the only place that assigns updateDisplayChannel, and it does so unconditionally, so the only way to see a nil channel
+here is to force one directly, representing RestoreTerminalSettings being called without any prior InitializeTerminal
+call in this process. A send on a nil channel blocks forever, which is why this test calls RestoreTerminalSettings on
+a background goroutine and races it against a short timeout rather than calling it directly. In addition, the
+following should be noted:
+
+- eventGoroutinesStopOnce is also forced to a fresh sync.Once here, since a prior test's Initialize/Restore cycle in
+  this same process would otherwise have already fired it, which would skip stopEventGoroutines's body, including the
+  nil check under test, entirely.
 
 Example:
     Expected Inputs:
-        commonResource.isDebugEnabled true, InitializeTerminal already called, updateDisplayChannel left nil.
+        commonResource.updateDisplayChannel and eventGoroutinesStopOnce forced to their zero values directly, with no
+        prior InitializeTerminal call establishing them in this process.
     Expected Outputs:
         RestoreTerminalSettings returns within the timeout rather than hanging.
 */
 func TestRestoreTerminalSettingsDoesNotHangWithNilUpdateDisplayChannel(test *testing.T) {
-	commonResource.isDebugEnabled = true
-	InitializeTerminal(20, 20)
-	assert.Nil(test, commonResource.updateDisplayChannel, "Expected updateDisplayChannel to be nil in debug mode!")
+	commonResource.updateDisplayChannel = nil
+	commonResource.eventGoroutinesStopOnce = sync.Once{}
 
 	finished := make(chan bool, 1)
 	go func() {
@@ -593,5 +615,50 @@ func TestRestoreTerminalSettingsDoesNotHangWithNilUpdateDisplayChannel(test *tes
 	case <-finished:
 	case <-time.After(2 * time.Second):
 		test.Fatal("RestoreTerminalSettings did not return within the timeout, indicating it hung on a nil channel send!")
+	}
+}
+
+/*
+TestRestoreTerminalSettingsStopsGoroutinesInDebugMode is a test which verifies that InitializeTerminal creates
+updateDisplayChannel in debug mode too, and that RestoreTerminalSettings actually stops setupEventUpdater and
+setupPeriodicEventUpdater instead of leaking them, by waiting on the same eventGoroutines WaitGroup those goroutines
+call Done on. In addition, the following should be noted:
+
+- Without this, a debug-mode session left un-restored keeps its two background goroutines running into whatever
+  test or code runs next in the same process, which is exactly the cross-test race this test guards against.
+
+Example:
+    Expected Inputs:
+        commonResource.isDebugEnabled true, InitializeTerminal already called.
+    Expected Outputs:
+        updateDisplayChannel is non-nil, and RestoreTerminalSettings returns only once eventGoroutines.Wait would
+        return immediately, confirming both background goroutines have already exited.
+*/
+func TestRestoreTerminalSettingsStopsGoroutinesInDebugMode(test *testing.T) {
+	commonResource.isDebugEnabled = true
+	InitializeTerminal(20, 20)
+	assert.NotNil(test, commonResource.updateDisplayChannel, "Expected updateDisplayChannel to be created in debug mode!")
+
+	finished := make(chan bool, 1)
+	go func() {
+		RestoreTerminalSettings()
+		finished <- true
+	}()
+
+	select {
+	case <-finished:
+	case <-time.After(2 * time.Second):
+		test.Fatal("RestoreTerminalSettings did not return within the timeout!")
+	}
+
+	waited := make(chan bool, 1)
+	go func() {
+		commonResource.eventGoroutines.Wait()
+		waited <- true
+	}()
+	select {
+	case <-waited:
+	case <-time.After(2 * time.Second):
+		test.Fatal("setupEventUpdater and setupPeriodicEventUpdater had not both exited after RestoreTerminalSettings returned!")
 	}
 }

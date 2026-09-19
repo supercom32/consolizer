@@ -20,7 +20,7 @@ Example:
         Screen content matches expected ANSI string (Base64 encoded) showing the track, arrows, and handle.
 */
 func TestScrollbarDefaultState(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	layer1.AddScrollbar(styleEntry, 5, 2, 10, 100, 0, 1, false)
 	UpdateDisplay(false)
 	layerEntry := commonResource.screenLayer
@@ -46,7 +46,7 @@ Example:
         Screen content matches expected ANSI string (Base64 encoded) showing the horizontal track and handle position.
 */
 func TestScrollbarHorizontal(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	layer1.AddScrollbar(styleEntry, 2, 2, 10, 100, 70, 1, true)
 	UpdateDisplay(false)
 	layerEntry := commonResource.screenLayer
@@ -72,7 +72,7 @@ Example:
         The getScrollValue method returns exactly 50 and the handle is correctly positioned on screen.
 */
 func TestScrollbarWithValue(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	scrollbarInstance := layer1.AddScrollbar(styleEntry, 2, 2, 10, 100, 50, 1, false)
 	UpdateDisplay(false)
 	layerEntry := commonResource.screenLayer
@@ -103,7 +103,7 @@ Example:
         The scrollbar value becomes 30 and the handle moves to the corresponding track position.
 */
 func TestScrollbarSetValue(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	scrollbarInstance := layer1.AddScrollbar(styleEntry, 2, 2, 10, 100, 75, 1, false)
 	scrollbarInstance.setScrollValue(30)
 	UpdateDisplay(false)
@@ -135,7 +135,7 @@ Example:
         The scrollbar value is automatically calculated and updated based on the new handle position.
 */
 func TestScrollbarSetHandlePosition(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	scrollbarInstance := layer1.AddScrollbar(styleEntry, 2, 2, 10, 100, 0, 1, false)
 
 	// Set the scrollbar handle position
@@ -165,7 +165,7 @@ Example:
         The scrollbar value is clamped to 99 and the handle is at the bottom-most position.
 */
 func TestScrollbarMaxValue(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	scrollbarInstance := layer1.AddScrollbar(styleEntry, 2, 2, 10, 100, 0, 1, false)
 
 	// Set the scrollbar to max value
@@ -199,7 +199,7 @@ Example:
         The scrollbar value becomes 0 and the handle is at the top-most position.
 */
 func TestScrollbarMinValue(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	scrollbarInstance := layer1.AddScrollbar(styleEntry, 2, 2, 10, 100, 50, 1, false)
 
 	// Set the scrollbar to min value
@@ -233,7 +233,7 @@ Example:
         Screen content matches expected ANSI string (Base64 encoded) for an empty layer.
 */
 func TestScrollbarDelete(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	scrollbarInstance := layer1.AddScrollbar(styleEntry, 2, 2, 10, 100, 0, 1, false)
 	UpdateDisplay(false)
 
@@ -263,7 +263,7 @@ Example:
         Screen content matches expected ANSI string (Base64 encoded) for an empty layer after all controls are removed.
 */
 func TestScrollbarDeleteAll(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	layer1.AddScrollbar(styleEntry, 2, 2, 10, 100, 0, 1, false)
 	layer1.AddScrollbar(styleEntry, 15, 2, 10, 100, 50, 1, true)
 	UpdateDisplay(false)
@@ -294,7 +294,7 @@ Example:
         Screen content matches expected ANSI string (Base64 encoded) showing the scrollbar with focused highlighting.
 */
 func TestScrollbarFocus(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	scrollbarInstance := layer1.AddScrollbar(styleEntry, 2, 2, 10, 100, 0, 1, false)
 	layer1.AddButton("Testing", styleEntry, 6, 1, 10, 5, true)
 	// Set focus to the scrollbar
@@ -323,7 +323,7 @@ Example:
         The scroll value decreases to 40 and the handle position is updated accordingly.
 */
 func TestScrollbarKeyboardEvent(test *testing.T) {
-	layer1, _, _, styleEntry := CommonTestSetup()
+	layer1, _, _, styleEntry := CommonTestSetup(test)
 	scrollbarInstance := layer1.AddScrollbar(styleEntry, 2, 2, 10, 100, 50, 5, false)
 
 	// Set focus to the scrollbar
