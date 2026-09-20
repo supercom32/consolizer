@@ -400,10 +400,10 @@ func bringLayerToFrontIfRequired() {
 		buttonHistory.layerAlias = ""
 		buttonHistory.buttonAlias = ""
 		// Protect against layer deletions.
-		if !Layers.IsExists(characterEntry.LayerAlias) {
+		layerEntry, isFound := Layers.Lookup(characterEntry.LayerAlias)
+		if !isFound {
 			return
 		}
-		layerEntry := Layers.Get(characterEntry.LayerAlias)
 		if layerEntry.IsFocusable == true {
 			return
 		}
@@ -432,13 +432,17 @@ Example:
     isInteractiveLayerOffscreen("layer1")
 */
 func isInteractiveLayerOffscreen(layerAlias string) bool {
-	layerEntry := Layers.Get(layerAlias)
+	layerEntry, isFound := Layers.Lookup(layerAlias)
+	if !isFound {
+		return false
+	}
 	viewportWidth := commonResource.terminalWidth
 	viewportHeight := commonResource.terminalHeight
 	if layerEntry.ParentAlias != "" {
-		parentEntry := Layers.Get(layerEntry.ParentAlias)
-		viewportWidth = parentEntry.Width
-		viewportHeight = parentEntry.Height
+		if parentEntry, isFound := Layers.Lookup(layerEntry.ParentAlias); isFound {
+			viewportWidth = parentEntry.Width
+			viewportHeight = parentEntry.Height
+		}
 	}
 	if !(layerEntry.ScreenXLocation < viewportWidth && layerEntry.ScreenXLocation+layerEntry.Width-2 > 0) ||
 		!(layerEntry.ScreenYLocation >= 0 && layerEntry.ScreenYLocation < viewportHeight) {

@@ -27,6 +27,7 @@ Example:
 func TestTooltipThinLine(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup(test)
 	layer1.AddTooltip("This is a tooltip!", styleEntry, 0, 0, 20, 5, 3, 3, 25, 1, false, false, 0)
+	UpdateDisplay(false)
 	SetMouseStatus(0, 0, 0, "")
 	Tooltip.updateMouseEvent()
 	time.Sleep(1 * time.Second)
@@ -62,6 +63,7 @@ Example:
 func TestTooltipNoBorder(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup(test)
 	layer1.AddTooltip("This is a tooltip and this works great!", styleEntry, 0, 0, 20, 5, 3, 3, 15, 10, false, false, 0)
+	UpdateDisplay(false)
 	SetMouseStatus(0, 0, 0, "")
 	Tooltip.updateMouseEvent()
 	time.Sleep(1 * time.Second)
@@ -97,6 +99,7 @@ Example:
 func TestTooltipNoDelay(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup(test)
 	layer1.AddTooltip("This is a tooltip and this works great!", styleEntry, 0, 0, 20, 5, 3, 3, 15, 10, false, true, 0)
+	UpdateDisplay(false)
 	SetMouseStatus(0, 0, 0, "")
 	Tooltip.updateMouseEvent()
 	time.Sleep(1 * time.Second)
@@ -133,6 +136,7 @@ Example:
 func TestTooltipWithDelay(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup(test)
 	layer1.AddTooltip("This is a tooltip and this works great!", styleEntry, 0, 0, 20, 5, 3, 3, 15, 10, false, true, 2000)
+	UpdateDisplay(false)
 	SetMouseStatus(0, 0, 0, "")
 	Tooltip.updateMouseEvent()
 	time.Sleep(1 * time.Second)

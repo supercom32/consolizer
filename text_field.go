@@ -39,9 +39,8 @@ Example:
     value := textField.GetValue()
 */
 func (shared *TextFieldInstanceType) GetValue() string {
-	if TextFields.IsExists(shared.layerAlias, shared.controlAlias) {
+	if textFieldEntry, isFound := TextFields.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 		validatorTextField(shared.layerAlias, shared.controlAlias)
-		textFieldEntry := TextFields.Get(shared.layerAlias, shared.controlAlias)
 		value := textFieldEntry.CurrentValue
 		if len(value) > 0 {
 			value = value[:len(value)-1] // remove one character from the right
@@ -58,10 +57,9 @@ Example:
     textField.SetLocation(10, 5)
 */
 func (shared *TextFieldInstanceType) SetLocation(xLocation int, yLocation int) {
-	if TextFields.IsExists(shared.layerAlias, shared.controlAlias) {
+	if textFieldEntry, isFound := TextFields.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 		validatorTextField(shared.layerAlias, shared.controlAlias)
 		validateLayerLocationByLayerAlias(shared.layerAlias, xLocation, yLocation)
-		textFieldEntry := TextFields.Get(shared.layerAlias, shared.controlAlias)
 		textFieldEntry.XLocation = xLocation
 		textFieldEntry.YLocation = yLocation
 	}
@@ -139,6 +137,7 @@ Example:
 func (shared *textFieldType) Delete(layerAlias string, textFieldAlias string) {
 	validatorTextField(layerAlias, textFieldAlias)
 	TextFields.Remove(layerAlias, textFieldAlias)
+	clearStaleControlReferences(layerAlias, textFieldAlias, constants.CellTypeTextField)
 }
 
 /*
@@ -154,7 +153,7 @@ Example:
     TextField.DeleteAll("Layer1")
 */
 func (shared *textFieldType) DeleteAll(layerAlias string) {
-	TextFields.RemoveAll(layerAlias)
+	removeAllControlsAndClearCells(TextFields, layerAlias, constants.CellTypeTextField, func(entry *types.TextFieldEntryType) string { return entry.Alias })
 }
 
 /*
@@ -385,8 +384,8 @@ func (shared *textFieldType) updateKeyboardEventManually(layerAlias string, text
 	keystrokeAsString := string(keystroke)
 	isScreenUpdateRequired := false
 	isKeystrokeConsumed := false
-	textFieldEntry := TextFields.Get(layerAlias, textFieldAlias)
-	if !textFieldEntry.IsEnabled {
+	textFieldEntry, isFound := TextFields.Lookup(layerAlias, textFieldAlias)
+	if !isFound || !textFieldEntry.IsEnabled {
 		return false, false
 	}
 
@@ -736,11 +735,11 @@ func (shared *textFieldType) updateKeyboardEvent(keystroke []rune) (bool, bool) 
 	focusedLayerAlias := eventStateMemory.currentlyFocusedControl.layerAlias
 	focusedControlAlias := eventStateMemory.currentlyFocusedControl.controlAlias
 	focusedControlType := eventStateMemory.currentlyFocusedControl.controlType
-	if focusedControlType != constants.CellTypeTextField || !TextFields.IsExists(focusedLayerAlias, focusedControlAlias) {
+	textFieldEntry, isFound := TextFields.Lookup(focusedLayerAlias, focusedControlAlias)
+	if focusedControlType != constants.CellTypeTextField || !isFound {
 		return false, false
 	}
 	isScreenUpdateRequired, isKeystrokeConsumed := shared.updateKeyboardEventManually(focusedLayerAlias, focusedControlAlias, keystroke)
-	textFieldEntry := TextFields.Get(focusedLayerAlias, focusedControlAlias)
 	if textFieldEntry.OnValueChanged != nil {
 		currentValue := textFieldEntry.CurrentValue
 		if len(currentValue) > 0 {
@@ -774,8 +773,7 @@ func (shared *textFieldType) updateMouseEvent() bool {
 	if buttonPressed != 0 && eventStateMemory.stateId != constants.EventStateDragAndDropScrollbar &&
 		eventStateMemory.stateId != constants.EventStateDragAndDrop {
 		characterEntry = getCellInformationUnderMouseCursor(mouseXLocation, mouseYLocation)
-		if characterEntry.AttributeEntry.CellType == constants.CellTypeTextField && TextFields.IsExists(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias) {
-			textFieldEntry := TextFields.Get(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias)
+		if textFieldEntry, isFound := TextFields.Lookup(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias); characterEntry.AttributeEntry.CellType == constants.CellTypeTextField && isFound {
 			if !textFieldEntry.IsEnabled {
 				return isScreenUpdateRequired
 			}
@@ -789,8 +787,7 @@ func (shared *textFieldType) updateMouseEvent() bool {
 	// Handle mouse drag for text selection
 	if eventStateMemory.stateId == constants.EventStateDragAndDrop && eventStateMemory.currentlyFocusedControl.controlType == constants.CellTypeTextField {
 		characterEntry = getCellInformationUnderMouseCursor(mouseXLocation, mouseYLocation)
-		if characterEntry.AttributeEntry.CellType == constants.CellTypeTextField && TextFields.IsExists(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias) {
-			textFieldEntry := TextFields.Get(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias)
+		if textFieldEntry, isFound := TextFields.Lookup(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias); characterEntry.AttributeEntry.CellType == constants.CellTypeTextField && isFound {
 			if !textFieldEntry.IsEnabled {
 				return isScreenUpdateRequired
 			}
@@ -851,9 +848,8 @@ Example:
     textField.SetValue("New Value")
 */
 func (shared *TextFieldInstanceType) SetValue(value string) *TextFieldInstanceType {
-	if TextFields.IsExists(shared.layerAlias, shared.controlAlias) {
+	if textFieldEntry, isFound := TextFields.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 		validatorTextField(shared.layerAlias, shared.controlAlias)
-		textFieldEntry := TextFields.Get(shared.layerAlias, shared.controlAlias)
 		textFieldEntry.CurrentValue = []rune(value + " ")
 		textFieldEntry.CursorPosition = len(value)
 		TextField.updateViewport(textFieldEntry)
@@ -870,9 +866,8 @@ Example:
     textField.SetDefaultValue("Default")
 */
 func (shared *TextFieldInstanceType) SetDefaultValue(value string) *TextFieldInstanceType {
-	if TextFields.IsExists(shared.layerAlias, shared.controlAlias) {
+	if textFieldEntry, isFound := TextFields.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 		validatorTextField(shared.layerAlias, shared.controlAlias)
-		textFieldEntry := TextFields.Get(shared.layerAlias, shared.controlAlias)
 		textFieldEntry.DefaultValue = value
 	}
 	return shared
@@ -885,9 +880,8 @@ Example:
     textField.SetMaxLength(50)
 */
 func (shared *TextFieldInstanceType) SetMaxLength(length int) *TextFieldInstanceType {
-	if TextFields.IsExists(shared.layerAlias, shared.controlAlias) {
+	if textFieldEntry, isFound := TextFields.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 		validatorTextField(shared.layerAlias, shared.controlAlias)
-		textFieldEntry := TextFields.Get(shared.layerAlias, shared.controlAlias)
 		textFieldEntry.MaxLengthAllowed = length
 	}
 	return shared
@@ -905,9 +899,8 @@ Example:
     textField.SetPasswordProtected(true)
 */
 func (shared *TextFieldInstanceType) SetPasswordProtected(isProtected bool) *TextFieldInstanceType {
-	if TextFields.IsExists(shared.layerAlias, shared.controlAlias) {
+	if textFieldEntry, isFound := TextFields.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 		validatorTextField(shared.layerAlias, shared.controlAlias)
-		textFieldEntry := TextFields.Get(shared.layerAlias, shared.controlAlias)
 		textFieldEntry.IsPasswordProtected = isProtected
 	}
 	return shared
@@ -932,9 +925,8 @@ Example:
 	})
 */
 func (shared *TextFieldInstanceType) SetOnValueChanged(fn func(current string) string) *TextFieldInstanceType {
-	if TextFields.IsExists(shared.layerAlias, shared.controlAlias) {
+	if textFieldEntry, isFound := TextFields.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 		validatorTextField(shared.layerAlias, shared.controlAlias)
-		textFieldEntry := TextFields.Get(shared.layerAlias, shared.controlAlias)
 		textFieldEntry.OnValueChanged = fn
 	}
 	return shared
@@ -952,9 +944,8 @@ Example:
     textField.SetCursorPosition(10)
 */
 func (shared *TextFieldInstanceType) SetCursorPosition(position int) *TextFieldInstanceType {
-	if TextFields.IsExists(shared.layerAlias, shared.controlAlias) {
+	if textFieldEntry, isFound := TextFields.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 		validatorTextField(shared.layerAlias, shared.controlAlias)
-		textFieldEntry := TextFields.Get(shared.layerAlias, shared.controlAlias)
 		textFieldEntry.CursorPosition = position
 	}
 	return shared
@@ -972,9 +963,8 @@ Example:
     textField.SetViewportPosition(5)
 */
 func (shared *TextFieldInstanceType) SetViewportPosition(position int) *TextFieldInstanceType {
-	if TextFields.IsExists(shared.layerAlias, shared.controlAlias) {
+	if textFieldEntry, isFound := TextFields.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 		validatorTextField(shared.layerAlias, shared.controlAlias)
-		textFieldEntry := TextFields.Get(shared.layerAlias, shared.controlAlias)
 		textFieldEntry.ViewportPosition = position
 	}
 	return shared
@@ -1001,8 +991,7 @@ Example:
     textField.SetTooltipText("Helpful info")
 */
 func (shared *TextFieldInstanceType) SetTooltipText(text string) *TextFieldInstanceType {
-	if TextFields.IsExists(shared.layerAlias, shared.controlAlias) {
-		textFieldEntry := TextFields.Get(shared.layerAlias, shared.controlAlias)
+	if textFieldEntry, isFound := TextFields.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 		var tooltipInstance TooltipInstanceType
 		tooltipInstance.layerAlias = shared.layerAlias
 		tooltipInstance.controlAlias = textFieldEntry.TooltipAlias
@@ -1018,8 +1007,7 @@ Example:
     textField.EnableTooltip(true)
 */
 func (shared *TextFieldInstanceType) EnableTooltip(enabled bool) *TextFieldInstanceType {
-	if TextFields.IsExists(shared.layerAlias, shared.controlAlias) {
-		textFieldEntry := TextFields.Get(shared.layerAlias, shared.controlAlias)
+	if textFieldEntry, isFound := TextFields.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 		var tooltipInstance TooltipInstanceType
 		tooltipInstance.layerAlias = shared.layerAlias
 		tooltipInstance.controlAlias = textFieldEntry.TooltipAlias

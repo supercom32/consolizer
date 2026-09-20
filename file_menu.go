@@ -146,9 +146,7 @@ Example:
     FileMenu.Delete("main", "fileMenu")
 */
 func (shared *fileMenuType) Delete(layerAlias string, menuAlias string) {
-	if FileMenus.IsExists(layerAlias, menuAlias) {
-		fileMenuEntry := FileMenus.Get(layerAlias, menuAlias)
-
+	if fileMenuEntry, isFound := FileMenus.Lookup(layerAlias, menuAlias); isFound {
 		// Delete all associated selectors
 		for _, selectorAlias := range fileMenuEntry.SelectorAliases {
 			Selector.Delete(layerAlias, selectorAlias)
@@ -159,6 +157,7 @@ func (shared *fileMenuType) Delete(layerAlias string, menuAlias string) {
 
 		// Delete the file menu entry
 		FileMenus.Remove(layerAlias, menuAlias)
+		clearStaleControlReferences(layerAlias, menuAlias, constants.CellTypeFileMenuHeading)
 	}
 }
 
@@ -327,9 +326,7 @@ func (shared *fileMenuType) updateStateMouse() bool {
 	// Only process if a button is pressed and it's a new click (not a continued press)
 	if isNewClick {
 		// Check if the mouse clicked on a file menu heading
-		if cellType == constants.CellTypeFileMenuHeading && FileMenus.IsExists(layerAlias, cellControlAlias) {
-			fileMenuEntry := FileMenus.Get(layerAlias, cellControlAlias)
-
+		if fileMenuEntry, isFound := FileMenus.Lookup(layerAlias, cellControlAlias); cellType == constants.CellTypeFileMenuHeading && isFound {
 			// If clicking on the active heading, close the submenu
 			if fileMenuEntry.ActiveHeadingIndex == cellControlId && fileMenuEntry.IsSubmenuOpen {
 				fileMenuEntry.IsSubmenuOpen = false
@@ -396,10 +393,10 @@ Example:
     heading, item, alias, value := fileMenu.GetSelectedItem()
 */
 func (shared *FileMenuInstanceType) GetSelectedItem() (int, int, string, string) {
-	if !FileMenus.IsExists(shared.layerAlias, shared.controlAlias) {
+	fileMenuEntry, isFound := FileMenus.Lookup(shared.layerAlias, shared.controlAlias)
+	if !isFound {
 		return -1, -1, "", ""
 	}
-	fileMenuEntry := FileMenus.Get(shared.layerAlias, shared.controlAlias)
 	// Iterate through selectors (one per heading)
 	for headingIndex, selectorAlias := range fileMenuEntry.SelectorAliases {
 		selectorEntry := Selectors.Get(shared.layerAlias, selectorAlias)
@@ -430,10 +427,10 @@ Example:
     }
 */
 func (shared *FileMenuInstanceType) IsOpen() bool {
-	if !FileMenus.IsExists(shared.layerAlias, shared.controlAlias) {
+	fileMenuEntry, isFound := FileMenus.Lookup(shared.layerAlias, shared.controlAlias)
+	if !isFound {
 		return false
 	}
-	fileMenuEntry := FileMenus.Get(shared.layerAlias, shared.controlAlias)
 	return fileMenuEntry.IsSubmenuOpen
 }
 
@@ -449,10 +446,10 @@ Example:
     fileMenu.Unselect()
 */
 func (shared *FileMenuInstanceType) Unselect() {
-	if !FileMenus.IsExists(shared.layerAlias, shared.controlAlias) {
+	fileMenuEntry, isFound := FileMenus.Lookup(shared.layerAlias, shared.controlAlias)
+	if !isFound {
 		return
 	}
-	fileMenuEntry := FileMenus.Get(shared.layerAlias, shared.controlAlias)
 	// Iterate through selectors (one per heading) and unselect them.
 	for _, selectorAlias := range fileMenuEntry.SelectorAliases {
 		selectorEntry := Selectors.Get(shared.layerAlias, selectorAlias)

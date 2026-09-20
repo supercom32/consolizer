@@ -96,29 +96,55 @@ func (shared *ControlMemoryManager[T]) RemoveAll(layerAlias string) {
 }
 
 /*
-Get is a method which retrieves a control entry from the memory manager. In addition, the following should be noted:
+Get is a method which allows you to retrieve a control entry from the memory manager. Returns a pointer to the control
+entry if it exists, and the entry can be modified through the returned pointer.
+In addition, the following should be noted:
 
-- Returns a pointer to the control entry if it exists.
+  - Panics if the layer or the entry does not exist, since a missing entry is treated as a programmer error rather
+    than a condition callers are expected to check for first.
 
-- Returns nil if the layer or entry doesn't exist.
-
-- The entry can be modified through the returned pointer.
+  - Callers that must tolerate a concurrently deleted entry, such as code on the mouse or keyboard event path, should
+    call Lookup instead, which reports a miss by returning false rather than panicking.
 
 Example:
-    entry := manager.Get("layer1", "button1")
+
+	entry := manager.Get("layer1", "button1")
 */
 func (shared *ControlMemoryManager[T]) Get(layerAlias string, alias string) *T {
 	typeName := reflect.TypeOf(*new(T)).Name() // Get the type name without pointer
 	layerManager, ok := shared.MemoryManager.Load(layerAlias)
 	if ok && layerManager != nil {
-		value := layerManager.(*MemoryManager[T]).Get(alias)
-		if value == nil {
+		value, isFound := layerManager.(*MemoryManager[T]).Lookup(alias)
+		if !isFound {
 			// Use reflect to get a human-readable type name (without pointer format)
 			panic(fmt.Sprintf("The %s '%s' under layer '%s' could not be obtained since it does not exist!", typeName, alias, layerAlias))
 		}
 		return value
 	}
 	panic(fmt.Sprintf("The layer '%s' for '%s' could not be found!", layerAlias, typeName))
+}
+
+/*
+Lookup is a method which allows you to retrieve a control entry from the memory manager using a single lookup that
+never panics. Returns the entry and true when both the layer and the entry exist.
+In addition, the following should be noted:
+
+  - Returns nil and false when the layer or the entry is missing, including when the entry was removed by another
+    goroutine an instant ago.
+
+  - Unlike calling IsExists followed by Get, which are two separate lookups a concurrent goroutine can delete an
+    entry between, this method cannot fail with a missing entry panic.
+
+Example:
+
+	entry, isFound := manager.Lookup("layer1", "button1")
+*/
+func (shared *ControlMemoryManager[T]) Lookup(layerAlias string, alias string) (*T, bool) {
+	layerManager, ok := shared.MemoryManager.Load(layerAlias)
+	if !ok || layerManager == nil {
+		return nil, false
+	}
+	return layerManager.(*MemoryManager[T]).Lookup(alias)
 }
 
 /*
@@ -207,7 +233,7 @@ Example:
 func (shared *ControlMemoryManager[T]) IsExists(layerAlias string, alias string) bool {
 	layerManager, ok := shared.MemoryManager.Load(layerAlias)
 	if ok && layerManager != nil {
-		return layerManager.(*MemoryManager[T]).Get(alias) != nil
+		return layerManager.(*MemoryManager[T]).IsExists(alias)
 	}
 	return false
 }

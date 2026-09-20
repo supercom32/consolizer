@@ -56,10 +56,10 @@ Example:
     }
 */
 func (shared *TimerType) IsExpired() bool {
-	timerEntry := Timers.Get(shared.timerAlias)
-	if timerEntry == nil {
+	if !Timers.IsExists(shared.timerAlias) {
 		safeSttyPanic(fmt.Sprintf("The requested timer with alias '%s' could not be returned since it does not exist.", shared.timerAlias))
 	}
+	timerEntry := Timers.Get(shared.timerAlias)
 	if timerEntry.IsTimerEnabled {
 		timeElapsed := GetCurrentTimeInMilliseconds() - timerEntry.StartTime
 		if timeElapsed > timerEntry.TimerLength {
@@ -79,10 +79,10 @@ Example:
     timer.Set(2000, true)
 */
 func (shared *TimerType) Set(durationInMilliseconds int64, isEnabled bool) {
-	timerEntry := Timers.Get(shared.timerAlias)
-	if timerEntry == nil {
+	if !Timers.IsExists(shared.timerAlias) {
 		safeSttyPanic(fmt.Sprintf("The requested timer with alias '%s' could not be returned since it does not exist.", shared.timerAlias))
 	}
+	timerEntry := Timers.Get(shared.timerAlias)
 	timerEntry.StartTime = GetCurrentTimeInMilliseconds()
 	timerEntry.TimerLength = durationInMilliseconds
 	timerEntry.IsTimerEnabled = isEnabled
@@ -97,10 +97,10 @@ Example:
     timer.Start()
 */
 func (shared *TimerType) Start() {
-	timerEntry := Timers.Get(shared.timerAlias)
-	if timerEntry == nil {
+	if !Timers.IsExists(shared.timerAlias) {
 		safeSttyPanic(fmt.Sprintf("The requested timer with alias '%s' could not be returned since it does not exist.", shared.timerAlias))
 	}
+	timerEntry := Timers.Get(shared.timerAlias)
 	timerEntry.StartTime = GetCurrentTimeInMilliseconds()
 	timerEntry.IsTimerEnabled = true
 }

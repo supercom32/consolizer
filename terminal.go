@@ -615,6 +615,52 @@ func GetCharacterOnScreen(xLocation int, yLocation int) rune {
 }
 
 /*
+clearStaleControlReferences is a method which allows you to reset the mouse and keyboard hit-testing metadata for any
+cell on the final composited screen buffer that still references a control that was just deleted. In addition, the
+following should be noted:
+
+  - A cell is only reset when its layer alias, cell type, and control alias all match what is passed in, so a
+    different, still-existing control drawn on top of the deleted control's former screen position (for example a
+    higher layer overlapping it) is left untouched.
+
+  - Without this, a cell can keep pointing at a deleted control's alias until the next full UpdateDisplay redraw. If
+    the application reuses that same alias for a new control of the same type on the same layer before that redraw
+    happens, the stale cell would resolve to the new control's entry instead of correctly resolving to nothing, and
+    could apply a stale CellControlId to a control it no longer describes.
+
+  - This is a no-op once RestoreTerminalSettings has torn the screen down, matching every other function that touches
+    commonResource.screenLayer.
+
+Example:
+
+	clearStaleControlReferences("main", "back", constants.CellTypeButton)
+*/
+func clearStaleControlReferences(layerAlias string, controlAlias string, cellType int) {
+	if controlAlias == "" {
+		return
+	}
+	commonResource.displayUpdate.Lock()
+	defer commonResource.displayUpdate.Unlock()
+	if commonResource.isTerminated {
+		return
+	}
+	characterMemory := commonResource.screenLayer.CharacterMemory
+	for rowIndex := range characterMemory {
+		row := characterMemory[rowIndex]
+		for columnIndex := range row {
+			attributeEntry := &row[columnIndex].AttributeEntry
+			if row[columnIndex].LayerAlias != layerAlias || attributeEntry.CellType != cellType || attributeEntry.CellControlAlias != controlAlias {
+				continue
+			}
+			attributeEntry.CellControlAlias = ""
+			attributeEntry.CellType = constants.NullCellType
+			attributeEntry.CellControlId = constants.NullCellControlId
+			attributeEntry.CellControlLocation = constants.NullCellControlLocation
+		}
+	}
+}
+
+/*
 scrollCharacterMemory is a method which allows you to advance the specified text layer up by one row. In addition, the
 following should be noted:
 
@@ -786,10 +832,11 @@ func renderLayers(rootLayerEntry *types.LayerEntryType, sortedLayerAliasSlice La
 	baseLayerEntry := types.NewLayerEntry("", "", 0, 0, rootLayerEntry)
 	isOpaque := true
 	for currentListIndex := 0; currentListIndex < len(sortedLayerAliasSlice); currentListIndex++ {
-		if !Layers.IsExists(sortedLayerAliasSlice[currentListIndex].Key) {
+		layerEntry, isFound := Layers.Lookup(sortedLayerAliasSlice[currentListIndex].Key)
+		if !isFound {
 			continue
 		}
-		currentLayerEntry := types.NewLayerEntry("", "", 0, 0, Layers.Get(sortedLayerAliasSlice[currentListIndex].Key))
+		currentLayerEntry := types.NewLayerEntry("", "", 0, 0, layerEntry)
 		if currentLayerEntry.IsVisible {
 			renderControls(currentLayerEntry)
 			if currentLayerEntry.IsParent && (currentLayerEntry.LayerAlias != baseLayerEntry.LayerAlias && currentLayerEntry.ParentAlias == baseLayerEntry.LayerAlias) {

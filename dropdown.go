@@ -38,11 +38,10 @@ func (shared *dropdownType) updateKeyboardEvent(keystroke []rune) (bool, bool) {
 	focusedControlType := eventStateMemory.currentlyFocusedControl.controlType
 
 	// Only process if a dropdown is focused
-	if focusedControlType != constants.CellTypeDropdown || !Dropdowns.IsExists(focusedLayerAlias, focusedControlAlias) {
+	dropdownEntry, isFound := Dropdowns.Lookup(focusedLayerAlias, focusedControlAlias)
+	if focusedControlType != constants.CellTypeDropdown || !isFound {
 		return isScreenUpdateRequired, isKeystrokeConsumed
 	}
-
-	dropdownEntry := Dropdowns.Get(focusedLayerAlias, focusedControlAlias)
 
 	// If dropdown is open but focus is on the dropdown itself (not the selector),
 	// move focus to the selector for keyboard navigation
@@ -330,6 +329,7 @@ Example:
 */
 func (shared *dropdownType) Delete(layerAlias string, dropdownAlias string) {
 	Dropdowns.Remove(layerAlias, dropdownAlias)
+	clearStaleControlReferences(layerAlias, dropdownAlias, constants.CellTypeDropdown)
 }
 
 /*
@@ -344,7 +344,7 @@ Example:
     Dropdown.DeleteAll("layer1")
 */
 func (shared *dropdownType) DeleteAll(layerAlias string) {
-	Dropdowns.RemoveAll(layerAlias)
+	removeAllControlsAndClearCells(Dropdowns, layerAlias, constants.CellTypeDropdown, func(entry *types.DropdownEntryType) string { return entry.Alias })
 }
 
 /*
@@ -452,10 +452,9 @@ func (shared *dropdownType) updateStateMouse() bool {
 	}
 
 	// If our Dropdown alias is not empty, then open our Dropdown.
-	if buttonPressed != 0 && cellControlAlias != "" && characterEntry.AttributeEntry.CellType == constants.CellTypeDropdown &&
-		Dropdowns.IsExists(layerAlias, cellControlAlias) {
+	if dropdownEntry, isFound := Dropdowns.Lookup(layerAlias, cellControlAlias); buttonPressed != 0 && cellControlAlias != "" &&
+		characterEntry.AttributeEntry.CellType == constants.CellTypeDropdown && isFound {
 		shared.closeAllOpen()
-		dropdownEntry := Dropdowns.Get(layerAlias, cellControlAlias)
 		dropdownEntry.IsTrayOpen = true
 		selectorEntry := Selectors.Get(layerAlias, dropdownEntry.SelectorAlias)
 		selectorEntry.IsVisible = true

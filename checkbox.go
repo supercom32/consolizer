@@ -58,8 +58,7 @@ Example:
     isSelected := checkbox.IsSelected()
 */
 func (shared *CheckboxInstanceType) IsSelected() bool {
-	if Checkboxes.IsExists(shared.layerAlias, shared.controlAlias) {
-		checkboxEntry := Checkboxes.Get(shared.layerAlias, shared.controlAlias)
+	if checkboxEntry, isFound := Checkboxes.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 		if checkboxEntry.IsSelected == true {
 			return true
 		}
@@ -74,8 +73,7 @@ Example:
     checkbox.SetState(true)
 */
 func (shared *CheckboxInstanceType) SetState(isChecked bool) {
-	if Checkboxes.IsExists(shared.layerAlias, shared.controlAlias) {
-		checkboxEntry := Checkboxes.Get(shared.layerAlias, shared.controlAlias)
+	if checkboxEntry, isFound := Checkboxes.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 		checkboxEntry.IsSelected = isChecked
 	}
 }
@@ -138,6 +136,7 @@ Example:
 */
 func (shared *checkboxType) Delete(layerAlias string, checkboxAlias string) {
 	Checkboxes.Remove(layerAlias, checkboxAlias)
+	clearStaleControlReferences(layerAlias, checkboxAlias, constants.CellTypeCheckbox)
 }
 
 /*
@@ -147,7 +146,7 @@ Example:
     Checkbox.DeleteAll("layer1")
 */
 func (shared *checkboxType) DeleteAll(layerAlias string) {
-	Checkboxes.RemoveAll(layerAlias)
+	removeAllControlsAndClearCells(Checkboxes, layerAlias, constants.CellTypeCheckbox, func(entry *types.CheckboxEntryType) string { return entry.Alias })
 }
 
 /*
@@ -213,11 +212,10 @@ func (shared *checkboxType) updateMouseEvent() bool {
 	controlAlias := characterEntry.AttributeEntry.CellControlAlias
 	if characterEntry.AttributeEntry.CellType == constants.CellTypeCheckbox && characterEntry.AttributeEntry.CellControlId != constants.NullCellId {
 		_, _, previousButtonPressed, _ := GetPreviousMouseStatus()
-		if buttonPressed != 0 && previousButtonPressed == 0 && Checkboxes.IsExists(layerAlias, controlAlias) {
+		if checkboxEntry, isFound := Checkboxes.Lookup(layerAlias, controlAlias); buttonPressed != 0 && previousButtonPressed == 0 && isFound {
 			eventStateMemory.currentlyFocusedControl.layerAlias = layerAlias
 			eventStateMemory.currentlyFocusedControl.controlAlias = controlAlias
 			eventStateMemory.currentlyFocusedControl.controlType = constants.CellTypeCheckbox
-			checkboxEntry := Checkboxes.Get(layerAlias, controlAlias)
 			if !checkboxEntry.IsEnabled {
 				return isUpdateRequired
 			}

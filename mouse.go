@@ -194,8 +194,8 @@ func GetLayerUnderMouseCursor() *LayerInstanceType {
 	if layerAlias == "" {
 		return nil
 	}
-	layerEntry := Layers.Get(layerAlias)
-	if layerEntry == nil {
+	layerEntry, isFound := Layers.Lookup(layerAlias)
+	if !isFound {
 		return nil
 	}
 	// We create a new instance of the layer so the user can interact with it.

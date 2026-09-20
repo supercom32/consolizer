@@ -2,6 +2,7 @@ package memory
 
 import (
 	"fmt"
+	"reflect"
 	"sync"
 )
 
@@ -54,15 +55,52 @@ func (shared *MemoryManager[T]) Remove(key string) {
 }
 
 /*
-Get is a method which retrieves the value stored at the specified key.
+Get is a method which allows you to retrieve the value stored at the specified key. Returns a pointer to the value if
+it exists, and the value can be modified through the returned pointer.
+In addition, the following should be noted:
+
+  - Panics if the key does not exist, since a missing entry is treated as a programmer error rather than a condition
+    callers are expected to check for first.
+
+  - Callers that must tolerate a concurrently deleted entry, such as internal cleanup that runs while a control or
+    layer is being deleted or while the application is shutting down, should call Lookup instead, which reports a
+    miss by returning false rather than panicking.
 
 Example:
-    manager.Get("button1")
+
+	entry := manager.Get("button1")
 */
 func (shared *MemoryManager[T]) Get(key string) *T {
 	shared.muxtex.RLock()
 	defer shared.muxtex.RUnlock()
-	return shared.memoryItems[key] // Return the pointer directly
+	value, isFound := shared.memoryItems[key]
+	if !isFound {
+		typeName := reflect.TypeOf(*new(T)).Name()
+		panic(fmt.Sprintf("The %s '%s' could not be obtained since it does not exist!", typeName, key))
+	}
+	return value
+}
+
+/*
+Lookup is a method which allows you to retrieve the value stored at the specified key using a single lookup that
+never panics. Returns the value and true when the key exists.
+In addition, the following should be noted:
+
+  - Returns nil and false when the key is missing, including when the entry was removed by another goroutine an
+    instant ago.
+
+  - Unlike calling IsExists followed by Get, which are two separate lookups a concurrent goroutine can delete an
+    entry between, this method cannot fail with a missing entry panic.
+
+Example:
+
+	entry, isFound := manager.Lookup("button1")
+*/
+func (shared *MemoryManager[T]) Lookup(key string) (*T, bool) {
+	shared.muxtex.RLock()
+	defer shared.muxtex.RUnlock()
+	value, isFound := shared.memoryItems[key]
+	return value, isFound
 }
 
 /*

@@ -191,6 +191,7 @@ Example:
 */
 func (shared *buttonType) Delete(layerAlias string, buttonAlias string) {
 	Buttons.Remove(layerAlias, buttonAlias)
+	clearStaleControlReferences(layerAlias, buttonAlias, constants.CellTypeButton)
 }
 
 /*
@@ -200,7 +201,7 @@ Example:
     Button.DeleteAll("layer1")
 */
 func (shared *buttonType) DeleteAll(layerAlias string) {
-	Buttons.RemoveAll(layerAlias)
+	removeAllControlsAndClearCells(Buttons, layerAlias, constants.CellTypeButton, func(entry *types.ButtonEntryType) string { return entry.Alias })
 }
 
 /*
@@ -360,18 +361,17 @@ func (shared *buttonType) updateStateMouse() bool {
 		return isUpdateRequired
 	}
 
-	if buttonAlias != "" && buttonPressed == 0 && Buttons.IsExists(layerAlias, buttonAlias) {
-		buttonEntry := Buttons.Get(layerAlias, buttonAlias)
+	buttonEntry, isFound := Buttons.Lookup(layerAlias, buttonAlias)
+	if buttonAlias != "" && buttonPressed == 0 && isFound {
 		if buttonEntry.IsPressed == true {
 			buttonEntry.Mutex.Lock()
 			buttonEntry.IsPressed = false
 			buttonEntry.Mutex.Unlock()
 			isUpdateRequired = true
 		}
-	} else if buttonAlias != "" && buttonPressed != 0 && Buttons.IsExists(layerAlias, buttonAlias) {
+	} else if buttonAlias != "" && buttonPressed != 0 && isFound {
 		// If button was found and mouse is being pressed, update button only
 		// if required.
-		buttonEntry := Buttons.Get(layerAlias, buttonAlias)
 		if buttonEntry.IsEnabled && buttonEntry.IsPressed == false {
 			buttonEntry.Mutex.Lock()
 			buttonHistory.layerAlias = layerAlias

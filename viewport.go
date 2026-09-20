@@ -31,7 +31,8 @@ Example:
     entry := GetViewport("main", "myVP")
 */
 func GetViewport(layerAlias string, viewportAlias string) *types.ViewportEntryType {
-	return Viewports.Get(layerAlias, viewportAlias)
+	viewportEntry, _ := Viewports.Lookup(layerAlias, viewportAlias)
+	return viewportEntry
 }
 
 /*
@@ -119,8 +120,7 @@ func (shared *ViewportInstanceType) SetContent(text string) *ViewportInstanceTyp
 	viewport.setViewportMaxScrollBarValues(shared.layerAlias, shared.controlAlias)
 
 	// Set the viewport's Y location to the maximum possible scroll value.
-	vScrollbar := ScrollBars.Get(shared.layerAlias, viewportEntry.VerticalScrollbarAlias)
-	if vScrollbar != nil {
+	if vScrollbar, isFound := ScrollBars.Lookup(shared.layerAlias, viewportEntry.VerticalScrollbarAlias); isFound {
 		viewportEntry.ViewportYLocation = vScrollbar.MaxScrollValue
 	}
 
@@ -163,8 +163,9 @@ func (shared *ViewportInstanceType) ScrollToBottom() *ViewportInstanceType {
 		return shared
 	}
 	viewport.setViewportMaxScrollBarValues(shared.layerAlias, shared.controlAlias)
-	vScrollbar := ScrollBars.Get(shared.layerAlias, viewportEntry.VerticalScrollbarAlias)
-	viewportEntry.ViewportYLocation = vScrollbar.MaxScrollValue
+	if vScrollbar, isFound := ScrollBars.Lookup(shared.layerAlias, viewportEntry.VerticalScrollbarAlias); isFound {
+		viewportEntry.ViewportYLocation = vScrollbar.MaxScrollValue
+	}
 	viewport.updateScrollbarBasedOnViewportViewport(shared.layerAlias, shared.controlAlias)
 	return shared
 }
@@ -458,17 +459,19 @@ func (shared *viewportType) updateScrollbarBasedOnViewportViewport(layerAlias st
 	}
 
 	// Update vertical scrollbar if it exists
-	if viewportEntry.VerticalScrollbarAlias != "" && ScrollBars.IsExists(layerAlias, viewportEntry.VerticalScrollbarAlias) {
-		scrollbarEntry := ScrollBars.Get(layerAlias, viewportEntry.VerticalScrollbarAlias)
-		scrollbarEntry.ScrollValue = viewportEntry.ViewportYLocation
-		scrollbar.computeHandlePositionByScrollValue(layerAlias, viewportEntry.VerticalScrollbarAlias)
+	if viewportEntry.VerticalScrollbarAlias != "" {
+		if scrollbarEntry, isFound := ScrollBars.Lookup(layerAlias, viewportEntry.VerticalScrollbarAlias); isFound {
+			scrollbarEntry.ScrollValue = viewportEntry.ViewportYLocation
+			scrollbar.computeHandlePositionByScrollValue(layerAlias, viewportEntry.VerticalScrollbarAlias)
+		}
 	}
 
 	// Update horizontal scrollbar if it exists
-	if viewportEntry.HorizontalScrollbarAlias != "" && ScrollBars.IsExists(layerAlias, viewportEntry.HorizontalScrollbarAlias) {
-		scrollbarEntry := ScrollBars.Get(layerAlias, viewportEntry.HorizontalScrollbarAlias)
-		scrollbarEntry.ScrollValue = viewportEntry.ViewportXLocation
-		scrollbar.computeHandlePositionByScrollValue(layerAlias, viewportEntry.HorizontalScrollbarAlias)
+	if viewportEntry.HorizontalScrollbarAlias != "" {
+		if scrollbarEntry, isFound := ScrollBars.Lookup(layerAlias, viewportEntry.HorizontalScrollbarAlias); isFound {
+			scrollbarEntry.ScrollValue = viewportEntry.ViewportXLocation
+			scrollbar.computeHandlePositionByScrollValue(layerAlias, viewportEntry.HorizontalScrollbarAlias)
+		}
 	}
 }
 
@@ -519,12 +522,12 @@ func (shared *viewportType) setViewportMaxScrollBarValues(layerAlias string, vie
 	var vScrollBarEntry *types.ScrollbarEntryType
 	var hScrollBarEntry *types.ScrollbarEntryType
 
-	if viewportEntry.VerticalScrollbarAlias != "" && ScrollBars.IsExists(layerAlias, viewportEntry.VerticalScrollbarAlias) {
-		vScrollBarEntry = ScrollBars.Get(layerAlias, viewportEntry.VerticalScrollbarAlias)
+	if viewportEntry.VerticalScrollbarAlias != "" {
+		vScrollBarEntry, _ = ScrollBars.Lookup(layerAlias, viewportEntry.VerticalScrollbarAlias)
 	}
 
-	if viewportEntry.HorizontalScrollbarAlias != "" && ScrollBars.IsExists(layerAlias, viewportEntry.HorizontalScrollbarAlias) {
-		hScrollBarEntry = ScrollBars.Get(layerAlias, viewportEntry.HorizontalScrollbarAlias)
+	if viewportEntry.HorizontalScrollbarAlias != "" {
+		hScrollBarEntry, _ = ScrollBars.Lookup(layerAlias, viewportEntry.HorizontalScrollbarAlias)
 	}
 
 	// Initial state - assume no scrollbars are visible
@@ -655,8 +658,7 @@ func (shared *viewportType) Add(layerAlias string, viewportAlias string, styleEn
 	viewportEntry.HorizontalScrollbarAlias = horizontalScrollbarAlias
 
 	// Set parent control information for horizontal scrollbar
-	hScrollbarEntry := ScrollBars.Get(layerAlias, horizontalScrollbarAlias)
-	if hScrollbarEntry != nil {
+	if hScrollbarEntry, isFound := ScrollBars.Lookup(layerAlias, horizontalScrollbarAlias); isFound {
 		hScrollbarEntry.ParentControlAlias = viewportAlias
 		hScrollbarEntry.ParentControlType = constants.CellTypeTextbox // Viewports use textbox cell type
 	}
@@ -681,8 +683,7 @@ func (shared *viewportType) Add(layerAlias string, viewportAlias string, styleEn
 	viewportEntry.VerticalScrollbarAlias = verticalScrollbarAlias
 
 	// Set parent control information for vertical scrollbar
-	vScrollbarEntry := ScrollBars.Get(layerAlias, verticalScrollbarAlias)
-	if vScrollbarEntry != nil {
+	if vScrollbarEntry, isFound := ScrollBars.Lookup(layerAlias, verticalScrollbarAlias); isFound {
 		vScrollbarEntry.ParentControlAlias = viewportAlias
 		vScrollbarEntry.ParentControlType = constants.CellTypeTextbox // Viewports use textbox cell type
 	}
@@ -724,6 +725,7 @@ func (shared *viewportType) Delete(layerAlias string, viewportAlias string) {
 
 	// Delete the viewport
 	Viewports.Remove(layerAlias, viewportAlias)
+	clearStaleControlReferences(layerAlias, viewportAlias, constants.CellTypeTextbox)
 }
 
 /*
@@ -738,6 +740,7 @@ func (shared *viewportType) DeleteAll(layerAlias string) {
 	// Remove each entry
 	for _, entry := range entries {
 		Viewports.Remove(layerAlias, entry.Alias)
+		clearStaleControlReferences(layerAlias, entry.Alias, constants.CellTypeTextbox)
 	}
 }
 
@@ -824,16 +827,14 @@ func (shared *viewportType) drawContent(layerEntry *types.LayerEntryType, viewpo
 	}
 
 	// Further adjust content area for scrollbars inside the frame
-	if viewportEntry.VerticalScrollbarAlias != "" && ScrollBars.IsExists(layerEntry.LayerAlias, viewportEntry.VerticalScrollbarAlias) {
-		scrollbarEntry := ScrollBars.Get(layerEntry.LayerAlias, viewportEntry.VerticalScrollbarAlias)
-		if scrollbarEntry.IsVisible {
+	if viewportEntry.VerticalScrollbarAlias != "" {
+		if scrollbarEntry, isFound := ScrollBars.Lookup(layerEntry.LayerAlias, viewportEntry.VerticalScrollbarAlias); isFound && scrollbarEntry.IsVisible {
 			contentWidth-- // Reduce width by 1 for vertical scrollbar
 		}
 	}
 
-	if viewportEntry.HorizontalScrollbarAlias != "" && ScrollBars.IsExists(layerEntry.LayerAlias, viewportEntry.HorizontalScrollbarAlias) {
-		scrollbarEntry := ScrollBars.Get(layerEntry.LayerAlias, viewportEntry.HorizontalScrollbarAlias)
-		if scrollbarEntry.IsVisible {
+	if viewportEntry.HorizontalScrollbarAlias != "" {
+		if scrollbarEntry, isFound := ScrollBars.Lookup(layerEntry.LayerAlias, viewportEntry.HorizontalScrollbarAlias); isFound && scrollbarEntry.IsVisible {
 			contentHeight-- // Reduce height by 1 for horizontal scrollbar
 		}
 	}
@@ -922,14 +923,18 @@ func (shared *viewportType) updateScrollbars(layerEntry *types.LayerEntryType, v
 	var hScrollbarEntry, vScrollbarEntry *types.ScrollbarEntryType
 	var isHorizontalScrollbarVisible, isVerticalScrollbarVisible bool
 
-	if viewportEntry.HorizontalScrollbarAlias != "" && ScrollBars.IsExists(layerEntry.LayerAlias, viewportEntry.HorizontalScrollbarAlias) {
-		hScrollbarEntry = ScrollBars.Get(layerEntry.LayerAlias, viewportEntry.HorizontalScrollbarAlias)
-		isHorizontalScrollbarVisible = hScrollbarEntry.IsVisible
+	if viewportEntry.HorizontalScrollbarAlias != "" {
+		if entry, isFound := ScrollBars.Lookup(layerEntry.LayerAlias, viewportEntry.HorizontalScrollbarAlias); isFound {
+			hScrollbarEntry = entry
+			isHorizontalScrollbarVisible = hScrollbarEntry.IsVisible
+		}
 	}
 
-	if viewportEntry.VerticalScrollbarAlias != "" && ScrollBars.IsExists(layerEntry.LayerAlias, viewportEntry.VerticalScrollbarAlias) {
-		vScrollbarEntry = ScrollBars.Get(layerEntry.LayerAlias, viewportEntry.VerticalScrollbarAlias)
-		isVerticalScrollbarVisible = vScrollbarEntry.IsVisible
+	if viewportEntry.VerticalScrollbarAlias != "" {
+		if entry, isFound := ScrollBars.Lookup(layerEntry.LayerAlias, viewportEntry.VerticalScrollbarAlias); isFound {
+			vScrollbarEntry = entry
+			isVerticalScrollbarVisible = vScrollbarEntry.IsVisible
+		}
 	}
 
 	// If both scrollbars are visible, adjust their lengths and fill the corner
@@ -996,14 +1001,16 @@ func (shared *viewportType) updateViewport(viewportEntry *types.ViewportEntryTyp
 	// It updates the viewport's position based on scrollbar values
 
 	// Update viewport position based on scrollbar values
-	if viewportEntry.HorizontalScrollbarAlias != "" && ScrollBars.IsExists(layerAlias, viewportEntry.HorizontalScrollbarAlias) {
-		scrollbarEntry := ScrollBars.Get(layerAlias, viewportEntry.HorizontalScrollbarAlias)
-		viewportEntry.ViewportXLocation = scrollbarEntry.ScrollValue
+	if viewportEntry.HorizontalScrollbarAlias != "" {
+		if scrollbarEntry, isFound := ScrollBars.Lookup(layerAlias, viewportEntry.HorizontalScrollbarAlias); isFound {
+			viewportEntry.ViewportXLocation = scrollbarEntry.ScrollValue
+		}
 	}
 
-	if viewportEntry.VerticalScrollbarAlias != "" && ScrollBars.IsExists(layerAlias, viewportEntry.VerticalScrollbarAlias) {
-		scrollbarEntry := ScrollBars.Get(layerAlias, viewportEntry.VerticalScrollbarAlias)
-		viewportEntry.ViewportYLocation = scrollbarEntry.ScrollValue
+	if viewportEntry.VerticalScrollbarAlias != "" {
+		if scrollbarEntry, isFound := ScrollBars.Lookup(layerAlias, viewportEntry.VerticalScrollbarAlias); isFound {
+			viewportEntry.ViewportYLocation = scrollbarEntry.ScrollValue
+		}
 	}
 }
 

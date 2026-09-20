@@ -472,12 +472,10 @@ func (shared *layerType) Add(layerAlias string, xLocation int, yLocation int, wi
 	layerEntry.ParentAlias = parentAlias
 
 	if parentAlias != "" {
-		parentEntry := Layers.Get(parentAlias)
-		if parentEntry != nil {
-			parentEntry.IsParent = true
-		} else {
+		if !Layers.IsExists(parentAlias) {
 			panic(fmt.Sprintf("The layer '%s' could not be created since the parent alias '%s' does not exist!", layerAlias, parentAlias))
 		}
+		Layers.Get(parentAlias).IsParent = true
 	}
 	Layers.Add(layerAlias, &layerEntry)
 }
@@ -504,8 +502,7 @@ Example:
     layer.Delete("myLayer")
 */
 func (shared *layerType) Delete(layerAlias string) {
-	screenEntry := Layers.Get(layerAlias)
-	if screenEntry == nil {
+	if !Layers.IsExists(layerAlias) {
 		panic(fmt.Sprintf("The layer '%s' could not be deleted since it does not exist!", layerAlias))
 	}
 	layerEntry := Layers.Get(layerAlias)
@@ -518,28 +515,26 @@ func (shared *layerType) Delete(layerAlias string) {
 	}
 
 	// Delete all controls on this layer
-	Labels.RemoveAll(layerAlias)
-	Buttons.RemoveAll(layerAlias)
-	Checkboxes.RemoveAll(layerAlias)
-	Dropdowns.RemoveAll(layerAlias)
-	ProgressBars.RemoveAll(layerAlias)
-	RadioButtons.RemoveAll(layerAlias)
-	ScrollBars.RemoveAll(layerAlias)
-	Selectors.RemoveAll(layerAlias)
-	Textboxes.RemoveAll(layerAlias)
-	TextFields.RemoveAll(layerAlias)
-	Tooltips.RemoveAll(layerAlias)
-	Viewports.RemoveAll(layerAlias)
+	removeAllControlsAndClearCells(Labels, layerAlias, constants.CellTypeLabel, func(entry *types.LabelEntryType) string { return entry.Alias })
+	removeAllControlsAndClearCells(Buttons, layerAlias, constants.CellTypeButton, func(entry *types.ButtonEntryType) string { return entry.Alias })
+	removeAllControlsAndClearCells(Checkboxes, layerAlias, constants.CellTypeCheckbox, func(entry *types.CheckboxEntryType) string { return entry.Alias })
+	removeAllControlsAndClearCells(Dropdowns, layerAlias, constants.CellTypeDropdown, func(entry *types.DropdownEntryType) string { return entry.Alias })
+	removeAllControlsAndClearCells(ProgressBars, layerAlias, constants.CellTypeProgressBar, func(entry *types.ProgressBarEntryType) string { return entry.Alias })
+	removeAllControlsAndClearCells(RadioButtons, layerAlias, constants.CellTypeRadioButton, func(entry *types.RadioButtonEntryType) string { return entry.Alias })
+	removeAllControlsAndClearCells(ScrollBars, layerAlias, constants.CellTypeScrollbar, func(entry *types.ScrollbarEntryType) string { return entry.Alias })
+	removeAllControlsAndClearCells(Selectors, layerAlias, constants.CellTypeSelectorItem, func(entry *types.SelectorEntryType) string { return entry.Alias })
+	removeAllControlsAndClearCells(Textboxes, layerAlias, constants.CellTypeTextbox, func(entry *types.TextboxEntryType) string { return entry.Alias })
+	removeAllControlsAndClearCells(TextFields, layerAlias, constants.CellTypeTextField, func(entry *types.TextFieldEntryType) string { return entry.Alias })
+	removeAllControlsAndClearCells(Tooltips, layerAlias, constants.CellTypeTooltip, func(entry *types.TooltipEntryType) string { return entry.Alias })
+	removeAllControlsAndClearCells(Viewports, layerAlias, constants.CellTypeTextbox, func(entry *types.ViewportEntryType) string { return entry.Alias })
 	// Remove the layer itself
 	Layers.Remove(layerAlias)
 
 	// Update parent's IsParent status if needed
 	if parentAlias != "" {
-		parentEntry := Layers.Get(parentAlias)
-		if parentEntry != nil {
+		if parentEntry, isFound := Layers.Lookup(parentAlias); isFound {
 			if !shared.IsAParent(parentAlias) {
-				layerEntry = Layers.Get(parentAlias)
-				layerEntry.IsParent = false
+				parentEntry.IsParent = false
 			}
 		}
 	}
@@ -619,7 +614,7 @@ Example:
     layer.SetHighestZOrderNumber("topLayer", "parentLayer")
 */
 func (shared *layerType) SetHighestZOrderNumber(layerAlias string, parentAlias string) {
-	if Layers.IsExists(layerAlias) {
+	if targetLayer, isFound := Layers.Lookup(layerAlias); isFound {
 		highestZOrderNumber := shared.getHighestZOrderNumber(parentAlias)
 		for _, currentValue := range Layers.GetAllEntries() {
 			if currentValue.ParentAlias == parentAlias && currentValue.ZOrder == highestZOrderNumber {
@@ -627,8 +622,8 @@ func (shared *layerType) SetHighestZOrderNumber(layerAlias string, parentAlias s
 				currentValue.IsTopmost = false
 			}
 		}
-		Layers.Get(layerAlias).ZOrder = highestZOrderNumber
-		Layers.Get(layerAlias).IsTopmost = true
+		targetLayer.ZOrder = highestZOrderNumber
+		targetLayer.IsTopmost = true
 	}
 }
 
@@ -656,11 +651,10 @@ Example:
     layer.SetTopmostLayer("myLayer")
 */
 func (shared *layerType) SetTopmostLayer(layerAlias string) {
-	if !Layers.IsExists(layerAlias) {
+	targetLayer, isFound := Layers.Lookup(layerAlias)
+	if !isFound {
 		return
 	}
-
-	targetLayer := Layers.Get(layerAlias)
 
 	// Reset the current topmost layer's flag.
 	for _, layerEntry := range Layers.GetAllEntries() {
@@ -1008,7 +1002,7 @@ Example:
     layerInstance.DeleteAllButtons()
 */
 func (shared *LayerInstanceType) DeleteAllButtons() {
-	Buttons.RemoveAll(shared.layerAlias)
+	removeAllControlsAndClearCells(Buttons, shared.layerAlias, constants.CellTypeButton, func(entry *types.ButtonEntryType) string { return entry.Alias })
 }
 
 /*
@@ -1018,7 +1012,7 @@ Example:
     layerInstance.DeleteAllCheckboxes()
 */
 func (shared *LayerInstanceType) DeleteAllCheckboxes() {
-	Checkboxes.RemoveAll(shared.layerAlias)
+	removeAllControlsAndClearCells(Checkboxes, shared.layerAlias, constants.CellTypeCheckbox, func(entry *types.CheckboxEntryType) string { return entry.Alias })
 }
 
 /*
@@ -1028,7 +1022,7 @@ Example:
     layerInstance.DeleteAllDropdowns()
 */
 func (shared *LayerInstanceType) DeleteAllDropdowns() {
-	Dropdowns.RemoveAll(shared.layerAlias)
+	removeAllControlsAndClearCells(Dropdowns, shared.layerAlias, constants.CellTypeDropdown, func(entry *types.DropdownEntryType) string { return entry.Alias })
 }
 
 /*
@@ -1038,7 +1032,7 @@ Example:
     layerInstance.DeleteAllLabels()
 */
 func (shared *LayerInstanceType) DeleteAllLabels() {
-	Labels.RemoveAll(shared.layerAlias)
+	removeAllControlsAndClearCells(Labels, shared.layerAlias, constants.CellTypeLabel, func(entry *types.LabelEntryType) string { return entry.Alias })
 }
 
 /*
@@ -1048,7 +1042,7 @@ Example:
     layerInstance.DeleteAllProgressBars()
 */
 func (shared *LayerInstanceType) DeleteAllProgressBars() {
-	ProgressBars.RemoveAll(shared.layerAlias)
+	removeAllControlsAndClearCells(ProgressBars, shared.layerAlias, constants.CellTypeProgressBar, func(entry *types.ProgressBarEntryType) string { return entry.Alias })
 }
 
 /*
@@ -1058,7 +1052,7 @@ Example:
     layerInstance.DeleteAllRadioButtons()
 */
 func (shared *LayerInstanceType) DeleteAllRadioButtons() {
-	RadioButtons.RemoveAll(shared.layerAlias)
+	removeAllControlsAndClearCells(RadioButtons, shared.layerAlias, constants.CellTypeRadioButton, func(entry *types.RadioButtonEntryType) string { return entry.Alias })
 }
 
 /*
@@ -1068,7 +1062,7 @@ Example:
     layerInstance.DeleteAllScrollbars()
 */
 func (shared *LayerInstanceType) DeleteAllScrollbars() {
-	ScrollBars.RemoveAll(shared.layerAlias)
+	removeAllControlsAndClearCells(ScrollBars, shared.layerAlias, constants.CellTypeScrollbar, func(entry *types.ScrollbarEntryType) string { return entry.Alias })
 }
 
 /*
@@ -1078,7 +1072,7 @@ Example:
     layerInstance.DeleteAllSelectors()
 */
 func (shared *LayerInstanceType) DeleteAllSelectors() {
-	Selectors.RemoveAll(shared.layerAlias)
+	removeAllControlsAndClearCells(Selectors, shared.layerAlias, constants.CellTypeSelectorItem, func(entry *types.SelectorEntryType) string { return entry.Alias })
 }
 
 /*
@@ -1088,7 +1082,7 @@ Example:
     layerInstance.DeleteAllTextFields()
 */
 func (shared *LayerInstanceType) DeleteAllTextFields() {
-	TextFields.RemoveAll(shared.layerAlias)
+	removeAllControlsAndClearCells(TextFields, shared.layerAlias, constants.CellTypeTextField, func(entry *types.TextFieldEntryType) string { return entry.Alias })
 }
 
 /*
@@ -1098,7 +1092,7 @@ Example:
     layerInstance.DeleteAllTextboxes()
 */
 func (shared *LayerInstanceType) DeleteAllTextboxes() {
-	Textboxes.RemoveAll(shared.layerAlias)
+	removeAllControlsAndClearCells(Textboxes, shared.layerAlias, constants.CellTypeTextbox, func(entry *types.TextboxEntryType) string { return entry.Alias })
 }
 
 /*
@@ -1108,7 +1102,7 @@ Example:
     layerInstance.DeleteAllTooltips()
 */
 func (shared *LayerInstanceType) DeleteAllTooltips() {
-	Tooltips.RemoveAll(shared.layerAlias)
+	removeAllControlsAndClearCells(Tooltips, shared.layerAlias, constants.CellTypeTooltip, func(entry *types.TooltipEntryType) string { return entry.Alias })
 }
 
 /*
@@ -1118,7 +1112,7 @@ Example:
     layerInstance.DeleteAllViewports()
 */
 func (shared *LayerInstanceType) DeleteAllViewports() {
-	Viewports.RemoveAll(shared.layerAlias)
+	removeAllControlsAndClearCells(Viewports, shared.layerAlias, constants.CellTypeTextbox, func(entry *types.ViewportEntryType) string { return entry.Alias })
 }
 
 /*
@@ -1128,7 +1122,7 @@ Example:
     layerInstance.DeleteAllFileMenus()
 */
 func (shared *LayerInstanceType) DeleteAllFileMenus() {
-	FileMenus.RemoveAll(shared.layerAlias)
+	removeAllControlsAndClearCells(FileMenus, shared.layerAlias, constants.CellTypeFileMenuHeading, func(entry *types.FileMenuEntryType) string { return entry.Alias })
 }
 
 /*
@@ -1846,10 +1840,10 @@ Example:
     layerInstance.PrintFont(myFont, 10, 5, "Big Text")
 */
 func (shared *LayerInstanceType) PrintFont(fontInstance fontInstanceType, xLocation int, yLocation int, stringToPrint string) {
-	layerEntry := Layers.Get(shared.layerAlias)
-	if layerEntry == nil {
+	if !Layers.IsExists(shared.layerAlias) {
 		panic(fmt.Sprintf("Layer with alias '%s' not found.", shared.layerAlias))
 	}
+	layerEntry := Layers.Get(shared.layerAlias)
 	Font.PrintText(layerEntry, fontInstance, xLocation, yLocation, stringToPrint)
 }
 
@@ -1955,8 +1949,12 @@ Example:
     moveLayerByRelativeValue("myLayer", 1, -1)
 */
 func moveLayerByRelativeValue(layerAlias string, xLocation int, yLocation int) {
-	validateLayer(layerAlias)
-	layerEntry := Layers.Get(layerAlias)
+	// A concurrent delete between the drag event firing and this call landing is a normal event on the mouse drag
+	// path, not a programmer error, so Lookup is used here to tolerate a miss instead of panicking.
+	layerEntry, isFound := Layers.Lookup(layerAlias)
+	if !isFound {
+		return
+	}
 	layerEntry.ScreenXLocation += xLocation
 	layerEntry.ScreenYLocation += yLocation
 }

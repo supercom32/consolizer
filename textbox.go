@@ -35,8 +35,8 @@ Example:
 */
 func GetTextbox(layerAlias string, textboxAlias string) *types.TextboxEntryType {
 	// Use the generic memory manager to retrieve the textbox entry
-	textboxEntry := Textboxes.Get(layerAlias, textboxAlias)
-	if textboxEntry == nil {
+	textboxEntry, isFound := Textboxes.Lookup(layerAlias, textboxAlias)
+	if !isFound {
 		safeSttyPanic(fmt.Sprintf("The requested text with alias '%s' on layer '%s' could not be returned since it does not exist.", textboxAlias, layerAlias))
 	}
 	return textboxEntry
@@ -50,7 +50,7 @@ Example:
 */
 func IsTextboxExists(layerAlias string, textboxAlias string) bool {
 	// Use the generic memory manager to check existence
-	return Textboxes.Get(layerAlias, textboxAlias) != nil
+	return Textboxes.IsExists(layerAlias, textboxAlias)
 }
 
 /*
@@ -78,8 +78,7 @@ Example:
     textbox.SetTooltipText("This is a tooltip")
 */
 func (shared *TextboxInstanceType) SetTooltipText(text string) *TextboxInstanceType {
-	if Textboxes.IsExists(shared.layerAlias, shared.controlAlias) {
-		textboxEntry := Textboxes.Get(shared.layerAlias, shared.controlAlias)
+	if textboxEntry, isFound := Textboxes.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 		var tooltipInstance TooltipInstanceType
 		tooltipInstance.layerAlias = shared.layerAlias
 		tooltipInstance.controlAlias = textboxEntry.TooltipAlias
@@ -95,8 +94,7 @@ Example:
     textbox.EnableTooltip(true)
 */
 func (shared *TextboxInstanceType) EnableTooltip(enabled bool) *TextboxInstanceType {
-	if Textboxes.IsExists(shared.layerAlias, shared.controlAlias) {
-		textboxEntry := Textboxes.Get(shared.layerAlias, shared.controlAlias)
+	if textboxEntry, isFound := Textboxes.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 		var tooltipInstance TooltipInstanceType
 		tooltipInstance.layerAlias = shared.layerAlias
 		tooltipInstance.controlAlias = textboxEntry.TooltipAlias
@@ -118,9 +116,8 @@ Example:
     textbox.SetText("Hello\nWorld")
 */
 func (shared *TextboxInstanceType) SetText(text string) *TextboxInstanceType {
-	if Textboxes.IsExists(shared.layerAlias, shared.controlAlias) {
+	if textboxEntry, isFound := Textboxes.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 		textData := strings.Split(text, "\n")
-		textboxEntry := Textboxes.Get(shared.layerAlias, shared.controlAlias)
 		for _, currentLine := range textData {
 			textboxEntry.TextData = append(textboxEntry.TextData, append(stringformat.GetRunesFromString(currentLine), ' '))
 		}
@@ -139,8 +136,7 @@ Example:
     text := textbox.GetText()
 */
 func (shared *TextboxInstanceType) GetText() string {
-	if Textboxes.IsExists(shared.layerAlias, shared.controlAlias) {
-		textboxEntry := Textboxes.Get(shared.layerAlias, shared.controlAlias)
+	if textboxEntry, isFound := Textboxes.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 		var text strings.Builder
 		for i, line := range textboxEntry.TextData {
 			text.WriteString(string(line))
@@ -161,8 +157,7 @@ Example:
     textbox.SetViewport(0, 0)
 */
 func (shared *TextboxInstanceType) SetViewport(xLocation int, yLocation int) *TextboxInstanceType {
-	if Textboxes.IsExists(shared.layerAlias, shared.controlAlias) {
-		textboxEntry := Textboxes.Get(shared.layerAlias, shared.controlAlias)
+	if textboxEntry, isFound := Textboxes.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 		textboxEntry.ViewportXLocation = xLocation
 		textboxEntry.ViewportYLocation = yLocation
 	}
@@ -183,15 +178,13 @@ Example:
     textbox.SetWordWrap(true)
 */
 func (shared *TextboxInstanceType) SetWordWrap(enabled bool) *TextboxInstanceType {
-	if Textboxes.IsExists(shared.layerAlias, shared.controlAlias) {
-		textboxEntry := Textboxes.Get(shared.layerAlias, shared.controlAlias)
+	if textboxEntry, isFound := Textboxes.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 		textboxEntry.IsWordWrapEnabled = enabled
 
 		// Update scrollbar visibility
 		if enabled {
 			// Hide horizontal scrollbar when word wrap is enabled
-			hScrollBarEntry := ScrollBars.Get(shared.layerAlias, textboxEntry.HorizontalScrollbarAlias)
-			if hScrollBarEntry != nil {
+			if hScrollBarEntry, isFound := ScrollBars.Lookup(shared.layerAlias, textboxEntry.HorizontalScrollbarAlias); isFound {
 				hScrollBarEntry.IsVisible = false
 				hScrollBarEntry.IsEnabled = false
 			}
@@ -215,8 +208,7 @@ Example:
     textbox.SetAutoIndent(true)
 */
 func (shared *TextboxInstanceType) SetAutoIndent(enabled bool) *TextboxInstanceType {
-	if Textboxes.IsExists(shared.layerAlias, shared.controlAlias) {
-		textboxEntry := Textboxes.Get(shared.layerAlias, shared.controlAlias)
+	if textboxEntry, isFound := Textboxes.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 		textboxEntry.IsAutoIndentEnabled = enabled
 	}
 	return shared
@@ -459,21 +451,19 @@ Example:
     textbox.updateScrollbarBasedOnTextboxViewport("layer1", "textbox1")
 */
 func (shared *textboxType) updateScrollbarBasedOnTextboxViewport(layerAlias string, textboxAlias string) {
-	textboxEntry := Textboxes.Get(layerAlias, textboxAlias)
-	if textboxEntry == nil {
+	textboxEntry, isFound := Textboxes.Lookup(layerAlias, textboxAlias)
+	if !isFound {
 		return
 	}
 
 	// Update horizontal scrollbar if it exists
-	if ScrollBars.IsExists(layerAlias, textboxEntry.HorizontalScrollbarAlias) {
-		horizontalScrollbarEntry := ScrollBars.Get(layerAlias, textboxEntry.HorizontalScrollbarAlias)
+	if horizontalScrollbarEntry, isFound := ScrollBars.Lookup(layerAlias, textboxEntry.HorizontalScrollbarAlias); isFound {
 		horizontalScrollbarEntry.ScrollValue = textboxEntry.ViewportXLocation
 		scrollbar.computeHandlePositionByScrollValue(layerAlias, textboxEntry.HorizontalScrollbarAlias)
 	}
 
 	// Update vertical scrollbar if it exists
-	if ScrollBars.IsExists(layerAlias, textboxEntry.VerticalScrollbarAlias) {
-		verticalScrollbarEntry := ScrollBars.Get(layerAlias, textboxEntry.VerticalScrollbarAlias)
+	if verticalScrollbarEntry, isFound := ScrollBars.Lookup(layerAlias, textboxEntry.VerticalScrollbarAlias); isFound {
 		verticalScrollbarEntry.ScrollValue = textboxEntry.ViewportYLocation
 		scrollbar.computeHandlePositionByScrollValue(layerAlias, textboxEntry.VerticalScrollbarAlias)
 	}
@@ -488,8 +478,8 @@ Example:
     maxWidth := textbox.getMaxHorizontalTextValue("layer1", "textbox1")
 */
 func (shared *textboxType) getMaxHorizontalTextValue(layerAlias string, textboxAlias string) int {
-	textboxEntry := Textboxes.Get(layerAlias, textboxAlias)
-	if textboxEntry == nil {
+	textboxEntry, isFound := Textboxes.Lookup(layerAlias, textboxAlias)
+	if !isFound {
 		return 0
 	}
 
@@ -522,8 +512,8 @@ Example:
     textbox.setTextboxMaxScrollBarValues("layer1", "textbox1")
 */
 func (shared *textboxType) setTextboxMaxScrollBarValues(layerAlias string, textboxAlias string) {
-	textboxEntry := Textboxes.Get(layerAlias, textboxAlias)
-	if textboxEntry == nil {
+	textboxEntry, isFound := Textboxes.Lookup(layerAlias, textboxAlias)
+	if !isFound {
 		return
 	}
 
@@ -542,18 +532,15 @@ func (shared *textboxType) setTextboxMaxScrollBarValues(layerAlias string, textb
 		maxHorizontalValue = shared.getMaxHorizontalTextValue(layerAlias, textboxAlias)
 	}
 
-	// Check if horizontal scrollbar exists
-	if !ScrollBars.IsExists(layerAlias, textboxEntry.HorizontalScrollbarAlias) {
+	// Check if horizontal and vertical scrollbars exist
+	hScrollBarEntry, isFound := ScrollBars.Lookup(layerAlias, textboxEntry.HorizontalScrollbarAlias)
+	if !isFound {
 		return
 	}
-
-	// Check if vertical scrollbar exists
-	if !ScrollBars.IsExists(layerAlias, textboxEntry.VerticalScrollbarAlias) {
+	vScrollBarEntry, isFound := ScrollBars.Lookup(layerAlias, textboxEntry.VerticalScrollbarAlias)
+	if !isFound {
 		return
 	}
-
-	hScrollBarEntry := ScrollBars.Get(layerAlias, textboxEntry.HorizontalScrollbarAlias)
-	vScrollBarEntry := ScrollBars.Get(layerAlias, textboxEntry.VerticalScrollbarAlias)
 
 	maxHorizontalValue = maxHorizontalValue - textboxEntry.Width
 	// If the max horizontal width is smaller than the textbox width, disable scrolling.
@@ -669,6 +656,7 @@ Example:
 */
 func (shared *textboxType) Delete(layerAlias string, textboxAlias string) {
 	Textboxes.Remove(layerAlias, textboxAlias)
+	clearStaleControlReferences(layerAlias, textboxAlias, constants.CellTypeTextbox)
 }
 
 /*
@@ -685,7 +673,7 @@ Example:
     textbox.DeleteAll("layer1")
 */
 func (shared *textboxType) DeleteAll(layerAlias string) {
-	Textboxes.RemoveAll(layerAlias)
+	removeAllControlsAndClearCells(Textboxes, layerAlias, constants.CellTypeTextbox, func(entry *types.TextboxEntryType) string { return entry.Alias })
 }
 
 /*
@@ -1379,7 +1367,10 @@ func (shared *textboxType) UpdateKeyboardEventManually(layerAlias string, textbo
 	isScreenUpdateRequired := false
 	isKeystrokeConsumed := false
 	keystrokeAsString := string(keystroke)
-	textboxEntry := Textboxes.Get(layerAlias, textboxAlias)
+	textboxEntry, isFound := Textboxes.Lookup(layerAlias, textboxAlias)
+	if !isFound {
+		return isScreenUpdateRequired, isKeystrokeConsumed
+	}
 
 	// Store old cursor position for highlight updates
 	oldCursorX := textboxEntry.CursorXLocation
@@ -1948,11 +1939,11 @@ func (shared *textboxType) updateMouseEvent() bool {
 	characterEntry := getCellInformationUnderMouseCursor(mouseXLocation, mouseYLocation)
 	layerAlias := characterEntry.LayerAlias
 	// If your clicking on a text box and not in the drag and drop event state.
-	if buttonPressed != 0 && characterEntry.AttributeEntry.CellType == constants.CellTypeTextbox &&
+	if textboxEntry, isFound := Textboxes.Lookup(layerAlias, characterEntry.AttributeEntry.CellControlAlias); buttonPressed != 0 &&
+		characterEntry.AttributeEntry.CellType == constants.CellTypeTextbox &&
 		eventStateMemory.stateId != constants.EventStateDragAndDropScrollbar &&
 		eventStateMemory.stateId != constants.EventStateDragAndDrop && // Add check for layer drag and drop
-		Textboxes.IsExists(layerAlias, characterEntry.AttributeEntry.CellControlAlias) {
-		textboxEntry := Textboxes.Get(layerAlias, characterEntry.AttributeEntry.CellControlAlias)
+		isFound {
 
 		// Ensure TextData is initialized before updating cursor
 		if len(textboxEntry.TextData) == 0 {
@@ -1984,13 +1975,14 @@ func (shared *textboxType) updateMouseEvent() bool {
 			textboxEntry := currentTextBoxEntry
 
 			// Skip if horizontal or vertical scrollbar doesn't exist
-			if !ScrollBars.IsExists(layerAlias, textboxEntry.HorizontalScrollbarAlias) ||
-				!ScrollBars.IsExists(layerAlias, textboxEntry.VerticalScrollbarAlias) {
+			hScrollBarEntry, isFound := ScrollBars.Lookup(layerAlias, textboxEntry.HorizontalScrollbarAlias)
+			if !isFound {
 				continue
 			}
-
-			hScrollBarEntry := ScrollBars.Get(layerAlias, textboxEntry.HorizontalScrollbarAlias)
-			vScrollBarEntry := ScrollBars.Get(layerAlias, textboxEntry.VerticalScrollbarAlias)
+			vScrollBarEntry, isFound := ScrollBars.Lookup(layerAlias, textboxEntry.VerticalScrollbarAlias)
+			if !isFound {
+				continue
+			}
 
 			if textboxEntry.ViewportXLocation != hScrollBarEntry.ScrollValue {
 				textboxEntry.ViewportXLocation = hScrollBarEntry.ScrollValue

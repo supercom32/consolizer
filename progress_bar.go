@@ -198,7 +198,8 @@ Example:
     ProgressBar.Delete("Layer1", "Progress1")
 */
 func (shared *progressBarType) Delete(layerAlias string, progressBarAlias string) {
-	Buttons.Remove(layerAlias, progressBarAlias)
+	ProgressBars.Remove(layerAlias, progressBarAlias)
+	clearStaleControlReferences(layerAlias, progressBarAlias, constants.CellTypeProgressBar)
 }
 
 /*
@@ -208,7 +209,7 @@ Example:
     ProgressBar.DeleteAll("Layer1")
 */
 func (shared *progressBarType) DeleteAll(layerAlias string) {
-	ProgressBars.RemoveAll(layerAlias)
+	removeAllControlsAndClearCells(ProgressBars, layerAlias, constants.CellTypeProgressBar, func(entry *types.ProgressBarEntryType) string { return entry.Alias })
 }
 
 /*

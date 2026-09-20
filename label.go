@@ -118,6 +118,7 @@ Example:
 */
 func (shared *labelType) Delete(layerAlias string, labelAlias string) {
 	Labels.Remove(layerAlias, labelAlias)
+	clearStaleControlReferences(layerAlias, labelAlias, constants.CellTypeLabel)
 }
 
 /*
@@ -127,7 +128,7 @@ Example:
     Label.DeleteAll("mainLayer")
 */
 func (shared *labelType) DeleteAll(layerAlias string) {
-	Labels.RemoveAll(layerAlias)
+	removeAllControlsAndClearCells(Labels, layerAlias, constants.CellTypeLabel, func(entry *types.LabelEntryType) string { return entry.Alias })
 }
 
 /*

@@ -63,8 +63,7 @@ Example:
 */
 func (shared *ScrollbarInstanceType) setScrollValue(value int) {
 	// TODO: AddLayer scroll value validation.
-	if ScrollBars.IsExists(shared.layerAlias, shared.controlAlias) {
-		scrollbarEntry := ScrollBars.Get(shared.layerAlias, shared.controlAlias)
+	if scrollbarEntry, isFound := ScrollBars.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 		scrollbarEntry.ScrollValue = value
 		scrollbar.computeHandlePositionByScrollValue(shared.layerAlias, shared.controlAlias)
 	}
@@ -80,8 +79,7 @@ Example:
     value := scrollbar.getScrollValue()
 */
 func (shared *ScrollbarInstanceType) getScrollValue() int {
-	if ScrollBars.IsExists(shared.layerAlias, shared.controlAlias) {
-		scrollbarEntry := ScrollBars.Get(shared.layerAlias, shared.controlAlias)
+	if scrollbarEntry, isFound := ScrollBars.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 		return scrollbarEntry.ScrollValue
 	}
 	return 0
@@ -97,8 +95,7 @@ Example:
     scrollbar.setHandlePosition(5)
 */
 func (shared *ScrollbarInstanceType) setHandlePosition(positionIndex int) {
-	if ScrollBars.IsExists(shared.layerAlias, shared.controlAlias) {
-		scrollbarEntry := ScrollBars.Get(shared.layerAlias, shared.controlAlias)
+	if scrollbarEntry, isFound := ScrollBars.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 		scrollbarEntry.HandlePosition = positionIndex
 		scrollbar.computeValueByHandlePosition(shared.layerAlias, shared.controlAlias)
 	}
@@ -156,6 +153,7 @@ Example:
 */
 func (shared *scrollbarType) Delete(layerAlias string, scrollbarAlias string) {
 	ScrollBars.Remove(layerAlias, scrollbarAlias)
+	clearStaleControlReferences(layerAlias, scrollbarAlias, constants.CellTypeScrollbar)
 }
 
 /*
@@ -168,7 +166,7 @@ Example:
     scrollbar.DeleteAll("Layer1")
 */
 func (shared *scrollbarType) DeleteAll(layerAlias string) {
-	ScrollBars.RemoveAll(layerAlias)
+	removeAllControlsAndClearCells(ScrollBars, layerAlias, constants.CellTypeScrollbar, func(entry *types.ScrollbarEntryType) string { return entry.Alias })
 }
 
 /*
@@ -207,8 +205,7 @@ Example:
 */
 func (shared *scrollbarType) drawOnLayerByAlias(layerEntry *types.LayerEntryType, scrollbarAlias string) {
 	layerAlias := layerEntry.LayerAlias
-	if ScrollBars.IsExists(layerAlias, scrollbarAlias) {
-		scrollbarEntry := ScrollBars.Get(layerAlias, scrollbarAlias)
+	if scrollbarEntry, isFound := ScrollBars.Lookup(layerAlias, scrollbarAlias); isFound {
 		if scrollbarEntry.IsVisible {
 			shared.draw(layerEntry, scrollbarEntry.Alias, scrollbarEntry.StyleEntry, scrollbarEntry.XLocation, scrollbarEntry.YLocation, scrollbarEntry.Length, scrollbarEntry.HandlePosition, scrollbarEntry.IsHorizontal)
 		}
@@ -279,7 +276,10 @@ Example:
     scrollbar.computeValueByHandlePosition("Layer1", "Scroll1")
 */
 func (shared *scrollbarType) computeValueByHandlePosition(layerAlias string, scrollbarAlias string) {
-	scrollbarEntry := ScrollBars.Get(layerAlias, scrollbarAlias)
+	scrollbarEntry, isFound := ScrollBars.Lookup(layerAlias, scrollbarAlias)
+	if !isFound {
+		return
+	}
 	// If instructed not to draw scroll bars, do not compute values.
 	if scrollbarEntry.IsEnabled == false {
 		return
@@ -312,7 +312,10 @@ Example:
     scrollbar.computeHandlePositionByScrollValue("Layer1", "Scroll1")
 */
 func (shared *scrollbarType) computeHandlePositionByScrollValue(layerAlias string, scrollbarAlias string) {
-	scrollbarEntry := ScrollBars.Get(layerAlias, scrollbarAlias)
+	scrollbarEntry, isFound := ScrollBars.Lookup(layerAlias, scrollbarAlias)
+	if !isFound {
+		return
+	}
 	// If instructed not to draw scroll bars, do not compute values.
 	if scrollbarEntry.IsEnabled == false {
 		return
@@ -350,7 +353,10 @@ func (shared *scrollbarType) updateKeyboardEventManually(layerAlias string, scro
 	isScreenUpdateRequired := false
 	isKeystrokeConsumed := false
 	// Check for scrollbar input only if the scroll bar is not disabled (not null).
-	scrollbarEntry := ScrollBars.Get(layerAlias, scrollbarAlias)
+	scrollbarEntry, isFound := ScrollBars.Lookup(layerAlias, scrollbarAlias)
+	if !isFound {
+		return isScreenUpdateRequired, isKeystrokeConsumed
+	}
 	if scrollbarEntry.IsEnabled {
 		if keystrokeAsString == "up" || keystrokeAsString == "left" {
 			scrollbarEntry.ScrollValue = scrollbarEntry.ScrollValue - scrollbarEntry.ScrollIncrement
@@ -449,8 +455,8 @@ func (shared *scrollbarType) updateMouseEvent() bool {
 	previousMouseXLocation, previousMouseYLocation, previousButtonPressed, _ := GetPreviousMouseStatus()
 	if buttonPressed != 0 {
 		characterEntry := getCellInformationUnderMouseCursor(mouseXLocation, mouseYLocation)
-		if previousButtonPressed == 0 && characterEntry.AttributeEntry.CellType == constants.CellTypeScrollbar {
-			scrollbarEntry := ScrollBars.Get(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias)
+		if scrollbarEntry, isFound := ScrollBars.Lookup(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias); previousButtonPressed == 0 &&
+			characterEntry.AttributeEntry.CellType == constants.CellTypeScrollbar && isFound {
 			// Check for scrollbar input only if the scroll bar is not disabled (not null).
 			if scrollbarEntry.IsEnabled {
 				if characterEntry.AttributeEntry.CellControlId == constants.CellControlIdScrollbarHandle {
@@ -475,8 +481,7 @@ func (shared *scrollbarType) updateMouseEvent() bool {
 		} else if previousButtonPressed != 0 && eventStateMemory.stateId == constants.EventStateDragAndDropScrollbar {
 			xMove := mouseXLocation - previousMouseXLocation
 			yMove := mouseYLocation - previousMouseYLocation
-			if focusedControlType == constants.CellTypeScrollbar {
-				scrollbarEntry := ScrollBars.Get(focusedLayerAlias, focusedControlAlias)
+			if scrollbarEntry, isFound := ScrollBars.Lookup(focusedLayerAlias, focusedControlAlias); focusedControlType == constants.CellTypeScrollbar && isFound {
 				if scrollbarEntry.IsHorizontal {
 					scrollbarEntry.HandlePosition = scrollbarEntry.HandlePosition + xMove
 				} else {

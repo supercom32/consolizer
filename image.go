@@ -79,11 +79,10 @@ Example:
     entry := getImage("myImage")
 */
 func getImage(imageAlias string) *types.ImageEntryType {
-	entry := Image.Entries.Get(imageAlias)
-	if entry == nil {
+	if !Image.Entries.IsExists(imageAlias) {
 		safeSttyPanic(fmt.Sprintf("The requested Image with alias '%s' could not be returned since it does not exist.", imageAlias))
 	}
-	return entry
+	return Image.Entries.Get(imageAlias)
 }
 
 /*

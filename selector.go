@@ -555,6 +555,7 @@ Example:
 */
 func (shared *selectorType) Delete(layerAlias string, selectorAlias string) {
 	Selectors.Remove(layerAlias, selectorAlias)
+	clearStaleControlReferences(layerAlias, selectorAlias, constants.CellTypeSelectorItem)
 }
 
 /*
@@ -569,7 +570,7 @@ Example:
     Selector.DeleteAll("Layer1")
 */
 func (shared *selectorType) DeleteAll(layerAlias string) {
-	Selectors.RemoveAll(layerAlias)
+	removeAllControlsAndClearCells(Selectors, layerAlias, constants.CellTypeSelectorItem, func(entry *types.SelectorEntryType) string { return entry.Alias })
 }
 
 /*
@@ -807,7 +808,10 @@ func (shared *selectorType) updateKeyboardEventForSelector(layerAlias string, se
 	keystrokeAsString := string(keystroke)
 	isScreenUpdateRequired := false
 	isKeystrokeConsumed := false
-	selectorEntry := Selectors.Get(layerAlias, selectorAlias)
+	selectorEntry, isFound := Selectors.Lookup(layerAlias, selectorAlias)
+	if !isFound {
+		return isScreenUpdateRequired, isKeystrokeConsumed
+	}
 
 	// Use full number of columns
 	effectiveColumns := selectorEntry.NumberOfColumns
@@ -822,7 +826,7 @@ func (shared *selectorType) updateKeyboardEventForSelector(layerAlias string, se
 		if selectorEntry.ItemHighlighted >= selectorEntry.ViewportPosition+(selectorEntry.Height*effectiveColumns) {
 			selectorEntry.ViewportPosition = selectorEntry.ItemHighlighted - (selectorEntry.Height * effectiveColumns) + effectiveColumns
 			// Update associated scrollbar
-			if scrollBarEntry := ScrollBars.Get(layerAlias, selectorEntry.ScrollbarAlias); scrollBarEntry != nil {
+			if scrollBarEntry, isFound := ScrollBars.Lookup(layerAlias, selectorEntry.ScrollbarAlias); isFound {
 				scrollBarEntry.ScrollValue = selectorEntry.ViewportPosition
 				scrollbar.computeHandlePositionByScrollValue(layerAlias, selectorEntry.ScrollbarAlias)
 			}
@@ -839,7 +843,7 @@ func (shared *selectorType) updateKeyboardEventForSelector(layerAlias string, se
 		if selectorEntry.ItemHighlighted < selectorEntry.ViewportPosition {
 			selectorEntry.ViewportPosition = selectorEntry.ItemHighlighted
 			// Update associated scrollbar
-			if scrollBarEntry := ScrollBars.Get(layerAlias, selectorEntry.ScrollbarAlias); scrollBarEntry != nil {
+			if scrollBarEntry, isFound := ScrollBars.Lookup(layerAlias, selectorEntry.ScrollbarAlias); isFound {
 				scrollBarEntry.ScrollValue = selectorEntry.ViewportPosition
 				scrollbar.computeHandlePositionByScrollValue(layerAlias, selectorEntry.ScrollbarAlias)
 			}
@@ -917,8 +921,8 @@ func (shared *selectorType) updateMouseEvent() bool {
 	var characterEntry types.CharacterEntryType
 	mouseXLocation, mouseYLocation, buttonPressed, _ := GetMouseStatus()
 	characterEntry = getCellInformationUnderMouseCursor(mouseXLocation, mouseYLocation)
-	if characterEntry.AttributeEntry.CellType == constants.CellTypeSelectorItem && eventStateMemory.stateId == constants.EventStateNone && Selectors.IsExists(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias) {
-		selectorEntry := Selectors.Get(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias)
+	if selectorEntry, isFound := Selectors.Lookup(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias); characterEntry.AttributeEntry.CellType == constants.CellTypeSelectorItem &&
+		eventStateMemory.stateId == constants.EventStateNone && isFound {
 		if buttonPressed != 0 {
 			selectorEntry.ItemHighlighted = characterEntry.AttributeEntry.CellControlId
 			selectorEntry.ItemSelected = characterEntry.AttributeEntry.CellControlId
@@ -942,9 +946,8 @@ func (shared *selectorType) updateMouseEvent() bool {
 		setPreviouslyHighlightedControl(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias, constants.CellTypeSelectorItem)
 		isScreenUpdateRequired = true
 	} else {
-		if eventStateMemory.previouslyHighlightedControl.controlType == constants.CellTypeSelectorItem && Selectors.IsExists(eventStateMemory.previouslyHighlightedControl.layerAlias, eventStateMemory.previouslyHighlightedControl.controlAlias) &&
-			Selectors.IsExists(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias) {
-			selectorEntry := Selectors.Get(eventStateMemory.previouslyHighlightedControl.layerAlias, eventStateMemory.previouslyHighlightedControl.controlAlias)
+		if selectorEntry, isFound := Selectors.Lookup(eventStateMemory.previouslyHighlightedControl.layerAlias, eventStateMemory.previouslyHighlightedControl.controlAlias); eventStateMemory.previouslyHighlightedControl.controlType == constants.CellTypeSelectorItem &&
+			isFound && Selectors.IsExists(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias) {
 			// Only clear highlighting if HighlightOnClickOnly is false
 			if !selectorEntry.HighlightOnClickOnly {
 				selectorEntry.ItemHighlighted = constants.NullItemSelection
@@ -965,8 +968,10 @@ func (shared *selectorType) updateMouseEvent() bool {
 		characterEntry.AttributeEntry.CellType == constants.CellTypeScrollbar) {
 		for _, currentSelectorEntry := range Selectors.GetAllEntries(focusedLayerAlias) {
 			selectorEntry := currentSelectorEntry
-			// TODO: Here we don't need to protect this since it is not user controlled?
-			scrollBarEntry := ScrollBars.Get(focusedLayerAlias, selectorEntry.ScrollbarAlias)
+			scrollBarEntry, isFound := ScrollBars.Lookup(focusedLayerAlias, selectorEntry.ScrollbarAlias)
+			if !isFound {
+				continue
+			}
 			if selectorEntry.ViewportPosition != scrollBarEntry.ScrollValue {
 				selectorEntry.ViewportPosition = scrollBarEntry.ScrollValue
 				isScreenUpdateRequired = true
@@ -976,8 +981,10 @@ func (shared *selectorType) updateMouseEvent() bool {
 	// If a Selector is no longer visible, then make the scroll bars associated with it invisible as well.
 	for _, currentSelectorEntry := range Selectors.GetAllEntries(layerAlias) {
 		selectorEntry := currentSelectorEntry
-		// TODO: Here we don't need to protect this since it is not user controlled?
-		scrollBarEntry := ScrollBars.Get(layerAlias, selectorEntry.ScrollbarAlias)
+		scrollBarEntry, isFound := ScrollBars.Lookup(layerAlias, selectorEntry.ScrollbarAlias)
+		if !isFound {
+			continue
+		}
 		if !selectorEntry.IsVisible {
 			scrollBarEntry.IsVisible = false
 		} else {

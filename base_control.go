@@ -2,6 +2,7 @@ package consolizer
 
 import (
 	"github.com/supercom32/consolizer/constants"
+	"github.com/supercom32/consolizer/memory"
 	"github.com/supercom32/consolizer/types"
 )
 
@@ -47,43 +48,43 @@ Example:
 func (shared *BaseControlInstanceType) getBaseControl() *types.BaseControlType {
 	switch shared.controlType {
 	case constants.TYPE_BUTTON:
-		if entry := Buttons.Get(shared.layerAlias, shared.controlAlias); entry != nil {
+		if entry, isFound := Buttons.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 			return &entry.BaseControlType
 		}
 	case constants.TYPE_CHECKBOX:
-		if entry := Checkboxes.Get(shared.layerAlias, shared.controlAlias); entry != nil {
+		if entry, isFound := Checkboxes.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 			return &entry.BaseControlType
 		}
 	case constants.TYPE_DROPDOWN:
-		if entry := Dropdowns.Get(shared.layerAlias, shared.controlAlias); entry != nil {
+		if entry, isFound := Dropdowns.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 			return &entry.BaseControlType
 		}
 	case constants.TYPE_LABEL:
-		if entry := Labels.Get(shared.layerAlias, shared.controlAlias); entry != nil {
+		if entry, isFound := Labels.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 			return &entry.BaseControlType
 		}
 	case constants.TYPE_PROGRESSBAR:
-		if entry := ProgressBars.Get(shared.layerAlias, shared.controlAlias); entry != nil {
+		if entry, isFound := ProgressBars.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 			return &entry.BaseControlType
 		}
 	case constants.TYPE_SCROLLBAR:
-		if entry := ScrollBars.Get(shared.layerAlias, shared.controlAlias); entry != nil {
+		if entry, isFound := ScrollBars.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 			return &entry.BaseControlType
 		}
 	case constants.TYPE_SELECTOR:
-		if entry := Selectors.Get(shared.layerAlias, shared.controlAlias); entry != nil {
+		if entry, isFound := Selectors.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 			return &entry.BaseControlType
 		}
 	case constants.TYPE_TEXTBOX:
-		if entry := Textboxes.Get(shared.layerAlias, shared.controlAlias); entry != nil {
+		if entry, isFound := Textboxes.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 			return &entry.BaseControlType
 		}
 	case constants.TYPE_TEXTFIELD:
-		if entry := TextFields.Get(shared.layerAlias, shared.controlAlias); entry != nil {
+		if entry, isFound := TextFields.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 			return &entry.BaseControlType
 		}
 	case constants.TYPE_TOOLTIP:
-		if entry := Tooltips.Get(shared.layerAlias, shared.controlAlias); entry != nil {
+		if entry, isFound := Tooltips.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 			return &entry.BaseControlType
 		}
 	}
@@ -355,53 +356,89 @@ func (shared *BaseControlInstanceType) Delete() *BaseControlInstanceType {
 	case constants.TYPE_BUTTON:
 		if Buttons.IsExists(shared.layerAlias, shared.controlAlias) {
 			Buttons.Remove(shared.layerAlias, shared.controlAlias)
+			clearStaleControlReferences(shared.layerAlias, shared.controlAlias, constants.CellTypeButton)
 		}
 	case constants.TYPE_CHECKBOX:
 		if Checkboxes.IsExists(shared.layerAlias, shared.controlAlias) {
 			Checkboxes.Remove(shared.layerAlias, shared.controlAlias)
+			clearStaleControlReferences(shared.layerAlias, shared.controlAlias, constants.CellTypeCheckbox)
 		}
 	case constants.TYPE_DROPDOWN:
 		if Dropdowns.IsExists(shared.layerAlias, shared.controlAlias) {
 			Dropdowns.Remove(shared.layerAlias, shared.controlAlias)
+			clearStaleControlReferences(shared.layerAlias, shared.controlAlias, constants.CellTypeDropdown)
 		}
 	case constants.TYPE_LABEL:
 		if Labels.IsExists(shared.layerAlias, shared.controlAlias) {
 			Labels.Remove(shared.layerAlias, shared.controlAlias)
+			clearStaleControlReferences(shared.layerAlias, shared.controlAlias, constants.CellTypeLabel)
 		}
 	case constants.TYPE_PROGRESSBAR:
 		if ProgressBars.IsExists(shared.layerAlias, shared.controlAlias) {
 			ProgressBars.Remove(shared.layerAlias, shared.controlAlias)
+			clearStaleControlReferences(shared.layerAlias, shared.controlAlias, constants.CellTypeProgressBar)
 		}
 	case constants.TYPE_SCROLLBAR:
 		if ScrollBars.IsExists(shared.layerAlias, shared.controlAlias) {
 			ScrollBars.Remove(shared.layerAlias, shared.controlAlias)
+			clearStaleControlReferences(shared.layerAlias, shared.controlAlias, constants.CellTypeScrollbar)
 		}
 	case constants.TYPE_SELECTOR:
 		if Selectors.IsExists(shared.layerAlias, shared.controlAlias) {
 			Selectors.Remove(shared.layerAlias, shared.controlAlias)
+			clearStaleControlReferences(shared.layerAlias, shared.controlAlias, constants.CellTypeSelectorItem)
 		}
 	case constants.TYPE_TEXTBOX:
 		if Textboxes.IsExists(shared.layerAlias, shared.controlAlias) {
 			Textboxes.Remove(shared.layerAlias, shared.controlAlias)
+			clearStaleControlReferences(shared.layerAlias, shared.controlAlias, constants.CellTypeTextbox)
 		}
 	case constants.TYPE_TEXTFIELD:
 		if TextFields.IsExists(shared.layerAlias, shared.controlAlias) {
 			TextFields.Remove(shared.layerAlias, shared.controlAlias)
+			clearStaleControlReferences(shared.layerAlias, shared.controlAlias, constants.CellTypeTextField)
 		}
 	case constants.TYPE_TOOLTIP:
 		if Tooltips.IsExists(shared.layerAlias, shared.controlAlias) {
 			Tooltips.Remove(shared.layerAlias, shared.controlAlias)
+			clearStaleControlReferences(shared.layerAlias, shared.controlAlias, constants.CellTypeTooltip)
 		}
 	case constants.TYPE_RADIOBUTTON:
 		if RadioButtons.IsExists(shared.layerAlias, shared.controlAlias) {
 			RadioButtons.Remove(shared.layerAlias, shared.controlAlias)
+			clearStaleControlReferences(shared.layerAlias, shared.controlAlias, constants.CellTypeRadioButton)
 		}
 	case constants.TYPE_VIEWPORT:
 		if Viewports.IsExists(shared.layerAlias, shared.controlAlias) {
 			Viewports.Remove(shared.layerAlias, shared.controlAlias)
+			clearStaleControlReferences(shared.layerAlias, shared.controlAlias, constants.CellTypeTextbox)
 		}
 	}
 	return nil
+}
+
+/*
+removeAllControlsAndClearCells is a method which allows you to remove every control of one type from a layer while
+also resetting the screen's stale hit-testing metadata for each one, so a control created afterward cannot be
+reached by a leftover reference to a deleted control that reused its alias. In addition, the following should be
+noted:
+
+  - getAlias is called once per surviving entry, before manager.RemoveAll runs, since the entries are no longer
+    reachable through manager afterward.
+
+  - This is the shared implementation behind every control type's DeleteAll method and every DeleteAllX helper on
+    LayerInstanceType.
+
+Example:
+
+	removeAllControlsAndClearCells(Buttons, "layer1", constants.CellTypeButton,
+		func(entry *types.ButtonEntryType) string { return entry.Alias })
+*/
+func removeAllControlsAndClearCells[T any](manager *memory.ControlMemoryManager[T], layerAlias string, cellType int, getAlias func(*T) string) {
+	for _, entry := range manager.GetAllEntries(layerAlias) {
+		clearStaleControlReferences(layerAlias, getAlias(entry), cellType)
+	}
+	manager.RemoveAll(layerAlias)
 }
 
 /*

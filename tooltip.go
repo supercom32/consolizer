@@ -81,6 +81,7 @@ Example:
 */
 func (shared *tooltipType) Delete(layerAlias string, labelAlias string) {
 	Tooltips.Remove(layerAlias, labelAlias)
+	clearStaleControlReferences(layerAlias, labelAlias, constants.CellTypeTooltip)
 }
 
 /*
@@ -90,7 +91,7 @@ Example:
     tooltip.DeleteAll("layer1")
 */
 func (shared *tooltipType) DeleteAll(layerAlias string) {
-	Tooltips.RemoveAll(layerAlias)
+	removeAllControlsAndClearCells(Tooltips, layerAlias, constants.CellTypeTooltip, func(entry *types.TooltipEntryType) string { return entry.Alias })
 }
 
 /*
@@ -223,64 +224,56 @@ func (shared *tooltipType) getFromCharacterEntry(entry types.CharacterEntryType)
 
 	switch entry.AttributeEntry.CellType {
 	case constants.CellTypeButton:
-		if Buttons.IsExists(layer, alias) {
-			button := Buttons.Get(layer, alias)
-			if button.TooltipAlias != "" {
-				return Tooltips.Get(layer, button.TooltipAlias)
+		if button, isFound := Buttons.Lookup(layer, alias); isFound && button.TooltipAlias != "" {
+			if tooltipEntry, isFound := Tooltips.Lookup(layer, button.TooltipAlias); isFound {
+				return tooltipEntry
 			}
 		}
 	case constants.CellTypeLabel:
-		if Labels.IsExists(layer, alias) {
-			label := Labels.Get(layer, alias)
-			if label.TooltipAlias != "" {
-				return Tooltips.Get(layer, label.TooltipAlias)
+		if label, isFound := Labels.Lookup(layer, alias); isFound && label.TooltipAlias != "" {
+			if tooltipEntry, isFound := Tooltips.Lookup(layer, label.TooltipAlias); isFound {
+				return tooltipEntry
 			}
 		}
 	case constants.CellTypeCheckbox:
-		if Checkboxes.IsExists(layer, alias) {
-			checkbox := Checkboxes.Get(layer, alias)
-			if checkbox.TooltipAlias != "" {
-				return Tooltips.Get(layer, checkbox.TooltipAlias)
+		if checkbox, isFound := Checkboxes.Lookup(layer, alias); isFound && checkbox.TooltipAlias != "" {
+			if tooltipEntry, isFound := Tooltips.Lookup(layer, checkbox.TooltipAlias); isFound {
+				return tooltipEntry
 			}
 		}
 	case constants.CellTypeRadioButton:
-		if RadioButtons.IsExists(layer, alias) {
-			radio := RadioButtons.Get(layer, alias)
-			if radio.TooltipAlias != "" {
-				return Tooltips.Get(layer, radio.TooltipAlias)
+		if radio, isFound := RadioButtons.Lookup(layer, alias); isFound && radio.TooltipAlias != "" {
+			if tooltipEntry, isFound := Tooltips.Lookup(layer, radio.TooltipAlias); isFound {
+				return tooltipEntry
 			}
 		}
 	case constants.CellTypeTextField:
-		if TextFields.IsExists(layer, alias) {
-			textField := TextFields.Get(layer, alias)
-			if textField.TooltipAlias != "" {
-				return Tooltips.Get(layer, textField.TooltipAlias)
+		if textField, isFound := TextFields.Lookup(layer, alias); isFound && textField.TooltipAlias != "" {
+			if tooltipEntry, isFound := Tooltips.Lookup(layer, textField.TooltipAlias); isFound {
+				return tooltipEntry
 			}
 		}
 	case constants.CellTypeTextbox:
-		if Textboxes.IsExists(layer, alias) {
-			textbox := Textboxes.Get(layer, alias)
-			if textbox.TooltipAlias != "" {
-				return Tooltips.Get(layer, textbox.TooltipAlias)
+		if textbox, isFound := Textboxes.Lookup(layer, alias); isFound && textbox.TooltipAlias != "" {
+			if tooltipEntry, isFound := Tooltips.Lookup(layer, textbox.TooltipAlias); isFound {
+				return tooltipEntry
 			}
 		}
 	case constants.CellTypeProgressBar:
-		if ProgressBars.IsExists(layer, alias) {
-			progressBar := ProgressBars.Get(layer, alias)
-			if progressBar.TooltipAlias != "" {
-				return Tooltips.Get(layer, progressBar.TooltipAlias)
+		if progressBar, isFound := ProgressBars.Lookup(layer, alias); isFound && progressBar.TooltipAlias != "" {
+			if tooltipEntry, isFound := Tooltips.Lookup(layer, progressBar.TooltipAlias); isFound {
+				return tooltipEntry
 			}
 		}
 	case constants.CellTypeSelectorItem:
-		if Selectors.IsExists(layer, alias) {
-			selector := Selectors.Get(layer, alias)
-			if selector.TooltipAlias != "" {
-				return Tooltips.Get(layer, selector.TooltipAlias)
+		if selector, isFound := Selectors.Lookup(layer, alias); isFound && selector.TooltipAlias != "" {
+			if tooltipEntry, isFound := Tooltips.Lookup(layer, selector.TooltipAlias); isFound {
+				return tooltipEntry
 			}
 		}
 	case constants.CellTypeTooltip:
-		if Tooltips.IsExists(layer, alias) {
-			return Tooltips.Get(layer, alias)
+		if tooltipEntry, isFound := Tooltips.Lookup(layer, alias); isFound {
+			return tooltipEntry
 		}
 	}
 	return nil
@@ -365,8 +358,8 @@ Example:
     tooltip.SetValue("New value")
 */
 func (shared *TooltipInstanceType) SetValue(text string) *TooltipInstanceType {
-	labelEntry := Labels.Get(shared.layerAlias, shared.controlAlias)
-	labelEntry.Label = text
+	tooltipEntry := Tooltips.Get(shared.layerAlias, shared.controlAlias)
+	tooltipEntry.Text = text
 	return shared
 }
 

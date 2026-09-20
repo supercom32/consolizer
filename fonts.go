@@ -553,9 +553,8 @@ Example:
     family := getFontFamilyFromMemory("myfont.tdf")
 */
 func getFontFamilyFromMemory(fontAlias string) *types.FontFamilyType {
-	fontFamily := fonts.Get(fontAlias)
-	if fontFamily == nil {
+	if !fonts.IsExists(fontAlias) {
 		safeSttyPanic(fmt.Sprintf("font with alias '%s' not found", fontAlias))
 	}
-	return fontFamily
+	return fonts.Get(fontAlias)
 }
