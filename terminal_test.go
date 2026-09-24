@@ -2,6 +2,7 @@ package consolizer
 
 import (
 	"fmt"
+	"github.com/gdamore/tcell/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/supercom32/consolizer/constants"
 	"github.com/supercom32/consolizer/recast"
@@ -661,4 +662,132 @@ func TestRestoreTerminalSettingsStopsGoroutinesInDebugMode(test *testing.T) {
 	case <-time.After(2 * time.Second):
 		test.Fatal("setupEventUpdater and setupPeriodicEventUpdater had not both exited after RestoreTerminalSettings returned!")
 	}
+}
+
+/*
+setupPinnedCanvasOnLargerSimulationScreen is a method which allows you to initialize a terminal session whose logical
+canvas is pinned smaller than a real tcell.SimulationScreen behind it, so that UpdateDisplay's reconciliation between
+the two sizes can be exercised without a real terminal attached. In addition, the following should be noted:
+
+  - commonResource.isDebugEnabled is switched off for the duration of the returned session, since that flag is what
+    normally makes drawLayerToScreen and blankDeadZoneCells treat the terminal as virtual and skip the real screen
+    entirely. Test cleanup switches it back on and tears the simulation screen down, so later tests in this file keep
+    running against the virtual terminal the rest of the suite assumes.
+
+Example:
+
+	simulationScreen, layerInstance := setupPinnedCanvasOnLargerSimulationScreen(test, 10, 5, 20, 8)
+*/
+func setupPinnedCanvasOnLargerSimulationScreen(test *testing.T, canvasWidth int, canvasHeight int, realWidth int,
+	realHeight int) (tcell.SimulationScreen, *LayerInstanceType) {
+	test.Helper()
+	simulationScreen := tcell.NewSimulationScreen("")
+	if err := simulationScreen.Init(); err != nil {
+		test.Fatalf("Failed to initialize the simulation screen: %v", err)
+	}
+	simulationScreen.SetSize(realWidth, realHeight)
+	DeleteAllLayers()
+	commonResource.screen = simulationScreen
+	commonResource.isDebugEnabled = false
+	commonResource.isTerminated = false
+	commonResource.terminalWidth = canvasWidth
+	commonResource.terminalHeight = canvasHeight
+	commonResource.isAutoSizeEnabled = false
+	layerInstance := AddLayer(0, 0, canvasWidth, canvasHeight, 1, nil)
+	test.Cleanup(func() {
+		commonResource.isTerminated = true
+		simulationScreen.Fini()
+		commonResource.screen = nil
+		commonResource.isDebugEnabled = true
+		DeleteAllLayers()
+	})
+	return simulationScreen, layerInstance
+}
+
+/*
+TestUpdateDisplayBlanksDeadZoneCells is a test which verifies that UpdateDisplay explicitly blanks every physical
+screen cell lying outside a logical canvas pinned smaller than the real terminal, instead of leaving it as an
+unmanaged cell that can be left showing stale content forever. In addition, the following should be noted:
+
+  - tcell treats the physical column immediately after a double width rune as spoken for by that rune, and skips
+    visiting it independently in its own render loop for as long as the wide rune remains in place. A cell there can
+    only be observed to reach the front buffer once the wide rune is later replaced by something narrower, which is
+    why this test draws its double width CJK rune at the pinned canvas's last column on a first frame and then
+    overwrites that same cell with a single width rune on a second frame, exactly reproducing the sequence that lets
+    the neighbouring physical column reach the screen again.
+
+  - The physical cell adjacent to the wide rune, a cell in the horizontal dead zone below the canvas, and the far
+    corner shared by both dead zones are each poisoned directly through the simulation screen before the first frame,
+    standing in for stray leftover content, since a freshly sized simulation screen otherwise starts blank and would
+    not distinguish a fixed reconciliation from one that never ran.
+
+  - A cell still inside the pinned canvas is checked too, confirming the fix does not blank legitimate content along
+    with the dead zone.
+
+Example:
+
+	Expected Inputs:
+	    A 10x5 logical canvas pinned on a 20x8 simulation screen. Physical cells (10, 2), (3, 5), and (19, 7) are
+	    pre-poisoned with a distinct rune and style. A '中' rune is written to canvas cell (9, 2) and UpdateDisplay
+	    runs once, then canvas cell (9, 2) is overwritten with 'A' and UpdateDisplay runs again.
+	Expected Outputs:
+	    After the second UpdateDisplay call, physical cells (10, 2), (3, 5), and (19, 7) each read a blank space
+	    with an explicit default style, while canvas cell (9, 2) reads 'A'.
+*/
+func TestUpdateDisplayBlanksDeadZoneCells(test *testing.T) {
+	canvasWidth := 10
+	canvasHeight := 5
+	realWidth := 20
+	realHeight := 8
+	simulationScreen, layerInstance := setupPinnedCanvasOnLargerSimulationScreen(test, canvasWidth, canvasHeight,
+		realWidth, realHeight)
+
+	wideRuneRow := 2
+	layerEntry := Layers.Get(layerInstance.GetAlias())
+
+	poisonStyle := tcell.StyleDefault.Foreground(tcell.ColorRed).Background(tcell.ColorYellow)
+	type poisonedCell struct {
+		x int
+		y int
+	}
+	poisonedCells := []poisonedCell{
+		{canvasWidth, wideRuneRow},       // Vertical dead zone, immediately to the right of the wide rune's column.
+		{3, canvasHeight},                // Horizontal dead zone, below the pinned canvas.
+		{realWidth - 1, realHeight - 1}, // Far corner of both dead zones at once.
+	}
+	for _, cell := range poisonedCells {
+		simulationScreen.SetContent(cell.x, cell.y, 'Z', nil, poisonStyle)
+	}
+
+	putRune(layerEntry.CharacterMemory, canvasWidth-1, wideRuneRow, '中', types.NewAttributeEntry(), layerEntry.Width,
+		layerEntry.Height)
+	UpdateDisplay(true)
+
+	putRune(layerEntry.CharacterMemory, canvasWidth-1, wideRuneRow, 'A', types.NewAttributeEntry(), layerEntry.Width,
+		layerEntry.Height)
+	UpdateDisplay(true)
+
+	frontCells, frontWidth, _ := simulationScreen.GetContents()
+	for _, cell := range poisonedCells {
+		simCell := frontCells[(cell.y*frontWidth)+cell.x]
+		obtainedRune := rune(0)
+		if len(simCell.Runes) > 0 {
+			obtainedRune = simCell.Runes[0]
+		}
+		assert.Equalf(test, ' ', obtainedRune, "Expected dead zone cell (%d, %d) to be blanked, but it still holds %q!",
+			cell.x, cell.y, obtainedRune)
+		obtainedForeground, obtainedBackground, _ := simCell.Style.Decompose()
+		assert.Equalf(test, tcell.ColorDefault, obtainedForeground,
+			"Expected dead zone cell (%d, %d) to carry an explicit default foreground color!", cell.x, cell.y)
+		assert.Equalf(test, tcell.ColorDefault, obtainedBackground,
+			"Expected dead zone cell (%d, %d) to carry an explicit default background color!", cell.x, cell.y)
+	}
+
+	canvasCell := frontCells[(wideRuneRow*frontWidth)+(canvasWidth-1)]
+	obtainedCanvasRune := rune(0)
+	if len(canvasCell.Runes) > 0 {
+		obtainedCanvasRune = canvasCell.Runes[0]
+	}
+	assert.Equalf(test, 'A', obtainedCanvasRune,
+		"Expected the pinned canvas's last column to keep showing its own legitimate content after the dead zone reconciliation!")
 }

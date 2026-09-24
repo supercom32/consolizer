@@ -299,6 +299,9 @@ func (shared *tooltipType) updateMouseEvent() bool {
 	}
 
 	tooltipEntry := shared.getFromCharacterEntry(characterEntry)
+	if tooltipEntry != nil && !tooltipEntry.IsEnabled {
+		tooltipEntry = nil
+	}
 
 	if tooltipEntry != nil {
 		mouseXLocation, mouseYLocation, _, _ = GetMouseStatus()
@@ -315,8 +318,10 @@ func (shared *tooltipType) updateMouseEvent() bool {
 		}
 		if time.Since(tooltipEntry.HoverStartTime) >= time.Duration(tooltipEntry.HoverDisplayDelay)*time.Millisecond {
 			setPreviouslyHighlightedControl(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias, constants.CellTypeTooltip)
+			if !tooltipEntry.IsDrawn {
+				isScreenUpdateRequired = true
+			}
 			tooltipEntry.IsDrawn = true
-			isScreenUpdateRequired = true
 		}
 	} else {
 		for _, currentTooltipEntry := range Tooltips.GetAllEntriesOverall() {

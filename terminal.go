@@ -792,7 +792,60 @@ func UpdateDisplay(isRefreshForced bool) {
 	baseLayerEntry = renderLayers(&baseLayerEntry, sortedLayerAliasSlice, true)
 	Tooltip.renderAll(baseLayerEntry)
 	drawLayerToScreen(&baseLayerEntry, isRefreshForced)
+	blankDeadZoneCells(&baseLayerEntry)
 	commonResource.screenLayer = baseLayerEntry
+}
+
+/*
+blankDeadZoneCells is a method which allows you to explicitly clear every physical screen cell that lies outside the
+pinned logical drawing canvas of the given base layer. Passing explicit nonzero width and height to
+InitializeTerminal pins the logical canvas to that fixed size for the life of the session, but the real
+tcell.Screen underneath it can still be physically larger, since consolizer never resizes the real screen to match.
+In addition, the following should be noted:
+
+  - tcell marks the physical column immediately to the right of a double-wide rune dirty on its own initiative,
+    even when nothing ever asks it to draw that column. If that column falls outside baseLayerEntry.Width, it
+    becomes a cell consolizer's own model has no concept of and can never revisit or correct again, so it must be
+    blanked here instead.
+
+  - Every physical column at or beyond baseLayerEntry.Width, across every physical row, and every physical row at
+    or beyond baseLayerEntry.Height, across every physical column, is reset to a blank space with an explicit
+    default style so that no cell in the dead zone is ever left holding stale or unmanaged content.
+
+  - This must run every frame after the base layer has been blitted, since even a single skipped frame is enough
+    to let a stray dirty cell persist forever in a region drawLayerToScreen never touches. It is safe to call every
+    frame regardless of whether a dead zone actually exists, since re-sending unchanged content to an already
+    blank cell costs tcell nothing beyond a dirty-flag check.
+
+  - When commonResource.isAutoSizeEnabled is true, the logical canvas already tracks the real physical screen size
+    on every resize, so the loops below normally have nothing to do and iterate zero times.
+
+  - The screen is explicitly shown again at the end so any cell blanked here reaches the terminal in the same
+    frame, rather than waiting for drawLayerToScreen's earlier Show call on the next pass.
+
+Example:
+
+	blankDeadZoneCells(&baseLayerEntry)
+*/
+func blankDeadZoneCells(baseLayerEntry *types.LayerEntryType) {
+	if commonResource.isDebugEnabled {
+		return
+	}
+	realWidth, realHeight := commonResource.screen.Size()
+	style := tcell.StyleDefault
+	style = style.Foreground(tcell.ColorDefault)
+	style = style.Background(tcell.ColorDefault)
+	for currentRow := 0; currentRow < realHeight; currentRow++ {
+		for currentColumn := baseLayerEntry.Width; currentColumn < realWidth; currentColumn++ {
+			commonResource.screen.SetContent(currentColumn, currentRow, ' ', nil, style)
+		}
+	}
+	for currentRow := baseLayerEntry.Height; currentRow < realHeight; currentRow++ {
+		for currentColumn := 0; currentColumn < realWidth; currentColumn++ {
+			commonResource.screen.SetContent(currentColumn, currentRow, ' ', nil, style)
+		}
+	}
+	commonResource.screen.Show()
 }
 
 /*
