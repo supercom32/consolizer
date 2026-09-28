@@ -5,24 +5,86 @@ import (
 	"github.com/supercom32/consolizer/memory"
 	"github.com/supercom32/consolizer/stringformat"
 	"github.com/supercom32/consolizer/types"
+	"sync"
 )
 
 /*
 buttonHistoryType is a structure which allows you to track the history of button presses for specific layers and aliases.
+In addition, the following should be noted:
+
+  - Every field access goes through the embedded mutex, since the event goroutine, the periodic-event goroutine, and
+    the application's own goroutine can all read or write it concurrently.
 
 Example:
     var history buttonHistoryType
 */
 type buttonHistoryType struct {
+	mutex       sync.Mutex
 	buttonAlias string
 	layerAlias  string
+}
+
+/*
+set is a method which records a new button press location, replacing whatever was previously recorded. In addition,
+the following should be noted:
+
+  - Callers must not hold a button entry's own Mutex when calling this, since that lock ordering is also taken in
+    the reverse direction elsewhere and would risk a deadlock.
+
+Example:
+    buttonHistory.set("layer1", "myButton")
+*/
+func (shared *buttonHistoryType) set(layerAlias string, buttonAlias string) {
+	shared.mutex.Lock()
+	defer shared.mutex.Unlock()
+	shared.layerAlias = layerAlias
+	shared.buttonAlias = buttonAlias
+}
+
+/*
+clear is a method which erases the currently recorded button press, if any.
+
+Example:
+    buttonHistory.clear()
+*/
+func (shared *buttonHistoryType) clear() {
+	shared.set("", "")
+}
+
+/*
+get is a method which returns the currently recorded button press without clearing it.
+
+Example:
+    layerAlias, buttonAlias := buttonHistory.get()
+*/
+func (shared *buttonHistoryType) get() (string, string) {
+	shared.mutex.Lock()
+	defer shared.mutex.Unlock()
+	return shared.layerAlias, shared.buttonAlias
+}
+
+/*
+getAndClear is a method which returns the currently recorded button press and clears it in a single locked step, so
+that no other goroutine can observe or overwrite the value in between the read and the clear.
+
+Example:
+    layerAlias, buttonAlias := buttonHistory.getAndClear()
+*/
+func (shared *buttonHistoryType) getAndClear() (string, string) {
+	shared.mutex.Lock()
+	defer shared.mutex.Unlock()
+	layerAlias := shared.layerAlias
+	buttonAlias := shared.buttonAlias
+	shared.layerAlias = ""
+	shared.buttonAlias = ""
+	return layerAlias, buttonAlias
 }
 
 /*
 buttonHistory is a variable which stores the last recorded button press information.
 
 Example:
-    buttonHistory.buttonAlias = "myButton"
+    buttonHistory.set("layer1", "myButton")
 */
 var buttonHistory buttonHistoryType
 
@@ -82,13 +144,13 @@ Example:
     isPressed := button.IsPressed()
 */
 func (shared *ButtonInstanceType) IsPressed() bool {
-	if buttonHistory.layerAlias != "" && buttonHistory.buttonAlias != "" {
-		if buttonHistory.layerAlias == shared.layerAlias && buttonHistory.buttonAlias == shared.controlAlias {
+	layerAlias, buttonAlias := buttonHistory.get()
+	if layerAlias != "" && buttonAlias != "" {
+		if layerAlias == shared.layerAlias && buttonAlias == shared.controlAlias {
 			for shared.IsStatePressed() {
 			}
 
-			buttonHistory.layerAlias = ""
-			buttonHistory.buttonAlias = ""
+			buttonHistory.clear()
 			return true
 		}
 	}
@@ -105,11 +167,8 @@ Example:
     layerAlias, buttonAlias := button.GetPressed()
 */
 func (shared *ButtonInstanceType) GetPressed() (string, string) {
-	if buttonHistory.layerAlias != "" && buttonHistory.buttonAlias != "" {
-		layerAlias := buttonHistory.layerAlias
-		buttonAlias := buttonHistory.buttonAlias
-		buttonHistory.layerAlias = ""
-		buttonHistory.buttonAlias = ""
+	layerAlias, buttonAlias := buttonHistory.getAndClear()
+	if layerAlias != "" && buttonAlias != "" {
 		return layerAlias, buttonAlias
 	}
 	return "", ""
@@ -316,7 +375,86 @@ func (shared *buttonType) updateStates(isMouseTriggered bool) bool {
 }
 
 /*
-updateStateMouse is a method which updates button states that are triggered by mouse events.
+clearAllPressedButtons is a method which resets the pressed state of every button across every layer. In addition,
+the following should be noted:
+
+  - This is used whenever a mouse release is observed, since the press may have started on a different button (or
+    on no button at all) than the one currently under the cursor, and every stale pressed state must be cleared so
+    that button does not get stuck ignoring its next click.
+
+  - Buttons removed by a concurrent delete are skipped rather than acted on, since Buttons.IsExists is checked
+    immediately before each entry is touched.
+
+Example:
+    isUpdateRequired := Button.clearAllPressedButtons()
+*/
+func (shared *buttonType) clearAllPressedButtons() bool {
+	isUpdateRequired := false
+	Buttons.MemoryManager.Range(func(key, value interface{}) bool {
+		currentLayer := key.(string)
+		buttons := Buttons.GetAllEntries(currentLayer)
+
+		for _, buttonEntry := range buttons {
+			// In case of delete race condition, we check if button exists
+			if !Buttons.IsExists(currentLayer, buttonEntry.Alias) {
+				continue
+			}
+
+			// If button is pressed, reset it
+			if buttonEntry.IsPressed {
+				buttonEntry.Mutex.Lock()
+				buttonEntry.IsPressed = false
+				buttonEntry.Mutex.Unlock()
+				isUpdateRequired = true
+			}
+		}
+		return true // continue iteration
+	})
+	return isUpdateRequired
+}
+
+/*
+isAnyButtonPressed is a method which reports whether any button, on any layer, currently has its pressed state set.
+In addition, the following should be noted:
+
+  - This is used to stop a second button from being armed while the mouse is still held down from an earlier
+    press, since that would otherwise let a release over the second button be mistaken for a fresh click on it.
+
+Example:
+    isPressed := Button.isAnyButtonPressed()
+*/
+func (shared *buttonType) isAnyButtonPressed() bool {
+	isPressed := false
+	Buttons.MemoryManager.Range(func(key, value interface{}) bool {
+		currentLayer := key.(string)
+		buttons := Buttons.GetAllEntries(currentLayer)
+
+		for _, buttonEntry := range buttons {
+			if !Buttons.IsExists(currentLayer, buttonEntry.Alias) {
+				continue
+			}
+			if buttonEntry.IsPressed {
+				isPressed = true
+				return false // found one, stop iterating
+			}
+		}
+		return true // continue iteration
+	})
+	return isPressed
+}
+
+/*
+updateStateMouse is a method which updates button states that are triggered by mouse events. In addition, the
+following should be noted:
+
+  - The visual pressed state (IsPressed, the sunken frame) is set the instant a mouse-down lands on an enabled
+    button, so feedback stays immediate. The click itself, recorded into buttonHistory for GetPressed/IsPressed to
+    report, only fires on the matching mouse-up: a release over the same button that was pressed. A release over a
+    different button, or off any button entirely, cancels the press without recording a click.
+
+  - Only one button may be armed (IsPressed) at a time. Without this, dragging from a pressed button straight onto
+    a second one, without ever crossing a non-button cell in between, would arm the second button too, and its
+    next release would be mistaken for a fresh click on it rather than a cancel of the first.
 
 Example:
     isUpdateNeeded := Button.updateStateMouse()
@@ -327,7 +465,6 @@ func (shared *buttonType) updateStateMouse() bool {
 		return false
 	}
 
-	isUpdateRequired := false
 	mouseXLocation, mouseYLocation, buttonPressed, _ := GetMouseStatus()
 	characterEntry := getCellInformationUnderMouseCursor(mouseXLocation, mouseYLocation)
 	layerAlias := characterEntry.LayerAlias
@@ -335,47 +472,25 @@ func (shared *buttonType) updateStateMouse() bool {
 
 	// If not a button, reset all buttons if needed.
 	if characterEntry.AttributeEntry.CellType != constants.CellTypeButton {
-		// GetLayer all buttons from all layers using ControlMemoryManager
-		Buttons.MemoryManager.Range(func(key, value interface{}) bool {
-			currentLayer := key.(string)
-			buttons := Buttons.GetAllEntries(currentLayer)
-
-			for _, buttonEntry := range buttons {
-				// In case of delete race condition, we check if button exists
-				if !Buttons.IsExists(currentLayer, buttonEntry.Alias) {
-					continue
-				}
-
-				// If button is pressed, reset it
-				if buttonEntry.IsPressed {
-					buttonHistory.layerAlias = layerAlias
-					buttonHistory.buttonAlias = buttonAlias
-					buttonEntry.Mutex.Lock()
-					buttonEntry.IsPressed = false
-					buttonEntry.Mutex.Unlock()
-					isUpdateRequired = true
-				}
-			}
-			return true // continue iteration
-		})
-		return isUpdateRequired
+		return shared.clearAllPressedButtons()
 	}
 
+	isUpdateRequired := false
 	buttonEntry, isFound := Buttons.Lookup(layerAlias, buttonAlias)
 	if buttonAlias != "" && buttonPressed == 0 && isFound {
-		if buttonEntry.IsPressed == true {
-			buttonEntry.Mutex.Lock()
-			buttonEntry.IsPressed = false
-			buttonEntry.Mutex.Unlock()
+		// A release only counts as a click on this button if this is the button that was pressed. Either way,
+		// every pressed button must be cleared, since the press that started it may have been on a different one.
+		if buttonEntry.IsPressed {
+			buttonHistory.set(layerAlias, buttonAlias)
+		}
+		if shared.clearAllPressedButtons() {
 			isUpdateRequired = true
 		}
 	} else if buttonAlias != "" && buttonPressed != 0 && isFound {
-		// If button was found and mouse is being pressed, update button only
-		// if required.
-		if buttonEntry.IsEnabled && buttonEntry.IsPressed == false {
+		// If button was found and mouse is being pressed, update button only if required, and only if no other
+		// button is already armed from an earlier press in this same mouse-down.
+		if buttonEntry.IsEnabled && buttonEntry.IsPressed == false && !shared.isAnyButtonPressed() {
 			buttonEntry.Mutex.Lock()
-			buttonHistory.layerAlias = layerAlias
-			buttonHistory.buttonAlias = buttonAlias
 			buttonEntry.IsPressed = true
 			buttonEntry.Mutex.Unlock()
 			setFocusedControl(layerAlias, buttonAlias, constants.CellTypeButton)

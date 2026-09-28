@@ -185,9 +185,15 @@ func UpdateEventQueues() {
 		}
 		isScreenUpdateRequired := false
 
-		// Throttle mouse movement events (when no button is pressed)
-		// Skip processing if not enough time has passed since the last event
-		if mouseButtonNumber == 0 && wheelState == "" || (eventStateMemory.stateId == constants.EventStateDragAndDropScrollbar) {
+		// Throttle mouse movement events, but never a release: a release is only ever detected here by comparing
+		// against the last recorded button (SetMouseStatus has not run yet for this event), and dropping one
+		// leaves whatever it should have released (a button, or a scrollbar drag) stuck in its pressed state,
+		// since nothing else clears it.
+		_, _, lastRecordedButtonNumber, _ := GetMouseStatus()
+		isRelease := lastRecordedButtonNumber != 0 && mouseButtonNumber == 0
+		isPureMovement := mouseButtonNumber == 0 && lastRecordedButtonNumber == 0 && wheelState == ""
+		isScrollbarDragMovement := mouseButtonNumber != 0 && eventStateMemory.stateId == constants.EventStateDragAndDropScrollbar
+		if !isRelease && (isPureMovement || isScrollbarDragMovement) {
 			elapsedTime := time.Since(lastMouseMoveTime)
 			if elapsedTime < 50*time.Millisecond {
 				return
@@ -238,8 +244,7 @@ func UpdateEventQueues() {
 			isScreenUpdateRequired = true
 		}
 		if scrollbar.updateMouseEvent() {
-			buttonHistory.layerAlias = ""
-			buttonHistory.buttonAlias = ""
+			buttonHistory.clear()
 			isScreenUpdateRequired = true
 		}
 		// LogInfo("mouse event selector" + time.Now().String())
@@ -382,7 +387,11 @@ func moveLayerIfRequired() bool {
 
 /*
 bringLayerToFrontIfRequired is a method which brings a layer to the front of the visible display area if the layer being
-clicked is focusable.
+clicked is focusable. In addition, the following should be noted:
+
+  - Any unread button press is cleared here, but only on the mouse-down transition itself (the previous mouse state
+    had no button held and the current one does). This runs on every mouse event with a button held, including
+    held movement, and clearing unconditionally on those would wipe a press before the application ever reads it.
 
 Example:
     bringLayerToFrontIfRequired()
@@ -397,8 +406,10 @@ func bringLayerToFrontIfRequired() {
 		if characterEntry.AttributeEntry.CellType == constants.CellTypeShadow {
 			return
 		}
-		buttonHistory.layerAlias = ""
-		buttonHistory.buttonAlias = ""
+		_, _, previousButtonPressed, _ := GetPreviousMouseStatus()
+		if previousButtonPressed == 0 {
+			buttonHistory.clear()
+		}
 		// Protect against layer deletions.
 		layerEntry, isFound := Layers.Lookup(characterEntry.LayerAlias)
 		if !isFound {
