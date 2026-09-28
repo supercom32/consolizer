@@ -1652,6 +1652,112 @@ func (shared *LayerInstanceType) GetAlpha() float32 {
 }
 
 /*
+CaptureScreen is a method which allows you to copy the fully composited frame produced by the most recent call to
+UpdateDisplay into the current layer, covering only the region this layer occupies at its current absolute screen
+position. The result is a snapshot of everything that was visible at that moment, including colours, text styles and
+wide rune placeholder cells, which the caller can place on top of newly built content and animate away using the
+layer's existing transition and transparency features. In addition, the following should be noted:
+
+  - The snapshot reflects the screen as of that last UpdateDisplay call, not whatever the layers currently hold, so a
+    capture taken before further drawing will not include it.
+
+  - Every copied cell has its control and hit testing metadata cleared, and its LayerAlias, along with its
+    ParentAlias where the original cell carried one, restamped to this layer. A control such as a button rendered
+    into the captured region becomes inert, so a later click on the copy can never resolve to it, even after that
+    control and its layer have both been deleted.
+
+  - Every copied cell is forced fully opaque, including a cell that displayed nothing at all, so the copy reliably
+    covers whatever is drawn beneath it until a layer transition or the layer's own alpha value says otherwise. The
+    layer's own alpha, transition style, transition progress and transparency strategy are left untouched.
+
+  - The region captured is clipped to the layer's current size and absolute position against the size of the last
+    displayed frame. Cells of the layer that fall outside that overlap are left completely unchanged, and the layer
+    itself is never resized or moved.
+
+  - An error is returned, and the layer is left unmodified, if no frame has ever been displayed or if the terminal
+    has already been torn down by RestoreTerminalSettings.
+
+  - The write into this layer's own character memory holds commonResource.displayUpdate for its full duration, not
+    just a read lock over the source frame, since UpdateDisplay may otherwise be reading this same layer's content
+    while building the next frame.
+
+Example:
+
+	err := layerInstance.CaptureScreen()
+*/
+func (shared *LayerInstanceType) CaptureScreen() error {
+	validateLayer(shared.layerAlias)
+	layerEntry := Layers.Get(shared.layerAlias)
+	absoluteXLocation, absoluteYLocation := layer.GetAbsoluteLocation(shared.layerAlias)
+
+	commonResource.displayUpdate.Lock()
+	defer commonResource.displayUpdate.Unlock()
+
+	if commonResource.isTerminated {
+		return fmt.Errorf("could not capture the screen into layer '%s' since the terminal has already been torn down", shared.layerAlias)
+	}
+	screenLayer := commonResource.screenLayer
+	if screenLayer.Width == 0 || screenLayer.Height == 0 {
+		return fmt.Errorf("could not capture the screen into layer '%s' since no frame has been displayed yet", shared.layerAlias)
+	}
+
+	targetStartX := 0
+	screenStartX := absoluteXLocation
+	if absoluteXLocation < 0 {
+		targetStartX = -absoluteXLocation
+		screenStartX = 0
+	}
+	widthToCopy := layerEntry.Width - targetStartX
+	if screenStartX+widthToCopy > screenLayer.Width {
+		widthToCopy = screenLayer.Width - screenStartX
+	}
+
+	targetStartY := 0
+	screenStartY := absoluteYLocation
+	if absoluteYLocation < 0 {
+		targetStartY = -absoluteYLocation
+		screenStartY = 0
+	}
+	heightToCopy := layerEntry.Height - targetStartY
+	if screenStartY+heightToCopy > screenLayer.Height {
+		heightToCopy = screenLayer.Height - screenStartY
+	}
+
+	if widthToCopy <= 0 || heightToCopy <= 0 {
+		return nil
+	}
+
+	for row := 0; row < heightToCopy; row++ {
+		layerRow := targetStartY + row
+		screenRow := screenStartY + row
+		for column := 0; column < widthToCopy; column++ {
+			layerColumn := targetStartX + column
+			screenColumn := screenStartX + column
+
+			capturedCell := screenLayer.CharacterMemory[screenRow][screenColumn]
+			if capturedCell.Character == constants.NullRune {
+				capturedCell.Character = ' '
+			}
+			capturedCell.LayerAlias = layerEntry.LayerAlias
+			if capturedCell.ParentAlias != "" {
+				capturedCell.ParentAlias = layerEntry.ParentAlias
+			}
+			capturedCell.AttributeEntry.CellType = constants.NullCellType
+			capturedCell.AttributeEntry.CellControlAlias = ""
+			capturedCell.AttributeEntry.CellControlId = constants.NullCellControlId
+			capturedCell.AttributeEntry.CellControlLocation = constants.NullCellControlLocation
+			capturedCell.AttributeEntry.IsForegroundTransparent = false
+			capturedCell.AttributeEntry.IsBackgroundTransparent = false
+			capturedCell.AttributeEntry.ForegroundAlphaValue = 1
+			capturedCell.AttributeEntry.BackgroundAlphaValue = 1
+
+			layerEntry.CharacterMemory[layerRow][layerColumn] = capturedCell
+		}
+	}
+	return nil
+}
+
+/*
 LoadLayer is a method which allows you to load a pre-rendered layer from disk and add it to the layer system. In addition, the following should be noted:
 
 - This is useful for quickly loading complex layers that were previously saved, such as image layers.

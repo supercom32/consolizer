@@ -407,6 +407,34 @@ func TestTerminalGetRuneOnLayer(test *testing.T) {
 }
 
 /*
+TestGetCharacterOnScreenIndexing is a test which verifies that GetCharacterOnScreen reads the character at the
+given (x, y) location using row-major indexing, matching every other reader of CharacterMemory, instead of
+transposing the two coordinates.
+
+Example:
+
+	Expected Inputs:
+	    A 5x3 terminal with a single 'Z' printed at column 1, row 2, a location where the row and column indices
+	    differ so a transposed read would return the wrong character.
+	Expected Outputs:
+	    GetCharacterOnScreen(1, 2) returns 'Z', and GetCharacterOnScreen(2, 1) returns a blank space.
+*/
+func TestGetCharacterOnScreenIndexing(test *testing.T) {
+	commonResource.isDebugEnabled = true
+	InitializeTerminal(5, 3)
+	defer RestoreTerminalSettings()
+
+	sourceLayer := AddLayer(0, 0, 5, 3, 1, nil)
+	sourceLayer.FillLayer(" ")
+	sourceLayer.Locate(1, 2)
+	sourceLayer.Print("Z")
+	UpdateDisplay(false)
+
+	assert.Equal(test, rune('Z'), GetCharacterOnScreen(1, 2), "GetCharacterOnScreen must read the character at column 1, row 2.")
+	assert.Equal(test, rune(' '), GetCharacterOnScreen(2, 1), "GetCharacterOnScreen must not transpose row and column.")
+}
+
+/*
 TestTerminalUpdateDisplay is a test which verifies that multiple layers with different priorities and fills
 are correctly composited onto the final screen buffer.
 

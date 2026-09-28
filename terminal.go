@@ -611,7 +611,7 @@ func GetCharacterOnScreen(xLocation int, yLocation int) rune {
 	layerEntry := commonResource.screenLayer
 	commonResource.displayUpdate.RUnlock()
 	validateLayerLocationByLayerEntry(&layerEntry, xLocation, yLocation)
-	return layerEntry.CharacterMemory[xLocation][yLocation].Character
+	return layerEntry.CharacterMemory[yLocation][xLocation].Character
 }
 
 /*
