@@ -26,6 +26,10 @@ type eventStateType struct {
 	modifierKeys tcell.ModMask
 }
 
+// tabIndexBeforeFirstEntry marks a tab position that precedes the first registered entry, so that the next Tab press
+// lands on entry 0.
+const tabIndexBeforeFirstEntry = -1
+
 var eventStateMemory eventStateType
 var eventIntervalTime time.Time
 var lastMouseMoveTime time.Time
@@ -271,13 +275,17 @@ func UpdateEventQueues() {
 }
 
 /*
-ClearTabIndex is a method which clears all registered tab index entries from memory.
+ClearTabIndex is a method which allows you to clear all registered tab index entries from memory and reset the tab
+position to before the first entry, so the next Tab press after the tab order is rebuilt starts from the beginning of
+the new order unless the currently focused control is part of it.
 
 Example:
-    ClearTabIndex()
+
+	ClearTabIndex()
 */
 func ClearTabIndex() {
 	eventStateMemory.tabIndexMemory = nil
+	eventStateMemory.currentTabIndex = tabIndexBeforeFirstEntry
 }
 
 /*
@@ -292,19 +300,49 @@ func addTabIndex(layerAlias string, controlAlias string, controlType int) {
 }
 
 /*
-nextTabIndex is a method which advances the focus to the next control in the registered tab index sequence.
+nextTabIndex is a method which allows you to advance the focus to the control registered after the currently focused
+control in the tab index sequence, wrapping back to the first entry after the last one. If the focused control is not
+part of the tab order, or nothing is focused, focus moves to the first entry. When no tab order is registered, focus is
+left unchanged. In addition, the following should be noted:
+
+  - The starting point is always the control that actually has focus rather than the stored tab position, since
+    focus can also change through mouse clicks, GetFocus, or Selector.Add without the stored position being
+    updated. The stored position is kept in step with the result.
 
 Example:
-    nextTabIndex()
+
+	nextTabIndex()
 */
 func nextTabIndex() {
-	eventStateMemory.currentTabIndex++
-	if eventStateMemory.currentTabIndex >= len(eventStateMemory.tabIndexMemory) {
-		eventStateMemory.currentTabIndex = 0
+	tabOrderLength := len(eventStateMemory.tabIndexMemory)
+	if tabOrderLength == 0 {
+		return
 	}
-	if len(eventStateMemory.tabIndexMemory) != 0 {
-		eventStateMemory.currentlyFocusedControl = eventStateMemory.tabIndexMemory[eventStateMemory.currentTabIndex]
+	nextIndex := 0
+	focusedIndex := findTabIndexOfControl(eventStateMemory.currentlyFocusedControl)
+	if focusedIndex != tabIndexBeforeFirstEntry {
+		nextIndex = (focusedIndex + 1) % tabOrderLength
 	}
+	eventStateMemory.currentTabIndex = nextIndex
+	eventStateMemory.currentlyFocusedControl = eventStateMemory.tabIndexMemory[nextIndex]
+}
+
+/*
+findTabIndexOfControl is a method which allows you to locate a control within the registered tab index sequence by
+matching its layer alias, control alias, and control type. It returns the position of the first matching entry, or
+tabIndexBeforeFirstEntry if the control is not registered.
+
+Example:
+
+	index := findTabIndexOfControl(eventStateMemory.currentlyFocusedControl)
+*/
+func findTabIndexOfControl(control controlIdentifierType) int {
+	for index, entry := range eventStateMemory.tabIndexMemory {
+		if entry == control {
+			return index
+		}
+	}
+	return tabIndexBeforeFirstEntry
 }
 
 /*
