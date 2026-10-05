@@ -29,16 +29,6 @@ var Labels = memory.NewControlMemoryManager[types.LabelEntryType]()
 // ============================================================================
 
 /*
-AddToTabIndex is a method which allows you to add the label to the tab index of its parent layer.
-
-Example:
-    labelInstance.AddToTabIndex()
-*/
-func (shared *LabelInstanceType) AddToTabIndex() {
-	addTabIndex(shared.layerAlias, shared.controlAlias, constants.CellTypeLabel)
-}
-
-/*
 SetIsTooltipEnabled is a method which allows you to enable or disable the tooltip associated with the label.
 
 Example:

@@ -29,16 +29,6 @@ var ProgressBars = memory.NewControlMemoryManager[types.ProgressBarEntryType]()
 // ============================================================================
 
 /*
-AddToTabIndex is a method which adds the progress bar to the tab navigation index.
-
-Example:
-    progressBar.AddToTabIndex()
-*/
-func (shared *ProgressBarInstanceType) AddToTabIndex() {
-	addTabIndex(shared.layerAlias, shared.controlAlias, constants.CellTypeProgressBar)
-}
-
-/*
 Delete is a method which removes the progress bar instance.
 
 Example:

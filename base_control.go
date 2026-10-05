@@ -1,6 +1,8 @@
 package consolizer
 
 import (
+	"fmt"
+
 	"github.com/supercom32/consolizer/constants"
 	"github.com/supercom32/consolizer/memory"
 	"github.com/supercom32/consolizer/types"
@@ -87,6 +89,10 @@ func (shared *BaseControlInstanceType) getBaseControl() *types.BaseControlType {
 		if entry, isFound := Tooltips.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 			return &entry.BaseControlType
 		}
+	case constants.TYPE_RADIOBUTTON:
+		if entry, isFound := RadioButtons.Lookup(shared.layerAlias, shared.controlAlias); isFound {
+			return &entry.BaseControlType
+		}
 	}
 	return nil
 }
@@ -159,7 +165,11 @@ func (shared *BaseControlInstanceType) SetSize(width, height int) *BaseControlIn
 }
 
 /*
-SetVisible is a method which allows you to toggle the visibility of the control.
+SetVisible is a method which allows you to toggle the visibility of the control. In addition, the following should be
+noted:
+
+  - Hiding the focused control moves focus to the next stop in its layer's tab order, or clears focus if no other
+    stop can take it.
 
 Example:
     control.SetVisible(true)
@@ -168,6 +178,7 @@ func (shared *BaseControlInstanceType) SetVisible(visible bool) *BaseControlInst
 	if control := shared.getBaseControl(); control != nil {
 		control.IsVisible = visible
 	}
+	reconcileFocus()
 	return shared
 }
 
@@ -185,7 +196,11 @@ func (shared *BaseControlInstanceType) SetStyle(style types.TuiStyleEntryType) *
 }
 
 /*
-SetEnabled is a method which allows you to enable or disable user interaction with the control.
+SetEnabled is a method which allows you to enable or disable user interaction with the control. In addition, the
+following should be noted:
+
+  - Disabling the focused control moves focus to the next stop in its layer's tab order, or clears focus if no other
+    stop can take it.
 
 Example:
     control.SetEnabled(false)
@@ -194,6 +209,7 @@ func (shared *BaseControlInstanceType) SetEnabled(enabled bool) *BaseControlInst
 	if control := shared.getBaseControl(); control != nil {
 		control.IsEnabled = enabled
 	}
+	reconcileFocus()
 	return shared
 }
 
@@ -424,7 +440,9 @@ reached by a leftover reference to a deleted control that reused its alias. In a
 noted:
 
   - getAlias is called once per surviving entry, before manager.RemoveAll runs, since the entries are no longer
-    reachable through manager afterward.
+    reachable through manager afterward. The cells and focus state are only cleared after the removal, so a
+    deleted control that had focus passes it on to a control that still exists rather than to one about to be
+    removed in the same call.
 
   - This is the shared implementation behind every control type's DeleteAll method and every DeleteAllX helper on
     LayerInstanceType.
@@ -435,44 +453,143 @@ Example:
 		func(entry *types.ButtonEntryType) string { return entry.Alias })
 */
 func removeAllControlsAndClearCells[T any](manager *memory.ControlMemoryManager[T], layerAlias string, cellType int, getAlias func(*T) string) {
+	var aliases []string
 	for _, entry := range manager.GetAllEntries(layerAlias) {
-		clearStaleControlReferences(layerAlias, getAlias(entry), cellType)
+		aliases = append(aliases, getAlias(entry))
 	}
 	manager.RemoveAll(layerAlias)
+	for _, alias := range aliases {
+		clearStaleControlReferences(layerAlias, alias, cellType)
+	}
 }
 
 /*
-GetFocus is a method which updates the event manager to set this control as the one currently in focus.
+getControlIdentifier is a method which allows you to obtain the identifier the focus manager uses for this control: its
+layer alias, control alias, and cell type. It is what makes every control instance usable with SetFocus.
 
 Example:
-    control.GetFocus()
+
+	control := button.getControlIdentifier()
+*/
+func (shared *BaseControlInstanceType) getControlIdentifier() controlIdentifierType {
+	return controlIdentifierType{layerAlias: shared.layerAlias, controlAlias: shared.controlAlias, controlType: getFocusStopCellType(shared.controlType)}
+}
+
+/*
+validateTabStop is a method which allows you to check that this control can be registered as a tab stop, returning an
+error that names the control when it is not an interactive type or does not exist.
+
+Example:
+
+	err := control.validateTabStop()
+*/
+func (shared *BaseControlInstanceType) validateTabStop() error {
+	control := shared.getControlIdentifier()
+	if !isTabStopCellType(control.controlType) {
+		return fmt.Errorf("the control '%s' on layer '%s' cannot be added to the tab order since it is not an interactive control", shared.controlAlias, shared.layerAlias)
+	}
+	if !isControlExists(control) {
+		return fmt.Errorf("the control '%s' on layer '%s' cannot be added to the tab order since it does not exist", shared.controlAlias, shared.layerAlias)
+	}
+	return nil
+}
+
+/*
+AddToTabIndex is a method which allows you to add the control to its layer's tab order, so that Tab and Shift+Tab move
+focus to it. Stops are visited in the order they were added, except that stops given an explicit order with
+SetTabIndex come first. An error is returned if the control is not an interactive type, such as a label or progress
+bar, or does not exist. Adding a control that is already in the tab order does nothing. In addition, the following
+should be noted:
+
+  - Each layer has its own tab order, so Tab never moves focus from one layer to another.
+
+  - Radio buttons of the same group count as a single stop, entered at the selected button. The arrow keys then move
+    and select within the group.
+
+  - While a control is disabled or hidden, or its layer is hidden, Tab skips it. A deleted control is removed from
+    the tab order automatically.
+
+Example:
+
+	err := okButton.AddToTabIndex()
+*/
+func (shared *BaseControlInstanceType) AddToTabIndex() error {
+	if err := shared.validateTabStop(); err != nil {
+		return err
+	}
+	defer focusManager.beginChange()()
+	focusManager.registerStopLocked(shared.getControlIdentifier(), noExplicitTabIndex)
+	return nil
+}
+
+/*
+SetTabIndex is a method which allows you to give the control an explicit position in its layer's tab order, adding it
+to the tab order if it is not already there. Stops with an explicit position come before every other stop, in
+ascending order of position, and stops with the same position keep the order they were added in. An error is returned
+if the position is negative, or the control is not an interactive type or does not exist.
+
+Example:
+
+	err := cancelButton.SetTabIndex(2)
+*/
+func (shared *BaseControlInstanceType) SetTabIndex(tabIndex int) error {
+	if tabIndex < 0 {
+		return fmt.Errorf("the tab index for control '%s' on layer '%s' must not be negative, but %d was given", shared.controlAlias, shared.layerAlias, tabIndex)
+	}
+	if err := shared.validateTabStop(); err != nil {
+		return err
+	}
+	defer focusManager.beginChange()()
+	focusManager.registerStopLocked(shared.getControlIdentifier(), tabIndex)
+	return nil
+}
+
+/*
+RemoveFromTabIndex is a method which allows you to remove the control from its layer's tab order, so that Tab no longer
+moves focus to it. The control keeps focus if it already has it, and can still be focused by clicking it or with
+SetFocus.
+
+Example:
+
+	helpButton.RemoveFromTabIndex()
+*/
+func (shared *BaseControlInstanceType) RemoveFromTabIndex() {
+	defer focusManager.beginChange()()
+	scope, isFound := focusManager.scopes[shared.layerAlias]
+	if !isFound {
+		return
+	}
+	control := shared.getControlIdentifier()
+	remainingStops := scope.stops[:0]
+	for _, stop := range scope.stops {
+		if stop.control != control {
+			remainingStops = append(remainingStops, stop)
+		}
+	}
+	scope.stops = remainingStops
+}
+
+/*
+IsFocused is a method which allows you to check whether the control currently has keyboard focus.
+
+Example:
+
+	if okButton.IsFocused() { ... }
+*/
+func (shared *BaseControlInstanceType) IsFocused() bool {
+	control := shared.getControlIdentifier()
+	return isControlCurrentlyFocused(control.layerAlias, control.controlAlias, control.controlType)
+}
+
+/*
+GetFocus is a method which allows you to give this control keyboard focus. It is shorthand for SetFocus with this
+control, and does nothing if SetFocus would return an error, such as for a disabled or hidden control.
+
+Example:
+
+	control.GetFocus()
 */
 func (shared *BaseControlInstanceType) GetFocus() *BaseControlInstanceType {
-	controlTypeInt := constants.NullControlType
-	switch shared.controlType {
-	case constants.TYPE_BUTTON:
-		controlTypeInt = constants.CellTypeButton
-	case constants.TYPE_CHECKBOX:
-		controlTypeInt = constants.CellTypeCheckbox
-	case constants.TYPE_DROPDOWN:
-		controlTypeInt = constants.CellTypeDropdown
-	case constants.TYPE_LABEL:
-		controlTypeInt = constants.CellTypeLabel
-	case constants.TYPE_PROGRESSBAR:
-		controlTypeInt = constants.CellTypeProgressBar
-	case constants.TYPE_SCROLLBAR:
-		controlTypeInt = constants.CellTypeScrollbar
-	case constants.TYPE_SELECTOR:
-		controlTypeInt = constants.CellTypeSelectorItem
-	case constants.TYPE_TEXTBOX:
-		controlTypeInt = constants.CellTypeTextbox
-	case constants.TYPE_TEXTFIELD:
-		controlTypeInt = constants.CellTypeTextField
-	case constants.TYPE_TOOLTIP:
-		controlTypeInt = constants.CellTypeTooltip
-	case constants.TYPE_RADIOBUTTON:
-		controlTypeInt = constants.CellTypeRadioButton
-	}
-	setFocusedControl(shared.layerAlias, shared.controlAlias, controlTypeInt)
+	_ = SetFocus(shared)
 	return shared
 }

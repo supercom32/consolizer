@@ -31,6 +31,9 @@ type defaultValueType struct {
 	terminalWidth           int
 	terminalHeight          int
 	isAutoSizeEnabled       bool
+	// screenLayer is the last composited frame. It is only ever replaced, under displayUpdate, and its character
+	// memory is never modified in place once published. Readers rely on this: they copy screenLayer under a read
+	// lock and then read its cells without the lock, which is only safe because those cells can never change.
 	screenLayer             types.LayerEntryType
 	debugDirectory          string
 	isDebugEnabled          bool
@@ -74,10 +77,17 @@ instance you wish to create. In addition, the following should be noted:
 - Passing explicit nonzero values pins the logical drawing area to that fixed size for the life of the session, so
   later physical terminal resizes are ignored for drawing, mouse hit testing, and layer bounds purposes.
 
+- If a previous session is still running because RestoreTerminalSettings was never called, it is torn down first,
+  exactly as RestoreTerminalSettings would. Its background goroutines are stopped and waited for, and its screen is
+  released, before any shared state is replaced. Without this, those goroutines would keep running against the new
+  session and race its setup. When there is no previous session, or it was already restored, this step does
+  nothing.
+
 Example:
     InitializeTerminal(80, 25)
 */
 func InitializeTerminal(width int, height int) {
+	RestoreTerminalSettings()
 	InitializeTimerMemory()
 	// Reset in case a prior session was torn down by RestoreTerminalSettings: without this, every screen-touching
 	// function would keep treating the new session as already terminated and silently refuse to draw.
@@ -631,6 +641,16 @@ following should be noted:
   - This is a no-op once RestoreTerminalSettings has torn the screen down, matching every other function that touches
     commonResource.screenLayer.
 
+  - Focus state is updated first, through handleControlDeleted, so a deleted control that had focus passes it to the
+    next stop in its layer's tab order and its tab stop is removed. That happens before commonResource.displayUpdate
+    is taken, since the focus manager lock must never be held while waiting on it.
+
+  - The published frame is never modified in place. A new row table is built, only the rows containing a matching
+    cell are cloned and changed, and the result replaces commonResource.screenLayer. Readers that copied the frame
+    under a read lock and are still reading its cells after releasing it therefore keep seeing the old, unchanged
+    cells instead of racing this write. Unchanged rows are shared between the old and new frames, which is safe since
+    neither ever modifies them.
+
 Example:
 
 	clearStaleControlReferences("main", "back", constants.CellTypeButton)
@@ -639,24 +659,40 @@ func clearStaleControlReferences(layerAlias string, controlAlias string, cellTyp
 	if controlAlias == "" {
 		return
 	}
+	handleControlDeleted(layerAlias, controlAlias, cellType)
 	commonResource.displayUpdate.Lock()
 	defer commonResource.displayUpdate.Unlock()
 	if commonResource.isTerminated {
 		return
 	}
-	characterMemory := commonResource.screenLayer.CharacterMemory
-	for rowIndex := range characterMemory {
-		row := characterMemory[rowIndex]
-		for columnIndex := range row {
-			attributeEntry := &row[columnIndex].AttributeEntry
-			if row[columnIndex].LayerAlias != layerAlias || attributeEntry.CellType != cellType || attributeEntry.CellControlAlias != controlAlias {
+	publishedMemory := commonResource.screenLayer.CharacterMemory
+	var updatedMemory [][]types.CharacterEntryType
+	for rowIndex, publishedRow := range publishedMemory {
+		var updatedRow []types.CharacterEntryType
+		for columnIndex := range publishedRow {
+			cell := &publishedRow[columnIndex]
+			if cell.LayerAlias != layerAlias || cell.AttributeEntry.CellType != cellType || cell.AttributeEntry.CellControlAlias != controlAlias {
 				continue
 			}
+			if updatedRow == nil {
+				updatedRow = append([]types.CharacterEntryType(nil), publishedRow...)
+			}
+			attributeEntry := &updatedRow[columnIndex].AttributeEntry
 			attributeEntry.CellControlAlias = ""
 			attributeEntry.CellType = constants.NullCellType
 			attributeEntry.CellControlId = constants.NullCellControlId
 			attributeEntry.CellControlLocation = constants.NullCellControlLocation
 		}
+		if updatedRow == nil {
+			continue
+		}
+		if updatedMemory == nil {
+			updatedMemory = append([][]types.CharacterEntryType(nil), publishedMemory...)
+		}
+		updatedMemory[rowIndex] = updatedRow
+	}
+	if updatedMemory != nil {
+		commonResource.screenLayer.CharacterMemory = updatedMemory
 	}
 }
 
@@ -780,6 +816,8 @@ Example:
     UpdateDisplay(false)
 */
 func UpdateDisplay(isRefreshForced bool) {
+	// Taken before the display lock, since the focus manager lock must never be held while waiting on it.
+	reconcileFocus()
 	commonResource.displayUpdate.Lock()
 	defer func() {
 		commonResource.displayUpdate.Unlock()

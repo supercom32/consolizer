@@ -3,6 +3,7 @@ package consolizer
 import (
 	"fmt"
 	"github.com/atotto/clipboard"
+	"github.com/gdamore/tcell/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/supercom32/consolizer/constants"
 	"github.com/supercom32/consolizer/stringformat"
@@ -540,12 +541,12 @@ func TestTextFieldCjkClickRightHalf(test *testing.T) {
 	assert.Equal(test, 1, layerEntry.CharacterMemory[2][4].AttributeEntry.CellControlId)
 	assert.Equal(test, 1, layerEntry.CharacterMemory[2][5].AttributeEntry.CellControlId)
 
-	eventStateMemory.stateId = 0
+	setEventStateId(0)
 	SetMouseStatus(3, 2, 1, "")
 	TextField.updateMouseEvent()
 	assert.Equal(test, 0, textFieldEntry.CursorPosition)
 
-	eventStateMemory.stateId = 0
+	setEventStateId(0)
 	SetMouseStatus(5, 2, 1, "")
 	TextField.updateMouseEvent()
 	assert.Equal(test, 1, textFieldEntry.CursorPosition)
@@ -569,14 +570,14 @@ func TestTextFieldCjkHighlightDrag(test *testing.T) {
 	textFieldEntry := TextFields.Get(textFieldInstance.layerAlias, textFieldInstance.controlAlias)
 	UpdateDisplay(false)
 
-	eventStateMemory.stateId = 0
+	setEventStateId(0)
 	SetMouseStatus(2, 2, 1, "")
 	TextField.updateMouseEvent()
 
-	eventStateMemory.stateId = constants.EventStateDragAndDrop
+	setEventStateId(constants.EventStateDragAndDrop)
 	SetMouseStatus(5, 2, 1, "")
 	TextField.updateMouseEvent()
-	eventStateMemory.stateId = 0
+	setEventStateId(0)
 
 	assert.True(test, textFieldEntry.IsHighlightActive)
 	assert.Equal(test, 0, textFieldEntry.HighlightStart)
@@ -810,4 +811,35 @@ func TestTextFieldOnValueChangedUnsetPreservesPriorBehavior(test *testing.T) {
 	TextField.updateKeyboardEventTextboxWithString("999a")
 	assert.Equal(test, "999a ", string(textFieldEntry.CurrentValue))
 	assert.Nil(test, textFieldEntry.OnValueChanged)
+}
+
+/*
+TestSetOnValueChangedHookRunsInsideEventHandling is a test which allows you to verify that a text field's OnValueChanged
+hook is called synchronously from the keyboard event handling, by observing that the value it receives already
+includes the keystroke being processed.
+
+Example:
+
+	Expected Inputs:
+		Focused, empty text field with a hook that records the value it is given, then the key "x".
+
+	Expected Outputs:
+		The hook is called with "x" before UpdateEventQueues returns.
+*/
+func TestSetOnValueChangedHookRunsInsideEventHandling(test *testing.T) {
+	layerAlias, styleEntry := setupInputTest(test)
+	textField := TextField.Add(layerAlias, "field", styleEntry, 2, 2, 10, 20, false, "", true)
+	var receivedValues []string
+	textField.SetOnValueChanged(func(current string) string {
+		receivedValues = append(receivedValues, current)
+		return current
+	})
+	textField.GetFocus()
+	simScreen := startInputSimulation(test)
+
+	pressKey(simScreen, tcell.KeyRune, 'x', tcell.ModNone)
+
+	if len(receivedValues) != 1 || receivedValues[0] != "x" {
+		test.Fatalf("expected the hook to be called once with %q, got %q", "x", receivedValues)
+	}
 }

@@ -2,6 +2,7 @@ package types
 
 import (
 	"encoding/json"
+	"github.com/supercom32/consolizer/constants"
 	"reflect"
 )
 
@@ -28,6 +29,7 @@ type SelectorEntryType struct {
 	ItemSelected         int
 	HighlightOnClickOnly bool
 	IsNewItemSelected    bool
+	SelectionSource      int
 }
 
 /*
@@ -75,6 +77,7 @@ func (shared SelectorEntryType) MarshalJSON() ([]byte, error) {
 		ItemSelected         int
 		HighlightOnClickOnly bool
 		IsNewItemSelected    bool
+		SelectionSource      int
 	}{
 		BaseControlType:      shared.BaseControlType,
 		ScrollbarAlias:       shared.ScrollbarAlias,
@@ -89,6 +92,7 @@ func (shared SelectorEntryType) MarshalJSON() ([]byte, error) {
 		ItemSelected:         shared.ItemSelected,
 		HighlightOnClickOnly: shared.HighlightOnClickOnly,
 		IsNewItemSelected:    shared.IsNewItemSelected,
+		SelectionSource:      shared.SelectionSource,
 	})
 	if err != nil {
 		return nil, err
@@ -134,6 +138,7 @@ func NewSelectorEntry(existingSelectorEntry ...*SelectorEntryType) SelectorEntry
 	var selectorEntry SelectorEntryType
 	selectorEntry.BaseControlType = NewBaseControl()
 	selectorEntry.IsNewItemSelected = false
+	selectorEntry.SelectionSource = constants.SelectionSourceNone
 
 	if existingSelectorEntry != nil {
 		selectorEntry.BaseControlType = existingSelectorEntry[0].BaseControlType
@@ -149,6 +154,7 @@ func NewSelectorEntry(existingSelectorEntry ...*SelectorEntryType) SelectorEntry
 		selectorEntry.HighlightOnClickOnly = existingSelectorEntry[0].HighlightOnClickOnly
 		selectorEntry.ItemSelected = existingSelectorEntry[0].ItemSelected
 		selectorEntry.IsNewItemSelected = existingSelectorEntry[0].IsNewItemSelected
+		selectorEntry.SelectionSource = existingSelectorEntry[0].SelectionSource
 	}
 	return selectorEntry
 }
@@ -175,7 +181,8 @@ func IsSelectorEntryEqual(sourceSelectorEntry *SelectorEntryType, targetSelector
 		sourceSelectorEntry.ItemHighlighted == targetSelectorEntry.ItemHighlighted &&
 		sourceSelectorEntry.HighlightOnClickOnly == targetSelectorEntry.HighlightOnClickOnly &&
 		sourceSelectorEntry.ItemSelected == targetSelectorEntry.ItemSelected &&
-		sourceSelectorEntry.IsNewItemSelected == targetSelectorEntry.IsNewItemSelected {
+		sourceSelectorEntry.IsNewItemSelected == targetSelectorEntry.IsNewItemSelected &&
+		sourceSelectorEntry.SelectionSource == targetSelectorEntry.SelectionSource {
 		return true
 	}
 	return false

@@ -201,9 +201,10 @@ func (shared *textFieldType) drawInputString(layerEntry *types.LayerEntryType, s
 	// never split across the right edge.
 	runesToDraw, _ := stringformat.GetRunesThatFitInColumnCountFromStart(inputValue[stringPosition:], width)
 	textFieldEntry := TextFields.Get(layerEntry.LayerAlias, textFieldAlias)
-	focusedLayerAlias := eventStateMemory.currentlyFocusedControl.layerAlias
-	focusedControlAlias := eventStateMemory.currentlyFocusedControl.controlAlias
-	focusedControlType := eventStateMemory.currentlyFocusedControl.controlType
+	focusedControl := getFocusedControl()
+	focusedLayerAlias := focusedControl.layerAlias
+	focusedControlAlias := focusedControl.controlAlias
+	focusedControlType := focusedControl.controlType
 	isFocused := focusedControlType == constants.CellTypeTextField && focusedLayerAlias == layerEntry.LayerAlias && focusedControlAlias == textFieldAlias
 	lastRuneIndex := len(textFieldEntry.CurrentValue) - 1
 	fillArea(layerEntry, attributeEntry, " ", xLocation, yLocation, width, 1, 0)
@@ -732,9 +733,10 @@ Example:
 	updateRequired, consumed := TextField.updateKeyboardEvent([]rune("a"))
 */
 func (shared *textFieldType) updateKeyboardEvent(keystroke []rune) (bool, bool) {
-	focusedLayerAlias := eventStateMemory.currentlyFocusedControl.layerAlias
-	focusedControlAlias := eventStateMemory.currentlyFocusedControl.controlAlias
-	focusedControlType := eventStateMemory.currentlyFocusedControl.controlType
+	focusedControl := getFocusedControl()
+	focusedLayerAlias := focusedControl.layerAlias
+	focusedControlAlias := focusedControl.controlAlias
+	focusedControlType := focusedControl.controlType
 	textFieldEntry, isFound := TextFields.Lookup(focusedLayerAlias, focusedControlAlias)
 	if focusedControlType != constants.CellTypeTextField || !isFound {
 		return false, false
@@ -770,8 +772,8 @@ func (shared *textFieldType) updateMouseEvent() bool {
 	isScreenUpdateRequired := false
 	var characterEntry types.CharacterEntryType
 	mouseXLocation, mouseYLocation, buttonPressed, _ := GetMouseStatus()
-	if buttonPressed != 0 && eventStateMemory.stateId != constants.EventStateDragAndDropScrollbar &&
-		eventStateMemory.stateId != constants.EventStateDragAndDrop {
+	if buttonPressed != 0 && getEventStateId() != constants.EventStateDragAndDropScrollbar &&
+		getEventStateId() != constants.EventStateDragAndDrop {
 		characterEntry = getCellInformationUnderMouseCursor(mouseXLocation, mouseYLocation)
 		if textFieldEntry, isFound := TextFields.Lookup(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias); characterEntry.AttributeEntry.CellType == constants.CellTypeTextField && isFound {
 			if !textFieldEntry.IsEnabled {
@@ -784,8 +786,10 @@ func (shared *textFieldType) updateMouseEvent() bool {
 		}
 	}
 
-	// Handle mouse drag for text selection
-	if eventStateMemory.stateId == constants.EventStateDragAndDrop && eventStateMemory.currentlyFocusedControl.controlType == constants.CellTypeTextField {
+	// Handle mouse drag for text selection. A window being dragged by its title bar also uses EventStateDragAndDrop,
+	// and since that drag leaves focus where it was, it must be excluded here so it cannot select text in a focused
+	// field it happens to pass over.
+	if getEventStateId() == constants.EventStateDragAndDrop && getDraggedLayerAlias() == "" && getFocusedControl().controlType == constants.CellTypeTextField {
 		characterEntry = getCellInformationUnderMouseCursor(mouseXLocation, mouseYLocation)
 		if textFieldEntry, isFound := TextFields.Lookup(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias); characterEntry.AttributeEntry.CellType == constants.CellTypeTextField && isFound {
 			if !textFieldEntry.IsEnabled {
@@ -915,6 +919,11 @@ the field should actually hold; returning the same value is a no-op. In addition
   - The hook runs inside the same keystroke handling call that changed the value, so any correction it returns
     replaces CurrentValue and is drawn in the same screen update as the keystroke, eliminating the one-frame flicker
     that would otherwise occur if the correction were applied on a later frame.
+
+  - The hook runs on consolizer's event goroutine, not on the goroutine that called SetOnValueChanged, so it runs
+    concurrently with the application's own code. Keep it free of shared state, ideally a pure function of the
+    value it receives, or guard any state it must touch with a lock. It should also return quickly, since no further
+    input is processed until it does.
 
   - Passing nil removes any previously set hook.
 

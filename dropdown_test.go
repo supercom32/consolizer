@@ -2,6 +2,7 @@ package consolizer
 
 import (
 	"fmt"
+	"github.com/gdamore/tcell/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/supercom32/consolizer/constants"
 	"github.com/supercom32/consolizer/types"
@@ -367,4 +368,115 @@ func TestDropdownFocus(test *testing.T) {
 		fmt.Println("Expected:\n", expectedValueBase64)
 		fmt.Println("Obtained:\n", obtainedValueBase64)
 	}
+}
+
+/*
+TestDropdownEscClosesOpenTrayWithoutChangingSelection is a test which allows you to verify that Esc on an open dropdown
+closes the tray, keeps the committed selection, and is consumed, and that the item highlighted before Esc is not
+committed by any later close. In addition, the following should be noted:
+
+  - This pins existing behavior rather than reproducing a failure. Before the fix, Esc shared Enter's branch, but
+    that branch committed the tray selector's ItemSelected, which arrow keys never change, so an open tray already
+    closed without a selection change.
+
+Example:
+
+	Expected Inputs:
+		Dropdown with items [Zero, One, Two, Three] and item 0 selected, focused. Keys Enter, Down, Esc, then Enter,
+		Enter to reopen and close it again.
+
+	Expected Outputs:
+		After Esc the tray is closed, ItemSelected is 0 on both the dropdown and its tray selector, and the keyboard
+		buffer is empty. After reopening, item 0 is highlighted, and after closing ItemSelected is still 0.
+*/
+func TestDropdownEscClosesOpenTrayWithoutChangingSelection(test *testing.T) {
+	layerAlias, styleEntry := setupInputTest(test)
+	dropdownEntry := addTestDropdown(layerAlias, styleEntry)
+	simScreen := startInputSimulation(test)
+
+	pressKey(simScreen, tcell.KeyEnter, 0, tcell.ModNone)
+	if !dropdownEntry.IsTrayOpen {
+		test.Fatalf("expected Enter to open the tray")
+	}
+	pressKey(simScreen, tcell.KeyDown, 0, tcell.ModNone)
+	pressKey(simScreen, tcell.KeyEscape, 0, tcell.ModNone)
+
+	selectorEntry := Selectors.Get(layerAlias, dropdownEntry.SelectorAlias)
+	if dropdownEntry.IsTrayOpen {
+		test.Fatalf("expected Esc to close the tray")
+	}
+	if dropdownEntry.ItemSelected != 0 || selectorEntry.ItemSelected != 0 {
+		test.Fatalf("expected selection to stay 0 after Esc, got dropdown %d and tray %d", dropdownEntry.ItemSelected, selectorEntry.ItemSelected)
+	}
+	assertKeyboardBuffer(test, "after Esc on an open tray")
+
+	pressKey(simScreen, tcell.KeyEnter, 0, tcell.ModNone)
+	if selectorEntry.ItemHighlighted != 0 {
+		test.Fatalf("expected reopened tray to highlight item 0, got %d", selectorEntry.ItemHighlighted)
+	}
+	pressKey(simScreen, tcell.KeyEnter, 0, tcell.ModNone)
+	if dropdownEntry.IsTrayOpen || dropdownEntry.ItemSelected != 0 {
+		test.Fatalf("expected closed tray with item 0 selected, got open %v with item %d", dropdownEntry.IsTrayOpen, dropdownEntry.ItemSelected)
+	}
+}
+
+/*
+TestDropdownEscOnClosedTrayIsNotConsumed is a test which allows you to verify that Esc on a focused dropdown whose tray
+is closed neither opens the tray nor changes the selection, and reaches the keyboard buffer so the application can
+treat it as Back. In addition, the following should be noted:
+
+  - Before the fix, Esc on a closed dropdown opened its tray and was consumed.
+
+Example:
+
+	Expected Inputs:
+		Dropdown with items [Zero, One, Two, Three] and item 0 selected, focused with its tray closed. Key Esc.
+
+	Expected Outputs:
+		The tray stays closed, ItemSelected is 0, and the keyboard buffer is ["esc"].
+*/
+func TestDropdownEscOnClosedTrayIsNotConsumed(test *testing.T) {
+	layerAlias, styleEntry := setupInputTest(test)
+	dropdownEntry := addTestDropdown(layerAlias, styleEntry)
+	simScreen := startInputSimulation(test)
+
+	pressKey(simScreen, tcell.KeyEscape, 0, tcell.ModNone)
+
+	if dropdownEntry.IsTrayOpen {
+		test.Fatalf("expected Esc not to open a closed tray")
+	}
+	if dropdownEntry.ItemSelected != 0 {
+		test.Fatalf("expected selection to stay 0, got %d", dropdownEntry.ItemSelected)
+	}
+	assertKeyboardBuffer(test, "after Esc on a closed tray", "esc")
+}
+
+/*
+TestDropdownEnterCommitsHighlightedItem is a test which allows you to verify that Enter still opens a dropdown and then
+commits the highlighted item when pressed again, and that neither press reaches the keyboard buffer.
+
+Example:
+
+	Expected Inputs:
+		Dropdown with items [Zero, One, Two, Three] and item 0 selected, focused. Keys Enter, Down, Enter.
+
+	Expected Outputs:
+		The tray is closed, ItemSelected is 1, and the keyboard buffer is empty.
+*/
+func TestDropdownEnterCommitsHighlightedItem(test *testing.T) {
+	layerAlias, styleEntry := setupInputTest(test)
+	dropdownEntry := addTestDropdown(layerAlias, styleEntry)
+	simScreen := startInputSimulation(test)
+
+	pressKey(simScreen, tcell.KeyEnter, 0, tcell.ModNone)
+	pressKey(simScreen, tcell.KeyDown, 0, tcell.ModNone)
+	pressKey(simScreen, tcell.KeyEnter, 0, tcell.ModNone)
+
+	if dropdownEntry.IsTrayOpen {
+		test.Fatalf("expected the second Enter to close the tray")
+	}
+	if dropdownEntry.ItemSelected != 1 {
+		test.Fatalf("expected item 1 to be committed, got %d", dropdownEntry.ItemSelected)
+	}
+	assertKeyboardBuffer(test, "after Enter, Down, Enter")
 }

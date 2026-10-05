@@ -20,7 +20,7 @@ Example:
     resetMouseEventState()
 */
 func resetMouseEventState() {
-	eventStateMemory.stateId = constants.EventStateNone
+	setEventStateId(constants.EventStateNone)
 	lastMouseMoveTime = time.Time{}
 }
 
@@ -362,8 +362,8 @@ func TestScrollbarDragReleaseWithinThrottleWindowUnsticksState(test *testing.T) 
 	// Press the scrollbar handle to begin a drag.
 	simScreen.InjectMouse(handleX, handleY, tcell.Button1, tcell.ModNone)
 	UpdateEventQueues()
-	if eventStateMemory.stateId != constants.EventStateDragAndDropScrollbar {
-		test.Fatalf("expected scrollbar drag state to begin, got state %d", eventStateMemory.stateId)
+	if getEventStateId() != constants.EventStateDragAndDropScrollbar {
+		test.Fatalf("expected scrollbar drag state to begin, got state %d", getEventStateId())
 	}
 
 	// Drag the handle down by one row while still held; this also refreshes the movement throttle timer.
@@ -373,8 +373,8 @@ func TestScrollbarDragReleaseWithinThrottleWindowUnsticksState(test *testing.T) 
 	// Release immediately, well within the 50ms throttle window the drag movement above just set.
 	simScreen.InjectMouse(handleX, handleY+1, tcell.ButtonNone, tcell.ModNone)
 	UpdateEventQueues()
-	if eventStateMemory.stateId != constants.EventStateNone {
-		test.Fatalf("expected scrollbar drag state to end after release, got state %d", eventStateMemory.stateId)
+	if getEventStateId() != constants.EventStateNone {
+		test.Fatalf("expected scrollbar drag state to end after release, got state %d", getEventStateId())
 	}
 
 	// A previously stuck drag state makes Button.updateStateMouse bail out unconditionally, so verify a click now
@@ -453,254 +453,52 @@ func TestButtonHistoryConcurrentAccess(test *testing.T) {
 }
 
 /*
-setupTabOrderTest is a method which allows you to prepare a clean tab navigation environment by initializing a test
-terminal, clearing any tab order and focus left behind by earlier tests, adding one button per alias given, and
-installing a simulation screen so Tab presses can be injected and processed synchronously. The created buttons are
-returned in the same order as their aliases, but none of them are added to the tab order. In addition, the following
-should be noted:
+TestRunKeyboardEventHandlersCombinesResults is a test which allows you to verify that the results of the control
+keyboard handlers are combined independently, so a later handler can neither undo an earlier consumption nor have its
+own consumption ignored for not requesting a redraw, and that every handler runs. In addition, the following should be
+noted:
 
-  - The tab order and focused control are package-level state that InitializeTerminal does not reset, so they are
-    cleared both before the test runs and again in a cleanup, keeping tab state from leaking between tests.
+  - Before the fix, each handler's consumed result only counted when that handler also requested a redraw, and it
+    replaced rather than added to the earlier result.
 
 Example:
 
-	layerAlias, buttons, simScreen := setupTabOrderTest(test, "a", "b", "c")
+	Expected Inputs:
+		Handlers returning (update, consumed) of [(true, true), (true, false)], then [(false, true), (false, false)],
+		then [(true, false)], then no handlers.
+
+	Expected Outputs:
+		(true, true), then (false, true), then (true, false), then (false, false), with every handler called once.
 */
-func setupTabOrderTest(test *testing.T, buttonAliases ...string) (
-	string, []ButtonInstanceType, tcell.SimulationScreen,
-) {
-	test.Helper()
-	resetMouseEventState()
-	layer1, _, _, styleEntry := CommonTestSetup(test)
-	layerAlias := layer1.GetAlias()
-	ClearTabIndex()
-	setFocusedControl("", "", constants.NullControlType)
-	test.Cleanup(func() {
-		ClearTabIndex()
-		setFocusedControl("", "", constants.NullControlType)
-	})
-	buttons := make([]ButtonInstanceType, 0, len(buttonAliases))
-	for index, buttonAlias := range buttonAliases {
-		buttons = append(buttons, Button.Add(layerAlias, buttonAlias, buttonAlias, styleEntry, 1, 1+index*3, 8, 3, true))
+func TestRunKeyboardEventHandlersCombinesResults(test *testing.T) {
+	testCases := []struct {
+		name             string
+		results          [][2]bool
+		expectedUpdate   bool
+		expectedConsumed bool
+	}{
+		{"later redraw does not undo consumption", [][2]bool{{true, true}, {true, false}}, true, true},
+		{"consumption without redraw is honored", [][2]bool{{false, true}, {false, false}}, false, true},
+		{"redraw without consumption", [][2]bool{{true, false}}, true, false},
+		{"no handlers", nil, false, false},
 	}
-	UpdateDisplay(false)
-	simScreen := setupSimulationMouseScreen(test)
-	return layerAlias, buttons, simScreen
-}
-
-/*
-pressTab is a method which allows you to inject a single Tab key press into the simulation screen and process it through
-the event queue, exactly as a real keypress would be handled.
-
-Example:
-
-	pressTab(simScreen)
-*/
-func pressTab(simScreen tcell.SimulationScreen) {
-	simScreen.InjectKey(tcell.KeyTab, 0, tcell.ModNone)
-	UpdateEventQueues()
-}
-
-/*
-assertButtonFocused is a method which allows you to fail the test if the button with the given alias on the given layer
-is not the control that currently has focus.
-
-Example:
-
-	assertButtonFocused(test, layerAlias, "b", "after first Tab")
-*/
-func assertButtonFocused(test *testing.T, layerAlias string, buttonAlias string, context string) {
-	test.Helper()
-	if !isControlCurrentlyFocused(layerAlias, buttonAlias, constants.CellTypeButton) {
-		focusedControl := eventStateMemory.currentlyFocusedControl
-		test.Fatalf("%s: expected button %q on layer %q to be focused, got control %q on layer %q with type %d",
-			context, buttonAlias, layerAlias, focusedControl.controlAlias, focusedControl.layerAlias, focusedControl.controlType)
+	for _, testCase := range testCases {
+		callCount := 0
+		var handlers []keyboardEventHandlerType
+		for _, result := range testCase.results {
+			result := result
+			handlers = append(handlers, func(keystroke []rune) (bool, bool) {
+				callCount++
+				return result[0], result[1]
+			})
+		}
+		updateRequired, consumed := runKeyboardEventHandlers([]rune("enter"), handlers)
+		if updateRequired != testCase.expectedUpdate || consumed != testCase.expectedConsumed {
+			test.Fatalf("%s: expected (%v, %v), got (%v, %v)", testCase.name, testCase.expectedUpdate,
+				testCase.expectedConsumed, updateRequired, consumed)
+		}
+		if callCount != len(testCase.results) {
+			test.Fatalf("%s: expected %d handler calls, got %d", testCase.name, len(testCase.results), callCount)
+		}
 	}
-}
-
-/*
-TestTabAfterRebuiltOrderContinuesFromFocusedControl is a test which allows you to verify that after the tab order is
-cleared and rebuilt, Tab continues from the control that has focus in the new order rather than from the stale position
-left by the previous order. In addition, the following should be noted:
-
-  - Before the fix, ClearTabIndex left the stored position at 1 from the old order, so the first Tab in the new
-    two-entry order wrapped back to entry 0 (C) instead of moving on to D.
-
-Example:
-
-	Expected Inputs:
-		Tab order [A, B], one Tab press, ClearTabIndex, tab order [C, D] with C focused via GetFocus, one Tab press.
-
-	Expected Outputs:
-		Focus is B after the first Tab press and D after the second.
-*/
-func TestTabAfterRebuiltOrderContinuesFromFocusedControl(test *testing.T) {
-	layerAlias, buttons, simScreen := setupTabOrderTest(test, "a", "b", "c", "d")
-	buttons[0].AddToTabIndex()
-	buttons[1].AddToTabIndex()
-	buttons[0].GetFocus()
-
-	pressTab(simScreen)
-	assertButtonFocused(test, layerAlias, "b", "first order, after Tab")
-
-	ClearTabIndex()
-	buttons[2].AddToTabIndex()
-	buttons[3].AddToTabIndex()
-	buttons[2].GetFocus()
-
-	pressTab(simScreen)
-	assertButtonFocused(test, layerAlias, "d", "rebuilt order, after Tab")
-}
-
-/*
-TestTabAfterRebuiltOrderWithoutFocusStartsAtFirstEntry is a test which allows you to verify that the first Tab after the
-tab order is rebuilt focuses the first entry of the new order when the focused control is not part of it.
-
-Example:
-
-	Expected Inputs:
-		Tab order [A, B] with nothing focused and three Tab presses (A, B, A), then ClearTabIndex and tab order [C, D].
-
-	Expected Outputs:
-		Focus is A after the three Tab presses and C after the next Tab press.
-*/
-func TestTabAfterRebuiltOrderWithoutFocusStartsAtFirstEntry(test *testing.T) {
-	layerAlias, buttons, simScreen := setupTabOrderTest(test, "a", "b", "c", "d")
-	buttons[0].AddToTabIndex()
-	buttons[1].AddToTabIndex()
-
-	pressTab(simScreen)
-	pressTab(simScreen)
-	pressTab(simScreen)
-	assertButtonFocused(test, layerAlias, "a", "first order, after three Tabs")
-
-	ClearTabIndex()
-	buttons[2].AddToTabIndex()
-	buttons[3].AddToTabIndex()
-
-	pressTab(simScreen)
-	assertButtonFocused(test, layerAlias, "c", "rebuilt order, after Tab")
-}
-
-/*
-TestTabContinuesFromFocusSetDirectly is a test which allows you to verify that when focus is moved with GetFocus instead
-of Tab, the next Tab press continues from that control and wraps around at the end of the order.
-
-Example:
-
-	Expected Inputs:
-		Tab order [A, B, C], B focused via GetFocus, then two Tab presses.
-
-	Expected Outputs:
-		Focus is C after the first Tab press and A after the second.
-*/
-func TestTabContinuesFromFocusSetDirectly(test *testing.T) {
-	layerAlias, buttons, simScreen := setupTabOrderTest(test, "a", "b", "c")
-	for index := range buttons {
-		buttons[index].AddToTabIndex()
-	}
-	buttons[1].GetFocus()
-
-	pressTab(simScreen)
-	assertButtonFocused(test, layerAlias, "c", "after first Tab")
-
-	pressTab(simScreen)
-	assertButtonFocused(test, layerAlias, "a", "after second Tab")
-}
-
-/*
-TestTabWithFocusOutsideOrderFocusesFirstEntry is a test which allows you to verify that when the focused control is not
-part of the tab order, Tab focuses the first entry of the order.
-
-Example:
-
-	Expected Inputs:
-		Tab order [A, B], with C (not in the order) focused via GetFocus, then one Tab press.
-
-	Expected Outputs:
-		Focus is A.
-*/
-func TestTabWithFocusOutsideOrderFocusesFirstEntry(test *testing.T) {
-	layerAlias, buttons, simScreen := setupTabOrderTest(test, "a", "b", "c")
-	buttons[0].AddToTabIndex()
-	buttons[1].AddToTabIndex()
-	buttons[2].GetFocus()
-
-	pressTab(simScreen)
-	assertButtonFocused(test, layerAlias, "a", "after Tab")
-}
-
-/*
-TestTabWithEmptyOrderLeavesFocusUnchanged is a test which allows you to verify that pressing Tab with no registered tab
-order neither panics nor changes which control has focus.
-
-Example:
-
-	Expected Inputs:
-		An empty tab order, with A focused via GetFocus, then two Tab presses.
-
-	Expected Outputs:
-		Focus remains on A.
-*/
-func TestTabWithEmptyOrderLeavesFocusUnchanged(test *testing.T) {
-	layerAlias, buttons, simScreen := setupTabOrderTest(test, "a")
-	buttons[0].GetFocus()
-
-	pressTab(simScreen)
-	pressTab(simScreen)
-	assertButtonFocused(test, layerAlias, "a", "after Tab with empty order")
-}
-
-/*
-TestTabWithSingleEntryKeepsFocusOnIt is a test which allows you to verify that with a single entry in the tab order, Tab
-focuses that entry and keeps focus on it across repeated presses.
-
-Example:
-
-	Expected Inputs:
-		Tab order [A] with nothing focused, then three Tab presses.
-
-	Expected Outputs:
-		Focus is A after every press.
-*/
-func TestTabWithSingleEntryKeepsFocusOnIt(test *testing.T) {
-	layerAlias, buttons, simScreen := setupTabOrderTest(test, "a")
-	buttons[0].AddToTabIndex()
-
-	for pressCount := 1; pressCount <= 3; pressCount++ {
-		pressTab(simScreen)
-		assertButtonFocused(test, layerAlias, "a", "after Tab")
-	}
-}
-
-/*
-TestTabContinuesFromFocusSetDirectlyAfterTabbing is a test which allows you to verify that when focus is moved with
-GetFocus after the stored tab position has already been advanced by Tab, the next Tab press continues from the directly
-focused control rather than from the stored position. In addition, the following should be noted:
-
-  - Before the fix, the stored position stayed on C after the Tab presses, so the next Tab wrapped to A even though
-    B had focus.
-
-Example:
-
-	Expected Inputs:
-		Tab order [A, B, C], three Tab presses ending on C, B focused via GetFocus, then one Tab press.
-
-	Expected Outputs:
-		Focus is C after the three Tab presses and C again after the final Tab press.
-*/
-func TestTabContinuesFromFocusSetDirectlyAfterTabbing(test *testing.T) {
-	layerAlias, buttons, simScreen := setupTabOrderTest(test, "a", "b", "c")
-	for index := range buttons {
-		buttons[index].AddToTabIndex()
-	}
-
-	pressTab(simScreen)
-	pressTab(simScreen)
-	pressTab(simScreen)
-	assertButtonFocused(test, layerAlias, "c", "after three Tabs")
-
-	buttons[1].GetFocus()
-	pressTab(simScreen)
-	assertButtonFocused(test, layerAlias, "c", "after Tab from directly focused B")
 }

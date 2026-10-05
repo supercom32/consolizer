@@ -2,6 +2,7 @@ package consolizer
 
 import (
 	"math/rand"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -1461,4 +1462,369 @@ func TestNoLayerOverflowFuzz(test *testing.T) {
 			assert.Equal(test, 1, columnsConsumed, "A narrow rune, or a wide rune clipped by the right edge, must consume one column.")
 		}
 	}
+}
+
+/*
+TestCaptureScreenCopiesCompositedFrame is a test which verifies that CaptureScreen copies the fully composited
+frame from the most recent UpdateDisplay call into a full-screen layer, and that the copy alone reproduces that
+exact frame once the original source layers are gone.
+
+Example:
+
+	Expected Inputs:
+	    A 20x8 terminal with two overlapping, fully filled layers rendered by UpdateDisplay, then captured into a
+	    third, higher z-order layer before the first two are deleted.
+	Expected Outputs:
+	    After the source layers are deleted and UpdateDisplay is called again, every screen cell's character,
+	    foreground colour, background colour, and bold, underline, reverse and blink flags match the frame that
+	    was displayed before the delete.
+*/
+func TestCaptureScreenCopiesCompositedFrame(test *testing.T) {
+	commonResource.isDebugEnabled = true
+	width := 20
+	height := 8
+	InitializeTerminal(width, height)
+	defer RestoreTerminalSettings()
+
+	bottomLayer := AddLayer(0, 0, width, height, 1, nil)
+	bottomLayer.Color(2, 4)
+	bottomLayer.FillLayer("ab")
+
+	topLayer := AddLayer(3, 2, width, height, 2, nil)
+	topLayer.Color(9, 1)
+	topLayer.FillLayer("cd")
+
+	UpdateDisplay(false)
+	expectedFrame := commonResource.screenLayer
+
+	captureLayer := AddLayer(0, 0, width, height, 3, nil)
+	err := captureLayer.CaptureScreen()
+	assert.NoError(test, err, "Capturing an already displayed frame must not return an error.")
+
+	bottomLayer.Delete()
+	topLayer.Delete()
+	UpdateDisplay(false)
+
+	obtainedFrame := commonResource.screenLayer
+	for row := 0; row < height; row++ {
+		for column := 0; column < width; column++ {
+			expectedCell := expectedFrame.CharacterMemory[row][column]
+			obtainedCell := obtainedFrame.CharacterMemory[row][column]
+			assert.Equalf(test, expectedCell.Character, obtainedCell.Character, "Character mismatch at (%d,%d).", column, row)
+			assert.Equalf(test, expectedCell.AttributeEntry.ForegroundColor, obtainedCell.AttributeEntry.ForegroundColor, "Foreground colour mismatch at (%d,%d).", column, row)
+			assert.Equalf(test, expectedCell.AttributeEntry.BackgroundColor, obtainedCell.AttributeEntry.BackgroundColor, "Background colour mismatch at (%d,%d).", column, row)
+			assert.Equalf(test, expectedCell.AttributeEntry.IsBold, obtainedCell.AttributeEntry.IsBold, "IsBold mismatch at (%d,%d).", column, row)
+			assert.Equalf(test, expectedCell.AttributeEntry.IsUnderlined, obtainedCell.AttributeEntry.IsUnderlined, "IsUnderlined mismatch at (%d,%d).", column, row)
+			assert.Equalf(test, expectedCell.AttributeEntry.IsReversed, obtainedCell.AttributeEntry.IsReversed, "IsReversed mismatch at (%d,%d).", column, row)
+			assert.Equalf(test, expectedCell.AttributeEntry.IsBlinking, obtainedCell.AttributeEntry.IsBlinking, "IsBlinking mismatch at (%d,%d).", column, row)
+		}
+	}
+}
+
+/*
+TestCaptureScreenClearsControlMetadata is a test which verifies that a button captured by CaptureScreen becomes
+completely inert in the copy, so that neither the layer-alias-based mouse hit test path nor a direct cell ID
+lookup can ever resolve it to a control, even after the original button and its layer have been deleted.
+
+Example:
+
+	Expected Inputs:
+	    A 20x6 terminal with a button drawn at (2,2) with width 6 and height 1, captured into a second layer, then
+	    the button and its layer deleted.
+	Expected Outputs:
+	    Every cell of the captured layer has CellType NullCellType, an empty CellControlAlias, CellControlId
+	    NullCellControlId and CellControlLocation NullCellControlLocation. getCellIdByLayerAlias on the captured
+	    layer at the button's former position returns NullCellId, and getCellInformationUnderMouseCursor at the
+	    button's former screen position reports CellType NullCellType and an empty CellControlAlias.
+*/
+func TestCaptureScreenClearsControlMetadata(test *testing.T) {
+	commonResource.isDebugEnabled = true
+	width := 20
+	height := 6
+	InitializeTerminal(width, height)
+	defer RestoreTerminalSettings()
+
+	buttonLayer := AddLayer(0, 0, width, height, 1, nil)
+	buttonLayer.FillLayer(" ")
+	styleEntry := types.NewTuiStyleEntry()
+	buttonInstance := buttonLayer.AddButton("OK", styleEntry, 2, 2, 6, 1, true)
+	UpdateDisplay(false)
+
+	captureLayer := AddLayer(0, 0, width, height, 2, nil)
+	err := captureLayer.CaptureScreen()
+	assert.NoError(test, err, "Capturing a screen containing a button must not return an error.")
+
+	buttonInstance.Delete()
+	buttonLayer.Delete()
+	UpdateDisplay(false)
+
+	captureLayerEntry := Layers.Get(captureLayer.layerAlias)
+	for row := range captureLayerEntry.CharacterMemory {
+		for column := range captureLayerEntry.CharacterMemory[row] {
+			attributeEntry := captureLayerEntry.CharacterMemory[row][column].AttributeEntry
+			assert.Equalf(test, constants.NullCellType, attributeEntry.CellType, "CellType must be cleared at (%d,%d).", column, row)
+			assert.Equalf(test, "", attributeEntry.CellControlAlias, "CellControlAlias must be cleared at (%d,%d).", column, row)
+			assert.Equalf(test, constants.NullCellControlId, attributeEntry.CellControlId, "CellControlId must be cleared at (%d,%d).", column, row)
+			assert.Equalf(test, constants.NullCellControlLocation, attributeEntry.CellControlLocation, "CellControlLocation must be cleared at (%d,%d).", column, row)
+		}
+	}
+
+	cellId := getCellIdByLayerAlias(captureLayer.layerAlias, 3, 2)
+	assert.Equal(test, constants.NullCellId, cellId, "A cell ID lookup over the captured button must resolve to nothing.")
+
+	mouseCharacterEntry := getCellInformationUnderMouseCursor(3, 2)
+	assert.Equal(test, constants.NullCellType, mouseCharacterEntry.AttributeEntry.CellType, "The mouse hit test path must not resolve the captured button to a control.")
+	assert.Equal(test, "", mouseCharacterEntry.AttributeEntry.CellControlAlias, "The mouse hit test path must not resolve the captured button to a control alias.")
+}
+
+/*
+TestCaptureScreenIsOpaqueAndTransitionable is a test which verifies that a capture layer fully hides whatever is
+drawn beneath it by default, and that applying a curtain wipe transition to the capture layer progressively
+reveals the layer underneath exactly as it would for any other opaque layer.
+
+Example:
+
+	Expected Inputs:
+	    A 10x4 terminal holding a layer filled with 'O', captured into a second layer, after which the original
+	    layer is deleted and a new lower z-order layer filled with 'N' is drawn beneath the capture.
+	Expected Outputs:
+	    With no transition applied, every screen cell still shows 'O'. With a left-to-right curtain wipe applied to
+	    the capture layer at 50% progress, the leftmost column shows 'N' and the rightmost column still shows 'O'.
+*/
+func TestCaptureScreenIsOpaqueAndTransitionable(test *testing.T) {
+	commonResource.isDebugEnabled = true
+	width := 10
+	height := 4
+	InitializeTerminal(width, height)
+	defer RestoreTerminalSettings()
+
+	oldLayer := AddLayer(0, 0, width, height, 1, nil)
+	oldLayer.Color(2, 3)
+	oldLayer.FillLayer("O")
+	UpdateDisplay(false)
+
+	captureLayer := AddLayer(0, 0, width, height, 5, nil)
+	err := captureLayer.CaptureScreen()
+	assert.NoError(test, err, "Capturing a fully opaque frame must not return an error.")
+
+	oldLayer.Delete()
+	newLayer := AddLayer(0, 0, width, height, 1, nil)
+	newLayer.Color(4, 5)
+	newLayer.FillLayer("N")
+
+	UpdateDisplay(false)
+	for row := 0; row < height; row++ {
+		for column := 0; column < width; column++ {
+			assert.Equalf(test, rune('O'), commonResource.screenLayer.CharacterMemory[row][column].Character, "The opaque capture must hide the layer beneath it at (%d,%d).", column, row)
+		}
+	}
+
+	transitionStyle := types.NewTransitionStyleEntry()
+	transitionStyle.TransitionType = constants.TransitionTypeCurtainWipe
+	transitionStyle.Direction = constants.TransitionDirectionLeftToRight
+	captureLayer.SetTransitionStyle(transitionStyle)
+	captureLayer.SetTransitionProgress(0.5)
+	UpdateDisplay(false)
+
+	assert.Equal(test, rune('N'), commonResource.screenLayer.CharacterMemory[0][0].Character, "A half-progressed left-to-right wipe must have revealed the leftmost column.")
+	assert.Equal(test, rune('O'), commonResource.screenLayer.CharacterMemory[0][width-1].Character, "A half-progressed left-to-right wipe must not yet have revealed the rightmost column.")
+}
+
+/*
+TestCaptureScreenClipsToOverlapWithScreen is a test which verifies that a layer positioned off the top and left
+edges of the screen, while also extending past its bottom and right edges, only has the region actually overlapping
+the screen captured, leaving the rest of the layer exactly as it was before the call.
+
+Example:
+
+	Expected Inputs:
+	    A 12x6 terminal filled entirely with 'B', and a 16x9 capture layer positioned at (-2,-1) so that it hangs
+	    off every edge of the screen, pre-filled with a sentinel character 'X' before the capture.
+	Expected Outputs:
+	    Layer-local rows 1-6 and columns 2-13, the region overlapping the screen, hold 'B'. Every other cell of the
+	    layer, including its bottom and right edges past the screen, still holds the sentinel 'X'.
+*/
+func TestCaptureScreenClipsToOverlapWithScreen(test *testing.T) {
+	commonResource.isDebugEnabled = true
+	width := 12
+	height := 6
+	InitializeTerminal(width, height)
+	defer RestoreTerminalSettings()
+
+	backgroundLayer := AddLayer(0, 0, width, height, 1, nil)
+	backgroundLayer.Color(2, 3)
+	backgroundLayer.FillLayer("B")
+	UpdateDisplay(false)
+
+	layerWidth := 16
+	layerHeight := 9
+	captureLayer := AddLayer(-2, -1, layerWidth, layerHeight, 2, nil)
+	captureLayerEntry := Layers.Get(captureLayer.layerAlias)
+	sentinel := rune('X')
+	for row := range captureLayerEntry.CharacterMemory {
+		for column := range captureLayerEntry.CharacterMemory[row] {
+			captureLayerEntry.CharacterMemory[row][column].Character = sentinel
+		}
+	}
+
+	err := captureLayer.CaptureScreen()
+	assert.NoError(test, err, "Capturing a layer that only partially overlaps the screen must not return an error.")
+
+	for row := 0; row < layerHeight; row++ {
+		for column := 0; column < layerWidth; column++ {
+			isInsideOverlap := column >= 2 && column <= 13 && row >= 1 && row <= 6
+			cellCharacter := captureLayerEntry.CharacterMemory[row][column].Character
+			if isInsideOverlap {
+				assert.Equalf(test, rune('B'), cellCharacter, "Cell (%d,%d) is inside the overlap and must be captured.", column, row)
+			} else {
+				assert.Equalf(test, sentinel, cellCharacter, "Cell (%d,%d) is outside the overlap and must be left untouched.", column, row)
+			}
+		}
+	}
+}
+
+/*
+TestCaptureScreenErrorsWithoutADisplayedFrame is a test which verifies that CaptureScreen returns an error rather
+than panicking or capturing garbage when no frame has ever reached commonResource.screenLayer.
+
+Example:
+
+	Expected Inputs:
+	    A freshly initialized 10x4 terminal whose screenLayer has been reset to its zero value, so as to simulate
+	    a session in which UpdateDisplay has never been called.
+	Expected Outputs:
+	    CaptureScreen returns a non-nil error.
+*/
+func TestCaptureScreenErrorsWithoutADisplayedFrame(test *testing.T) {
+	commonResource.isDebugEnabled = true
+	InitializeTerminal(10, 4)
+	defer RestoreTerminalSettings()
+	// commonResource.screenLayer is process-wide state that earlier tests in this binary may have already
+	// populated, so it is reset directly here to reliably simulate a session with no displayed frame yet.
+	commonResource.screenLayer = types.LayerEntryType{}
+
+	captureLayer := AddLayer(0, 0, 10, 4, 1, nil)
+	err := captureLayer.CaptureScreen()
+	assert.Error(test, err, "Capturing before any UpdateDisplay call must return an error.")
+}
+
+/*
+TestCaptureScreenErrorsAfterTerminalTornDown is a test which verifies that CaptureScreen returns an error rather
+than touching a torn down terminal once commonResource.isTerminated is set.
+
+Example:
+
+	Expected Inputs:
+	    A 10x4 terminal with a displayed frame, and commonResource.isTerminated set directly to simulate the state
+	    RestoreTerminalSettings leaves behind. Debug mode tests never create a real tcell.Screen, so
+	    RestoreTerminalSettings itself has nothing to tear down and, matching the pattern already used elsewhere
+	    in this suite, isTerminated is set directly instead of relying on it.
+	Expected Outputs:
+	    CaptureScreen returns a non-nil error.
+*/
+func TestCaptureScreenErrorsAfterTerminalTornDown(test *testing.T) {
+	commonResource.isDebugEnabled = true
+	InitializeTerminal(10, 4)
+	defer RestoreTerminalSettings()
+
+	captureLayer := AddLayer(0, 0, 10, 4, 1, nil)
+	UpdateDisplay(false)
+
+	commonResource.isTerminated = true
+	defer func() { commonResource.isTerminated = false }()
+
+	err := captureLayer.CaptureScreen()
+	assert.Error(test, err, "Capturing after the terminal has been torn down must return an error.")
+}
+
+/*
+TestCaptureScreenPreservesWideRunePlaceholders is a test which verifies that a wide CJK rune and its trailing
+placeholder cell survive a capture intact, rather than being split, duplicated or dropped.
+
+Example:
+
+	Expected Inputs:
+	    A 10x3 terminal with the string "a中b" printed starting at column 2, row 1, captured into a second layer.
+	Expected Outputs:
+	    Every cell of row 1 in the captured layer matches the corresponding cell of the displayed frame, including
+	    the wide rune's lead cell holding '中' and its placeholder cell holding a blank space.
+*/
+func TestCaptureScreenPreservesWideRunePlaceholders(test *testing.T) {
+	commonResource.isDebugEnabled = true
+	width := 10
+	height := 3
+	InitializeTerminal(width, height)
+	defer RestoreTerminalSettings()
+
+	sourceLayer := AddLayer(0, 0, width, height, 1, nil)
+	sourceLayer.FillLayer(" ")
+	sourceLayer.Locate(2, 1)
+	sourceLayer.Print("a中b")
+	UpdateDisplay(false)
+	expectedRow := commonResource.screenLayer.CharacterMemory[1]
+
+	captureLayer := AddLayer(0, 0, width, height, 2, nil)
+	err := captureLayer.CaptureScreen()
+	assert.NoError(test, err, "Capturing a frame containing a wide rune must not return an error.")
+
+	captureLayerEntry := Layers.Get(captureLayer.layerAlias)
+	for column := 0; column < width; column++ {
+		assert.Equalf(test, expectedRow[column].Character, captureLayerEntry.CharacterMemory[1][column].Character, "Character mismatch at column %d.", column)
+	}
+	assert.Equal(test, rune('中'), captureLayerEntry.CharacterMemory[1][3].Character, "The wide rune's lead cell must round-trip intact.")
+	assert.Equal(test, rune(' '), captureLayerEntry.CharacterMemory[1][4].Character, "The wide rune's placeholder cell must round-trip intact.")
+}
+
+/*
+TestCaptureScreenConcurrentWithUpdateDisplayRace is a test which drives CaptureScreen and UpdateDisplay from two
+goroutines at once, so that running it under the race detector (go test -race) confirms CaptureScreen does not
+race with a concurrent render pass over the same layer's character memory.
+
+Example:
+
+	Expected Inputs:
+	    A 20x8 terminal with a filled background layer and a second layer repeatedly captured while UpdateDisplay
+	    runs concurrently from another goroutine.
+	Expected Outputs:
+	    Both goroutines finish without the race detector reporting a data race.
+*/
+func TestCaptureScreenConcurrentWithUpdateDisplayRace(test *testing.T) {
+	commonResource.isDebugEnabled = true
+	width := 20
+	height := 8
+	InitializeTerminal(width, height)
+	defer RestoreTerminalSettings()
+
+	backgroundLayer := AddLayer(0, 0, width, height, 1, nil)
+	backgroundLayer.FillLayer("R")
+	UpdateDisplay(false)
+
+	captureLayer := AddLayer(0, 0, width, height, 2, nil)
+
+	var waitGroup sync.WaitGroup
+	stop := make(chan struct{})
+
+	waitGroup.Add(1)
+	go func() {
+		defer waitGroup.Done()
+		for i := 0; i < 200; i++ {
+			UpdateDisplay(false)
+		}
+		close(stop)
+	}()
+
+	waitGroup.Add(1)
+	go func() {
+		defer waitGroup.Done()
+		for {
+			select {
+			case <-stop:
+				return
+			default:
+				_ = captureLayer.CaptureScreen()
+			}
+		}
+	}()
+
+	waitGroup.Wait()
 }

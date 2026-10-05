@@ -2,9 +2,11 @@ package consolizer
 
 import (
 	"fmt"
+	"github.com/gdamore/tcell/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/supercom32/consolizer/constants"
 	"testing"
+	"time"
 )
 
 const SELECTOR_TEST_SUITE_NAME = "selector"
@@ -408,5 +410,148 @@ func TestFocusSelectionNonExistentItem(test *testing.T) {
 	if !assert.Equalf(test, expectedValue, obtainedValue, "The updated screen does not match the master original!") {
 		fmt.Println("Expected:\n", expectedValueBase64)
 		fmt.Println("Obtained:\n", obtainedValueBase64)
+	}
+}
+
+/*
+TestSelectorSelectionSourceKeyboardAndProgrammatic is a test which allows you to verify that a selector reports no
+source before any selection, the keyboard source for Enter, and the programmatic source for Select.
+
+Example:
+
+	Expected Inputs:
+		Selector with items [a, b, c, d], focused with SetFocus. Down then Enter, then Select("c").
+
+	Expected Outputs:
+		SelectionSourceNone before any selection, item 1 with SelectionSourceKeyboard after Enter, and item 2 with
+		SelectionSourceProgrammatic after Select.
+*/
+func TestSelectorSelectionSourceKeyboardAndProgrammatic(test *testing.T) {
+	layerAlias, styleEntry := setupInputTest(test)
+	selector := addTestSelector(layerAlias, styleEntry)
+	if err := SetFocus(&selector); err != nil {
+		test.Fatalf("expected the selector to take focus, got %v", err)
+	}
+	simScreen := startInputSimulation(test)
+
+	if source := selector.GetSelectionSource(); source != constants.SelectionSourceNone {
+		test.Fatalf("expected no selection source before any selection, got %d", source)
+	}
+
+	pressKey(simScreen, tcell.KeyDown, 0, tcell.ModNone)
+	pressKey(simScreen, tcell.KeyEnter, 0, tcell.ModNone)
+	assertSelection(test, selector, "after Enter", 1, constants.SelectionSourceKeyboard)
+
+	selector.Select("c")
+	assertSelection(test, selector, "after Select", 2, constants.SelectionSourceProgrammatic)
+}
+
+/*
+TestSelectorSelectionSourceSingleAndDoubleClick is a test which allows you to verify that clicks on a selector item are
+reported as a single click, then a double click for a second click on the same item within the interval, then a single
+click again for a third click, and that a click on a different item is always a single click.
+
+Example:
+
+	Expected Inputs:
+		Selector with items [a, b, c, d]. Three quick clicks on item 1, then one click on item 2.
+
+	Expected Outputs:
+		Item 1 with SingleClick, item 1 with DoubleClick, item 1 with SingleClick, then item 2 with SingleClick.
+*/
+func TestSelectorSelectionSourceSingleAndDoubleClick(test *testing.T) {
+	layerAlias, styleEntry := setupInputTest(test)
+	selector := addTestSelector(layerAlias, styleEntry)
+	simScreen := startInputSimulation(test)
+
+	clickAt(simScreen, 4, 3)
+	assertSelection(test, selector, "first click", 1, constants.SelectionSourceSingleClick)
+
+	clickAt(simScreen, 4, 3)
+	assertSelection(test, selector, "second click", 1, constants.SelectionSourceDoubleClick)
+
+	clickAt(simScreen, 4, 3)
+	assertSelection(test, selector, "third click", 1, constants.SelectionSourceSingleClick)
+
+	clickAt(simScreen, 4, 4)
+	assertSelection(test, selector, "click on another item", 2, constants.SelectionSourceSingleClick)
+}
+
+/*
+TestSelectorDragToAnotherItemIsSingleClick is a test which allows you to verify that pressing on one selector item and
+dragging with the button held onto another item selects the second item as a single click, and that a quick click on
+that item afterward is not mistaken for a double click.
+
+Example:
+
+	Expected Inputs:
+		Selector with items [a, b, c, d]. Press on item 1, move with the button held to item 2, release, then click
+		item 2.
+
+	Expected Outputs:
+		Item 2 with SingleClick after the release, and item 2 with SingleClick after the click.
+*/
+func TestSelectorDragToAnotherItemIsSingleClick(test *testing.T) {
+	layerAlias, styleEntry := setupInputTest(test)
+	selector := addTestSelector(layerAlias, styleEntry)
+	simScreen := startInputSimulation(test)
+
+	simScreen.InjectMouse(4, 3, tcell.Button1, tcell.ModNone)
+	UpdateEventQueues()
+	simScreen.InjectMouse(4, 4, tcell.Button1, tcell.ModNone)
+	UpdateEventQueues()
+	simScreen.InjectMouse(4, 4, tcell.ButtonNone, tcell.ModNone)
+	UpdateEventQueues()
+	assertSelection(test, selector, "after drag", 2, constants.SelectionSourceSingleClick)
+
+	clickAt(simScreen, 4, 4)
+	assertSelection(test, selector, "click after drag", 2, constants.SelectionSourceSingleClick)
+}
+
+/*
+TestSelectorDoubleClickInterval is a test which allows you to verify that two clicks on the same item only count as a
+double click when the second lands within the configured interval, that the interval can be changed, and that an
+interval which is not greater than zero is rejected without changing the current one.
+
+Example:
+
+	Expected Inputs:
+		Clicks on the same item 600ms apart with the default 500ms interval, then with the interval set to 1s.
+		SetDoubleClickInterval with 0 and with -1ms.
+
+	Expected Outputs:
+		SingleClick then SingleClick with the default interval, SingleClick then DoubleClick with the 1s interval.
+		Both invalid intervals return an error and the interval stays 1s.
+*/
+func TestSelectorDoubleClickInterval(test *testing.T) {
+	setupInputTest(test)
+	if interval := Selector.GetDoubleClickInterval(); interval != 500*time.Millisecond {
+		test.Fatalf("expected default interval of 500ms, got %v", interval)
+	}
+	startTime := time.Now()
+
+	firstSource := Selector.getMouseSelectionSource("layer", "selector", 1, startTime)
+	secondSource := Selector.getMouseSelectionSource("layer", "selector", 1, startTime.Add(600*time.Millisecond))
+	if firstSource != constants.SelectionSourceSingleClick || secondSource != constants.SelectionSourceSingleClick {
+		test.Fatalf("default interval: expected two single clicks, got %d and %d", firstSource, secondSource)
+	}
+
+	if err := Selector.SetDoubleClickInterval(time.Second); err != nil {
+		test.Fatalf("expected a 1s interval to be accepted, got %v", err)
+	}
+	selectorLastClick = selectorClickType{}
+	firstSource = Selector.getMouseSelectionSource("layer", "selector", 1, startTime)
+	secondSource = Selector.getMouseSelectionSource("layer", "selector", 1, startTime.Add(600*time.Millisecond))
+	if firstSource != constants.SelectionSourceSingleClick || secondSource != constants.SelectionSourceDoubleClick {
+		test.Fatalf("1s interval: expected single then double click, got %d and %d", firstSource, secondSource)
+	}
+
+	for _, invalidInterval := range []time.Duration{0, -time.Millisecond} {
+		if err := Selector.SetDoubleClickInterval(invalidInterval); err == nil {
+			test.Fatalf("expected interval %v to be rejected", invalidInterval)
+		}
+	}
+	if interval := Selector.GetDoubleClickInterval(); interval != time.Second {
+		test.Fatalf("expected rejected intervals to leave 1s in place, got %v", interval)
 	}
 }

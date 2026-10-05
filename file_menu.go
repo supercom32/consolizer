@@ -44,19 +44,6 @@ func (shared *FileMenuInstanceType) Delete() *FileMenuInstanceType {
 }
 
 /*
-AddToTabIndex is a method which allows you to add a file menu to the tab index. In addition, the following should be
-noted:
-
-- This method is used to make the file menu focusable via tab navigation.
-
-Example:
-    fileMenu.AddToTabIndex()
-*/
-func (shared *FileMenuInstanceType) AddToTabIndex() {
-	addTabIndex(shared.layerAlias, shared.controlAlias, constants.CellTypeFileMenuHeading)
-}
-
-/*
 Add is a method which allows you to add a new file menu to a layer. In addition, the following should be noted:
 
 - The file menu will be drawn at the specified location with the given style.
@@ -269,32 +256,18 @@ addition, the following should be noted:
 
 - It handles keyboard navigation for file menus.
 
+- Esc closes every open file menu and is consumed. When no file menu is open, Esc is left unconsumed so the
+  application can treat it as a Back or Cancel action.
+
 Example:
     updateRequired, consumed := FileMenu.updateKeyboardEvent(keystroke)
 */
 func (shared *fileMenuType) updateKeyboardEvent(keystroke []rune) (bool, bool) {
-	keystrokeAsString := string(keystroke)
-	isScreenUpdateRequired := false
-	isKeystrokeConsumed := false
-
-	// Handle escape key to close open menus
-	if keystrokeAsString == "escape" {
-		// Get all layer entries
-		for _, layerEntry := range Layers.GetAllEntries() {
-			layerAlias := layerEntry.LayerAlias
-			fileMenuEntries := FileMenus.GetAllEntries(layerAlias)
-			for _, fileMenuEntry := range fileMenuEntries {
-				if fileMenuEntry.IsSubmenuOpen {
-					fileMenuEntry.IsSubmenuOpen = false
-					fileMenuEntry.ActiveHeadingIndex = -1
-					isScreenUpdateRequired = true
-					isKeystrokeConsumed = true
-				}
-			}
-		}
+	// tcell reports the Escape key as "Esc", which is lowercased to "esc" before reaching the controls.
+	if string(keystroke) == "esc" && shared.closeAllOpenMenus() {
+		return true, true
 	}
-
-	return isScreenUpdateRequired, isKeystrokeConsumed
+	return false, false
 }
 
 /*

@@ -1703,9 +1703,10 @@ Example:
     update, consumed := textbox.UpdateKeyboardEvent(rune("A"))
 */
 func (shared *textboxType) UpdateKeyboardEvent(keystroke []rune) (bool, bool) {
-	focusedLayerAlias := eventStateMemory.currentlyFocusedControl.layerAlias
-	focusedControlAlias := eventStateMemory.currentlyFocusedControl.controlAlias
-	focusedControlType := eventStateMemory.currentlyFocusedControl.controlType
+	focusedControl := getFocusedControl()
+	focusedLayerAlias := focusedControl.layerAlias
+	focusedControlAlias := focusedControl.controlAlias
+	focusedControlType := focusedControl.controlType
 	if focusedControlType != constants.CellTypeTextbox || !Textboxes.IsExists(focusedLayerAlias, focusedControlAlias) {
 		return false, false
 	}
@@ -1941,8 +1942,8 @@ func (shared *textboxType) updateMouseEvent() bool {
 	// If your clicking on a text box and not in the drag and drop event state.
 	if textboxEntry, isFound := Textboxes.Lookup(layerAlias, characterEntry.AttributeEntry.CellControlAlias); buttonPressed != 0 &&
 		characterEntry.AttributeEntry.CellType == constants.CellTypeTextbox &&
-		eventStateMemory.stateId != constants.EventStateDragAndDropScrollbar &&
-		eventStateMemory.stateId != constants.EventStateDragAndDrop && // Add check for layer drag and drop
+		getEventStateId() != constants.EventStateDragAndDropScrollbar &&
+		getEventStateId() != constants.EventStateDragAndDrop && // Add check for layer drag and drop
 		isFound {
 
 		// Ensure TextData is initialized before updating cursor
@@ -1963,12 +1964,12 @@ func (shared *textboxType) updateMouseEvent() bool {
 		shared.updateViewport(textboxEntry)
 		shared.setTextboxMaxScrollBarValues(layerAlias, characterEntry.AttributeEntry.CellControlAlias)
 		shared.updateScrollbarBasedOnTextboxViewport(layerAlias, characterEntry.AttributeEntry.CellControlAlias)
-		setFocusedControl(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias, characterEntry.AttributeEntry.CellType)
+		// Focus itself is given by the press, through focusControlFromClick, which also refuses a disabled textbox.
 		isUpdateRequired = true
 		return isUpdateRequired
 	}
 	// If you are dragging and dropping, then update the scroll bars as needed.
-	if buttonPressed != 0 && (eventStateMemory.stateId == constants.EventStateDragAndDropScrollbar ||
+	if buttonPressed != 0 && (getEventStateId() == constants.EventStateDragAndDropScrollbar ||
 		characterEntry.AttributeEntry.CellType == constants.CellTypeScrollbar) {
 		isMatchFound := false
 		for _, currentTextBoxEntry := range Textboxes.GetAllEntries(layerAlias) {

@@ -456,13 +456,13 @@ func TestTextboxCjkClickCoordinates(test *testing.T) {
 	assert.Equal(test, 1, layerEntry.CharacterMemory[2][4].AttributeEntry.CellControlId)
 	assert.Equal(test, 1, layerEntry.CharacterMemory[2][5].AttributeEntry.CellControlId)
 
-	eventStateMemory.stateId = 0
+	setEventStateId(0)
 	SetMouseStatus(3, 2, 1, "")
 	textbox.updateMouseEvent()
 	assert.Equal(test, 0, textboxEntry.CursorXLocation)
 	assert.Equal(test, 0, textboxEntry.CursorYLocation)
 
-	eventStateMemory.stateId = 0
+	setEventStateId(0)
 	SetMouseStatus(10, 2, 1, "")
 	textbox.updateMouseEvent()
 	assert.Equal(test, 3, textboxEntry.CursorXLocation)
@@ -601,7 +601,7 @@ func TestTextboxWordWrapClickPlacesCursor(test *testing.T) {
 
 	assert.Equal(test, 'v', commonResource.screenLayer.CharacterMemory[4][4].Character)
 
-	eventStateMemory.stateId = 0
+	setEventStateId(0)
 	SetMouseStatus(4, 4, 1, "")
 	textbox.updateMouseEvent()
 	assert.Equal(test, 0, textboxEntry.CursorYLocation)

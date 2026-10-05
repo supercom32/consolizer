@@ -1,6 +1,8 @@
 package consolizer
 
 import (
+	"sort"
+
 	"github.com/supercom32/consolizer/constants"
 	"github.com/supercom32/consolizer/memory"
 	"github.com/supercom32/consolizer/stringformat"
@@ -32,16 +34,6 @@ Example:
 func IsRadioButtonExists(layerAlias string, radioButtonAlias string) bool {
 	// Use ControlMemoryManager to check if the radio button exists
 	return RadioButtons.IsExists(layerAlias, radioButtonAlias)
-}
-
-/*
-AddToTabIndex is a method which adds the radio button to the tab navigation index.
-
-Example:
-    radioButton.AddToTabIndex()
-*/
-func (shared *RadioButtonInstanceType) AddToTabIndex() {
-	addTabIndex(shared.layerAlias, shared.controlAlias, constants.CellTypeRadioButton)
 }
 
 /*
@@ -174,6 +166,9 @@ draw is a method which draws a radio button on a given text layer. In addition, 
 - If the radio button to be drawn falls outside the range of the provided layer, then only the visible portion of the
   radio button will be drawn.
 
+- While the radio button has keyboard focus, it is drawn with the style's focused colours, resolved by
+  getFocusedColors so that focus stays visible even when the style does not set them.
+
 Example:
     radioButton.draw(&layerEntry, "Radio1", "Option 1", style, 0, 0, true, true)
 */
@@ -182,6 +177,10 @@ func (shared *radioButtonType) draw(layerEntry *types.LayerEntryType, radioButto
 	attributeEntry := types.NewAttributeEntry()
 	attributeEntry.ForegroundColor = localStyleEntry.RadioButton.ForegroundColor
 	attributeEntry.BackgroundColor = localStyleEntry.RadioButton.BackgroundColor
+	if isControlCurrentlyFocused(layerEntry.LayerAlias, radioButtonAlias, constants.CellTypeRadioButton) {
+		attributeEntry.ForegroundColor, attributeEntry.BackgroundColor = getFocusedColors(localStyleEntry.RadioButton.ForegroundColor,
+			localStyleEntry.RadioButton.BackgroundColor, localStyleEntry.RadioButton.FocusedForegroundColor, localStyleEntry.RadioButton.FocusedBackgroundColor)
+	}
 	attributeEntry.CellType = constants.CellTypeRadioButton
 	attributeEntry.CellControlAlias = radioButtonAlias
 	firstArrayOfRunes := stringformat.GetRunesFromString(radioButtonLabel)
@@ -246,6 +245,82 @@ func (shared *radioButtonType) updateMouseEvent() bool {
 		}
 	}
 	return isUpdateRequired
+}
+
+/*
+updateKeyboardEvent is a method which allows you to operate the focused radio button from the keyboard. Space selects
+it. The arrow keys move focus to the previous button in its group, for up and left, or the next one, for down and
+right, wrapping around at either end, and select the button they move to. It returns whether a screen update is
+required and whether the keystroke was consumed. In addition, the following should be noted:
+
+  - Buttons in a group are ordered by their position on screen, top to bottom and then left to right, which matches
+    how a vertical or horizontal group reads.
+
+  - Buttons that are disabled or hidden are skipped. When no other button in the group can take focus, an arrow key
+    leaves focus where it is but is still consumed, so it does not reach the keyboard buffer.
+
+Example:
+
+	updateRequired, consumed := radioButton.updateKeyboardEvent([]rune("down"))
+*/
+func (shared *radioButtonType) updateKeyboardEvent(keystroke []rune) (bool, bool) {
+	keystrokeAsString := string(keystroke)
+	direction := 0
+	switch keystrokeAsString {
+	case " ":
+	case "up", "left":
+		direction = -1
+	case "down", "right":
+		direction = 1
+	default:
+		return false, false
+	}
+	focusedControl := getFocusedControl()
+	if focusedControl.controlType != constants.CellTypeRadioButton || !isControlFocusable(focusedControl) {
+		return false, false
+	}
+	focusedEntry, isFound := RadioButtons.Lookup(focusedControl.layerAlias, focusedControl.controlAlias)
+	if !isFound {
+		return false, false
+	}
+	if direction == 0 {
+		selectRadioButton(focusedControl.layerAlias, focusedControl.controlAlias)
+		return true, true
+	}
+	var groupMembers []*types.RadioButtonEntryType
+	for _, radioButtonEntry := range RadioButtons.GetAllEntries(focusedControl.layerAlias) {
+		if radioButtonEntry.GroupId == focusedEntry.GroupId {
+			groupMembers = append(groupMembers, radioButtonEntry)
+		}
+	}
+	sort.SliceStable(groupMembers, func(firstIndex int, secondIndex int) bool {
+		first := groupMembers[firstIndex]
+		second := groupMembers[secondIndex]
+		if first.YLocation != second.YLocation {
+			return first.YLocation < second.YLocation
+		}
+		if first.XLocation != second.XLocation {
+			return first.XLocation < second.XLocation
+		}
+		return first.Alias < second.Alias
+	})
+	currentIndex := 0
+	for index, member := range groupMembers {
+		if member.Alias == focusedEntry.Alias {
+			currentIndex = index
+		}
+	}
+	memberCount := len(groupMembers)
+	for step := 1; step < memberCount; step++ {
+		candidate := groupMembers[((currentIndex+direction*step)%memberCount+memberCount)%memberCount]
+		candidateControl := controlIdentifierType{layerAlias: focusedControl.layerAlias, controlAlias: candidate.Alias, controlType: constants.CellTypeRadioButton}
+		if isControlFocusable(candidateControl) {
+			setFocusedControl(candidateControl.layerAlias, candidateControl.controlAlias, candidateControl.controlType)
+			selectRadioButton(candidateControl.layerAlias, candidateControl.controlAlias)
+			return true, true
+		}
+	}
+	return false, true
 }
 
 /*

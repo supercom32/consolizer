@@ -5,30 +5,48 @@ import (
 	"github.com/supercom32/consolizer/constants"
 	"github.com/supercom32/consolizer/types"
 	"strings"
+	"sync"
 	"time"
 )
 
+/*
+controlIdentifierType is a structure which identifies a single control by the alias of the layer it belongs to, its
+own alias, and its cell type, which is one of the constants.CellType values.
+
+Example:
+
+	control := controlIdentifierType{layerAlias: "main", controlAlias: "ok", controlType: constants.CellTypeButton}
+*/
 type controlIdentifierType struct {
 	layerAlias   string
 	controlAlias string
 	controlType  int
 }
 
+/*
+eventStateType is a structure which holds the shared interaction state of the event manager: the drag state, the layer
+being dragged, which control was last highlighted, and the current modifier keys. Focus is not kept here; the focus
+manager in focus_manager.go is its only owner. In addition, the following should be noted:
+
+  - Every field is guarded by mutex, since the event goroutine, the periodic-event goroutine, and the application's
+    own goroutine all read and write this state. Fields must only be accessed through the accessor functions in this
+    file, and no accessor may call another while holding the lock.
+
+Example:
+
+	var eventState eventStateType
+*/
 type eventStateType struct {
-	stateId                 int
-	currentlyFocusedControl controlIdentifierType
+	mutex   sync.Mutex
+	stateId int
+	// draggedLayerAlias is the layer being moved by its title bar while stateId is EventStateDragAndDrop.
+	draggedLayerAlias string
 	// This variable is used to keep track of items which were highlighted so that they can be
 	// un-highlighted later. Currently, only used by selectors and tooltips
 	previouslyHighlightedControl controlIdentifierType
-	tabIndexMemory               []controlIdentifierType
-	currentTabIndex              int
 	// Track modifier key states
 	modifierKeys tcell.ModMask
 }
-
-// tabIndexBeforeFirstEntry marks a tab position that precedes the first registered entry, so that the next Tab press
-// lands on entry 0.
-const tabIndexBeforeFirstEntry = -1
 
 var eventStateMemory eventStateType
 var eventIntervalTime time.Time
@@ -121,44 +139,41 @@ func UpdateEventQueues() {
 		isScreenUpdateRequired := false
 		isKeystrokeConsumed := false
 		var keystroke []rune
+		reconcileFocus()
 
 		// Update modifier key state
-		eventStateMemory.modifierKeys = event.Modifiers()
+		setModifierKeys(event.Modifiers())
 
 		if strings.Contains(event.Name(), "Rune") {
 			keystroke = []rune{event.Rune()}
 		} else {
 			keystroke = []rune(strings.ToLower(event.Name()))
 		}
-		if string(keystroke) == "tab" {
-			nextTabIndex()
+		switch string(keystroke) {
+		case "tab":
+			// An open dropdown tray belongs to the control losing focus, so it is closed before focus moves on.
+			Dropdown.closeAllOpen()
+			FocusNext()
+			keystroke = nil
+			isScreenUpdateRequired = true
+			isKeystrokeConsumed = true
+		case "backtab", "shift+backtab", "shift+tab":
+			Dropdown.closeAllOpen()
+			FocusPrevious()
 			keystroke = nil
 			isScreenUpdateRequired = true
 			isKeystrokeConsumed = true
 		}
-		if updateRequired, consumed := scrollbar.updateKeyboardEvent(keystroke); updateRequired {
-			isScreenUpdateRequired = true
-			isKeystrokeConsumed = consumed
-		}
-		if updateRequired, consumed := TextField.updateKeyboardEvent(keystroke); updateRequired {
-			isScreenUpdateRequired = true
-			isKeystrokeConsumed = consumed
-		}
-		if updateRequired, consumed := textbox.UpdateKeyboardEvent(keystroke); updateRequired {
-			isScreenUpdateRequired = true
-			isKeystrokeConsumed = consumed
-		}
-		if updateRequired, consumed := Selector.updateKeyboardEvent(keystroke); updateRequired {
-			isScreenUpdateRequired = true
-			isKeystrokeConsumed = consumed
-		}
-		if updateRequired, consumed := Dropdown.updateKeyboardEvent(keystroke); updateRequired {
-			isScreenUpdateRequired = true
-			isKeystrokeConsumed = consumed
-		}
-		if updateRequired, consumed := FileMenu.updateKeyboardEvent(keystroke); updateRequired {
-			isScreenUpdateRequired = true
-			isKeystrokeConsumed = consumed
+		updateRequired, consumed := runKeyboardEventHandlers(keystroke, getKeyboardEventHandlers())
+		isScreenUpdateRequired = isScreenUpdateRequired || updateRequired
+		isKeystrokeConsumed = isKeystrokeConsumed || consumed
+		// Enter and Esc that no control used fall through to the active scope's default and cancel buttons.
+		if !isKeystrokeConsumed && keystroke != nil {
+			if scopeButton := getDefaultButtonForKey(string(keystroke)); scopeButton.controlAlias != "" {
+				buttonHistory.set(scopeButton.layerAlias, scopeButton.controlAlias)
+				isScreenUpdateRequired = true
+				isKeystrokeConsumed = true
+			}
 		}
 		if isScreenUpdateRequired == true {
 			UpdateDisplay(false)
@@ -196,7 +211,7 @@ func UpdateEventQueues() {
 		_, _, lastRecordedButtonNumber, _ := GetMouseStatus()
 		isRelease := lastRecordedButtonNumber != 0 && mouseButtonNumber == 0
 		isPureMovement := mouseButtonNumber == 0 && lastRecordedButtonNumber == 0 && wheelState == ""
-		isScrollbarDragMovement := mouseButtonNumber != 0 && eventStateMemory.stateId == constants.EventStateDragAndDropScrollbar
+		isScrollbarDragMovement := mouseButtonNumber != 0 && getEventStateId() == constants.EventStateDragAndDropScrollbar
 		if !isRelease && (isPureMovement || isScrollbarDragMovement) {
 			elapsedTime := time.Since(lastMouseMoveTime)
 			if elapsedTime < 50*time.Millisecond {
@@ -206,6 +221,18 @@ func UpdateEventQueues() {
 		}
 
 		SetMouseStatus(mouseXLocation, mouseYLocation, mouseButtonNumber, wheelState)
+		reconcileFocus()
+		// While a modal layer is active, mouse input outside it is ignored, unless a drag that started inside it is
+		// still in progress. A release outside still un-presses any armed button, so it cannot get stuck pressed.
+		if getEventStateId() == constants.EventStateNone {
+			characterEntry := getCellInformationUnderMouseCursor(mouseXLocation, mouseYLocation)
+			if !isLayerAcceptingInput(characterEntry.LayerAlias) {
+				if isRelease && Button.clearAllPressedButtons() {
+					UpdateDisplay(false)
+				}
+				return
+			}
+		}
 		bringLayerToFrontIfRequired()
 		if moveLayerIfRequired() {
 			isScreenUpdateRequired = true
@@ -213,11 +240,11 @@ func UpdateEventQueues() {
 			return
 		}
 
-		// If a mouse button is pressed, find what control is under the mouse
-		// so we can set focus to it.
-		if mouseButton&tcell.Button1 != 0 && eventStateMemory.stateId == constants.EventStateNone {
-			characterEntry := getCellInformationUnderMouseCursor(mouseXLocation, mouseYLocation)
-			setFocusedControl(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias, characterEntry.AttributeEntry.CellType)
+		// A press of the left button focuses the control under it. Only the press itself does, not held movement,
+		// so dragging out of a control does not take focus away from it.
+		if mouseButton&tcell.Button1 != 0 && lastRecordedButtonNumber == 0 && getEventStateId() == constants.EventStateNone {
+			focusControlFromClick(getCellInformationUnderMouseCursor(mouseXLocation, mouseYLocation))
+			isScreenUpdateRequired = true
 		}
 		if Tooltip.updateMouseEvent() {
 			isScreenUpdateRequired = true
@@ -275,102 +302,62 @@ func UpdateEventQueues() {
 }
 
 /*
-ClearTabIndex is a method which allows you to clear all registered tab index entries from memory and reset the tab
-position to before the first entry, so the next Tab press after the tab order is rebuilt starts from the beginning of
-the new order unless the currently focused control is part of it.
+keyboardEventHandlerType is a function type which allows you to describe a control's keyboard handler. It receives the
+keystroke being processed and returns whether a screen update is required and whether the keystroke was consumed.
 
 Example:
 
-	ClearTabIndex()
+	var handler keyboardEventHandlerType = Button.updateKeyboardEvent
 */
-func ClearTabIndex() {
-	eventStateMemory.tabIndexMemory = nil
-	eventStateMemory.currentTabIndex = tabIndexBeforeFirstEntry
-}
+type keyboardEventHandlerType func(keystroke []rune) (bool, bool)
 
 /*
-addTabIndex is a method which registers a new control in the tab index memory for sequential navigation.
-
-Example:
-    addTabIndex("layer1", "button1", constants.CellTypeButton)
-*/
-func addTabIndex(layerAlias string, controlAlias string, controlType int) {
-	controlEntry := controlIdentifierType{layerAlias: layerAlias, controlAlias: controlAlias, controlType: controlType}
-	eventStateMemory.tabIndexMemory = append(eventStateMemory.tabIndexMemory, controlEntry)
-}
-
-/*
-nextTabIndex is a method which allows you to advance the focus to the control registered after the currently focused
-control in the tab index sequence, wrapping back to the first entry after the last one. If the focused control is not
-part of the tab order, or nothing is focused, focus moves to the first entry. When no tab order is registered, focus is
-left unchanged. In addition, the following should be noted:
-
-  - The starting point is always the control that actually has focus rather than the stored tab position, since
-    focus can also change through mouse clicks, GetFocus, or Selector.Add without the stored position being
-    updated. The stored position is kept in step with the result.
+getKeyboardEventHandlers is a method which allows you to obtain every control keyboard handler, in the order
+UpdateEventQueues runs them.
 
 Example:
 
-	nextTabIndex()
+	handlers := getKeyboardEventHandlers()
 */
-func nextTabIndex() {
-	tabOrderLength := len(eventStateMemory.tabIndexMemory)
-	if tabOrderLength == 0 {
-		return
+func getKeyboardEventHandlers() []keyboardEventHandlerType {
+	return []keyboardEventHandlerType{
+		Button.updateKeyboardEvent,
+		Checkbox.updateKeyboardEvent,
+		radioButton.updateKeyboardEvent,
+		scrollbar.updateKeyboardEvent,
+		TextField.updateKeyboardEvent,
+		textbox.UpdateKeyboardEvent,
+		Selector.updateKeyboardEvent,
+		Dropdown.updateKeyboardEvent,
+		FileMenu.updateKeyboardEvent,
 	}
-	nextIndex := 0
-	focusedIndex := findTabIndexOfControl(eventStateMemory.currentlyFocusedControl)
-	if focusedIndex != tabIndexBeforeFirstEntry {
-		nextIndex = (focusedIndex + 1) % tabOrderLength
-	}
-	eventStateMemory.currentTabIndex = nextIndex
-	eventStateMemory.currentlyFocusedControl = eventStateMemory.tabIndexMemory[nextIndex]
 }
 
 /*
-findTabIndexOfControl is a method which allows you to locate a control within the registered tab index sequence by
-matching its layer alias, control alias, and control type. It returns the position of the first matching entry, or
-tabIndexBeforeFirstEntry if the control is not registered.
+runKeyboardEventHandlers is a method which allows you to pass a keystroke to every handler given, in order, and combine
+their results. A screen update is required if any handler asks for one, and the keystroke is consumed if any handler
+consumes it. In addition, the following should be noted:
+
+  - Every handler runs even after one has consumed the keystroke, matching the behavior each control already
+    relies on, since each handler only acts when its own control has focus or is open.
+
+  - The two results are combined independently, so a later handler that requests a redraw without consuming the
+    keystroke cannot undo an earlier handler's consumption, and a handler that consumes a keystroke without needing
+    a redraw is still honored.
 
 Example:
 
-	index := findTabIndexOfControl(eventStateMemory.currentlyFocusedControl)
+	updateRequired, consumed := runKeyboardEventHandlers([]rune("esc"), getKeyboardEventHandlers())
 */
-func findTabIndexOfControl(control controlIdentifierType) int {
-	for index, entry := range eventStateMemory.tabIndexMemory {
-		if entry == control {
-			return index
-		}
+func runKeyboardEventHandlers(keystroke []rune, handlers []keyboardEventHandlerType) (bool, bool) {
+	isScreenUpdateRequired := false
+	isKeystrokeConsumed := false
+	for _, handler := range handlers {
+		updateRequired, consumed := handler(keystroke)
+		isScreenUpdateRequired = isScreenUpdateRequired || updateRequired
+		isKeystrokeConsumed = isKeystrokeConsumed || consumed
 	}
-	return tabIndexBeforeFirstEntry
-}
-
-/*
-setFocusedControl is a method which explicitly sets which control currently has focus.
-
-Example:
-    setFocusedControl("layer1", "textfield1", constants.CellTypeTextField)
-*/
-func setFocusedControl(layerAlias string, controlAlias string, controlType int) {
-	eventStateMemory.currentlyFocusedControl.layerAlias = layerAlias
-	eventStateMemory.currentlyFocusedControl.controlAlias = controlAlias
-	eventStateMemory.currentlyFocusedControl.controlType = controlType
-}
-
-/*
-isControlCurrentlyFocused is a method which checks if a specific control is currently the focused control in the
-application.
-
-Example:
-    isControlCurrentlyFocused("layer1", "textfield1", constants.CellTypeTextField)
-*/
-func isControlCurrentlyFocused(layerAlias string, controlAlias string, cellType int) bool {
-	if eventStateMemory.currentlyFocusedControl.layerAlias == layerAlias &&
-		eventStateMemory.currentlyFocusedControl.controlAlias == controlAlias &&
-		eventStateMemory.currentlyFocusedControl.controlType == cellType {
-		return true
-	}
-	return false
+	return isScreenUpdateRequired, isKeystrokeConsumed
 }
 
 /*
@@ -380,9 +367,95 @@ Example:
     setPreviouslyHighlightedControl("layer1", "item1", constants.CellTypeSelector)
 */
 func setPreviouslyHighlightedControl(layerAlias string, controlAlias string, controlType int) {
+	eventStateMemory.mutex.Lock()
+	defer eventStateMemory.mutex.Unlock()
 	eventStateMemory.previouslyHighlightedControl.layerAlias = layerAlias
 	eventStateMemory.previouslyHighlightedControl.controlAlias = controlAlias
 	eventStateMemory.previouslyHighlightedControl.controlType = controlType
+}
+
+/*
+getPreviouslyHighlightedControl is a method which allows you to obtain the control that was last recorded as
+highlighted by the mouse, read as a single consistent snapshot.
+
+Example:
+
+	highlightedControl := getPreviouslyHighlightedControl()
+*/
+func getPreviouslyHighlightedControl() controlIdentifierType {
+	eventStateMemory.mutex.Lock()
+	defer eventStateMemory.mutex.Unlock()
+	return eventStateMemory.previouslyHighlightedControl
+}
+
+/*
+getEventStateId is a method which allows you to obtain the current interaction state, one of the constants.EventState
+values, such as whether a layer or scroll bar is being dragged.
+
+Example:
+
+	isDragging := getEventStateId() == constants.EventStateDragAndDrop
+*/
+func getEventStateId() int {
+	eventStateMemory.mutex.Lock()
+	defer eventStateMemory.mutex.Unlock()
+	return eventStateMemory.stateId
+}
+
+/*
+setEventStateId is a method which allows you to set the current interaction state to one of the constants.EventState
+values.
+
+Example:
+
+	setEventStateId(constants.EventStateNone)
+*/
+func setEventStateId(stateId int) {
+	eventStateMemory.mutex.Lock()
+	defer eventStateMemory.mutex.Unlock()
+	eventStateMemory.stateId = stateId
+}
+
+/*
+getDraggedLayerAlias is a method which allows you to obtain the alias of the layer currently being moved by its title
+bar, or an empty string when no layer is being dragged.
+
+Example:
+
+	layerAlias := getDraggedLayerAlias()
+*/
+func getDraggedLayerAlias() string {
+	eventStateMemory.mutex.Lock()
+	defer eventStateMemory.mutex.Unlock()
+	return eventStateMemory.draggedLayerAlias
+}
+
+/*
+setDraggedLayerAlias is a method which allows you to record the alias of the layer being moved by its title bar.
+Passing an empty string records that no layer is being dragged.
+
+Example:
+
+	setDraggedLayerAlias("window1")
+*/
+func setDraggedLayerAlias(layerAlias string) {
+	eventStateMemory.mutex.Lock()
+	defer eventStateMemory.mutex.Unlock()
+	eventStateMemory.draggedLayerAlias = layerAlias
+}
+
+/*
+setModifierKeys is a method which allows you to record the modifier keys held during the most recent key event, so that
+IsModifierKeyPressed and its helpers can report them.
+
+Example:
+
+	setModifierKeys(tcell.ModShift)
+*/
+func setModifierKeys(modifierKeys tcell.ModMask) {
+	eventStateMemory.mutex.Lock()
+	defer eventStateMemory.mutex.Unlock()
+	eventStateMemory.modifierKeys = modifierKeys
 }
 
 /*
@@ -395,6 +468,9 @@ according to the mouse's new position. In addition, the following should be note
 
 - This is done so that it is impossible to move a window off-screen where it can never be grabbed again.
 
+- The layer being dragged is tracked separately from focus, so dragging a window by its title bar never takes focus
+  away from the control that has it.
+
 Example:
     moveLayerIfRequired()
 */
@@ -404,21 +480,23 @@ func moveLayerIfRequired() bool {
 	previousMouseXLocation, previousMouseYLocation, previousButtonPressed, _ := GetPreviousMouseStatus()
 	if buttonPressed != 0 {
 		characterEntry := getCellInformationUnderMouseCursor(mouseXLocation, mouseYLocation)
-		if previousButtonPressed != 0 && eventStateMemory.stateId == constants.EventStateDragAndDrop && isLayerExists(eventStateMemory.currentlyFocusedControl.layerAlias) {
+		draggedLayerAlias := getDraggedLayerAlias()
+		if previousButtonPressed != 0 && getEventStateId() == constants.EventStateDragAndDrop && isLayerExists(draggedLayerAlias) {
 			xMove := mouseXLocation - previousMouseXLocation
 			yMove := mouseYLocation - previousMouseYLocation
-			moveLayerByRelativeValue(eventStateMemory.currentlyFocusedControl.layerAlias, xMove, yMove)
-			if isInteractiveLayerOffscreen(eventStateMemory.currentlyFocusedControl.layerAlias) {
-				moveLayerByRelativeValue(eventStateMemory.currentlyFocusedControl.layerAlias, -xMove, -yMove)
+			moveLayerByRelativeValue(draggedLayerAlias, xMove, yMove)
+			if isInteractiveLayerOffscreen(draggedLayerAlias) {
+				moveLayerByRelativeValue(draggedLayerAlias, -xMove, -yMove)
 			}
 			isScreenUpdateRequired = true
-		} else if characterEntry.AttributeEntry.CellType == constants.CellTypeFrameTop && eventStateMemory.stateId != constants.EventStateDragAndDrop {
-			// Only set the drag state and focused control if we're not already dragging
-			eventStateMemory.stateId = constants.EventStateDragAndDrop
-			setFocusedControl(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias, characterEntry.AttributeEntry.CellType)
+		} else if characterEntry.AttributeEntry.CellType == constants.CellTypeFrameTop && getEventStateId() != constants.EventStateDragAndDrop {
+			// Only start a drag if one is not already in progress.
+			setEventStateId(constants.EventStateDragAndDrop)
+			setDraggedLayerAlias(characterEntry.LayerAlias)
 		}
 	} else {
-		eventStateMemory.stateId = constants.EventStateNone
+		setEventStateId(constants.EventStateNone)
+		setDraggedLayerAlias("")
 	}
 	return isScreenUpdateRequired
 }
@@ -534,6 +612,8 @@ Example:
     IsModifierKeyPressed(tcell.ModShift)
 */
 func IsModifierKeyPressed(modifier tcell.ModMask) bool {
+	eventStateMemory.mutex.Lock()
+	defer eventStateMemory.mutex.Unlock()
 	return (eventStateMemory.modifierKeys & modifier) != 0
 }
 

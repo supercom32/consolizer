@@ -2,6 +2,7 @@ package consolizer
 
 import (
 	"fmt"
+	"github.com/gdamore/tcell/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/supercom32/consolizer/constants"
 	"testing"
@@ -447,4 +448,69 @@ func TestButtonBorderlessAllowsSingleRow(test *testing.T) {
 
 	assert.Equal(test, constants.CellTypeButton, characterMemory[2][3].AttributeEntry.CellType)
 	assert.NotEqual(test, constants.CellTypeButton, characterMemory[3][3].AttributeEntry.CellType)
+}
+
+/*
+TestFocusedButtonPressedByEnterAndSpace is a test which allows you to verify that Enter and Space on a focused button
+record a press that GetPressed reports, exactly like a mouse click, and that neither key reaches the keyboard buffer.
+
+Example:
+
+	Expected Inputs:
+		Button A focused via GetFocus, then Enter, then Space.
+
+	Expected Outputs:
+		GetPressed returns (layer, "a") after each key, and the keyboard buffer is empty.
+*/
+func TestFocusedButtonPressedByEnterAndSpace(test *testing.T) {
+	layerAlias, buttons, simScreen := setupTabOrderTest(test, "a")
+	readKeyboardBuffer()
+	buttons[0].GetFocus()
+
+	pressKey(simScreen, tcell.KeyEnter, 0, tcell.ModNone)
+	pressedLayerAlias, pressedButtonAlias := buttons[0].GetPressed()
+	if pressedLayerAlias != layerAlias || pressedButtonAlias != "a" {
+		test.Fatalf("after Enter: expected (%q, %q), got (%q, %q)", layerAlias, "a", pressedLayerAlias, pressedButtonAlias)
+	}
+
+	pressKey(simScreen, tcell.KeyRune, ' ', tcell.ModNone)
+	pressedLayerAlias, pressedButtonAlias = buttons[0].GetPressed()
+	if pressedLayerAlias != layerAlias || pressedButtonAlias != "a" {
+		test.Fatalf("after Space: expected (%q, %q), got (%q, %q)", layerAlias, "a", pressedLayerAlias, pressedButtonAlias)
+	}
+	assertKeyboardBuffer(test, "after Enter and Space")
+}
+
+/*
+TestDisabledOrUnfocusedButtonIgnoresEnter is a test which allows you to verify that Enter does not press a focused
+button that is disabled, nor any button when no button has focus, and that in both cases Enter reaches the keyboard
+buffer as an ordinary keystroke.
+
+Example:
+
+	Expected Inputs:
+		Button A disabled and focused, Enter. Then A enabled, nothing focused, Enter.
+
+	Expected Outputs:
+		GetPressed returns ("", "") both times, and the keyboard buffer is ["enter"] both times.
+*/
+func TestDisabledOrUnfocusedButtonIgnoresEnter(test *testing.T) {
+	_, buttons, simScreen := setupTabOrderTest(test, "a")
+	readKeyboardBuffer()
+	buttons[0].SetEnabled(false)
+	buttons[0].GetFocus()
+
+	pressKey(simScreen, tcell.KeyEnter, 0, tcell.ModNone)
+	if pressedLayerAlias, pressedButtonAlias := buttons[0].GetPressed(); pressedLayerAlias != "" || pressedButtonAlias != "" {
+		test.Fatalf("disabled button: expected no press, got (%q, %q)", pressedLayerAlias, pressedButtonAlias)
+	}
+	assertKeyboardBuffer(test, "disabled button", "enter")
+
+	buttons[0].SetEnabled(true)
+	setFocusedControl("", "", constants.NullControlType)
+	pressKey(simScreen, tcell.KeyEnter, 0, tcell.ModNone)
+	if pressedLayerAlias, pressedButtonAlias := buttons[0].GetPressed(); pressedLayerAlias != "" || pressedButtonAlias != "" {
+		test.Fatalf("nothing focused: expected no press, got (%q, %q)", pressedLayerAlias, pressedButtonAlias)
+	}
+	assertKeyboardBuffer(test, "nothing focused", "enter")
 }

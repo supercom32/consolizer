@@ -2,8 +2,10 @@ package consolizer
 
 import (
 	"fmt"
+	"github.com/gdamore/tcell/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/supercom32/consolizer/constants"
+	"github.com/supercom32/consolizer/types"
 	"testing"
 )
 
@@ -272,4 +274,38 @@ func TestCheckboxLongLabel(test *testing.T) {
 		fmt.Println("Expected:\n", expectedValueBase64)
 		fmt.Println("Obtained:\n", obtainedValueBase64)
 	}
+}
+
+/*
+TestCheckboxSpaceTogglesFocusedCheckbox is a test which allows you to verify that Space toggles the focused checkbox and
+is consumed, and that a checkbox can be reached with Tab.
+
+Example:
+
+	Expected Inputs:
+		Tab order [a, check] with a focused, then Tab, Space, and Space.
+
+	Expected Outputs:
+		The checkbox is focused, checked after the first Space and unchecked after the second, and the keyboard buffer
+		is empty.
+*/
+func TestCheckboxSpaceTogglesFocusedCheckbox(test *testing.T) {
+	layerAlias, buttons, simScreen := setupTabOrderTest(test, "a")
+	checkbox := Checkbox.Add(layerAlias, "check", "Check", types.NewTuiStyleEntry(), 20, 2, false, true)
+	buttons[0].AddToTabIndex()
+	checkbox.AddToTabIndex()
+	SetFocus(&buttons[0])
+	readKeyboardBuffer()
+
+	pressTab(simScreen)
+	assertFocus(test, "after Tab", layerAlias, "check", constants.CellTypeCheckbox)
+	pressKey(simScreen, tcell.KeyRune, ' ', tcell.ModNone)
+	if !checkbox.IsSelected() {
+		test.Fatalf("expected Space to check the checkbox")
+	}
+	pressKey(simScreen, tcell.KeyRune, ' ', tcell.ModNone)
+	if checkbox.IsSelected() {
+		test.Fatalf("expected a second Space to uncheck the checkbox")
+	}
+	assertKeyboardBuffer(test, "after Space")
 }

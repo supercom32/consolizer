@@ -3,6 +3,7 @@ package consolizer
 import (
 	"github.com/supercom32/consolizer/memory"
 	"github.com/supercom32/consolizer/stringformat"
+	"sync"
 	"time"
 
 	"github.com/supercom32/consolizer/constants"
@@ -20,6 +21,13 @@ type tooltipType struct{}
 
 var Tooltip tooltipType
 var Tooltips = memory.NewControlMemoryManager[types.TooltipEntryType]()
+
+// tooltipStateMutex guards every tooltip's hover state (HoverStartTime, HoverXLocation, HoverYLocation, and IsDrawn),
+// which the event goroutine and the periodic-event goroutine both update through updateMouseEvent, and which render
+// reads while UpdateDisplay runs on any goroutine. Lock order: commonResource.displayUpdate may be held when taking
+// this lock. While this lock is held, only leaf locks may be taken (mouse memory, the event state lock, and the
+// control memory managers), never commonResource.displayUpdate.
+var tooltipStateMutex sync.Mutex
 
 // ============================================================================
 // REGULAR ENTRY
@@ -153,6 +161,9 @@ render is a method which renders a tooltip on a given text layer. In addition, t
 
 - If the tooltip is not enabled or not marked as drawn, then no rendering will occur.
 
+- IsDrawn is read under tooltipStateMutex, since updateMouseEvent may be changing it on another goroutine while
+  UpdateDisplay renders.
+
 - When absolute positioning is not used, the tooltip will be positioned relative to the current mouse cursor location.
 
 - If borders are enabled, they will be drawn around the text area, expanding the total rendered size by 2 characters.
@@ -161,7 +172,10 @@ Example:
     tooltip.render(layerEntry, entry)
 */
 func (shared *tooltipType) render(layerEntry *types.LayerEntryType, tooltipEntry *types.TooltipEntryType) {
-	if !tooltipEntry.IsEnabled || !tooltipEntry.IsDrawn {
+	tooltipStateMutex.Lock()
+	isDrawn := tooltipEntry.IsDrawn
+	tooltipStateMutex.Unlock()
+	if !tooltipEntry.IsEnabled || !isDrawn {
 		return
 	}
 	attributeEntry := types.NewAttributeEntry()
@@ -286,6 +300,11 @@ updateMouseEvent is a method which processes mouse events for tooltips. In addit
 
 - Manages showing and hiding of tooltips based on mouse movement and position.
 
+- The hover state machine runs entirely under tooltipStateMutex, since both the event goroutine and the
+  periodic-event goroutine call this method and would otherwise interleave their updates to the same tooltip. The
+  screen and event state lookups happen before the lock is taken, so it is never held while waiting on
+  commonResource.displayUpdate.
+
 Example:
     update := tooltip.updateMouseEvent()
 */
@@ -294,7 +313,7 @@ func (shared *tooltipType) updateMouseEvent() bool {
 	mouseXLocation, mouseYLocation, _, _ := GetMouseStatus()
 	characterEntry := getCellInformationUnderMouseCursor(mouseXLocation, mouseYLocation)
 
-	if eventStateMemory.stateId != constants.EventStateNone {
+	if getEventStateId() != constants.EventStateNone {
 		return false
 	}
 
@@ -303,6 +322,8 @@ func (shared *tooltipType) updateMouseEvent() bool {
 		tooltipEntry = nil
 	}
 
+	tooltipStateMutex.Lock()
+	defer tooltipStateMutex.Unlock()
 	if tooltipEntry != nil {
 		mouseXLocation, mouseYLocation, _, _ = GetMouseStatus()
 		if tooltipEntry.HoverStartTime.IsZero() {
@@ -332,7 +353,7 @@ func (shared *tooltipType) updateMouseEvent() bool {
 			currentTooltipEntry.IsDrawn = false
 			currentTooltipEntry.HoverStartTime = time.Time{}
 		}
-		if eventStateMemory.previouslyHighlightedControl.controlType == constants.CellTypeTooltip {
+		if getPreviouslyHighlightedControl().controlType == constants.CellTypeTooltip {
 			setPreviouslyHighlightedControl("", "", constants.NullControlType)
 		}
 	}

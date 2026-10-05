@@ -24,6 +24,9 @@ event. In addition, the following should be noted:
 
 - Handles Up/Down keys to navigate through dropdown options when open.
 
+- Handles Esc to close an open tray without changing the selection. Esc on a closed dropdown is left unconsumed
+  so the application can treat it as a Back or Cancel action.
+
 - Returns true if the screen needs to be updated due to state changes.
 
 Example:
@@ -33,9 +36,10 @@ func (shared *dropdownType) updateKeyboardEvent(keystroke []rune) (bool, bool) {
 	keystrokeAsString := string(keystroke)
 	isScreenUpdateRequired := false
 	isKeystrokeConsumed := false
-	focusedLayerAlias := eventStateMemory.currentlyFocusedControl.layerAlias
-	focusedControlAlias := eventStateMemory.currentlyFocusedControl.controlAlias
-	focusedControlType := eventStateMemory.currentlyFocusedControl.controlType
+	focusedControl := getFocusedControl()
+	focusedLayerAlias := focusedControl.layerAlias
+	focusedControlAlias := focusedControl.controlAlias
+	focusedControlType := focusedControl.controlType
 
 	// Only process if a dropdown is focused
 	dropdownEntry, isFound := Dropdowns.Lookup(focusedLayerAlias, focusedControlAlias)
@@ -50,7 +54,7 @@ func (shared *dropdownType) updateKeyboardEvent(keystroke []rune) (bool, bool) {
 	}
 
 	// Handle Enter key to open/close dropdown
-	if keystrokeAsString == "enter" || keystrokeAsString == "esc" {
+	if keystrokeAsString == "enter" {
 		if dropdownEntry.IsTrayOpen {
 			// Close dropdown and apply selection
 			selectorEntry := Selectors.Get(focusedLayerAlias, dropdownEntry.SelectorAlias)
@@ -68,7 +72,7 @@ func (shared *dropdownType) updateKeyboardEvent(keystroke []rune) (bool, bool) {
 
 			// Reset focus to the dropdown itself
 			setFocusedControl(focusedLayerAlias, focusedControlAlias, constants.CellTypeDropdown)
-			eventStateMemory.stateId = constants.EventStateNone
+			setEventStateId(constants.EventStateNone)
 		} else {
 			// Open dropdown
 			shared.closeAllOpen() // Close any other open dropdowns first
@@ -92,11 +96,15 @@ func (shared *dropdownType) updateKeyboardEvent(keystroke []rune) (bool, bool) {
 		isKeystrokeConsumed = true
 	}
 
-	// Handle Escape key to close dropdown without changing selection
-	if keystrokeAsString == "escape" && dropdownEntry.IsTrayOpen {
-		// Close dropdown without applying selection
+	// Handle Esc key to close dropdown without changing selection. tcell reports the Escape key as "Esc".
+	if keystrokeAsString == "esc" && dropdownEntry.IsTrayOpen {
 		selectorEntry := Selectors.Get(focusedLayerAlias, dropdownEntry.SelectorAlias)
 		scrollBarEntry := ScrollBars.Get(focusedLayerAlias, dropdownEntry.ScrollbarAlias)
+
+		// Revert the tray to the committed selection, so a later close that applies the tray's selection (such as
+		// closeAllOpen) cannot commit anything picked before Esc was pressed.
+		selectorEntry.ItemSelected = dropdownEntry.ItemSelected
+		selectorEntry.ItemHighlighted = dropdownEntry.ItemSelected
 
 		// Hide dropdown components
 		selectorEntry.IsVisible = false
@@ -105,7 +113,7 @@ func (shared *dropdownType) updateKeyboardEvent(keystroke []rune) (bool, bool) {
 
 		// Reset focus to the dropdown itself
 		setFocusedControl(focusedLayerAlias, focusedControlAlias, constants.CellTypeDropdown)
-		eventStateMemory.stateId = constants.EventStateNone
+		setEventStateId(constants.EventStateNone)
 		isScreenUpdateRequired = true
 		isKeystrokeConsumed = true
 	}
@@ -133,21 +141,6 @@ Example:
 func (shared *DropdownInstanceType) Delete() *DropdownInstanceType {
 	shared.BaseControlInstanceType.Delete()
 	return nil
-}
-
-/*
-AddToTabIndex is a method which adds a dropdown to the tab index. This enables keyboard navigation between
-controls using the tab key. In addition, the following should be noted:
-
-- The dropdown will be added to the tab order based on the order in which it was created.
-
-- The tab index is used to determine which control receives focus when the tab key is pressed.
-
-Example:
-    dropdown.AddToTabIndex()
-*/
-func (shared *DropdownInstanceType) AddToTabIndex() {
-	addTabIndex(shared.layerAlias, shared.controlAlias, constants.CellTypeDropdown)
 }
 
 /*
@@ -377,6 +370,10 @@ should be noted:
 
 - The dropdown uses the style entry's foreground and background colors for rendering.
 
+- While the dropdown has keyboard focus, it is drawn with the style's focused colours, resolved by getFocusedColors
+  so that focus stays visible even when the style does not set them. The arrow keeps inverting whichever colours are
+  in use.
+
 Example:
     Dropdown.draw(layer, "myDropdown")
 */
@@ -387,6 +384,10 @@ func (shared *dropdownType) draw(layerEntry *types.LayerEntryType, dropdownAlias
 	attributeEntry := types.NewAttributeEntry()
 	attributeEntry.ForegroundColor = localStyleEntry.Dropdown.ForegroundColor
 	attributeEntry.BackgroundColor = localStyleEntry.Dropdown.BackgroundColor
+	if isControlCurrentlyFocused(layerAlias, dropdownAlias, constants.CellTypeDropdown) {
+		attributeEntry.ForegroundColor, attributeEntry.BackgroundColor = getFocusedColors(localStyleEntry.Dropdown.ForegroundColor,
+			localStyleEntry.Dropdown.BackgroundColor, localStyleEntry.Dropdown.FocusedForegroundColor, localStyleEntry.Dropdown.FocusedBackgroundColor)
+	}
 	attributeEntry.CellType = constants.CellTypeDropdown
 	attributeEntry.CellControlAlias = dropdownAlias
 
@@ -402,8 +403,7 @@ func (shared *dropdownType) draw(layerEntry *types.LayerEntryType, dropdownAlias
 	arrayOfRunes := stringformat.GetRunesFromString(formattedItemName)
 	printLayer(layerEntry, attributeEntry, dropdownEntry.XLocation, dropdownEntry.YLocation, arrayOfRunes)
 	// Invert colors for the dropdown arrow
-	attributeEntry.ForegroundColor = localStyleEntry.Dropdown.BackgroundColor
-	attributeEntry.BackgroundColor = localStyleEntry.Dropdown.ForegroundColor
+	attributeEntry.ForegroundColor, attributeEntry.BackgroundColor = attributeEntry.BackgroundColor, attributeEntry.ForegroundColor
 	printLayer(layerEntry, attributeEntry, dropdownEntry.XLocation+stringformat.GetWidthOfRunesWhenPrinted(arrayOfRunes), dropdownEntry.YLocation, []rune{constants.CharTriangleDown})
 }
 
@@ -430,7 +430,7 @@ func (shared *dropdownType) updateStateMouse() bool {
 	// If a buttonType is pressed AND (you are in a drag and drop event OR the cell type is scroll bar), then
 	// sync all Dropdown selectors with their appropriate scroll bars. If the control under focus
 	// matches a control that belongs to a Dropdown list, then stop processing (Do not attempt to close Dropdown).
-	if buttonPressed != 0 && (eventStateMemory.stateId == constants.EventStateDragAndDropScrollbar ||
+	if buttonPressed != 0 && (getEventStateId() == constants.EventStateDragAndDropScrollbar ||
 		characterEntry.AttributeEntry.CellType == constants.CellTypeScrollbar) {
 		isMatchFound := false
 		for _, currentDropdownEntry := range Dropdowns.GetAllEntries(layerAlias) {
@@ -461,7 +461,6 @@ func (shared *dropdownType) updateStateMouse() bool {
 		scrollBarEntry := ScrollBars.Get(layerAlias, dropdownEntry.ScrollbarAlias)
 		if scrollBarEntry.IsEnabled {
 			scrollBarEntry.IsVisible = true
-			setFocusedControl(layerAlias, dropdownEntry.Alias, constants.CellTypeDropdown)
 		}
 		isUpdateRequired = true
 		return isUpdateRequired
@@ -516,9 +515,10 @@ func (shared *dropdownType) closeAllOpenOnLayer(layerAlias string) bool {
 			if dropdownEntry.ItemSelected != selectorEntry.ItemSelected {
 				dropdownEntry.ItemSelected = selectorEntry.ItemSelected
 			}
-			setFocusedControl("", "", constants.NullCellType)
+			// Focus is left where it is: on the dropdown itself, or on whatever control the click that closed the
+			// tray landed on.
 			// Reset the event state only if a tray is closed.
-			eventStateMemory.stateId = constants.EventStateNone
+			setEventStateId(constants.EventStateNone)
 			isAnyDropdownClosed = true
 		}
 	}

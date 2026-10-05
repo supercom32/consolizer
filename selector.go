@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"github.com/supercom32/consolizer/memory"
 	"github.com/supercom32/consolizer/stringformat"
+	"sync/atomic"
+	"time"
 
 	"github.com/supercom32/consolizer/constants"
 	"github.com/supercom32/consolizer/types"
@@ -20,6 +22,88 @@ type selectorType struct{}
 
 var Selector selectorType
 var Selectors = memory.NewControlMemoryManager[types.SelectorEntryType]()
+
+/*
+selectorClickType is a structure which records the most recent mouse click on a selector item, so that a following
+click on the same item can be recognized as a double click.
+
+Example:
+
+	var lastClick selectorClickType
+*/
+type selectorClickType struct {
+	layerAlias    string
+	selectorAlias string
+	itemIndex     int
+	clickTime     time.Time
+}
+
+// selectorLastClick is only read and written by the event goroutine, so it needs no synchronization of its own.
+var selectorLastClick selectorClickType
+
+// selectorDoubleClickInterval holds the double click interval in nanoseconds. It is atomic since the application
+// goroutine may change it while the event goroutine reads it.
+var selectorDoubleClickInterval atomic.Int64
+
+func init() {
+	selectorDoubleClickInterval.Store(int64(constants.DefaultDoubleClickInterval * time.Millisecond))
+}
+
+/*
+SetDoubleClickInterval is a method which allows you to set the maximum time allowed between two mouse clicks on the
+same selector item for the second click to be reported as a double click by GetSelectionSource. The interval applies to
+every selector and defaults to constants.DefaultDoubleClickInterval milliseconds. An error is returned, and the current
+interval is kept, if the interval given is not greater than zero.
+
+Example:
+
+	err := Selector.SetDoubleClickInterval(400 * time.Millisecond)
+*/
+func (shared *selectorType) SetDoubleClickInterval(interval time.Duration) error {
+	if interval <= 0 {
+		return fmt.Errorf("the double click interval must be greater than zero, but %v was given", interval)
+	}
+	selectorDoubleClickInterval.Store(int64(interval))
+	return nil
+}
+
+/*
+GetDoubleClickInterval is a method which allows you to obtain the maximum time allowed between two mouse clicks on the
+same selector item for the second click to be reported as a double click.
+
+Example:
+
+	interval := Selector.GetDoubleClickInterval()
+*/
+func (shared *selectorType) GetDoubleClickInterval() time.Duration {
+	return time.Duration(selectorDoubleClickInterval.Load())
+}
+
+/*
+getMouseSelectionSource is a method which allows you to classify a mouse press on a selector item as a single or double
+click, and records the press so the next one can be compared against it. A press is a double click when it lands on
+the same item of the same selector as the previous recorded press, within the double click interval. In addition, the
+following should be noted:
+
+  - A double click consumes the recorded press, so a third click in quick succession starts a new pair and is
+    reported as a single click rather than as another double click.
+
+Example:
+
+	selectionSource := Selector.getMouseSelectionSource("Layer1", "Selector1", 3, time.Now())
+*/
+func (shared *selectorType) getMouseSelectionSource(layerAlias string, selectorAlias string, itemIndex int, clickTime time.Time) int {
+	previousClick := selectorLastClick
+	isSameItem := previousClick.layerAlias == layerAlias && previousClick.selectorAlias == selectorAlias &&
+		previousClick.itemIndex == itemIndex && !previousClick.clickTime.IsZero()
+	elapsedTime := clickTime.Sub(previousClick.clickTime)
+	if isSameItem && elapsedTime >= 0 && elapsedTime <= shared.GetDoubleClickInterval() {
+		selectorLastClick = selectorClickType{}
+		return constants.SelectionSourceDoubleClick
+	}
+	selectorLastClick = selectorClickType{layerAlias: layerAlias, selectorAlias: selectorAlias, itemIndex: itemIndex, clickTime: clickTime}
+	return constants.SelectionSourceSingleClick
+}
 
 /*
 IsSelectorExists is a method which checks if a selector with the specified alias exists on a given text layer. In
@@ -63,21 +147,6 @@ func GetSelector(layerAlias string, selectorAlias string) *types.SelectorEntryTy
 // ============================================================================
 
 /*
-AddToTabIndex is a method which adds a selector to the tab index. This enables keyboard navigation between controls using
-the tab key. In addition, the following should be noted:
-
-- The selector will be added to the tab order based on the order in which it was created.
-
-- The tab index is used to determine which control receives focus when the tab key is pressed.
-
-Example:
-    selector.AddToTabIndex()
-*/
-func (shared *SelectorInstanceType) AddToTabIndex() {
-	addTabIndex(shared.layerAlias, shared.controlAlias, constants.CellTypeSelectorItem)
-}
-
-/*
 Delete is a method which removes a selector from a text layer. In addition, the following should be noted:
 
 - If you attempt to delete a selector which does not exist, then the request will simply be ignored.
@@ -93,7 +162,8 @@ func (shared *SelectorInstanceType) Delete() *SelectorInstanceType {
 }
 
 /*
-IsNewItemSelected is a method which checks if a new item has been selected in the selector.
+IsNewItemSelected is a method which checks if a new item has been selected in the selector. Use GetSelectionSource to
+tell whether the selection came from the keyboard, a single click, or a double click.
 
 Example:
     if selector.IsNewItemSelected() { ... }
@@ -104,6 +174,33 @@ func (shared *SelectorInstanceType) IsNewItemSelected() bool {
 		return selectorEntry.IsNewItemSelected
 	}
 	return false
+}
+
+/*
+GetSelectionSource is a method which allows you to obtain how the selector's current selection was made, so that an
+application can, for example, treat Enter or a double click as activating an item while a single click only selects
+it. The value returned is one of constants.SelectionSourceKeyboard, constants.SelectionSourceSingleClick,
+constants.SelectionSourceDoubleClick, or constants.SelectionSourceProgrammatic for a selection made with Select. If no
+selection has been made yet, or the selector does not exist, constants.SelectionSourceNone is returned. In addition, the
+following should be noted:
+
+  - The source is not cleared by GetSelected, so it may be read before or after GetSelected for the same selection.
+
+  - The first click of a double click is reported on its own as a single click, and the second click then reports
+    the same item again as a double click. An application that acts on double clicks should therefore not treat a
+    single click as final.
+
+Example:
+
+	if selector.IsNewItemSelected() && selector.GetSelectionSource() == constants.SelectionSourceDoubleClick {
+		openItem(selector.GetSelected())
+	}
+*/
+func (shared *SelectorInstanceType) GetSelectionSource() int {
+	if selectorEntry, isFound := Selectors.Lookup(shared.layerAlias, shared.controlAlias); isFound {
+		return selectorEntry.SelectionSource
+	}
+	return constants.SelectionSourceNone
 }
 
 /*
@@ -202,6 +299,7 @@ func (shared *SelectorInstanceType) Select(selectionAlias string) {
 			selectorEntry.ItemSelected = itemIndex
 			selectorEntry.ItemHighlighted = itemIndex
 			selectorEntry.IsNewItemSelected = true
+			selectorEntry.SelectionSource = constants.SelectionSourceProgrammatic
 		}
 	}
 }
@@ -539,7 +637,6 @@ func (shared *selectorType) Add(layerAlias string, selectorAlias string, styleEn
 	selectorInstance.layerAlias = layerAlias
 	selectorInstance.controlAlias = selectorAlias
 	selectorInstance.controlType = constants.TYPE_SELECTOR
-	setFocusedControl(layerAlias, selectorAlias, constants.CellTypeSelectorItem)
 	return selectorInstance
 }
 
@@ -730,7 +827,14 @@ func (shared *selectorType) drawSelector(selectorAlias string, layerEntry *types
 	menuAttributeEntry, highlightAttributeEntry := shared.setupSelectorAttributes(styleEntry)
 
 	if selectorEntry.IsBorderDrawn {
-		shared.drawSelectorBorder(layerEntry, styleEntry, menuAttributeEntry, xLocation, yLocation, itemWidth, selectorHeight)
+		borderStyleEntry := styleEntry
+		// A focused selector shows its focus on its border, drawn in the style's focused colours.
+		if isControlCurrentlyFocused(layerEntry.LayerAlias, selectorAlias, constants.CellTypeSelectorItem) {
+			borderStyleEntry.Window.LineDrawingTextForegroundColor, borderStyleEntry.Window.LineDrawingTextBackgroundColor = getFocusedColors(
+				styleEntry.Window.LineDrawingTextForegroundColor, styleEntry.Window.LineDrawingTextBackgroundColor,
+				styleEntry.Selector.FocusedForegroundColor, styleEntry.Selector.FocusedBackgroundColor)
+		}
+		shared.drawSelectorBorder(layerEntry, borderStyleEntry, menuAttributeEntry, xLocation, yLocation, itemWidth, selectorHeight)
 	}
 
 	currentYLocation := yLocation
@@ -874,6 +978,7 @@ func (shared *selectorType) updateKeyboardEventForSelector(layerAlias string, se
 	if keystrokeAsString == "enter" {
 		selectorEntry.ItemSelected = selectorEntry.ItemHighlighted
 		selectorEntry.IsNewItemSelected = true
+		selectorEntry.SelectionSource = constants.SelectionSourceKeyboard
 		isScreenUpdateRequired = true
 		isKeystrokeConsumed = true
 	}
@@ -896,10 +1001,11 @@ Example:
 func (shared *selectorType) updateKeyboardEvent(keystroke []rune) (bool, bool) {
 	isScreenUpdateRequired := false
 	isKeystrokeConsumed := false
-	if eventStateMemory.currentlyFocusedControl.controlType != constants.CellTypeSelectorItem || !Selectors.IsExists(eventStateMemory.currentlyFocusedControl.layerAlias, eventStateMemory.currentlyFocusedControl.controlAlias) {
+	focusedControl := getFocusedControl()
+	if focusedControl.controlType != constants.CellTypeSelectorItem || !Selectors.IsExists(focusedControl.layerAlias, focusedControl.controlAlias) {
 		return isScreenUpdateRequired, isKeystrokeConsumed
 	}
-	return shared.updateKeyboardEventForSelector(eventStateMemory.currentlyFocusedControl.layerAlias, eventStateMemory.currentlyFocusedControl.controlAlias, keystroke)
+	return shared.updateKeyboardEventForSelector(focusedControl.layerAlias, focusedControl.controlAlias, keystroke)
 }
 
 /*
@@ -917,15 +1023,24 @@ Example:
 */
 func (shared *selectorType) updateMouseEvent() bool {
 	isScreenUpdateRequired := false
-	focusedLayerAlias := eventStateMemory.currentlyFocusedControl.layerAlias
+	focusedLayerAlias := getFocusedControl().layerAlias
 	var characterEntry types.CharacterEntryType
 	mouseXLocation, mouseYLocation, buttonPressed, _ := GetMouseStatus()
 	characterEntry = getCellInformationUnderMouseCursor(mouseXLocation, mouseYLocation)
 	if selectorEntry, isFound := Selectors.Lookup(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias); characterEntry.AttributeEntry.CellType == constants.CellTypeSelectorItem &&
-		eventStateMemory.stateId == constants.EventStateNone && isFound {
+		getEventStateId() == constants.EventStateNone && isFound {
 		if buttonPressed != 0 {
-			selectorEntry.ItemHighlighted = characterEntry.AttributeEntry.CellControlId
-			selectorEntry.ItemSelected = characterEntry.AttributeEntry.CellControlId
+			itemIndex := characterEntry.AttributeEntry.CellControlId
+			_, _, previousButtonPressed, _ := GetPreviousMouseStatus()
+			if previousButtonPressed == 0 {
+				selectorEntry.SelectionSource = shared.getMouseSelectionSource(characterEntry.LayerAlias, selectorEntry.Alias, itemIndex, time.Now())
+			} else if selectorEntry.ItemSelected != itemIndex {
+				// Dragging with the button held onto another item selects it, but only as a single click.
+				selectorLastClick = selectorClickType{}
+				selectorEntry.SelectionSource = constants.SelectionSourceSingleClick
+			}
+			selectorEntry.ItemHighlighted = itemIndex
+			selectorEntry.ItemSelected = itemIndex
 			selectorEntry.IsNewItemSelected = true
 		} else if !selectorEntry.HighlightOnClickOnly {
 			selectorEntry.ItemHighlighted = characterEntry.AttributeEntry.CellControlId
@@ -934,25 +1049,24 @@ func (shared *selectorType) updateMouseEvent() bool {
 		for _, currentDropdownEntry := range Dropdowns.GetAllEntries(characterEntry.LayerAlias) {
 			dropdownEntry := currentDropdownEntry
 			if dropdownEntry.SelectorAlias == characterEntry.AttributeEntry.CellControlAlias {
-				// If it belongs to a dropdown, set the dropdown as the focused control
-				setFocusedControl(characterEntry.LayerAlias, dropdownEntry.Alias, constants.CellTypeDropdown)
+				// Focus itself is given by the press, through focusControlFromClick, which maps a tray item to its
+				// dropdown. Hovering only tracks the highlight.
 				setPreviouslyHighlightedControl(characterEntry.LayerAlias, dropdownEntry.Alias, constants.CellTypeDropdown)
 				isScreenUpdateRequired = true
 				return isScreenUpdateRequired
 			}
 		}
-		// If not part of a dropdown, set the selector as the focused control
-		setFocusedControl(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias, constants.CellTypeSelectorItem)
+		// Focus itself is given by the press, through focusControlFromClick. Hovering only tracks the highlight.
 		setPreviouslyHighlightedControl(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias, constants.CellTypeSelectorItem)
 		isScreenUpdateRequired = true
 	} else {
-		if selectorEntry, isFound := Selectors.Lookup(eventStateMemory.previouslyHighlightedControl.layerAlias, eventStateMemory.previouslyHighlightedControl.controlAlias); eventStateMemory.previouslyHighlightedControl.controlType == constants.CellTypeSelectorItem &&
+		previouslyHighlightedControl := getPreviouslyHighlightedControl()
+		if selectorEntry, isFound := Selectors.Lookup(previouslyHighlightedControl.layerAlias, previouslyHighlightedControl.controlAlias); previouslyHighlightedControl.controlType == constants.CellTypeSelectorItem &&
 			isFound && Selectors.IsExists(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias) {
 			// Only clear highlighting if HighlightOnClickOnly is false
 			if !selectorEntry.HighlightOnClickOnly {
 				selectorEntry.ItemHighlighted = constants.NullItemSelection
 			}
-			setFocusedControl("", "", constants.NullControlType)
 			setPreviouslyHighlightedControl("", "", constants.NullControlType)
 			isScreenUpdateRequired = true
 		}
@@ -964,7 +1078,7 @@ func (shared *selectorType) updateMouseEvent() bool {
 	// If a buttonType is pressed AND (you are in a drag and drop event OR the cell type is scroll bar), then
 	// sync all Dropdown selectors with their appropriate scroll bars. If the control under focus
 	// matches a control that belongs to a Dropdown list, then stop processing (Do not attempt to close Dropdown).
-	if buttonPressed != 0 && (eventStateMemory.stateId == constants.EventStateDragAndDropScrollbar ||
+	if buttonPressed != 0 && (getEventStateId() == constants.EventStateDragAndDropScrollbar ||
 		characterEntry.AttributeEntry.CellType == constants.CellTypeScrollbar) {
 		for _, currentSelectorEntry := range Selectors.GetAllEntries(focusedLayerAlias) {
 			selectorEntry := currentSelectorEntry

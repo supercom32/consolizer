@@ -415,6 +415,19 @@ const (
 	MouseButtonRight
 )
 
+// Selection sources report how a selector's current selection was made, as returned by GetSelectionSource.
+const (
+	SelectionSourceNone = iota
+	SelectionSourceKeyboard
+	SelectionSourceSingleClick
+	SelectionSourceDoubleClick
+	SelectionSourceProgrammatic
+)
+
+// DefaultDoubleClickInterval is the default maximum time, in milliseconds, between two clicks on the same selector
+// item for the second click to count as a double click.
+const DefaultDoubleClickInterval = 500
+
 var BayerMatrix2x2 = [2][2]float32{
 	{0.0, 0.5},
 	{0.75, 0.25},

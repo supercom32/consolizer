@@ -41,16 +41,6 @@ func (shared *CheckboxInstanceType) Delete() *CheckboxInstanceType {
 }
 
 /*
-AddToTabIndex is a method which adds the checkbox to the tab index of its associated layer.
-
-Example:
-    checkbox.AddToTabIndex()
-*/
-func (shared *CheckboxInstanceType) AddToTabIndex() {
-	addTabIndex(shared.layerAlias, shared.controlAlias, constants.CellTypeCheckbox)
-}
-
-/*
 IsSelected is a method which detects if the checkbox is selected. If the checkbox instance no
 longer exists, then a result of false is always returned.
 
@@ -173,6 +163,9 @@ determined by the style entry passed in. In addition, the following should be no
 - If the checkbox to be drawn falls outside the range of the provided layer, then only the visible portion of the
   checkbox will be drawn.
 
+- While the checkbox has keyboard focus, it is drawn with the style's focused colours, resolved by getFocusedColors
+  so that focus stays visible even when the style does not set them.
+
 Example:
     Checkbox.draw(&myLayer, "cb1", "Enable Feature", style, 0, 0, false, true)
 */
@@ -181,6 +174,10 @@ func (shared *checkboxType) draw(layerEntry *types.LayerEntryType, checkboxAlias
 	attributeEntry := types.NewAttributeEntry()
 	attributeEntry.ForegroundColor = localStyleEntry.Checkbox.ForegroundColor
 	attributeEntry.BackgroundColor = localStyleEntry.Checkbox.BackgroundColor
+	if isControlCurrentlyFocused(layerEntry.LayerAlias, checkboxAlias, constants.CellTypeCheckbox) {
+		attributeEntry.ForegroundColor, attributeEntry.BackgroundColor = getFocusedColors(localStyleEntry.Checkbox.ForegroundColor,
+			localStyleEntry.Checkbox.BackgroundColor, localStyleEntry.Checkbox.FocusedForegroundColor, localStyleEntry.Checkbox.FocusedBackgroundColor)
+	}
 	attributeEntry.CellType = constants.CellTypeCheckbox
 	attributeEntry.CellControlAlias = checkboxAlias
 
@@ -195,6 +192,31 @@ func (shared *checkboxType) draw(layerEntry *types.LayerEntryType, checkboxAlias
 	layer.printLayer(layerEntry, attributeEntry, xLocation, yLocation, secondArrayOfRunes)
 	firstArrayOfRunes := stringformat.GetRunesFromString(checkboxLabel)
 	layer.printLayer(layerEntry, attributeEntry, xLocation+2, yLocation, firstArrayOfRunes)
+}
+
+/*
+updateKeyboardEvent is a method which allows you to toggle the focused checkbox from the keyboard. When an enabled,
+visible checkbox has focus and the keystroke is Space, the checkbox is toggled exactly as a click would toggle it, and
+the keystroke is consumed. It returns whether a screen update is required and whether the keystroke was consumed.
+
+Example:
+
+	updateRequired, consumed := Checkbox.updateKeyboardEvent([]rune(" "))
+*/
+func (shared *checkboxType) updateKeyboardEvent(keystroke []rune) (bool, bool) {
+	if string(keystroke) != " " {
+		return false, false
+	}
+	focusedControl := getFocusedControl()
+	if focusedControl.controlType != constants.CellTypeCheckbox || !isControlFocusable(focusedControl) {
+		return false, false
+	}
+	checkboxEntry, isFound := Checkboxes.Lookup(focusedControl.layerAlias, focusedControl.controlAlias)
+	if !isFound {
+		return false, false
+	}
+	checkboxEntry.IsSelected = !checkboxEntry.IsSelected
+	return true, true
 }
 
 /*
@@ -213,9 +235,6 @@ func (shared *checkboxType) updateMouseEvent() bool {
 	if characterEntry.AttributeEntry.CellType == constants.CellTypeCheckbox && characterEntry.AttributeEntry.CellControlId != constants.NullCellId {
 		_, _, previousButtonPressed, _ := GetPreviousMouseStatus()
 		if checkboxEntry, isFound := Checkboxes.Lookup(layerAlias, controlAlias); buttonPressed != 0 && previousButtonPressed == 0 && isFound {
-			eventStateMemory.currentlyFocusedControl.layerAlias = layerAlias
-			eventStateMemory.currentlyFocusedControl.controlAlias = controlAlias
-			eventStateMemory.currentlyFocusedControl.controlType = constants.CellTypeCheckbox
 			if !checkboxEntry.IsEnabled {
 				return isUpdateRequired
 			}

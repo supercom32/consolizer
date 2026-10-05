@@ -125,16 +125,6 @@ func (shared *ButtonInstanceType) Delete() *ButtonInstanceType {
 }
 
 /*
-AddToTabIndex is a method which adds the button to the tab index of its associated layer.
-
-Example:
-    button.AddToTabIndex()
-*/
-func (shared *ButtonInstanceType) AddToTabIndex() {
-	addTabIndex(shared.layerAlias, shared.controlAlias, constants.CellTypeButton)
-}
-
-/*
 IsPressed is a method which detects if the button was pressed. In order to obtain the button pressed
 and to clear this state, you must call the GetPressed method. In addition, the following should be noted:
 
@@ -292,6 +282,9 @@ determined by the style entry passed in. In addition, the following should be no
   pressed state shown with the pressed colours). Flat and borderless keep the three-row minimum only for the
   beveled and flat frames; a borderless button may be a single row.
 
+- While the button has keyboard focus and is not pressed, its face and label are drawn with the style's focused
+  colours, resolved by getFocusedColors so that focus stays visible even when the style does not set them.
+
 Example:
     Button.draw(&myLayer, "btn1", "OK", style, false, false, true, 0, 0, 10, 3)
 */
@@ -325,6 +318,10 @@ func (shared *buttonType) draw(layerEntry *types.LayerEntryType, buttonAlias str
 	if isPressed && styleMode != constants.ButtonStyleBeveled {
 		attributeEntry.ForegroundColor = styleEntry.Button.PressedForegroundColor
 		attributeEntry.BackgroundColor = styleEntry.Button.PressedBackgroundColor
+	}
+	if !isPressed && isControlCurrentlyFocused(layerEntry.LayerAlias, buttonAlias, constants.CellTypeButton) {
+		attributeEntry.ForegroundColor, attributeEntry.BackgroundColor = getFocusedColors(styleEntry.Button.ForegroundColor,
+			styleEntry.Button.BackgroundColor, styleEntry.Button.FocusedForegroundColor, styleEntry.Button.FocusedBackgroundColor)
 	}
 
 	fillArea(layerEntry, attributeEntry, " ", xLocation, yLocation, width, height, constants.NullCellControlLocation)
@@ -372,6 +369,35 @@ func (shared *buttonType) updateStates(isMouseTriggered bool) bool {
 		// AddLayer code to update when keyboard caused a change.
 	}
 	return false
+}
+
+/*
+updateKeyboardEvent is a method which allows you to press the currently focused button from the keyboard. When a button
+has focus and the keystroke is Enter or Space, the press is recorded exactly as a completed mouse click would be, so
+GetPressed and IsPressed report it. It returns whether a screen update is required and whether the keystroke was
+consumed, and both are true only when a press was recorded. In addition, the following should be noted:
+
+  - A disabled or hidden button, or one on a hidden layer, ignores the keystroke and leaves it unconsumed, so it
+    still reaches the keyboard buffer.
+
+  - A consumed Enter or Space is never added to the keyboard buffer, so the application does not see the same
+    action twice.
+
+Example:
+
+	updateRequired, consumed := Button.updateKeyboardEvent([]rune("enter"))
+*/
+func (shared *buttonType) updateKeyboardEvent(keystroke []rune) (bool, bool) {
+	keystrokeAsString := string(keystroke)
+	if keystrokeAsString != "enter" && keystrokeAsString != " " {
+		return false, false
+	}
+	focusedControl := getFocusedControl()
+	if focusedControl.controlType != constants.CellTypeButton || !isControlFocusable(focusedControl) {
+		return false, false
+	}
+	buttonHistory.set(focusedControl.layerAlias, focusedControl.controlAlias)
+	return true, true
 }
 
 /*
@@ -461,7 +487,7 @@ Example:
 */
 func (shared *buttonType) updateStateMouse() bool {
 	// If we're currently in a scrollbar drag operation, don't process button clicks
-	if eventStateMemory.stateId == constants.EventStateDragAndDropScrollbar {
+	if getEventStateId() == constants.EventStateDragAndDropScrollbar {
 		return false
 	}
 

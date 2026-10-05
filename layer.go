@@ -529,6 +529,8 @@ func (shared *layerType) Delete(layerAlias string) {
 	removeAllControlsAndClearCells(Viewports, layerAlias, constants.CellTypeTextbox, func(entry *types.ViewportEntryType) string { return entry.Alias })
 	// Remove the layer itself
 	Layers.Remove(layerAlias)
+	// Closes the layer's modal state if it had one, returning focus to where it was before, and drops its tab order.
+	reconcileFocus()
 
 	// Update parent's IsParent status if needed
 	if parentAlias != "" {
@@ -1448,6 +1450,85 @@ func (shared *LayerInstanceType) Delete() {
 }
 
 /*
+SetModal is a method which allows you to make the layer modal, or stop it being modal. While a modal layer is visible
+it is the active focus scope: focus moves to its first tab stop, Tab and Shift+Tab cannot leave it, SetFocus refuses
+controls outside it, and mouse input to every other layer is ignored. When the modal layer is hidden, deleted, or made
+non-modal again, focus returns to the control that had it before the modal opened. In addition, the following should
+be noted:
+
+  - The layer's child layers count as part of the modal for mouse input and SetFocus, but Tab only moves through the
+    modal layer's own tab order.
+
+  - Several layers may be modal at once. The most recently made modal one is active, and closing it activates the
+    one before it.
+
+  - The layer's drawing order is not changed, so a modal layer should be created or moved above the layers it
+    covers.
+
+Example:
+
+	dialogLayer.SetModal(true)
+*/
+func (shared *LayerInstanceType) SetModal(isModal bool) {
+	validateLayer(shared.layerAlias)
+	setLayerModal(shared.layerAlias, isModal)
+}
+
+/*
+IsModal is a method which allows you to check whether the layer is marked as modal.
+
+Example:
+
+	isModal := dialogLayer.IsModal()
+*/
+func (shared *LayerInstanceType) IsModal() bool {
+	return isLayerModal(shared.layerAlias)
+}
+
+/*
+SetDefaultButton is a method which allows you to choose the button that Enter presses while focus is in this layer, or
+while this layer is the active modal, whenever the focused control does not use Enter itself. Controls such as a
+selector, a dropdown, a text box, or a focused button keep Enter for their own use. The press is reported through
+GetPressed exactly like a click. Passing nil clears the default button. An error is returned if the button does not
+exist or belongs to a different layer.
+
+Example:
+
+	err := dialogLayer.SetDefaultButton(&okButton)
+*/
+func (shared *LayerInstanceType) SetDefaultButton(button *ButtonInstanceType) error {
+	validateLayer(shared.layerAlias)
+	return setScopeButton(shared.layerAlias, button, true)
+}
+
+/*
+SetCancelButton is a method which allows you to choose the button that Esc presses while focus is in this layer, or
+while this layer is the active modal, whenever no control uses Esc itself, such as an open dropdown closing its tray.
+The press is reported through GetPressed exactly like a click. Passing nil clears the cancel button. An error is
+returned if the button does not exist or belongs to a different layer.
+
+Example:
+
+	err := dialogLayer.SetCancelButton(&cancelButton)
+*/
+func (shared *LayerInstanceType) SetCancelButton(button *ButtonInstanceType) error {
+	validateLayer(shared.layerAlias)
+	return setScopeButton(shared.layerAlias, button, false)
+}
+
+/*
+ClearTabIndex is a method which allows you to remove every tab stop of this layer, along with its default and cancel
+buttons, without affecting any other layer. Focus is left where it is.
+
+Example:
+
+	layerInstance.ClearTabIndex()
+*/
+func (shared *LayerInstanceType) ClearTabIndex() {
+	clearLayerTabIndex(shared.layerAlias)
+}
+
+/*
 IsExists is a method which allows you to check if the current layer instance still exists in the layer management
 system.
 
@@ -1462,7 +1543,11 @@ func (shared *LayerInstanceType) IsExists() bool {
 }
 
 /*
-SetIsVisible is a method which allows you to set the visibility of the current layer.
+SetIsVisible is a method which allows you to set the visibility of the current layer. In addition, the following should
+be noted:
+
+  - Hiding the layer that holds the focused control moves focus off it, and hiding a modal layer closes it, returning
+    focus to the control that had it before the modal opened. Showing a modal layer again reopens it.
 
 Example:
     layerInstance.SetIsVisible(false)
@@ -2114,6 +2199,8 @@ func setLayerIsVisible(layerAlias string, isVisible bool) {
 	validateLayer(layerAlias)
 	layerEntry := Layers.Get(layerAlias)
 	layerEntry.IsVisible = isVisible
+	// Hiding a layer moves focus off its controls, and hiding or showing a modal layer closes or reopens it.
+	reconcileFocus()
 }
 
 /*

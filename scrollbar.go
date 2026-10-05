@@ -23,19 +23,6 @@ var ScrollBars = memory.NewControlMemoryManager[types.ScrollbarEntryType]()
 // ============================================================================
 
 /*
-AddToTabIndex is a method which allows you to add the scroll bar to the tab index. In addition, the following should be
-noted:
-
-- This enables the scroll bar to be selected and interacted with when the user cycles through controls using the tab.
-
-Example:
-    scrollbar.AddToTabIndex()
-*/
-func (shared *ScrollbarInstanceType) AddToTabIndex() {
-	addTabIndex(shared.layerAlias, shared.controlAlias, constants.CellTypeScrollbar)
-}
-
-/*
 Delete is a method which allows you to delete the scroll bar instance. In addition, the following should be noted:
 
 - All memory associated with the scroll bar will be freed and it will no longer be rendered.
@@ -428,9 +415,10 @@ Example:
     updateRequired, consumed := scrollbar.updateKeyboardEvent(rune("down"))
 */
 func (shared *scrollbarType) updateKeyboardEvent(keystroke []rune) (bool, bool) {
-	focusedLayerAlias := eventStateMemory.currentlyFocusedControl.layerAlias
-	focusedControlAlias := eventStateMemory.currentlyFocusedControl.controlAlias
-	focusedControlType := eventStateMemory.currentlyFocusedControl.controlType
+	focusedControl := getFocusedControl()
+	focusedLayerAlias := focusedControl.layerAlias
+	focusedControlAlias := focusedControl.controlAlias
+	focusedControlType := focusedControl.controlType
 	if focusedControlType != constants.CellTypeScrollbar || !ScrollBars.IsExists(focusedLayerAlias, focusedControlAlias) {
 		return false, false
 	}
@@ -448,9 +436,10 @@ Example:
 */
 func (shared *scrollbarType) updateMouseEvent() bool {
 	isScreenUpdateRequired := false
-	focusedLayerAlias := eventStateMemory.currentlyFocusedControl.layerAlias
-	focusedControlAlias := eventStateMemory.currentlyFocusedControl.controlAlias
-	focusedControlType := eventStateMemory.currentlyFocusedControl.controlType
+	focusedControl := getFocusedControl()
+	focusedLayerAlias := focusedControl.layerAlias
+	focusedControlAlias := focusedControl.controlAlias
+	focusedControlType := focusedControl.controlType
 	mouseXLocation, mouseYLocation, buttonPressed, _ := GetMouseStatus()
 	previousMouseXLocation, previousMouseYLocation, previousButtonPressed, _ := GetPreviousMouseStatus()
 	if buttonPressed != 0 {
@@ -461,7 +450,7 @@ func (shared *scrollbarType) updateMouseEvent() bool {
 			if scrollbarEntry.IsEnabled {
 				if characterEntry.AttributeEntry.CellControlId == constants.CellControlIdScrollbarHandle {
 					// If you click on a scroll bar handle, start the scrolling event.
-					eventStateMemory.stateId = constants.EventStateDragAndDropScrollbar
+					setEventStateId(constants.EventStateDragAndDropScrollbar)
 				} else if characterEntry.AttributeEntry.CellControlId == constants.CellControlIdUpScrollArrow {
 					// If you click on the up scroll bar buttonType.
 					scrollbarEntry.ScrollValue = scrollbarEntry.ScrollValue - scrollbarEntry.ScrollIncrement
@@ -478,7 +467,7 @@ func (shared *scrollbarType) updateMouseEvent() bool {
 			}
 			setFocusedControl(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias, constants.CellTypeScrollbar)
 			isScreenUpdateRequired = true
-		} else if previousButtonPressed != 0 && eventStateMemory.stateId == constants.EventStateDragAndDropScrollbar {
+		} else if previousButtonPressed != 0 && getEventStateId() == constants.EventStateDragAndDropScrollbar {
 			xMove := mouseXLocation - previousMouseXLocation
 			yMove := mouseYLocation - previousMouseYLocation
 			if scrollbarEntry, isFound := ScrollBars.Lookup(focusedLayerAlias, focusedControlAlias); focusedControlType == constants.CellTypeScrollbar && isFound {
@@ -492,7 +481,7 @@ func (shared *scrollbarType) updateMouseEvent() bool {
 			}
 		}
 	} else {
-		eventStateMemory.stateId = constants.EventStateNone
+		setEventStateId(constants.EventStateNone)
 	}
 	return isScreenUpdateRequired
 }

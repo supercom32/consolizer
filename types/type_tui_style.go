@@ -54,6 +54,11 @@ type CheckboxStyle struct {
 	BackgroundColor     constants.ColorType
 	SelectedCharacter   rune
 	UnselectedCharacter rune
+	// FocusedForegroundColor and FocusedBackgroundColor are drawn while the control has keyboard focus. A colour left
+	// unset (zero) falls back to the normal colour, and if the result would look the same as the unfocused control,
+	// the normal colours are swapped instead, so focus always stays visible.
+	FocusedForegroundColor constants.ColorType
+	FocusedBackgroundColor constants.ColorType
 }
 
 /*
@@ -68,6 +73,11 @@ type RadioButtonStyle struct {
 	BackgroundColor     constants.ColorType
 	SelectedCharacter   rune
 	UnselectedCharacter rune
+	// FocusedForegroundColor and FocusedBackgroundColor are drawn while the control has keyboard focus. A colour left
+	// unset (zero) falls back to the normal colour, and if the result would look the same as the unfocused control,
+	// the normal colours are swapped instead, so focus always stays visible.
+	FocusedForegroundColor constants.ColorType
+	FocusedBackgroundColor constants.ColorType
 }
 
 /*
@@ -155,6 +165,11 @@ type SelectorStyle struct {
 	TextAlignment            int
 	IsSelectionCentered      bool
 	IsShadowDrawn            bool
+	// FocusedForegroundColor and FocusedBackgroundColor are drawn on the selector's border while it has keyboard
+	// focus, with the same fallback rules as the other controls' focused colours. A selector without a border shows
+	// focus through its highlighted item instead.
+	FocusedForegroundColor constants.ColorType
+	FocusedBackgroundColor constants.ColorType
 }
 
 /*
@@ -176,6 +191,11 @@ type ButtonStyle struct {
 	// have no bevel to flip, to signal the pressed state.
 	PressedForegroundColor constants.ColorType
 	PressedBackgroundColor constants.ColorType
+	// FocusedForegroundColor and FocusedBackgroundColor are drawn while the control has keyboard focus. A colour left
+	// unset (zero) falls back to the normal colour, and if the result would look the same as the unfocused control,
+	// the normal colours are swapped instead, so focus always stays visible.
+	FocusedForegroundColor constants.ColorType
+	FocusedBackgroundColor constants.ColorType
 }
 
 /*
@@ -249,6 +269,11 @@ type DropdownStyle struct {
 	ForegroundColor constants.ColorType
 	BackgroundColor constants.ColorType
 	TextAlignment   int
+	// FocusedForegroundColor and FocusedBackgroundColor are drawn while the control has keyboard focus. A colour left
+	// unset (zero) falls back to the normal colour, and if the result would look the same as the unfocused control,
+	// the normal colours are swapped instead, so focus always stays visible.
+	FocusedForegroundColor constants.ColorType
+	FocusedBackgroundColor constants.ColorType
 }
 
 /*
@@ -341,11 +366,15 @@ func NewTuiStyleEntry(existingStyleEntry ...*TuiStyleEntryType) TuiStyleEntryTyp
 		styleEntry.Checkbox.BackgroundColor = constants.AnsiColorByIndex[0]
 		styleEntry.Checkbox.SelectedCharacter = constants.CharCheckedBox
 		styleEntry.Checkbox.UnselectedCharacter = constants.CharUncheckedBox
+		styleEntry.Checkbox.FocusedForegroundColor = constants.AnsiColorByIndex[0]
+		styleEntry.Checkbox.FocusedBackgroundColor = constants.AnsiColorByIndex[15]
 
 		styleEntry.RadioButton.ForegroundColor = constants.AnsiColorByIndex[15]
 		styleEntry.RadioButton.BackgroundColor = constants.AnsiColorByIndex[0]
 		styleEntry.RadioButton.SelectedCharacter = constants.CharUncheckedRadioButton
 		styleEntry.RadioButton.UnselectedCharacter = constants.CharCheckedRadioButton
+		styleEntry.RadioButton.FocusedForegroundColor = constants.AnsiColorByIndex[0]
+		styleEntry.RadioButton.FocusedBackgroundColor = constants.AnsiColorByIndex[15]
 
 		styleEntry.Scrollbar.TrackPattern = constants.CharBlockSparce
 		styleEntry.Scrollbar.Handle = constants.CharBlockSolid
@@ -383,6 +412,8 @@ func NewTuiStyleEntry(existingStyleEntry ...*TuiStyleEntryType) TuiStyleEntryTyp
 		styleEntry.Selector.HighlightBackgroundColor = constants.AnsiColorByIndex[15]
 		styleEntry.Selector.TextAlignment = constants.AlignmentLeft
 		styleEntry.Selector.IsShadowDrawn = false
+		styleEntry.Selector.FocusedForegroundColor = constants.AnsiColorByIndex[0]
+		styleEntry.Selector.FocusedBackgroundColor = constants.AnsiColorByIndex[15]
 
 		styleEntry.Button.RaisedColor = constants.AnsiColorByIndex[15]
 		styleEntry.Button.ForegroundColor = constants.AnsiColorByIndex[0]
@@ -391,6 +422,8 @@ func NewTuiStyleEntry(existingStyleEntry ...*TuiStyleEntryType) TuiStyleEntryTyp
 		styleEntry.Button.StyleMode = constants.ButtonStyleBeveled
 		styleEntry.Button.PressedForegroundColor = constants.AnsiColorByIndex[15]
 		styleEntry.Button.PressedBackgroundColor = constants.AnsiColorByIndex[0]
+		styleEntry.Button.FocusedForegroundColor = constants.AnsiColorByIndex[15]
+		styleEntry.Button.FocusedBackgroundColor = constants.AnsiColorByIndex[4]
 
 		styleEntry.Tooltip.ForegroundColor = constants.AnsiColorByIndex[15]
 		styleEntry.Tooltip.BackgroundColor = constants.AnsiColorByIndex[0]
@@ -417,6 +450,8 @@ func NewTuiStyleEntry(existingStyleEntry ...*TuiStyleEntryType) TuiStyleEntryTyp
 		styleEntry.Dropdown.ForegroundColor = constants.AnsiColorByIndex[15]
 		styleEntry.Dropdown.BackgroundColor = constants.AnsiColorByIndex[0]
 		styleEntry.Dropdown.TextAlignment = constants.AlignmentLeft
+		styleEntry.Dropdown.FocusedForegroundColor = constants.AnsiColorByIndex[0]
+		styleEntry.Dropdown.FocusedBackgroundColor = constants.AnsiColorByIndex[15]
 	}
 
 	return styleEntry

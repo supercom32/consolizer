@@ -15,8 +15,9 @@ addition, the following should be noted:
 
 - Calls Tooltip.updateMouseEvent directly instead of going through the throttled UpdatePeriodicEvents, so this test
   drives the hover state machine's two required calls (arm, then reveal) deterministically. CommonTestSetup starts
-  a background goroutine that also calls UpdatePeriodicEvents on its own 10ms schedule, and going through that same
-  throttled path here would race it on the tooltip's unsynchronized HoverStartTime and IsDrawn fields.
+  a background goroutine that also calls UpdatePeriodicEvents on its own 10ms schedule, so going through that same
+  throttled path here would make whether each call runs depend on the 500ms throttle it shares with that goroutine.
+  That goroutine's own calls are safe to overlap with these, since the hover state is guarded by tooltipStateMutex.
 
 Example:
     Expected Inputs:
@@ -51,8 +52,9 @@ following should be noted:
 
 - Calls Tooltip.updateMouseEvent directly instead of going through the throttled UpdatePeriodicEvents, so this test
   drives the hover state machine's two required calls (arm, then reveal) deterministically. CommonTestSetup starts
-  a background goroutine that also calls UpdatePeriodicEvents on its own 10ms schedule, and going through that same
-  throttled path here would race it on the tooltip's unsynchronized HoverStartTime and IsDrawn fields.
+  a background goroutine that also calls UpdatePeriodicEvents on its own 10ms schedule, so going through that same
+  throttled path here would make whether each call runs depend on the 500ms throttle it shares with that goroutine.
+  That goroutine's own calls are safe to overlap with these, since the hover state is guarded by tooltipStateMutex.
 
 Example:
     Expected Inputs:
@@ -87,8 +89,9 @@ following should be noted:
 
 - Calls Tooltip.updateMouseEvent directly instead of going through the throttled UpdatePeriodicEvents, so this test
   drives the hover state machine's two required calls (arm, then reveal) deterministically. CommonTestSetup starts
-  a background goroutine that also calls UpdatePeriodicEvents on its own 10ms schedule, and going through that same
-  throttled path here would race it on the tooltip's unsynchronized HoverStartTime and IsDrawn fields.
+  a background goroutine that also calls UpdatePeriodicEvents on its own 10ms schedule, so going through that same
+  throttled path here would make whether each call runs depend on the 500ms throttle it shares with that goroutine.
+  That goroutine's own calls are safe to overlap with these, since the hover state is guarded by tooltipStateMutex.
 
 Example:
     Expected Inputs:
@@ -123,9 +126,10 @@ following should be noted:
 
 - Calls Tooltip.updateMouseEvent directly instead of going through the throttled UpdatePeriodicEvents, so this test
   drives the hover state machine's calls (arm, then check before and after the delay) deterministically.
-  CommonTestSetup starts a background goroutine that also calls UpdatePeriodicEvents on its own 10ms schedule, and
-  going through that same throttled path here would race it on the tooltip's unsynchronized HoverStartTime and
-  IsDrawn fields.
+  CommonTestSetup starts a background goroutine that also calls UpdatePeriodicEvents on its own 10ms schedule, so
+  going through that same throttled path here would make whether each call runs depend on the 500ms throttle it
+  shares with that goroutine. That goroutine's own calls are safe to overlap with these, since the hover state is
+  guarded by tooltipStateMutex.
 
 Example:
     Expected Inputs:
