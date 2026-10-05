@@ -843,3 +843,102 @@ func TestSetOnValueChangedHookRunsInsideEventHandling(test *testing.T) {
 		test.Fatalf("expected the hook to be called once with %q, got %q", "x", receivedValues)
 	}
 }
+
+/*
+TestTextFieldSetValueWithWideRunes is a test which allows you to verify that SetValue places the cursor after the last
+rune rather than at the value's length in bytes, which for a value of multi byte runes was past the end and made
+SetValue itself panic while scrolling the cursor into view.
+
+Example:
+
+	Expected Inputs:
+		A text field given the three rune value "日本語" with SetValue, then the screen is updated.
+
+	Expected Outputs:
+		No panic, the cursor is at rune index 3, the trailing blank, and GetValue returns "日本語".
+*/
+func TestTextFieldSetValueWithWideRunes(test *testing.T) {
+	layerAlias, styleEntry := setupInputTest(test)
+	textField := TextField.Add(layerAlias, "field", styleEntry, 2, 2, 10, 20, false, "", true)
+	textField.SetValue("日本語")
+	UpdateDisplay(false)
+	if cursorPosition := TextFields.Get(layerAlias, "field").CursorPosition; cursorPosition != 3 {
+		test.Fatalf("expected the cursor at rune index 3, got %d", cursorPosition)
+	}
+	if value := textField.GetValue(); value != "日本語" {
+		test.Fatalf("expected value %q, got %q", "日本語", value)
+	}
+}
+
+/*
+TestTextFieldStaleIndexesAreClamped is a test which allows you to verify that a text field cannot index outside its
+value through a cursor, viewport or highlight position left behind by a shorter value or set directly, each of which
+used to panic on the next keystroke or screen update.
+
+Example:
+
+	Expected Inputs:
+		Each case starts from a text field holding "abcdef" and applies its steps: Ctrl+A then SetValue("a") then
+		Delete; SetCursorPosition(50) then "x"; SetCursorPosition(-3) then "x"; SetViewportPosition(99) then a screen
+		update; SetViewportPosition(-1) then a screen update; and with Shift held, Shift+Right then Shift+Left,
+		which leaves the highlight ending at minus one, then Delete with Shift released.
+
+	Expected Outputs:
+		No case panics and each ends with the value expected: "a" with the highlight cleared, "abcdefx", "xabcdef",
+		"abcdef", "abcdef", and "bcdef".
+*/
+func TestTextFieldStaleIndexesAreClamped(test *testing.T) {
+	testCases := []struct {
+		name          string
+		applySteps    func(textField TextFieldInstanceType, layerAlias string)
+		expectedValue string
+	}{
+		{"highlight from a longer value", func(textField TextFieldInstanceType, layerAlias string) {
+			TextField.updateKeyboardEventManually(layerAlias, "field", []rune("ctrl+a"))
+			textField.SetValue("a")
+			TextField.updateKeyboardEventManually(layerAlias, "field", []rune("delete"))
+		}, "a"},
+		{"cursor past end", func(textField TextFieldInstanceType, layerAlias string) {
+			textField.SetCursorPosition(50)
+			TextField.updateKeyboardEventManually(layerAlias, "field", []rune("x"))
+		}, "abcdefx"},
+		{"negative cursor", func(textField TextFieldInstanceType, layerAlias string) {
+			textField.SetCursorPosition(-3)
+			TextField.updateKeyboardEventManually(layerAlias, "field", []rune("x"))
+		}, "xabcdef"},
+		{"viewport past end", func(textField TextFieldInstanceType, layerAlias string) {
+			textField.SetViewportPosition(99)
+			UpdateDisplay(false)
+		}, "abcdef"},
+		{"negative viewport", func(textField TextFieldInstanceType, layerAlias string) {
+			textField.SetViewportPosition(-1)
+			UpdateDisplay(false)
+		}, "abcdef"},
+		{"highlight ending before the start", func(textField TextFieldInstanceType, layerAlias string) {
+			textField.SetCursorPosition(0)
+			setModifierKeys(tcell.ModShift)
+			TextField.updateKeyboardEventManually(layerAlias, "field", []rune("shift+right"))
+			TextField.updateKeyboardEventManually(layerAlias, "field", []rune("shift+left"))
+			setModifierKeys(tcell.ModNone)
+			TextField.updateKeyboardEventManually(layerAlias, "field", []rune("delete"))
+		}, "bcdef"},
+	}
+	for _, testCase := range testCases {
+		test.Run(testCase.name, func(test *testing.T) {
+			layerAlias, styleEntry := setupInputTest(test)
+			textField := TextField.Add(layerAlias, "field", styleEntry, 2, 2, 10, 20, false, "", true)
+			textField.SetValue("abcdef")
+			testCase.applySteps(textField, layerAlias)
+			UpdateDisplay(false)
+			if value := textField.GetValue(); value != testCase.expectedValue {
+				test.Fatalf("%s: expected value %q, got %q", testCase.name, testCase.expectedValue, value)
+			}
+			textFieldEntry := TextFields.Get(layerAlias, "field")
+			lastRuneIndex := len(textFieldEntry.CurrentValue) - 1
+			if textFieldEntry.CursorPosition < 0 || textFieldEntry.CursorPosition > lastRuneIndex ||
+				textFieldEntry.ViewportPosition < 0 || textFieldEntry.ViewportPosition > lastRuneIndex {
+				test.Fatalf("%s: cursor %d or viewport %d is outside 0 to %d", testCase.name, textFieldEntry.CursorPosition, textFieldEntry.ViewportPosition, lastRuneIndex)
+			}
+		})
+	}
+}

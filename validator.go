@@ -160,3 +160,23 @@ func safeSttyPanic(panicMessage interface{}) {
 	RestoreTerminalSettings()
 	panic(panicMessage)
 }
+
+/*
+getClampedIndex is a method which allows you to limit an integer index to the closed range minimum through maximum. If
+maximum is smaller than minimum, minimum is returned, so an empty range still yields a value that is safe as a lower
+bound. The package defines float64 versions of min and max for image work, which hide the built in integer ones, so
+index arithmetic uses this method instead.
+
+Example:
+
+	viewportPosition := getClampedIndex(viewportPosition, 0, maxViewportPosition)
+*/
+func getClampedIndex(value int, minimum int, maximum int) int {
+	if value > maximum {
+		value = maximum
+	}
+	if value < minimum {
+		value = minimum
+	}
+	return value
+}

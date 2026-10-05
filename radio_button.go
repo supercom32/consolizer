@@ -153,31 +153,26 @@ func (shared *radioButtonType) drawOnLayer(layerEntry types.LayerEntryType) {
 }
 
 /*
-draw is a method which draws a radio button on a given text layer. In addition, the following should be noted:
+draw is a method which allows you to draw a radio button on a given text layer, in the style given by the style entry
+passed in. Radio buttons are not drawn physically to the text layer provided. Instead, they are rendered to the
+terminal at the same time as the text layer, so they never overwrite the layer data under them, and if the radio
+button falls outside the range of the layer, only its visible portion is drawn. In addition, the following should be
+noted:
 
-- The Style of the radio button will be determined by the style entry passed in.
-
-- Radio buttons are not drawn physically to the text layer provided.
-
-- Instead, they are rendered to the terminal at the same time when the text layer is rendered.
-
-- This allows you to create radio buttons without actually overwriting the text layer data under it.
-
-- If the radio button to be drawn falls outside the range of the provided layer, then only the visible portion of the
-  radio button will be drawn.
-
-- While the radio button has keyboard focus, it is drawn with the style's focused colours, resolved by
-  getFocusedColors so that focus stays visible even when the style does not set them.
+  - While the radio button has focus, it is drawn with the style's focused colours, resolved by getFocusedColors so
+    that focus stays visible even when the style does not set them. As described for setFocusIndicatorVisible, these
+    colours are only shown while the user's last input came from the keyboard.
 
 Example:
-    radioButton.draw(&layerEntry, "Radio1", "Option 1", style, 0, 0, true, true)
+
+	radioButton.draw(&layerEntry, "Radio1", "Option 1", style, 0, 0, true, true)
 */
 func (shared *radioButtonType) draw(layerEntry *types.LayerEntryType, radioButtonAlias string, radioButtonLabel string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, isSelected bool, isEnabled bool) {
 	localStyleEntry := types.NewTuiStyleEntry(&styleEntry)
 	attributeEntry := types.NewAttributeEntry()
 	attributeEntry.ForegroundColor = localStyleEntry.RadioButton.ForegroundColor
 	attributeEntry.BackgroundColor = localStyleEntry.RadioButton.BackgroundColor
-	if isControlCurrentlyFocused(layerEntry.LayerAlias, radioButtonAlias, constants.CellTypeRadioButton) {
+	if isFocusIndicatorShown(layerEntry.LayerAlias, radioButtonAlias, constants.CellTypeRadioButton) {
 		attributeEntry.ForegroundColor, attributeEntry.BackgroundColor = getFocusedColors(localStyleEntry.RadioButton.ForegroundColor,
 			localStyleEntry.RadioButton.BackgroundColor, localStyleEntry.RadioButton.FocusedForegroundColor, localStyleEntry.RadioButton.FocusedBackgroundColor)
 	}

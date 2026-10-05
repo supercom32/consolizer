@@ -255,12 +255,14 @@ func (shared *scrollbarType) draw(layerEntry *types.LayerEntryType, scrollbarAli
 
 /*
 computeValueByHandlePosition is a method which allows you to compute the scroll bar value based on the position of the
-scroll bar handle. In addition, the following should be noted:
+scroll bar handle. If the scroll bar is disabled, no computation occurs. In addition, the following should be noted:
 
-- If the scroll bar is disabled, no computation occurs.
+  - The computed value is always kept between zero and the maximum scroll value, and is zero when the maximum is
+    zero or negative, so a scroll bar whose content fits can never produce a negative position for its control.
 
 Example:
-    scrollbar.computeValueByHandlePosition("Layer1", "Scroll1")
+
+	scrollbar.computeValueByHandlePosition("Layer1", "Scroll1")
 */
 func (shared *scrollbarType) computeValueByHandlePosition(layerAlias string, scrollbarAlias string) {
 	scrollbarEntry, isFound := ScrollBars.Lookup(layerAlias, scrollbarAlias)
@@ -283,57 +285,61 @@ func (shared *scrollbarType) computeValueByHandlePosition(layerAlias string, scr
 	// expects to happen.
 	if scrollbarEntry.HandlePosition == scrollbarEntry.Length-3 {
 		scrollbarEntry.ScrollValue = scrollbarEntry.MaxScrollValue
-		return
+	} else {
+		percentScrolled := float64(scrollbarEntry.HandlePosition) / float64(scrollbarEntry.Length)
+		scrollbarEntry.ScrollValue = int(float64(scrollbarEntry.MaxScrollValue) * percentScrolled)
 	}
-	percentScrolled := float64(scrollbarEntry.HandlePosition) / float64(scrollbarEntry.Length)
-	scrollbarEntry.ScrollValue = int(float64(scrollbarEntry.MaxScrollValue) * percentScrolled)
+	scrollbarEntry.ScrollValue = getClampedIndex(scrollbarEntry.ScrollValue, 0, scrollbarEntry.MaxScrollValue)
 }
 
 /*
 computeHandlePositionByScrollValue is a method which allows you to calculate the position of the scroll bar handle based
-on the current scroll bar value. In addition, the following should be noted:
+on the current scroll bar value, after clamping the value between zero and the maximum scroll value. If the scroll bar
+is disabled, only a negative scroll value is corrected and no other computation occurs. In addition, the following
+should be noted:
 
-- If the scroll bar is disabled, no computation occurs.
+  - A negative scroll value is never a valid position, so it is reset to zero even on a disabled scroll bar, since a
+    control may still copy the value into its own viewport.
+
+  - The handle is kept on the track, between zero and the track length, even when the scroll bar is too short to
+    have a track.
 
 Example:
-    scrollbar.computeHandlePositionByScrollValue("Layer1", "Scroll1")
+
+	scrollbar.computeHandlePositionByScrollValue("Layer1", "Scroll1")
 */
 func (shared *scrollbarType) computeHandlePositionByScrollValue(layerAlias string, scrollbarAlias string) {
 	scrollbarEntry, isFound := ScrollBars.Lookup(layerAlias, scrollbarAlias)
 	if !isFound {
 		return
 	}
+	if scrollbarEntry.ScrollValue < 0 {
+		scrollbarEntry.ScrollValue = 0
+	}
 	// If instructed not to draw scroll bars, do not compute values.
 	if scrollbarEntry.IsEnabled == false {
 		return
 	}
-	// Make sure the scroll value is valid first.
-	if scrollbarEntry.ScrollValue >= scrollbarEntry.MaxScrollValue {
-		scrollbarEntry.ScrollValue = scrollbarEntry.MaxScrollValue
-	}
-	if scrollbarEntry.ScrollValue < 0 {
-		scrollbarEntry.ScrollValue = 0
-	}
+	scrollbarEntry.ScrollValue = getClampedIndex(scrollbarEntry.ScrollValue, 0, scrollbarEntry.MaxScrollValue)
 	percentScrolled := float64(0)
 	// Protect against divide by zero cases.
-	if scrollbarEntry.MaxScrollValue != 0 {
+	if scrollbarEntry.MaxScrollValue > 0 {
 		percentScrolled = float64(scrollbarEntry.ScrollValue) / float64(scrollbarEntry.MaxScrollValue)
 	}
-	scrollbarEntry.HandlePosition = int(float64(scrollbarEntry.Length-3) * percentScrolled)
-	// Protect in case drawing over the bar limit.
-	if scrollbarEntry.HandlePosition >= scrollbarEntry.Length {
-		scrollbarEntry.HandlePosition = scrollbarEntry.Length - 3
-	}
+	scrollbarEntry.HandlePosition = getClampedIndex(int(float64(scrollbarEntry.Length-3)*percentScrolled), 0, scrollbarEntry.Length-3)
 }
 
 /*
 updateKeyboardEventManually is a method which allows you to manually update the state of a scroll bar according to a
-keystroke event. In addition, the following should be noted:
+keystroke. Up and left scroll back by one increment, down and right forward by one, and Page Up and Page Down by three,
+and a selector that owns the scroll bar has its viewport moved to match. It returns whether the screen needs updating
+and whether the keystroke was consumed. In addition, the following should be noted:
 
-- This is used when the scroll bar is not the primary focused control but still needs to react to input.
+  - The viewport position copied into the selector is clamped into the range the selector can scroll to.
 
 Example:
-    updateRequired, consumed := scrollbar.updateKeyboardEventManually("Layer1", "Scroll1", rune("up"))
+
+	isUpdateRequired, isConsumed := scrollbar.updateKeyboardEventManually("Layer1", "Scroll1", []rune("up"))
 */
 func (shared *scrollbarType) updateKeyboardEventManually(layerAlias string, scrollbarAlias string, keystroke []rune) (bool, bool) {
 	keystrokeAsString := string(keystroke)
@@ -353,6 +359,7 @@ func (shared *scrollbarType) updateKeyboardEventManually(layerAlias string, scro
 				selectorEntry := currentSelectorEntry
 				if selectorEntry.ScrollbarAlias == scrollbarAlias {
 					selectorEntry.ViewportPosition = scrollbarEntry.ScrollValue
+					Selector.normalizeIndexes(selectorEntry)
 					isScreenUpdateRequired = true
 					isKeystrokeConsumed = true
 					break
@@ -367,6 +374,7 @@ func (shared *scrollbarType) updateKeyboardEventManually(layerAlias string, scro
 				selectorEntry := currentSelectorEntry
 				if selectorEntry.ScrollbarAlias == scrollbarAlias {
 					selectorEntry.ViewportPosition = scrollbarEntry.ScrollValue
+					Selector.normalizeIndexes(selectorEntry)
 					isScreenUpdateRequired = true
 					isKeystrokeConsumed = true
 					break
@@ -381,6 +389,7 @@ func (shared *scrollbarType) updateKeyboardEventManually(layerAlias string, scro
 				selectorEntry := currentSelectorEntry
 				if selectorEntry.ScrollbarAlias == scrollbarAlias {
 					selectorEntry.ViewportPosition = scrollbarEntry.ScrollValue
+					Selector.normalizeIndexes(selectorEntry)
 					isScreenUpdateRequired = true
 					isKeystrokeConsumed = true
 					break
@@ -395,6 +404,7 @@ func (shared *scrollbarType) updateKeyboardEventManually(layerAlias string, scro
 				selectorEntry := currentSelectorEntry
 				if selectorEntry.ScrollbarAlias == scrollbarAlias {
 					selectorEntry.ViewportPosition = scrollbarEntry.ScrollValue
+					Selector.normalizeIndexes(selectorEntry)
 					isScreenUpdateRequired = true
 					isKeystrokeConsumed = true
 					break

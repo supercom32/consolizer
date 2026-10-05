@@ -163,6 +163,7 @@ func resetInputState() {
 	focusManager.modalLayers = map[string]int{}
 	focusManager.modalStack = nil
 	focusManager.changeQueue = nil
+	focusManager.isFocusIndicatorVisible = true
 	focusManager.mutex.Unlock()
 	setFocusedControl("", "", constants.NullControlType)
 	setPreviouslyHighlightedControl("", "", constants.NullControlType)

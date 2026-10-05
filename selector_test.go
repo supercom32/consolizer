@@ -5,6 +5,7 @@ import (
 	"github.com/gdamore/tcell/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/supercom32/consolizer/constants"
+	"github.com/supercom32/consolizer/types"
 	"testing"
 	"time"
 )
@@ -553,5 +554,417 @@ func TestSelectorDoubleClickInterval(test *testing.T) {
 	}
 	if interval := Selector.GetDoubleClickInterval(); interval != time.Second {
 		test.Fatalf("expected rejected intervals to leave 1s in place, got %v", interval)
+	}
+}
+
+/*
+getTestSelectionEntry is a method which allows you to build a selection entry holding a given number of items, whose
+aliases are "item0", "item1" and so on and whose display values are "Item 0", "Item 1" and so on.
+
+Example:
+
+	selectionEntry := getTestSelectionEntry(4)
+*/
+func getTestSelectionEntry(itemCount int) types.SelectionEntryType {
+	selectionEntry := NewSelectionEntry()
+	for itemIndex := 0; itemIndex < itemCount; itemIndex++ {
+		selectionEntry.Add(fmt.Sprintf("item%d", itemIndex), fmt.Sprintf("Item %d", itemIndex))
+	}
+	return selectionEntry
+}
+
+/*
+assertSelectorIndexes is a method which allows you to fail the test unless a selector's highlighted item, selected item
+and viewport position all hold the values expected.
+
+Example:
+
+	assertSelectorIndexes(test, "after Up", selectorEntry, 0, constants.SELECTED_NONE, 0)
+*/
+func assertSelectorIndexes(test *testing.T, context string, selectorEntry *types.SelectorEntryType, expectedHighlighted int, expectedSelected int, expectedViewportPosition int) {
+	test.Helper()
+	if selectorEntry.ItemHighlighted != expectedHighlighted || selectorEntry.ItemSelected != expectedSelected ||
+		selectorEntry.ViewportPosition != expectedViewportPosition {
+		test.Fatalf("%s: expected highlighted %d, selected %d, viewport %d, got highlighted %d, selected %d, viewport %d",
+			context, expectedHighlighted, expectedSelected, expectedViewportPosition,
+			selectorEntry.ItemHighlighted, selectorEntry.ItemSelected, selectorEntry.ViewportPosition)
+	}
+}
+
+/*
+TestSelectorEmptyListReceivesFocusAndArrowKeys is a test which allows you to verify the reported crash is fixed: moving
+focus with Tab onto an empty selector and pressing Up used to store a viewport position of minus one, which made the
+next screen update index the item list at minus one and panic on the event goroutine.
+
+Example:
+
+	Expected Inputs:
+		Selector "available" with three items, a disabled button "skip", and selector "signed" with no items and no
+		highlighted item, added to the tab order in that order. Focus starts on "available", then Tab, then Up, Down, Left, Right and Enter
+		with the screen updated after each key.
+
+	Expected Outputs:
+		Tab lands on "signed". No key panics. "signed" keeps highlighted minus one, selected minus one and viewport
+		zero, and reports no new selection. The four arrow keys are consumed, so only "enter" reaches the keyboard
+		buffer, since Enter selects nothing on an empty list and is left for the application.
+*/
+func TestSelectorEmptyListReceivesFocusAndArrowKeys(test *testing.T) {
+	layerAlias, styleEntry := setupInputTest(test)
+	availableSelector := Selector.Add(layerAlias, "available", styleEntry, getTestSelectionEntry(3), 2, 2, 4, 10, 1, 0, 0, false, true)
+	skipButton := Button.Add(layerAlias, "skip", "skip", styleEntry, 30, 2, 8, 3, true)
+	skipButton.SetEnabled(false)
+	signedSelector := Selector.Add(layerAlias, "signed", styleEntry, NewSelectionEntry(), 16, 2, 4, 10, 1, 0, constants.NullItemSelection, false, true)
+	for _, control := range []*BaseControlInstanceType{&availableSelector.BaseControlInstanceType, &skipButton.BaseControlInstanceType, &signedSelector.BaseControlInstanceType} {
+		if err := control.AddToTabIndex(); err != nil {
+			test.Fatalf("expected AddToTabIndex to succeed, got %v", err)
+		}
+	}
+	simScreen := startInputSimulation(test)
+	if err := SetFocus(&availableSelector); err != nil {
+		test.Fatalf("expected SetFocus to succeed, got %v", err)
+	}
+	pressTab(simScreen)
+	assertFocus(test, "after Tab", layerAlias, "signed", constants.CellTypeSelectorItem)
+
+	signedEntry := Selectors.Get(layerAlias, "signed")
+	for _, key := range []tcell.Key{tcell.KeyUp, tcell.KeyDown, tcell.KeyLeft, tcell.KeyRight, tcell.KeyEnter} {
+		pressKey(simScreen, key, 0, tcell.ModNone)
+		UpdateDisplay(false)
+		assertSelectorIndexes(test, fmt.Sprintf("after key %d", key), signedEntry, constants.NullItemSelection, constants.SELECTED_NONE, 0)
+	}
+	if signedSelector.IsNewItemSelected() {
+		test.Fatalf("expected no new selection on an empty selector")
+	}
+	assertKeyboardBuffer(test, "after keys on the empty selector", "enter")
+}
+
+/*
+TestSelectorRefilledWhileFocused is a test which allows you to verify that refilling a focused selector with
+SetSelectionEntry leaves it with a valid highlight, where it used to reset the highlight to minus one so that the next
+Up stored a viewport position of minus one and the following screen update panicked.
+
+Example:
+
+	Expected Inputs:
+		A focused selector with four items and a four row tray, item 2 highlighted, refilled with six items, then Up,
+		Down and Down with the screen updated after each key.
+
+	Expected Outputs:
+		After the refill the highlight is item 0, the selection is cleared and the viewport is 0. Up keeps item 0,
+		then Down moves to items 1 and 2. Nothing panics.
+*/
+func TestSelectorRefilledWhileFocused(test *testing.T) {
+	layerAlias, styleEntry := setupInputTest(test)
+	selector := Selector.Add(layerAlias, "list", styleEntry, getTestSelectionEntry(4), 2, 2, 4, 10, 1, 0, 2, false, true)
+	simScreen := startInputSimulation(test)
+	if err := SetFocus(&selector); err != nil {
+		test.Fatalf("expected SetFocus to succeed, got %v", err)
+	}
+	selector.SetSelectionEntry(getTestSelectionEntry(6))
+	selectorEntry := Selectors.Get(layerAlias, "list")
+	assertSelectorIndexes(test, "after refill", selectorEntry, 0, constants.SELECTED_NONE, 0)
+	for _, step := range []struct {
+		key                 tcell.Key
+		expectedHighlighted int
+	}{
+		{tcell.KeyUp, 0},
+		{tcell.KeyDown, 1},
+		{tcell.KeyDown, 2},
+	} {
+		pressKey(simScreen, step.key, 0, tcell.ModNone)
+		UpdateDisplay(false)
+		assertSelectorIndexes(test, fmt.Sprintf("after key %d", step.key), selectorEntry, step.expectedHighlighted, constants.SELECTED_NONE, 0)
+	}
+}
+
+/*
+TestSelectorKeyboardEdgeCases is a test which allows you to verify every navigation key against the selector states
+that used to produce an invalid index: an empty list, no highlight on a list with items, a highlight left out of
+range, a multiple column list, where minus one modulo the column count is minus one, a list shorter than its height,
+and a column count of zero, which used to divide by zero.
+
+Example:
+
+	Expected Inputs:
+		Each case builds a selector with the given item count, height and column count, sets its highlighted item,
+		selected item and viewport position, sends one key directly to the selector's keyboard handler, then
+		updates the screen. For example: 7 items, height 2, 3 columns, highlight minus one, key "right".
+
+	Expected Outputs:
+		The highlighted item, selected item, viewport position and consumed flag match the case, and nothing panics.
+		For the example: highlight 0 is chosen first and Right moves it to 1, selection minus one, viewport 0,
+		consumed.
+*/
+func TestSelectorKeyboardEdgeCases(test *testing.T) {
+	testCases := []struct {
+		name                     string
+		itemCount                int
+		height                   int
+		columnCount              int
+		highlighted              int
+		selected                 int
+		viewportPosition         int
+		key                      string
+		expectedHighlighted      int
+		expectedSelected         int
+		expectedViewportPosition int
+		expectedConsumed         bool
+	}{
+		{"empty up", 0, 4, 1, -1, -1, 0, "up", -1, -1, 0, true},
+		{"empty down", 0, 4, 1, -1, -1, 0, "down", -1, -1, 0, true},
+		{"empty left", 0, 4, 1, -1, -1, 0, "left", -1, -1, 0, true},
+		{"empty right", 0, 4, 1, -1, -1, 0, "right", -1, -1, 0, true},
+		{"empty enter", 0, 4, 1, -1, -1, 0, "enter", -1, -1, 0, false},
+		{"no highlight up", 4, 4, 1, -1, -1, 0, "up", 0, -1, 0, true},
+		{"no highlight down", 4, 4, 1, -1, -1, 0, "down", 1, -1, 0, true},
+		{"no highlight left", 4, 4, 1, -1, -1, 0, "left", 0, -1, 0, false},
+		{"no highlight right", 4, 4, 1, -1, -1, 0, "right", 0, -1, 0, false},
+		{"no highlight enter", 4, 4, 1, -1, -1, 0, "enter", 0, 0, 0, true},
+		{"no highlight uses selection", 4, 4, 1, -1, 2, 0, "down", 3, 2, 0, true},
+		{"highlight past end", 4, 4, 1, 9, -1, 0, "up", 0, -1, 0, true},
+		{"highlight past end uses selection", 4, 4, 1, 9, 3, 0, "enter", 3, 3, 0, true},
+		{"multiple columns no highlight up", 7, 2, 3, -1, -1, 0, "up", 0, -1, 0, true},
+		{"multiple columns no highlight down", 7, 2, 3, -1, -1, 0, "down", 3, -1, 0, true},
+		{"multiple columns no highlight left", 7, 2, 3, -1, -1, 0, "left", 0, -1, 0, false},
+		{"multiple columns no highlight right", 7, 2, 3, -1, -1, 0, "right", 1, -1, 0, true},
+		{"multiple columns down onto missing item", 7, 2, 3, 4, -1, 0, "down", 4, -1, 0, true},
+		{"multiple columns down to last row", 7, 2, 3, 3, -1, 0, "down", 6, -1, 3, true},
+		{"multiple columns right past last item", 7, 2, 3, 6, -1, 3, "right", 6, -1, 3, true},
+		{"multiple columns up scrolls back", 7, 2, 3, 3, -1, 3, "up", 0, -1, 0, true},
+		{"multiple columns misaligned viewport", 7, 2, 3, 6, -1, 2, "left", 6, -1, 3, false},
+		{"shorter than height down", 2, 5, 1, 1, -1, 0, "down", 1, -1, 0, true},
+		{"shorter than height viewport past end", 2, 5, 1, 1, -1, 4, "up", 0, -1, 0, true},
+		{"negative viewport", 6, 2, 1, 0, -1, -3, "down", 1, -1, 0, true},
+		{"zero columns left", 4, 4, 0, 1, -1, 0, "left", 1, -1, 0, false},
+		{"zero columns right", 4, 4, 0, 1, -1, 0, "right", 1, -1, 0, false},
+	}
+	for _, testCase := range testCases {
+		test.Run(testCase.name, func(test *testing.T) {
+			layerAlias, styleEntry := setupInputTest(test)
+			Selector.Add(layerAlias, "list", styleEntry, getTestSelectionEntry(testCase.itemCount), 2, 2, testCase.height, 6, testCase.columnCount, 0, 0, false, true)
+			startInputSimulation(test)
+			selectorEntry := Selectors.Get(layerAlias, "list")
+			selectorEntry.ItemHighlighted = testCase.highlighted
+			selectorEntry.ItemSelected = testCase.selected
+			selectorEntry.ViewportPosition = testCase.viewportPosition
+			_, isConsumed := Selector.updateKeyboardEventForSelector(layerAlias, "list", []rune(testCase.key))
+			UpdateDisplay(false)
+			assertSelectorIndexes(test, testCase.name, selectorEntry, testCase.expectedHighlighted, testCase.expectedSelected, testCase.expectedViewportPosition)
+			if isConsumed != testCase.expectedConsumed {
+				test.Fatalf("%s: expected consumed %t, got %t", testCase.name, testCase.expectedConsumed, isConsumed)
+			}
+			if scrollBarEntry, isFound := ScrollBars.Lookup(layerAlias, selectorEntry.ScrollbarAlias); isFound && scrollBarEntry.IsEnabled &&
+				scrollBarEntry.ScrollValue != selectorEntry.ViewportPosition {
+				test.Fatalf("%s: expected scroll value %d to follow the viewport, got %d", testCase.name, selectorEntry.ViewportPosition, scrollBarEntry.ScrollValue)
+			}
+		})
+	}
+}
+
+/*
+TestSelectorDrawWithOutOfRangeState is a test which allows you to verify that drawing a selector cannot panic whatever
+indexes it holds, since rendering runs on the event goroutine where a panic cannot be recovered by the application.
+
+Example:
+
+	Expected Inputs:
+		A selector with four items whose viewport position is set to minus five and whose highlighted item is set to
+		nine through the exported entry, followed by a screen update.
+
+	Expected Outputs:
+		The screen update completes without panicking and the selector draws its first item at its top row.
+*/
+func TestSelectorDrawWithOutOfRangeState(test *testing.T) {
+	layerAlias, styleEntry := setupInputTest(test)
+	Selector.Add(layerAlias, "list", styleEntry, getTestSelectionEntry(4), 2, 2, 4, 10, 1, 0, 0, false, true)
+	selectorEntry := GetSelector(layerAlias, "list")
+	selectorEntry.ViewportPosition = -5
+	selectorEntry.ItemHighlighted = 9
+	UpdateDisplay(false)
+	characterEntry := getCellInformationUnderMouseCursor(2, 2)
+	if characterEntry.AttributeEntry.CellType != constants.CellTypeSelectorItem || characterEntry.AttributeEntry.CellControlId != 0 {
+		test.Fatalf("expected item 0 at the top row, got cell type %d and item %d", characterEntry.AttributeEntry.CellType, characterEntry.AttributeEntry.CellControlId)
+	}
+}
+
+/*
+TestSelectorAddCorrectsOutOfRangeArguments is a test which allows you to verify that adding a selector with a viewport
+position or highlighted item that does not fit its items stores corrected values, where the negative viewport used to
+make the first screen update panic.
+
+Example:
+
+	Expected Inputs:
+		Add calls with four items and a four row tray given viewport minus three and highlight nine, viewport
+		seven and highlight two, and no items with highlight zero.
+
+	Expected Outputs:
+		Viewport 0 and highlight minus one; viewport 0 and highlight 2; viewport 0, highlight minus one and selection
+		minus one. Each screen update completes without panicking.
+*/
+func TestSelectorAddCorrectsOutOfRangeArguments(test *testing.T) {
+	testCases := []struct {
+		name                string
+		itemCount           int
+		viewportPosition    int
+		highlighted         int
+		expectedHighlighted int
+		expectedSelected    int
+	}{
+		{"negative viewport and highlight past end", 4, -3, 9, constants.NullItemSelection, 0},
+		{"viewport past end", 4, 7, 2, 2, 0},
+		{"empty list", 0, 0, 0, constants.NullItemSelection, constants.SELECTED_NONE},
+	}
+	for _, testCase := range testCases {
+		test.Run(testCase.name, func(test *testing.T) {
+			layerAlias, styleEntry := setupInputTest(test)
+			Selector.Add(layerAlias, "list", styleEntry, getTestSelectionEntry(testCase.itemCount), 2, 2, 4, 10, 1, testCase.viewportPosition, testCase.highlighted, false, true)
+			UpdateDisplay(false)
+			assertSelectorIndexes(test, testCase.name, Selectors.Get(layerAlias, "list"), testCase.expectedHighlighted, testCase.expectedSelected, 0)
+		})
+	}
+}
+
+/*
+TestSelectorDeleteItemKeepsIndexesInRange is a test which allows you to verify that DeleteItem leaves no index outside
+the shortened list and never writes into the slices the application passed in.
+
+Example:
+
+	Expected Inputs:
+		A three row selector filled through SetSelectionEntry with ten items, scrolled to viewport 7 with item 9
+		highlighted and selected, then items deleted from the front until one remains, then that item deleted.
+
+	Expected Outputs:
+		The application's own alias slice still reads "item0" to "item9". After each deletion the viewport is at
+		most the item count minus three, and never below zero, and the highlight and selection are inside the list.
+		After the last deletion highlight and selection are minus one and the viewport is 0. The scroll bar's
+		maximum always equals the largest viewport position.
+*/
+func TestSelectorDeleteItemKeepsIndexesInRange(test *testing.T) {
+	layerAlias, styleEntry := setupInputTest(test)
+	selector := Selector.Add(layerAlias, "list", styleEntry, NewSelectionEntry(), 2, 2, 3, 10, 1, 0, 0, false, true)
+	applicationEntry := getTestSelectionEntry(10)
+	selector.SetSelectionEntry(applicationEntry)
+	selector.setViewport(7)
+	selectorEntry := Selectors.Get(layerAlias, "list")
+	selectorEntry.ItemHighlighted = 9
+	selectorEntry.ItemSelected = 9
+	for remainingItems := 9; remainingItems >= 0; remainingItems-- {
+		selector.DeleteItem(0)
+		UpdateDisplay(false)
+		maxViewportPosition := remainingItems - 3
+		if maxViewportPosition < 0 {
+			maxViewportPosition = 0
+		}
+		if selectorEntry.ViewportPosition < 0 || selectorEntry.ViewportPosition > maxViewportPosition {
+			test.Fatalf("with %d items: expected viewport between 0 and %d, got %d", remainingItems, maxViewportPosition, selectorEntry.ViewportPosition)
+		}
+		if selectorEntry.ItemHighlighted >= remainingItems || selectorEntry.ItemSelected >= remainingItems {
+			test.Fatalf("with %d items: highlight %d or selection %d is out of range", remainingItems, selectorEntry.ItemHighlighted, selectorEntry.ItemSelected)
+		}
+		scrollBarEntry := ScrollBars.Get(layerAlias, selectorEntry.ScrollbarAlias)
+		if scrollBarEntry.MaxScrollValue != maxViewportPosition {
+			test.Fatalf("with %d items: expected scroll bar maximum %d, got %d", remainingItems, maxViewportPosition, scrollBarEntry.MaxScrollValue)
+		}
+	}
+	assertSelectorIndexes(test, "after deleting every item", selectorEntry, constants.NullItemSelection, constants.SELECTED_NONE, 0)
+	for itemIndex, alias := range applicationEntry.SelectionAlias {
+		if alias != fmt.Sprintf("item%d", itemIndex) {
+			test.Fatalf("expected the application's slice to be unchanged, but index %d now holds %q", itemIndex, alias)
+		}
+	}
+}
+
+/*
+TestSelectorScrollbarRangeMatchesItems is a test which allows you to verify that the scroll bar range set by
+SetSelectionEntry and AddItem is the largest viewport position, where it used to be one more, so that scrolling to
+the end showed a blank last row.
+
+Example:
+
+	Expected Inputs:
+		A three row selector given ten items with SetSelectionEntry, then one more with AddItem, then an empty list
+		with SetSelectionEntry.
+
+	Expected Outputs:
+		Scroll bar maximum 7 and enabled, then 8 and enabled, then 0 and disabled.
+*/
+func TestSelectorScrollbarRangeMatchesItems(test *testing.T) {
+	layerAlias, styleEntry := setupInputTest(test)
+	selector := Selector.Add(layerAlias, "list", styleEntry, NewSelectionEntry(), 2, 2, 3, 10, 1, 0, 0, false, true)
+	scrollBarEntry := ScrollBars.Get(layerAlias, Selectors.Get(layerAlias, "list").ScrollbarAlias)
+	selector.SetSelectionEntry(getTestSelectionEntry(10))
+	if scrollBarEntry.MaxScrollValue != 7 || !scrollBarEntry.IsEnabled {
+		test.Fatalf("after ten items: expected maximum 7 and enabled, got %d and %t", scrollBarEntry.MaxScrollValue, scrollBarEntry.IsEnabled)
+	}
+	selector.AddItem("extra", "Extra")
+	if scrollBarEntry.MaxScrollValue != 8 || !scrollBarEntry.IsEnabled {
+		test.Fatalf("after AddItem: expected maximum 8 and enabled, got %d and %t", scrollBarEntry.MaxScrollValue, scrollBarEntry.IsEnabled)
+	}
+	selector.SetSelectionEntry(NewSelectionEntry())
+	if scrollBarEntry.MaxScrollValue != 0 || scrollBarEntry.IsEnabled {
+		test.Fatalf("after an empty list: expected maximum 0 and disabled, got %d and %t", scrollBarEntry.MaxScrollValue, scrollBarEntry.IsEnabled)
+	}
+}
+
+/*
+TestSelectorClickOnStaleItemIsIgnored is a test which allows you to verify that a click on a selector cell drawn
+before the list was shortened, and not yet redrawn, does not store the vanished item's index as the selection.
+
+Example:
+
+	Expected Inputs:
+		A selector with four items is drawn, refilled with one item without a redraw, and then clicked on the row
+		where item 3 was drawn.
+
+	Expected Outputs:
+		The selection stays minus one, the highlight stays inside the one item list, and no new selection is
+		reported.
+*/
+func TestSelectorClickOnStaleItemIsIgnored(test *testing.T) {
+	layerAlias, styleEntry := setupInputTest(test)
+	selector := addTestSelector(layerAlias, styleEntry)
+	UpdateDisplay(false)
+	selector.SetSelectionEntry(getTestSelectionEntry(1))
+	SetMouseStatus(3, 5, 0, "")
+	SetMouseStatus(3, 5, 1, "")
+	Selector.updateMouseEvent()
+	selectorEntry := Selectors.Get(layerAlias, "selector")
+	if selectorEntry.ItemSelected != constants.SELECTED_NONE || selectorEntry.ItemHighlighted > 0 || selector.IsNewItemSelected() {
+		test.Fatalf("expected the stale click to be ignored, got highlighted %d, selected %d, new selection %t",
+			selectorEntry.ItemHighlighted, selectorEntry.ItemSelected, selector.IsNewItemSelected())
+	}
+}
+
+/*
+TestSelectorFocusFixesStaleHighlight is a test which allows you to verify that giving focus to a selector whose
+highlight lies past its items replaces the highlight with a valid one, and that GetAllItems returns copies.
+
+Example:
+
+	Expected Inputs:
+		A selector with three items, two selected, whose highlight is set to ten through the exported entry, then
+		focused with SetFocus. The aliases returned by GetAllItems are then overwritten.
+
+	Expected Outputs:
+		The highlight becomes 2, the selected item. The selector's own first alias is still "item0".
+*/
+func TestSelectorFocusFixesStaleHighlight(test *testing.T) {
+	layerAlias, styleEntry := setupInputTest(test)
+	selector := Selector.Add(layerAlias, "list", styleEntry, getTestSelectionEntry(3), 2, 2, 4, 10, 1, 0, 0, false, true)
+	selector.Select("item2")
+	selectorEntry := GetSelector(layerAlias, "list")
+	selectorEntry.ItemHighlighted = 10
+	if err := SetFocus(&selector); err != nil {
+		test.Fatalf("expected SetFocus to succeed, got %v", err)
+	}
+	if selectorEntry.ItemHighlighted != 2 {
+		test.Fatalf("expected highlight 2 after focus, got %d", selectorEntry.ItemHighlighted)
+	}
+	aliases, _ := selector.GetAllItems()
+	aliases[0] = "changed"
+	if selectorEntry.SelectionEntry.SelectionAlias[0] != "item0" {
+		test.Fatalf("expected GetAllItems to return a copy, but the selector now holds %q", selectorEntry.SelectionEntry.SelectionAlias[0])
 	}
 }

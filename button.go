@@ -268,25 +268,24 @@ func (shared *buttonType) drawOnLayer(layerEntry types.LayerEntryType) {
 }
 
 /*
-draw is a method which draws a button on a given text layer. The style of the button will be
-determined by the style entry passed in. In addition, the following should be noted:
+draw is a method which allows you to draw a button on a given text layer, in the style given by the style entry passed
+in. Buttons are not drawn physically to the text layer provided. Instead, they are rendered to the terminal at the
+same time as the text layer, and if the button falls outside the range of the layer, only its visible portion is
+drawn. In addition, the following should be noted:
 
-- Buttons are not drawn physically to the text layer provided. Instead, they are rendered to the terminal at the
-  same time when the text layer is rendered.
+  - styleEntry.Button.StyleMode selects the look: beveled (default, two-tone 3D frame that flips when pressed),
+    flat (single-colour frame, pressed state shown with the pressed colours), or borderless (no frame at all,
+    pressed state shown with the pressed colours). Flat and borderless keep the three-row minimum only for the
+    beveled and flat frames; a borderless button may be a single row.
 
-- If the button to be drawn falls outside the range of the provided layer, then only the visible portion of the
-  button will be drawn.
-
-- styleEntry.Button.StyleMode selects the look: beveled (default, two-tone 3D frame that flips when pressed),
-  flat (single-colour frame, pressed state shown with the pressed colours), or borderless (no frame at all,
-  pressed state shown with the pressed colours). Flat and borderless keep the three-row minimum only for the
-  beveled and flat frames; a borderless button may be a single row.
-
-- While the button has keyboard focus and is not pressed, its face and label are drawn with the style's focused
-  colours, resolved by getFocusedColors so that focus stays visible even when the style does not set them.
+  - While the button has focus and is not pressed, its face and label are drawn with the style's focused colours,
+    resolved by getFocusedColors so that focus stays visible even when the style does not set them. As described
+    for setFocusIndicatorVisible, these colours are only shown while the user's last input came from the keyboard,
+    so clicking a button does not flash them over it.
 
 Example:
-    Button.draw(&myLayer, "btn1", "OK", style, false, false, true, 0, 0, 10, 3)
+
+	Button.draw(&myLayer, "btn1", "OK", style, false, false, true, 0, 0, 10, 3)
 */
 func (shared *buttonType) draw(layerEntry *types.LayerEntryType, buttonAlias string, buttonLabel string, styleEntry types.TuiStyleEntryType, isPressed bool, isSelected bool, isEnabled bool, xLocation int, yLocation int, width int, height int) {
 	localStyleEntry := types.NewTuiStyleEntry(&styleEntry)
@@ -319,7 +318,7 @@ func (shared *buttonType) draw(layerEntry *types.LayerEntryType, buttonAlias str
 		attributeEntry.ForegroundColor = styleEntry.Button.PressedForegroundColor
 		attributeEntry.BackgroundColor = styleEntry.Button.PressedBackgroundColor
 	}
-	if !isPressed && isControlCurrentlyFocused(layerEntry.LayerAlias, buttonAlias, constants.CellTypeButton) {
+	if !isPressed && isFocusIndicatorShown(layerEntry.LayerAlias, buttonAlias, constants.CellTypeButton) {
 		attributeEntry.ForegroundColor, attributeEntry.BackgroundColor = getFocusedColors(styleEntry.Button.ForegroundColor,
 			styleEntry.Button.BackgroundColor, styleEntry.Button.FocusedForegroundColor, styleEntry.Button.FocusedBackgroundColor)
 	}

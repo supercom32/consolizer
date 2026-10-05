@@ -870,3 +870,49 @@ func TestTextboxDeleteLastCharacterThenType(test *testing.T) {
 	assert.Equal(test, []rune("Y "), textboxEntry.TextData[lastLineIndex])
 	assert.Equal(test, 1, textboxEntry.CursorXLocation)
 }
+
+/*
+TestTextboxStaleCursorIsClamped is a test which allows you to verify that a textbox cannot index outside its text
+through a cursor left out of range, whether set through the exported entry or left behind by deleting a highlighted
+whole line, each of which used to panic or leave the cursor at minus one.
+
+Example:
+
+	Expected Inputs:
+		Case one: a textbox holding "ab" whose cursor is set to line 9, column 40, then Right. Case two: a textbox
+		holding "ab" with its whole line, sentinel included, highlighted from column 0 to column 2 and deleted.
+
+	Expected Outputs:
+		Case one: no panic, and the cursor ends inside the text. Case two: the line is restored to a single blank
+		sentinel and the cursor is at line 0, column 0.
+*/
+func TestTextboxStaleCursorIsClamped(test *testing.T) {
+	test.Run("cursor set out of range", func(test *testing.T) {
+		layerAlias, styleEntry := setupInputTest(test)
+		textboxInstance := textbox.Add(layerAlias, "box", styleEntry, 2, 2, 20, 5, false)
+		textboxInstance.SetText("ab")
+		textboxEntry := GetTextbox(layerAlias, "box")
+		textboxEntry.CursorYLocation = 9
+		textboxEntry.CursorXLocation = 40
+		textbox.UpdateKeyboardEventManually(layerAlias, "box", []rune("right"))
+		UpdateDisplay(false)
+		if textboxEntry.CursorYLocation >= len(textboxEntry.TextData) ||
+			textboxEntry.CursorXLocation >= len(textboxEntry.TextData[textboxEntry.CursorYLocation]) {
+			test.Fatalf("expected the cursor inside the text, got line %d, column %d", textboxEntry.CursorYLocation, textboxEntry.CursorXLocation)
+		}
+	})
+	test.Run("whole line highlighted and deleted", func(test *testing.T) {
+		layerAlias, styleEntry := setupInputTest(test)
+		textbox.Add(layerAlias, "box", styleEntry, 2, 2, 20, 5, false)
+		textboxEntry := GetTextbox(layerAlias, "box")
+		textboxEntry.TextData = [][]rune{[]rune("ab ")}
+		textboxEntry.IsHighlightActive = true
+		textboxEntry.HighlightStartX, textboxEntry.HighlightStartY = 0, 0
+		textboxEntry.CursorXLocation, textboxEntry.CursorYLocation = 2, 0
+		textbox.deleteHighlightedText(textboxEntry)
+		if textboxEntry.CursorXLocation != 0 || textboxEntry.CursorYLocation != 0 || string(textboxEntry.TextData[0]) != " " {
+			test.Fatalf("expected an empty line with the cursor at 0, 0, got line %q with the cursor at %d, %d",
+				string(textboxEntry.TextData[0]), textboxEntry.CursorYLocation, textboxEntry.CursorXLocation)
+		}
+	})
+}

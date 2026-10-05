@@ -153,28 +153,25 @@ func (shared *checkboxType) drawOnLayer(layerEntry types.LayerEntryType) {
 }
 
 /*
-draw is a method which draws a checkbox on a given text layer. The style of the checkbox will be
-determined by the style entry passed in. In addition, the following should be noted:
+draw is a method which allows you to draw a checkbox on a given text layer, in the style given by the style entry
+passed in. Checkboxes are not drawn physically to the text layer provided. Instead, they are rendered to the terminal
+at the same time as the text layer, so they never overwrite the layer data under them, and if the checkbox falls
+outside the range of the layer, only its visible portion is drawn. In addition, the following should be noted:
 
-- Checkboxes are not drawn physically to the text layer provided. Instead, they are rendered to the terminal at
-  the same time when the text layer is rendered. This allows you to create checkboxes without actually
-  overwriting the text layer data under it.
-
-- If the checkbox to be drawn falls outside the range of the provided layer, then only the visible portion of the
-  checkbox will be drawn.
-
-- While the checkbox has keyboard focus, it is drawn with the style's focused colours, resolved by getFocusedColors
-  so that focus stays visible even when the style does not set them.
+  - While the checkbox has focus, it is drawn with the style's focused colours, resolved by getFocusedColors so that
+    focus stays visible even when the style does not set them. As described for setFocusIndicatorVisible, these
+    colours are only shown while the user's last input came from the keyboard.
 
 Example:
-    Checkbox.draw(&myLayer, "cb1", "Enable Feature", style, 0, 0, false, true)
+
+	Checkbox.draw(&myLayer, "cb1", "Enable Feature", style, 0, 0, false, true)
 */
 func (shared *checkboxType) draw(layerEntry *types.LayerEntryType, checkboxAlias string, checkboxLabel string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, isSelected bool, isEnabled bool) {
 	localStyleEntry := types.NewTuiStyleEntry(&styleEntry)
 	attributeEntry := types.NewAttributeEntry()
 	attributeEntry.ForegroundColor = localStyleEntry.Checkbox.ForegroundColor
 	attributeEntry.BackgroundColor = localStyleEntry.Checkbox.BackgroundColor
-	if isControlCurrentlyFocused(layerEntry.LayerAlias, checkboxAlias, constants.CellTypeCheckbox) {
+	if isFocusIndicatorShown(layerEntry.LayerAlias, checkboxAlias, constants.CellTypeCheckbox) {
 		attributeEntry.ForegroundColor, attributeEntry.BackgroundColor = getFocusedColors(localStyleEntry.Checkbox.ForegroundColor,
 			localStyleEntry.Checkbox.BackgroundColor, localStyleEntry.Checkbox.FocusedForegroundColor, localStyleEntry.Checkbox.FocusedBackgroundColor)
 	}

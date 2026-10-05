@@ -87,11 +87,16 @@ func UpdatePeriodicEvents() {
 }
 
 /*
-UpdateEventQueues is a method which updates all event queues so that information such as mouse clicks, keystrokes, and
-other events are properly registered.
+UpdateEventQueues is a method which allows you to process the next pending terminal event, so that information such as
+mouse clicks, keystrokes, and resizes are registered and passed on to the controls, redrawing the screen when they
+change. In addition, the following should be noted:
+
+  - Every keystroke shows the keyboard focus indicator and every mouse button press hides it, as described for
+    setFocusIndicatorVisible, and the screen is redrawn when that changes how the focused control looks.
 
 Example:
-    UpdateEventQueues()
+
+	UpdateEventQueues()
 */
 func UpdateEventQueues() {
 	// Skip event processing if screen is not initialized (e.g., in debug mode or tests)
@@ -143,6 +148,9 @@ func UpdateEventQueues() {
 
 		// Update modifier key state
 		setModifierKeys(event.Modifiers())
+		if setFocusIndicatorVisible(true) {
+			isScreenUpdateRequired = true
+		}
 
 		if strings.Contains(event.Name(), "Rune") {
 			keystroke = []rune{event.Rune()}
@@ -232,6 +240,10 @@ func UpdateEventQueues() {
 				}
 				return
 			}
+		}
+		// Any mouse button press, but not movement or the wheel, hides the keyboard focus indicator.
+		if mouseButtonNumber != 0 && lastRecordedButtonNumber == 0 && setFocusIndicatorVisible(false) {
+			isScreenUpdateRequired = true
 		}
 		bringLayerToFrontIfRequired()
 		if moveLayerIfRequired() {

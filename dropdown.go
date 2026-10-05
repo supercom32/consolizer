@@ -17,20 +17,19 @@ type DropdownInstanceType struct {
 type dropdownType struct{}
 
 /*
-updateKeyboardEvent is a method which updates the state of all dropdowns according to the current keyboard
-event. In addition, the following should be noted:
+updateKeyboardEvent is a method which allows you to update the focused dropdown according to the current keystroke.
+Enter opens the tray, or closes it and commits the tray's selection, the arrow keys move through the items while the
+tray is open, and Esc closes an open tray without changing the selection. It returns whether the screen needs
+updating and whether the keystroke was consumed. In addition, the following should be noted:
 
-- Handles Enter key to open/close the dropdown.
+  - Esc on a closed dropdown is left unconsumed so the application can treat it as a Back or Cancel action.
 
-- Handles Up/Down keys to navigate through dropdown options when open.
-
-- Handles Esc to close an open tray without changing the selection. Esc on a closed dropdown is left unconsumed
-  so the application can treat it as a Back or Cancel action.
-
-- Returns true if the screen needs to be updated due to state changes.
+  - Every index copied between the dropdown and its tray is brought back into range for the tray's items, so a
+    dropdown with no items, or with no selection, can be opened, navigated and closed safely.
 
 Example:
-    isUpdate, isConsumed := Dropdown.updateKeyboardEvent(keystroke)
+
+	isUpdateRequired, isConsumed := Dropdown.updateKeyboardEvent(keystroke)
 */
 func (shared *dropdownType) updateKeyboardEvent(keystroke []rune) (bool, bool) {
 	keystrokeAsString := string(keystroke)
@@ -60,6 +59,7 @@ func (shared *dropdownType) updateKeyboardEvent(keystroke []rune) (bool, bool) {
 			selectorEntry := Selectors.Get(focusedLayerAlias, dropdownEntry.SelectorAlias)
 			scrollBarEntry := ScrollBars.Get(focusedLayerAlias, dropdownEntry.ScrollbarAlias)
 			scrollBarEntry.ScrollValue = selectorEntry.ItemSelected
+			scrollbar.computeHandlePositionByScrollValue(focusedLayerAlias, dropdownEntry.ScrollbarAlias)
 			// Update selected item if changed
 			if dropdownEntry.ItemSelected != selectorEntry.ItemSelected {
 				dropdownEntry.ItemSelected = selectorEntry.ItemSelected
@@ -82,6 +82,7 @@ func (shared *dropdownType) updateKeyboardEvent(keystroke []rune) (bool, bool) {
 			selectorEntry := Selectors.Get(focusedLayerAlias, dropdownEntry.SelectorAlias)
 			selectorEntry.IsVisible = true
 			selectorEntry.ItemHighlighted = dropdownEntry.ItemSelected // Highlight current selection
+			Selector.normalizeIndexes(selectorEntry)
 
 			// Set focus to the selector for keyboard navigation
 			//setFocusedControl(focusedLayerAlias, dropdownEntry.SelectorAlias, constants.CellTypeSelectorItem)
@@ -105,6 +106,7 @@ func (shared *dropdownType) updateKeyboardEvent(keystroke []rune) (bool, bool) {
 		// closeAllOpen) cannot commit anything picked before Esc was pressed.
 		selectorEntry.ItemSelected = dropdownEntry.ItemSelected
 		selectorEntry.ItemHighlighted = dropdownEntry.ItemSelected
+		Selector.normalizeIndexes(selectorEntry)
 
 		// Hide dropdown components
 		selectorEntry.IsVisible = false
@@ -197,76 +199,98 @@ func (shared *DropdownInstanceType) GetSelectedItemIndex() int {
 }
 
 /*
-SetSelectedItemIndex is a method which sets the currently selected item in the dropdown by its index. In addition, the
-following should be noted:
-
-- The item index is zero-based.
-
-- If the item index specified is invalid or out of range, the request will be ignored.
+SetSelectedItemIndex is a method which allows you to set the currently selected item of a dropdown by its zero based
+index. Passing constants.SELECTED_NONE, which is minus one, clears the selection. Any other index that is negative or
+past the last item is ignored, leaving the selection unchanged.
 
 Example:
-    dropdown.SetSelectedItemIndex(2)
+
+	dropdown.SetSelectedItemIndex(2)
 */
 func (shared *DropdownInstanceType) SetSelectedItemIndex(itemIndex int) {
 	dropdownEntry := Dropdowns.Get(shared.layerAlias, shared.controlAlias)
-	if itemIndex < len(dropdownEntry.SelectionEntry.SelectionValue) {
-		dropdownEntry.ItemSelected = itemIndex
-		selectorEntry := Selectors.Get(shared.layerAlias, dropdownEntry.SelectorAlias)
+	if itemIndex < constants.SELECTED_NONE || itemIndex >= Dropdown.getItemCount(dropdownEntry) {
+		return
+	}
+	dropdownEntry.ItemSelected = itemIndex
+	if selectorEntry, isFound := Selectors.Lookup(shared.layerAlias, dropdownEntry.SelectorAlias); isFound {
 		selectorEntry.ItemSelected = itemIndex
+		Selector.normalizeIndexes(selectorEntry)
 	}
 }
 
 /*
-SetSelectionEntry is a method which overwrites the selection entry for a dropdown. In addition, the
-following should be noted:
-
-- This replaces the list of items that can be selected in the dropdown.
-
-- The currently selected item index will be reset to -1.
-
-- The associated selector and scrollbar will be updated to reflect the new items.
+getItemCount is a method which allows you to obtain the number of items of a dropdown that can be safely indexed. It is
+the length of the shorter of the alias and value slices, so any index below it is valid for both.
 
 Example:
-    dropdown.SetSelectionEntry(newSelection)
+
+	itemCount := Dropdown.getItemCount(dropdownEntry)
 */
-func (shared *DropdownInstanceType) SetSelectionEntry(selectionEntry types.SelectionEntryType) {
-	dropdownEntry := Dropdowns.Get(shared.layerAlias, shared.controlAlias)
-	dropdownEntry.SelectionEntry = selectionEntry
-	dropdownEntry.ItemSelected = -1
-
-	selectorEntry := Selectors.Get(shared.layerAlias, dropdownEntry.SelectorAlias)
-	selectorEntry.SelectionEntry = selectionEntry
-	selectorEntry.ItemSelected = -1
-
-	scrollBarEntry := ScrollBars.Get(shared.layerAlias, dropdownEntry.ScrollbarAlias)
-	scrollBarEntry.MaxScrollValue = len(selectionEntry.SelectionValue) - selectorEntry.Height
+func (shared *dropdownType) getItemCount(dropdownEntry *types.DropdownEntryType) int {
+	return getClampedIndex(len(dropdownEntry.SelectionEntry.SelectionAlias), 0, len(dropdownEntry.SelectionEntry.SelectionValue))
 }
 
 /*
-Add is a method which creates a new dropdown control on a text layer. In addition, the following should be
-noted:
+SetSelectionEntry is a method which allows you to replace the list of items a dropdown offers. The selected item is
+cleared, and the dropdown's tray is reset to match the new list: its highlight is cleared, it scrolls back to the
+first item, and its scroll bar is resized, enabled only while the items overflow the tray, and shown only while the
+tray is open. This is safe to call whether the tray is open or closed, and with an empty list. In addition, the
+following should be noted:
 
-- The dropdown consists of a main control and an associated selector for the dropdown tray.
-
-- A scrollbar is automatically added if the number of items exceeds the selector height.
-
-- The dropdown tray is initially hidden and only shown when the dropdown is clicked.
-
-- The default selected item can be specified when creating the dropdown.
+  - The dropdown keeps its own copy of the item slices, so changing the slices of the entry passed in afterwards
+    does not change the dropdown.
 
 Example:
-    dropdown := Dropdown.Add("layer1", "myDropdown", style, items, 10, 10, 5, 15, 0)
+
+	dropdown.SetSelectionEntry(newSelection)
+*/
+func (shared *DropdownInstanceType) SetSelectionEntry(selectionEntry types.SelectionEntryType) {
+	dropdownEntry := Dropdowns.Get(shared.layerAlias, shared.controlAlias)
+	dropdownEntry.SelectionEntry = Selector.getSelectionEntryCopy(selectionEntry)
+	dropdownEntry.ItemSelected = constants.SELECTED_NONE
+
+	selectorEntry, isFound := Selectors.Lookup(shared.layerAlias, dropdownEntry.SelectorAlias)
+	if !isFound {
+		return
+	}
+	selectorEntry.SelectionEntry = Selector.getSelectionEntryCopy(selectionEntry)
+	selectorEntry.ItemSelected = constants.SELECTED_NONE
+	selectorEntry.ItemHighlighted = constants.NullItemSelection
+	selectorEntry.ViewportPosition = 0
+	Selector.updateScrollbar(shared.layerAlias, selectorEntry)
+}
+
+/*
+Add is a method which allows you to create a new dropdown control on a text layer. The dropdown is made of a main
+control showing the selected item and a hidden selector for its tray, which is shown when the dropdown is opened, plus
+a scroll bar that is enabled when the items exceed the tray height. The default selected item is given by its zero
+based index. In addition, the following should be noted:
+
+  - A default item index outside the items given is stored as constants.SELECTED_NONE, so the dropdown starts with
+    no selection rather than an invalid one.
+
+  - The tray starts with the same selected item as the dropdown, so opening the tray and closing it again without
+    picking anything leaves the selection unchanged.
+
+  - The dropdown keeps its own copy of the item slices.
+
+Example:
+
+	dropdown := Dropdown.Add("layer1", "myDropdown", style, items, 10, 10, 5, 15, 0)
 */
 func (shared *dropdownType) Add(layerAlias string, dropdownAlias string, styleEntry types.TuiStyleEntryType, selectionEntry types.SelectionEntryType, xLocation int, yLocation int, selectorHeight int, itemWidth int, defaultItemSelected int) DropdownInstanceType {
-	// TODO: AddLayer validation to the default item selected.
 	newDropdownEntry := types.NewDropdownEntry()
 	newDropdownEntry.Alias = dropdownAlias
 	newDropdownEntry.StyleEntry = styleEntry
-	newDropdownEntry.SelectionEntry = selectionEntry
+	newDropdownEntry.SelectionEntry = Selector.getSelectionEntryCopy(selectionEntry)
 	newDropdownEntry.XLocation = xLocation
 	newDropdownEntry.YLocation = yLocation
 	newDropdownEntry.ItemWidth = itemWidth
 	newDropdownEntry.ItemSelected = defaultItemSelected
+	if defaultItemSelected < 0 || defaultItemSelected >= shared.getItemCount(&newDropdownEntry) {
+		newDropdownEntry.ItemSelected = constants.SELECTED_NONE
+	}
 	newDropdownEntry.TooltipAlias = stringformat.GetLastSortedUUID()
 
 	// Use the ControlMemoryManager to add the dropdown entry
@@ -286,6 +310,8 @@ func (shared *dropdownType) Add(layerAlias string, dropdownAlias string, styleEn
 	Selector.Add(layerAlias, dropdownEntry.SelectorAlias, styleEntry, selectionEntry, xLocation+1, yLocation+1, selectorHeight, selectorWidth, 1, 0, 0, false, true)
 	selectorEntry := Selectors.Get(layerAlias, dropdownEntry.SelectorAlias)
 	selectorEntry.IsVisible = false
+	// The tray starts out agreeing with the dropdown, so closing it without a pick cannot change the selection.
+	selectorEntry.ItemSelected = dropdownEntry.ItemSelected
 	dropdownEntry.ScrollbarAlias = selectorEntry.ScrollbarAlias
 	scrollBarEntry := ScrollBars.Get(layerAlias, dropdownEntry.ScrollbarAlias)
 	scrollBarEntry.IsVisible = false
@@ -361,21 +387,17 @@ func (shared *dropdownType) drawOnLayer(layerEntry types.LayerEntryType) {
 }
 
 /*
-draw is a method which draws a single dropdown on a given text layer. In addition, the following
-should be noted:
+draw is a method which allows you to draw a single dropdown on a given text layer, showing its selected item formatted
+to the dropdown's width and alignment, in the style's colours, followed by a down arrow drawn in inverted colours. In
+addition, the following should be noted:
 
-- The dropdown is drawn with a border and a down arrow indicator.
-
-- The selected item text is formatted according to the specified width and alignment.
-
-- The dropdown uses the style entry's foreground and background colors for rendering.
-
-- While the dropdown has keyboard focus, it is drawn with the style's focused colours, resolved by getFocusedColors
-  so that focus stays visible even when the style does not set them. The arrow keeps inverting whichever colours are
-  in use.
+  - While the dropdown has focus, it is drawn with the style's focused colours, resolved by getFocusedColors so that
+    focus stays visible even when the style does not set them, and the arrow inverts those instead. As described for
+    setFocusIndicatorVisible, these colours are only shown while the user's last input came from the keyboard.
 
 Example:
-    Dropdown.draw(layer, "myDropdown")
+
+	Dropdown.draw(layer, "myDropdown")
 */
 func (shared *dropdownType) draw(layerEntry *types.LayerEntryType, dropdownAlias string) {
 	layerAlias := layerEntry.LayerAlias
@@ -384,7 +406,7 @@ func (shared *dropdownType) draw(layerEntry *types.LayerEntryType, dropdownAlias
 	attributeEntry := types.NewAttributeEntry()
 	attributeEntry.ForegroundColor = localStyleEntry.Dropdown.ForegroundColor
 	attributeEntry.BackgroundColor = localStyleEntry.Dropdown.BackgroundColor
-	if isControlCurrentlyFocused(layerAlias, dropdownAlias, constants.CellTypeDropdown) {
+	if isFocusIndicatorShown(layerAlias, dropdownAlias, constants.CellTypeDropdown) {
 		attributeEntry.ForegroundColor, attributeEntry.BackgroundColor = getFocusedColors(localStyleEntry.Dropdown.ForegroundColor,
 			localStyleEntry.Dropdown.BackgroundColor, localStyleEntry.Dropdown.FocusedForegroundColor, localStyleEntry.Dropdown.FocusedBackgroundColor)
 	}
@@ -408,17 +430,16 @@ func (shared *dropdownType) draw(layerEntry *types.LayerEntryType, dropdownAlias
 }
 
 /*
-updateStateMouse is a method which updates the state of all dropdowns according to the current
-mouse event state. In addition, the following should be noted:
+updateStateMouse is a method which allows you to update the state of all dropdowns according to the current mouse
+event state. Clicking a dropdown opens its tray, clicking elsewhere closes every open tray, and dragging a tray's
+scroll bar moves the tray's viewport. It returns true if the screen needs to be updated. In addition, the following
+should be noted:
 
-- Handles mouse clicks to open/close dropdowns.
-
-- Manages scrollbar synchronization for dropdowns with many items.
-
-- Returns true if the screen needs to be updated due to state changes.
+  - A viewport position copied from a scroll bar is clamped into the range the tray can scroll to.
 
 Example:
-    isUpdate := Dropdown.updateStateMouse()
+
+	isUpdateRequired := Dropdown.updateStateMouse()
 */
 func (shared *dropdownType) updateStateMouse() bool {
 	isUpdateRequired := false
@@ -439,6 +460,7 @@ func (shared *dropdownType) updateStateMouse() bool {
 			scrollBarEntry := ScrollBars.Get(layerAlias, dropdownEntry.ScrollbarAlias)
 			if selectorEntry.ViewportPosition != scrollBarEntry.ScrollValue {
 				selectorEntry.ViewportPosition = scrollBarEntry.ScrollValue
+				Selector.normalizeIndexes(selectorEntry)
 				isUpdateRequired = true
 			}
 			if isControlCurrentlyFocused(layerAlias, dropdownEntry.Alias, constants.CellTypeDropdown) {

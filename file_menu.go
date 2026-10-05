@@ -360,10 +360,17 @@ func (shared *fileMenuType) closeAllOpenMenus() bool {
 }
 
 /*
-GetSelectedItem is a method which allows you to retrieve the currently selected item from the file menu.
+GetSelectedItem is a method which allows you to retrieve the currently selected item from the file menu, as the index
+of its heading, its index within that heading's submenu, its alias, and its display value. Reading the selection clears
+it. If nothing is selected, or the file menu does not exist, minus one, minus one and two empty strings are returned.
+In addition, the following should be noted:
+
+  - A recorded selection that no longer fits its submenu's items is ignored rather than used to index them, and the
+    submenu of a heading whose selector no longer exists is skipped.
 
 Example:
-    heading, item, alias, value := fileMenu.GetSelectedItem()
+
+	heading, item, alias, value := fileMenu.GetSelectedItem()
 */
 func (shared *FileMenuInstanceType) GetSelectedItem() (int, int, string, string) {
 	fileMenuEntry, isFound := FileMenus.Lookup(shared.layerAlias, shared.controlAlias)
@@ -372,8 +379,11 @@ func (shared *FileMenuInstanceType) GetSelectedItem() (int, int, string, string)
 	}
 	// Iterate through selectors (one per heading)
 	for headingIndex, selectorAlias := range fileMenuEntry.SelectorAliases {
-		selectorEntry := Selectors.Get(shared.layerAlias, selectorAlias)
-		if selectorEntry.ItemSelected >= 0 {
+		selectorEntry, isFound := Selectors.Lookup(shared.layerAlias, selectorAlias)
+		if !isFound {
+			continue
+		}
+		if selectorEntry.ItemSelected >= 0 && selectorEntry.ItemSelected < Selector.getItemCount(selectorEntry) {
 			// Store the values to be returned
 			itemIndex := selectorEntry.ItemSelected
 			itemAlias := selectorEntry.SelectionEntry.SelectionAlias[itemIndex]
@@ -408,15 +418,13 @@ func (shared *FileMenuInstanceType) IsOpen() bool {
 }
 
 /*
-Unselect is a method which allows you to clear the current selection for a file menu. In addition, the following should
-be noted:
-
-- This method iterates through all submenus (selectors) of the file menu and unselects any selected item.
-
-- If the file menu does not exist, no operation occurs.
+Unselect is a method which allows you to clear the current selection of a file menu, by clearing the selected item of
+every one of its submenus. If the file menu does not exist, no operation occurs, and a submenu whose selector no longer
+exists is skipped.
 
 Example:
-    fileMenu.Unselect()
+
+	fileMenu.Unselect()
 */
 func (shared *FileMenuInstanceType) Unselect() {
 	fileMenuEntry, isFound := FileMenus.Lookup(shared.layerAlias, shared.controlAlias)
@@ -425,7 +433,8 @@ func (shared *FileMenuInstanceType) Unselect() {
 	}
 	// Iterate through selectors (one per heading) and unselect them.
 	for _, selectorAlias := range fileMenuEntry.SelectorAliases {
-		selectorEntry := Selectors.Get(shared.layerAlias, selectorAlias)
-		selectorEntry.ItemSelected = constants.SELECTED_NONE
+		if selectorEntry, isFound := Selectors.Lookup(shared.layerAlias, selectorAlias); isFound {
+			selectorEntry.ItemSelected = constants.SELECTED_NONE
+		}
 	}
 }

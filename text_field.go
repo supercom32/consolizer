@@ -178,18 +178,15 @@ func (shared *textFieldType) drawOnLayer(layerEntry types.LayerEntryType) {
 }
 
 /*
-drawInputString is a method which draws the input string for a text field. In addition, the following should be noted:
+drawInputString is a method which allows you to draw the value of a text field, starting from a given rune position,
+in the field's style. Password protected values are masked, the cursor is drawn while the field has focus, and
+highlighted text is drawn in the highlight colours. In addition, the following should be noted:
 
-- The input string is drawn with the specified style and attributes.
-
-- If the text field is password protected, characters are masked.
-
-- The cursor is drawn if the text field is currently focused.
-
-- Highlighted text is drawn with inverted colors if active.
+  - A starting position outside the value is clamped into it, so drawing cannot panic on the event goroutine.
 
 Example:
-    TextField.drawInputString(&layerEntry, style, "Text1", 0, 0, 20, 0, runes)
+
+	TextField.drawInputString(&layerEntry, style, "Text1", 0, 0, 20, 0, runes)
 */
 func (shared *textFieldType) drawInputString(layerEntry *types.LayerEntryType, styleEntry types.TuiStyleEntryType, textFieldAlias string, xLocation int, yLocation int, width int, stringPosition int, inputValue []rune) {
 	attributeEntry := types.NewAttributeEntry()
@@ -199,6 +196,7 @@ func (shared *textFieldType) drawInputString(layerEntry *types.LayerEntryType, s
 	attributeEntry.CellControlAlias = textFieldAlias
 	// Take a rune-boundary prefix that fits the field width in COLUMNS so a trailing wide rune is
 	// never split across the right edge.
+	stringPosition = getClampedIndex(stringPosition, 0, len(inputValue)-1)
 	runesToDraw, _ := stringformat.GetRunesThatFitInColumnCountFromStart(inputValue[stringPosition:], width)
 	textFieldEntry := TextFields.Get(layerEntry.LayerAlias, textFieldAlias)
 	focusedControl := getFocusedControl()
@@ -303,6 +301,27 @@ func (shared *textFieldType) updateViewport(textFieldEntry *types.TextFieldEntry
 }
 
 /*
+normalizeIndexes is a method which allows you to bring a text field's cursor, viewport and highlight positions back in
+line with its current value, so that none of them can be used to index outside it. Each position is clamped between
+zero and the index of the value's trailing sentinel blank, and an empty value is given that sentinel first. It is
+called before a keystroke is processed and whenever one of the positions is set directly.
+
+Example:
+
+	TextField.normalizeIndexes(textFieldEntry)
+*/
+func (shared *textFieldType) normalizeIndexes(textFieldEntry *types.TextFieldEntryType) {
+	if len(textFieldEntry.CurrentValue) == 0 {
+		textFieldEntry.CurrentValue = []rune{' '}
+	}
+	lastRuneIndex := len(textFieldEntry.CurrentValue) - 1
+	textFieldEntry.CursorPosition = getClampedIndex(textFieldEntry.CursorPosition, 0, lastRuneIndex)
+	textFieldEntry.ViewportPosition = getClampedIndex(textFieldEntry.ViewportPosition, 0, lastRuneIndex)
+	textFieldEntry.HighlightStart = getClampedIndex(textFieldEntry.HighlightStart, 0, lastRuneIndex)
+	textFieldEntry.HighlightEnd = getClampedIndex(textFieldEntry.HighlightEnd, 0, lastRuneIndex)
+}
+
+/*
 insertCharacterAtPosition is a method which inserts a character into a given text field. The location to insert is determined automatically by the current cursor position.
 
 Example:
@@ -376,10 +395,16 @@ func (shared *textFieldType) updateCursor(textFieldEntry *types.TextFieldEntryTy
 }
 
 /*
-updateKeyboardEventManually is a method which manually updates the state of a text field according to a keystroke event.
+updateKeyboardEventManually is a method which allows you to update the state of a text field according to a keystroke,
+editing its value, moving its cursor, or changing its highlight. It returns whether the screen needs updating and
+whether the keystroke was consumed. In addition, the following should be noted:
+
+  - The cursor, viewport and highlight positions are clamped to the current value before the keystroke is applied,
+    so positions left behind by a shorter value, or set directly, cannot be used to index outside it.
 
 Example:
-    updateRequired, consumed := TextField.updateKeyboardEventManually("Layer1", "Text1", rune("a"))
+
+	isUpdateRequired, isConsumed := TextField.updateKeyboardEventManually("Layer1", "Text1", []rune("a"))
 */
 func (shared *textFieldType) updateKeyboardEventManually(layerAlias string, textFieldAlias string, keystroke []rune) (bool, bool) {
 	keystrokeAsString := string(keystroke)
@@ -389,6 +414,7 @@ func (shared *textFieldType) updateKeyboardEventManually(layerAlias string, text
 	if !isFound || !textFieldEntry.IsEnabled {
 		return false, false
 	}
+	shared.normalizeIndexes(textFieldEntry)
 
 	// Windows Quirk: On Linux, the Shift key is only reported as "pressed" when used with non-character keys
 	// (e.g., Shift+Delete). For regular character input like capital letters or symbols (e.g., Shift+A or Shift+;),
@@ -842,20 +868,22 @@ func (shared *textFieldType) updateKeyboardEventTextboxWithCommands(keystroke ..
 }
 
 /*
-SetValue is a method which sets the current value of your text field. In addition, the following should be noted:
-
-- If the text field is password protected, the value will be stored but displayed as masked characters.
-
-- If the text field does not exist, the request will be ignored.
+SetValue is a method which allows you to set the current value of a text field. The cursor is placed after the last
+character, any highlight is cleared, and the viewport scrolls to show the cursor. If the text field is password
+protected, the value is stored as given but displayed masked. If the text field does not exist, the request is
+ignored.
 
 Example:
-    textField.SetValue("New Value")
+
+	textField.SetValue("New Value")
 */
 func (shared *TextFieldInstanceType) SetValue(value string) *TextFieldInstanceType {
 	if textFieldEntry, isFound := TextFields.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 		validatorTextField(shared.layerAlias, shared.controlAlias)
 		textFieldEntry.CurrentValue = []rune(value + " ")
-		textFieldEntry.CursorPosition = len(value)
+		textFieldEntry.CursorPosition = len(textFieldEntry.CurrentValue) - 1
+		textFieldEntry.IsHighlightActive = false
+		TextField.normalizeIndexes(textFieldEntry)
 		TextField.updateViewport(textFieldEntry)
 	}
 	return shared
@@ -942,39 +970,38 @@ func (shared *TextFieldInstanceType) SetOnValueChanged(fn func(current string) s
 }
 
 /*
-SetCursorPosition is a method which sets the position of the cursor within the text field. In addition, the following
-should be noted:
-
-- The cursor position is zero-based.
-
-- The viewport will automatically adjust to keep the cursor visible.
+SetCursorPosition is a method which allows you to set the zero based rune position of the cursor within a text field,
+and scrolls the viewport to keep the cursor visible. A position before the start or past the end of the value is
+clamped to the nearest valid position.
 
 Example:
-    textField.SetCursorPosition(10)
+
+	textField.SetCursorPosition(10)
 */
 func (shared *TextFieldInstanceType) SetCursorPosition(position int) *TextFieldInstanceType {
 	if textFieldEntry, isFound := TextFields.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 		validatorTextField(shared.layerAlias, shared.controlAlias)
 		textFieldEntry.CursorPosition = position
+		TextField.normalizeIndexes(textFieldEntry)
+		TextField.updateViewport(textFieldEntry)
 	}
 	return shared
 }
 
 /*
-SetViewportPosition is a method which sets the starting position of the visible portion of the text field. In addition,
-the following should be noted:
-
-- The viewport position is zero-based.
-
-- The cursor will remain visible within the viewport.
+SetViewportPosition is a method which allows you to set the zero based rune position of the first character shown in
+a text field. A position before the start or past the end of the value is clamped to the nearest valid position. The
+cursor is not moved, so it may lie outside the visible portion until the next keystroke scrolls it back into view.
 
 Example:
-    textField.SetViewportPosition(5)
+
+	textField.SetViewportPosition(5)
 */
 func (shared *TextFieldInstanceType) SetViewportPosition(position int) *TextFieldInstanceType {
 	if textFieldEntry, isFound := TextFields.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 		validatorTextField(shared.layerAlias, shared.controlAlias)
 		textFieldEntry.ViewportPosition = position
+		TextField.normalizeIndexes(textFieldEntry)
 	}
 	return shared
 }

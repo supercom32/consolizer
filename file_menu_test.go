@@ -76,3 +76,29 @@ func TestFileMenuEscWithNoOpenMenuIsNotConsumed(test *testing.T) {
 	}
 	assertKeyboardBuffer(test, "after Esc with no open file menu", "esc")
 }
+
+/*
+TestFileMenuGetSelectedItemIgnoresStaleSelection is a test which allows you to verify that GetSelectedItem does not
+index a submenu with a recorded selection that no longer fits it, which used to panic.
+
+Example:
+
+	Expected Inputs:
+		A file menu with the heading "File" whose submenu has two items, with the submenu's selection set to five
+		through the exported selector entry.
+
+	Expected Outputs:
+		GetSelectedItem reports nothing selected: minus one, minus one, and two empty strings.
+*/
+func TestFileMenuGetSelectedItemIgnoresStaleSelection(test *testing.T) {
+	layerAlias, styleEntry := setupInputTest(test)
+	menuSelection := types.NewSelectionEntry()
+	menuSelection.Add("open", "Open")
+	menuSelection.Add("exit", "Exit")
+	fileMenu := FileMenu.Add(layerAlias, "menu", styleEntry, []string{"File"}, []types.SelectionEntryType{menuSelection}, 0, 0, true)
+	GetSelector(layerAlias, FileMenus.Get(layerAlias, "menu").SelectorAliases[0]).ItemSelected = 5
+	headingIndex, itemIndex, itemAlias, itemValue := fileMenu.GetSelectedItem()
+	if headingIndex != -1 || itemIndex != -1 || itemAlias != "" || itemValue != "" {
+		test.Fatalf("expected nothing selected, got (%d, %d, %q, %q)", headingIndex, itemIndex, itemAlias, itemValue)
+	}
+}

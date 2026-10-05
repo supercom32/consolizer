@@ -1353,15 +1353,16 @@ func (shared *textboxType) UpdateKeyboardEventTextboxWithCommands(keystroke ...s
 }
 
 /*
-UpdateKeyboardEventManually is a method which allows you to process a keyboard event for a specific textbox. In
-addition, the following should be noted:
+UpdateKeyboardEventManually is a method which allows you to process a keystroke for a specific textbox, handling
+cursor movement, text editing, highlighting and clipboard operations. It returns whether the screen needs updating and
+whether the keystroke was consumed. In addition, the following should be noted:
 
-- Handles cursor movement, text editing, and clipboard operations.
-
-- Manages text highlighting and selection.
+  - The cursor is clamped to the text before the keystroke is applied, so a cursor set out of range through the
+    exported entry cannot be used to index outside the text.
 
 Example:
-    update, consumed := textbox.UpdateKeyboardEventManually("layer1", "textbox1", rune("A"))
+
+	isUpdateRequired, isConsumed := textbox.UpdateKeyboardEventManually("layer1", "textbox1", []rune("A"))
 */
 func (shared *textboxType) UpdateKeyboardEventManually(layerAlias string, textboxAlias string, keystroke []rune) (bool, bool) {
 	isScreenUpdateRequired := false
@@ -1371,6 +1372,8 @@ func (shared *textboxType) UpdateKeyboardEventManually(layerAlias string, textbo
 	if !isFound {
 		return isScreenUpdateRequired, isKeystrokeConsumed
 	}
+	// The cursor is clamped first, since every case below indexes TextData with it.
+	shared.updateCursor(textboxEntry, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
 
 	// Store old cursor position for highlight updates
 	oldCursorX := textboxEntry.CursorXLocation
@@ -1802,17 +1805,15 @@ func (shared *textboxType) getHighlightedText(textboxEntry *types.TextboxEntryTy
 }
 
 /*
-deleteHighlightedText is a method which allows you to delete the currently highlighted text. In addition, the following
-should be noted:
+deleteHighlightedText is a method which allows you to delete the highlighted text of a textbox, on one line or across
+several, and move the cursor to where the deleted text began. In addition, the following should be noted:
 
-- Removes all text within the highlight range.
-
-- Handles both single-line and multi-line highlights.
-
-- Updates the cursor position to the start of the deleted text.
+  - Deleting a whole line, its trailing blank sentinel included, leaves that line empty, so the sentinel is restored
+    and the cursor is clamped to the line, never left at minus one.
 
 Example:
-    textbox.deleteHighlightedText(entry)
+
+	textbox.deleteHighlightedText(entry)
 */
 func (shared *textboxType) deleteHighlightedText(textboxEntry *types.TextboxEntryType) {
 	// Determine the correct start and end positions for highlighting
@@ -1904,13 +1905,13 @@ func (shared *textboxType) deleteHighlightedText(textboxEntry *types.TextboxEntr
 		textboxEntry.TextData = append(textboxEntry.TextData, []rune{' '})
 	}
 
-	// Ensure the cursor position is valid
-	if textboxEntry.CursorYLocation >= len(textboxEntry.TextData) {
-		textboxEntry.CursorYLocation = len(textboxEntry.TextData) - 1
+	// Ensure the cursor position is valid. Deleting a whole line, sentinel included, can leave it empty, so the
+	// sentinel is restored before the cursor is clamped to the line.
+	textboxEntry.CursorYLocation = getClampedIndex(textboxEntry.CursorYLocation, 0, len(textboxEntry.TextData)-1)
+	if len(textboxEntry.TextData[textboxEntry.CursorYLocation]) == 0 {
+		textboxEntry.TextData[textboxEntry.CursorYLocation] = []rune{' '}
 	}
-	if textboxEntry.CursorXLocation >= len(textboxEntry.TextData[textboxEntry.CursorYLocation]) {
-		textboxEntry.CursorXLocation = len(textboxEntry.TextData[textboxEntry.CursorYLocation]) - 1
-	}
+	textboxEntry.CursorXLocation = getClampedIndex(textboxEntry.CursorXLocation, 0, len(textboxEntry.TextData[textboxEntry.CursorYLocation])-1)
 
 	// Ensure each line ends with a space character for the cursor
 	for i := 0; i < len(textboxEntry.TextData); i++ {

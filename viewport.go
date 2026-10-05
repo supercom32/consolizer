@@ -130,10 +130,13 @@ func (shared *ViewportInstanceType) SetContent(text string) *ViewportInstanceTyp
 }
 
 /*
-SetViewport is a method which allows you to set the viewport scroll position.
+SetViewport is a method which allows you to set the viewport scroll position, as the column and line of the content
+shown in the viewport's top left corner. A negative column or line is treated as zero, since content cannot be
+scrolled to before its start.
 
 Example:
-    vp.SetViewport(0, 10)
+
+	vp.SetViewport(0, 10)
 */
 func (shared *ViewportInstanceType) SetViewport(xLocation int, yLocation int) *ViewportInstanceType {
 	viewportEntry := GetViewport(shared.layerAlias, shared.controlAlias)
@@ -141,8 +144,8 @@ func (shared *ViewportInstanceType) SetViewport(xLocation int, yLocation int) *V
 		return shared
 	}
 
-	viewportEntry.ViewportXLocation = xLocation
-	viewportEntry.ViewportYLocation = yLocation
+	viewportEntry.ViewportXLocation = getClampedIndex(xLocation, 0, xLocation)
+	viewportEntry.ViewportYLocation = getClampedIndex(yLocation, 0, yLocation)
 
 	// Update scrollbars
 	viewport.setViewportMaxScrollBarValues(shared.layerAlias, shared.controlAlias)
@@ -171,14 +174,16 @@ func (shared *ViewportInstanceType) ScrollToBottom() *ViewportInstanceType {
 }
 
 /*
-SetMaxHistoryLines is a method which allows you to set the maximum number of lines to keep in history.
+SetMaxHistoryLines is a method which allows you to set the maximum number of lines to keep in history. A negative
+number of lines is ignored, leaving the current limit unchanged.
 
 Example:
-    vp.SetMaxHistoryLines(500)
+
+	vp.SetMaxHistoryLines(500)
 */
 func (shared *ViewportInstanceType) SetMaxHistoryLines(maxLines int) *ViewportInstanceType {
 	viewportEntry := GetViewport(shared.layerAlias, shared.controlAlias)
-	if viewportEntry == nil {
+	if viewportEntry == nil || maxLines < 0 {
 		return shared
 	}
 
@@ -346,13 +351,16 @@ func (shared *viewportType) processTextWithMarkup(textToPrint string, widthOfLin
 }
 
 /*
-trimHistory is a method which allows you to trim the viewport's history to the maximum number of lines allowed.
+trimHistory is a method which allows you to trim the viewport's history to the maximum number of lines allowed. A
+negative maximum, which can only be given when the viewport is added, is treated as no limit rather than used to slice
+the history.
 
 Example:
-    viewport.trimHistory(entry)
+
+	viewport.trimHistory(entry)
 */
 func (shared *viewportType) trimHistory(viewportEntry *types.ViewportEntryType) {
-	if viewportEntry.IsHistoryEnabled && len(viewportEntry.TextData) > viewportEntry.MaxHistoryLines {
+	if viewportEntry.IsHistoryEnabled && viewportEntry.MaxHistoryLines >= 0 && len(viewportEntry.TextData) > viewportEntry.MaxHistoryLines {
 		// Keep only the most recent MaxHistoryLines
 		viewportEntry.TextData = viewportEntry.TextData[len(viewportEntry.TextData)-viewportEntry.MaxHistoryLines:]
 		// Adjust viewport position
@@ -363,16 +371,19 @@ func (shared *viewportType) trimHistory(viewportEntry *types.ViewportEntryType) 
 }
 
 /*
-trimToVisible is a method which allows you to trim the viewport's text data to only what is currently visible.
+trimToVisible is a method which allows you to trim the viewport's text data to only what is currently visible. A
+viewport too small to show any line, such as a bordered one less than three rows high, keeps no lines.
 
 Example:
-    viewport.trimToVisible(entry)
+
+	viewport.trimToVisible(entry)
 */
 func (shared *viewportType) trimToVisible(viewportEntry *types.ViewportEntryType) {
 	effectiveHeight := viewportEntry.Height
 	if viewportEntry.IsBorderDrawn {
 		effectiveHeight -= 2
 	}
+	effectiveHeight = getClampedIndex(effectiveHeight, 0, effectiveHeight)
 
 	if len(viewportEntry.TextData) > effectiveHeight {
 		// Keep only the most recent lines that fit in the viewport
@@ -802,10 +813,15 @@ func (shared *viewportType) drawBorder(layerEntry *types.LayerEntryType, styleEn
 }
 
 /*
-drawContent is a method which allows you to draw the content of the viewport.
+drawContent is a method which allows you to draw the lines of a viewport that fall within its scroll position, inside
+its border and scroll bars. In addition, the following should be noted:
+
+  - A negative scroll position is drawn as zero rather than used as an index, so drawing cannot panic on the event
+    goroutine.
 
 Example:
-    viewport.drawContent(layer, "myVP", style, attr, 1, 1, 38, 8)
+
+	viewport.drawContent(layer, "myVP", style, attr, 1, 1, 38, 8)
 */
 func (shared *viewportType) drawContent(layerEntry *types.LayerEntryType, viewportAlias string, styleEntry types.TuiStyleEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, width int, height int) {
 	viewportEntry := GetViewport(layerEntry.LayerAlias, viewportAlias)
@@ -864,11 +880,11 @@ func (shared *viewportType) drawContent(layerEntry *types.LayerEntryType, viewpo
 	// Draw each line of text in the viewport
 	for y := 0; y < contentHeight; y++ {
 		textDataY := y + viewportEntry.ViewportYLocation
-		if textDataY < len(viewportEntry.TextData) {
+		if textDataY >= 0 && textDataY < len(viewportEntry.TextData) {
 			line := viewportEntry.TextData[textDataY]
 
 			// Apply horizontal scrolling
-			startX := viewportEntry.ViewportXLocation
+			startX := getClampedIndex(viewportEntry.ViewportXLocation, 0, viewportEntry.ViewportXLocation)
 			endX := startX + contentWidth
 			if endX > len(line) {
 				endX = len(line)

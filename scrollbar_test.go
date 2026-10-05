@@ -350,3 +350,39 @@ func TestScrollbarKeyboardEvent(test *testing.T) {
 		fmt.Println("Scrollbar value is incorrect")
 	}
 }
+
+/*
+TestScrollbarValueNeverNegative is a test which allows you to verify that a scroll bar never computes a negative
+value, which a selector or viewport would copy into its own position and then use as an index.
+
+Example:
+
+	Expected Inputs:
+		An enabled scroll bar of length ten whose maximum is minus three, with its handle moved to the end of its
+		track; the same scroll bar disabled with its value set to minus four; and an enabled scroll bar of length
+		two with maximum five and value five.
+
+	Expected Outputs:
+		The first computes value 0. The second corrects its value to 0. The third keeps its handle at position 0.
+*/
+func TestScrollbarValueNeverNegative(test *testing.T) {
+	layer1, _, _, styleEntry := CommonTestSetup(test)
+	layerAlias := layer1.GetAlias()
+	scrollbar.Add(layerAlias, "negative", styleEntry, 0, 0, 10, -2, 0, 1, false)
+	scrollbarEntry := ScrollBars.Get(layerAlias, "negative")
+	scrollbarEntry.HandlePosition = scrollbarEntry.Length - 3
+	scrollbar.computeValueByHandlePosition(layerAlias, "negative")
+	if scrollbarEntry.ScrollValue != 0 {
+		test.Fatalf("expected value 0 for a negative maximum, got %d", scrollbarEntry.ScrollValue)
+	}
+	scrollbarEntry.IsEnabled = false
+	scrollbarEntry.ScrollValue = -4
+	scrollbar.computeHandlePositionByScrollValue(layerAlias, "negative")
+	if scrollbarEntry.ScrollValue != 0 {
+		test.Fatalf("expected a disabled scroll bar to correct value minus four to 0, got %d", scrollbarEntry.ScrollValue)
+	}
+	scrollbar.Add(layerAlias, "short", styleEntry, 5, 0, 2, 6, 5, 1, false)
+	if handlePosition := ScrollBars.Get(layerAlias, "short").HandlePosition; handlePosition != 0 {
+		test.Fatalf("expected the handle of a scroll bar too short for a track to stay at 0, got %d", handlePosition)
+	}
+}

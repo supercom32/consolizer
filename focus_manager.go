@@ -121,18 +121,20 @@ Example:
 	focusManager.mutex.Lock()
 */
 type focusManagerType struct {
-	mutex          sync.Mutex
-	focusedControl controlIdentifierType
-	scopes         map[string]*focusScopeType
-	nextSequence   int
-	modalLayers    map[string]int
-	modalStack     []modalEntryType
-	changeQueue    []FocusChangeType
+	mutex                   sync.Mutex
+	focusedControl          controlIdentifierType
+	scopes                  map[string]*focusScopeType
+	nextSequence            int
+	modalLayers             map[string]int
+	modalStack              []modalEntryType
+	changeQueue             []FocusChangeType
+	isFocusIndicatorVisible bool
 }
 
 var focusManager = focusManagerType{
-	scopes:      map[string]*focusScopeType{},
-	modalLayers: map[string]int{},
+	scopes:                  map[string]*focusScopeType{},
+	modalLayers:             map[string]int{},
+	isFocusIndicatorVisible: true,
 }
 
 /*
@@ -412,8 +414,9 @@ noted:
   - An identifier with an empty control alias clears focus, and is stored as the empty identifier so that "no focus"
     has exactly one representation.
 
-  - When a selector gains focus with no item highlighted, its selected item, or its first item, is highlighted, so
-    that its focus is visible and Enter has an item to pick.
+  - When a selector gains focus with no valid item highlighted, its selected item, or its first item, is
+    highlighted, so that its focus is visible and Enter has an item to pick. An empty selector is left with no
+    highlight.
 
 Example:
 
@@ -429,12 +432,8 @@ func (shared *focusManagerType) setFocusLocked(control controlIdentifierType) {
 	}
 	shared.focusedControl = control
 	if control.controlType == constants.CellTypeSelectorItem {
-		if selectorEntry, isFound := Selectors.Lookup(control.layerAlias, control.controlAlias); isFound &&
-			selectorEntry.ItemHighlighted < 0 && len(selectorEntry.SelectionEntry.SelectionValue) > 0 {
-			selectorEntry.ItemHighlighted = 0
-			if selectorEntry.ItemSelected >= 0 && selectorEntry.ItemSelected < len(selectorEntry.SelectionEntry.SelectionValue) {
-				selectorEntry.ItemHighlighted = selectorEntry.ItemSelected
-			}
+		if selectorEntry, isFound := Selectors.Lookup(control.layerAlias, control.controlAlias); isFound {
+			Selector.highlightStartingItem(selectorEntry)
 		}
 	}
 }
@@ -983,6 +982,57 @@ func isControlCurrentlyFocused(layerAlias string, controlAlias string, cellType 
 	defer focusManager.mutex.Unlock()
 	focusedControl := focusManager.focusedControl
 	return focusedControl.layerAlias == layerAlias && focusedControl.controlAlias == controlAlias && focusedControl.controlType == cellType
+}
+
+/*
+setFocusIndicatorVisible is a method which allows you to record whether the focused control should currently be drawn
+with its focus indicator, the style's focused colours. The indicator follows the input method last used, as the
+:focus-visible rule does in web browsers: a keystroke shows it, so a keyboard user can always see which control will
+receive their keys, and a mouse button press hides it, since a mouse user already knows what they clicked. It returns
+true when the setting changed while a control has focus, which means the screen needs to be redrawn. In addition, the
+following should be noted:
+
+  - Only how focus is drawn depends on this setting. Which control has focus, and so where keystrokes go, is the
+    same either way, and a control focused by a click still shows its indicator once the user presses a key.
+
+  - Focus moved by the application with SetFocus is drawn according to the input method the user last used, so it
+    shows the indicator until the user first presses a mouse button.
+
+Example:
+
+	isRedrawRequired := setFocusIndicatorVisible(false)
+*/
+func setFocusIndicatorVisible(isVisible bool) bool {
+	focusManager.mutex.Lock()
+	defer focusManager.mutex.Unlock()
+	if focusManager.isFocusIndicatorVisible == isVisible {
+		return false
+	}
+	focusManager.isFocusIndicatorVisible = isVisible
+	return focusManager.focusedControl.controlAlias != ""
+}
+
+/*
+isFocusIndicatorShown is a method which allows you to check whether a control should be drawn with its focus
+indicator, which is the case only while it is the focused control and the user's last input came from the keyboard,
+as described for setFocusIndicatorVisible. Control drawing uses this rather than isControlCurrentlyFocused, so that
+clicking a control focuses it without flashing the keyboard focus colours over it.
+
+Example:
+
+	if isFocusIndicatorShown("layer1", "ok", constants.CellTypeButton) {
+		foregroundColor, backgroundColor = getFocusedColors(foregroundColor, backgroundColor, focusedForeground, focusedBackground)
+	}
+*/
+func isFocusIndicatorShown(layerAlias string, controlAlias string, cellType int) bool {
+	if controlAlias == "" {
+		return false
+	}
+	focusManager.mutex.Lock()
+	defer focusManager.mutex.Unlock()
+	focusedControl := focusManager.focusedControl
+	return focusManager.isFocusIndicatorVisible && focusedControl.layerAlias == layerAlias &&
+		focusedControl.controlAlias == controlAlias && focusedControl.controlType == cellType
 }
 
 /*

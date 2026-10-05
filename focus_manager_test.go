@@ -1021,3 +1021,190 @@ func TestFocusStateConcurrentAccessIsConsistent(test *testing.T) {
 	close(stop)
 	<-done
 }
+
+/*
+getRenderedCellColors is a method which allows you to redraw the screen and obtain the foreground and background colours
+of the screen cell at a given location.
+
+Example:
+
+	foregroundColor, backgroundColor := getRenderedCellColors(4, 2)
+*/
+func getRenderedCellColors(xLocation int, yLocation int) (constants.ColorType, constants.ColorType) {
+	UpdateDisplay(false)
+	attributeEntry := commonResource.screenLayer.CharacterMemory[yLocation][xLocation].AttributeEntry
+	return attributeEntry.ForegroundColor, attributeEntry.BackgroundColor
+}
+
+/*
+TestFocusIndicatorFollowsInputMethod is a test which allows you to verify that clicking a control focuses it without
+drawing the keyboard focus colours, and that a keystroke then shows them, for every control that draws focus colours.
+
+Example:
+
+	Expected Inputs:
+		One case per control: a button, a checkbox, a radio button, a dropdown and a bordered selector, each clicked
+		once, then the key "x" is pressed, then the control is clicked again. A dropdown's tray is closed after each
+		click. The cell sampled is the clicked cell, except for the selector, whose top left border cell is sampled.
+
+	Expected Outputs:
+		After each click the control has focus and the sampled cell has the control's normal colours. After "x" the
+		same cell has the colours getFocusedColors resolves from the style's focused colours.
+*/
+func TestFocusIndicatorFollowsInputMethod(test *testing.T) {
+	type styleColorsFunc func(styleEntry types.TuiStyleEntryType) (constants.ColorType, constants.ColorType, constants.ColorType, constants.ColorType)
+	testCases := []struct {
+		name            string
+		addControl      func(layerAlias string, styleEntry types.TuiStyleEntryType)
+		controlType     int
+		clickXLocation  int
+		clickYLocation  int
+		sampleXLocation int
+		sampleYLocation int
+		getStyleColors  styleColorsFunc
+	}{
+		{
+			name: "button",
+			addControl: func(layerAlias string, styleEntry types.TuiStyleEntryType) {
+				Button.Add(layerAlias, "control", "control", styleEntry, 1, 1, 12, 3, true)
+			},
+			controlType:    constants.CellTypeButton,
+			clickXLocation: 4, clickYLocation: 2, sampleXLocation: 4, sampleYLocation: 2,
+			getStyleColors: func(styleEntry types.TuiStyleEntryType) (constants.ColorType, constants.ColorType, constants.ColorType, constants.ColorType) {
+				return styleEntry.Button.ForegroundColor, styleEntry.Button.BackgroundColor, styleEntry.Button.FocusedForegroundColor, styleEntry.Button.FocusedBackgroundColor
+			},
+		},
+		{
+			name: "checkbox",
+			addControl: func(layerAlias string, styleEntry types.TuiStyleEntryType) {
+				Checkbox.Add(layerAlias, "control", "control", styleEntry, 2, 2, false, true)
+			},
+			controlType:    constants.CellTypeCheckbox,
+			clickXLocation: 2, clickYLocation: 2, sampleXLocation: 2, sampleYLocation: 2,
+			getStyleColors: func(styleEntry types.TuiStyleEntryType) (constants.ColorType, constants.ColorType, constants.ColorType, constants.ColorType) {
+				return styleEntry.Checkbox.ForegroundColor, styleEntry.Checkbox.BackgroundColor, styleEntry.Checkbox.FocusedForegroundColor, styleEntry.Checkbox.FocusedBackgroundColor
+			},
+		},
+		{
+			name: "radio button",
+			addControl: func(layerAlias string, styleEntry types.TuiStyleEntryType) {
+				radioButton.Add(layerAlias, "control", "control", styleEntry, 2, 2, 1, false)
+			},
+			controlType:    constants.CellTypeRadioButton,
+			clickXLocation: 2, clickYLocation: 2, sampleXLocation: 2, sampleYLocation: 2,
+			getStyleColors: func(styleEntry types.TuiStyleEntryType) (constants.ColorType, constants.ColorType, constants.ColorType, constants.ColorType) {
+				return styleEntry.RadioButton.ForegroundColor, styleEntry.RadioButton.BackgroundColor, styleEntry.RadioButton.FocusedForegroundColor, styleEntry.RadioButton.FocusedBackgroundColor
+			},
+		},
+		{
+			name: "dropdown",
+			addControl: func(layerAlias string, styleEntry types.TuiStyleEntryType) {
+				Dropdown.Add(layerAlias, "control", styleEntry, getTestSelectionEntry(4), 2, 2, 3, 10, 0)
+			},
+			controlType:    constants.CellTypeDropdown,
+			clickXLocation: 3, clickYLocation: 2, sampleXLocation: 3, sampleYLocation: 2,
+			getStyleColors: func(styleEntry types.TuiStyleEntryType) (constants.ColorType, constants.ColorType, constants.ColorType, constants.ColorType) {
+				return styleEntry.Dropdown.ForegroundColor, styleEntry.Dropdown.BackgroundColor, styleEntry.Dropdown.FocusedForegroundColor, styleEntry.Dropdown.FocusedBackgroundColor
+			},
+		},
+		{
+			name: "selector border",
+			addControl: func(layerAlias string, styleEntry types.TuiStyleEntryType) {
+				Selector.Add(layerAlias, "control", styleEntry, getTestSelectionEntry(4), 3, 3, 4, 10, 1, 0, 0, false, true)
+			},
+			controlType:    constants.CellTypeSelectorItem,
+			clickXLocation: 3, clickYLocation: 3, sampleXLocation: 2, sampleYLocation: 2,
+			getStyleColors: func(styleEntry types.TuiStyleEntryType) (constants.ColorType, constants.ColorType, constants.ColorType, constants.ColorType) {
+				return styleEntry.Window.LineDrawingTextForegroundColor, styleEntry.Window.LineDrawingTextBackgroundColor, styleEntry.Selector.FocusedForegroundColor, styleEntry.Selector.FocusedBackgroundColor
+			},
+		},
+	}
+	for _, testCase := range testCases {
+		test.Run(testCase.name, func(test *testing.T) {
+			layerAlias, styleEntry := setupInputTest(test)
+			testCase.addControl(layerAlias, styleEntry)
+			simScreen := startInputSimulation(test)
+			normalForeground, normalBackground, focusedForeground, focusedBackground := testCase.getStyleColors(styleEntry)
+			expectedFocusedForeground, expectedFocusedBackground := getFocusedColors(normalForeground, normalBackground, focusedForeground, focusedBackground)
+			assertColors := func(context string, expectedForeground constants.ColorType, expectedBackground constants.ColorType) {
+				test.Helper()
+				foregroundColor, backgroundColor := getRenderedCellColors(testCase.sampleXLocation, testCase.sampleYLocation)
+				if foregroundColor != expectedForeground || backgroundColor != expectedBackground {
+					test.Fatalf("%s: expected colours (%d, %d), got (%d, %d)", context, expectedForeground, expectedBackground, foregroundColor, backgroundColor)
+				}
+			}
+			clickAndCloseTray := func(context string) {
+				test.Helper()
+				// A click opens a dropdown's tray, whose border covers the sampled cell, so any tray is closed first.
+				clickAt(simScreen, testCase.clickXLocation, testCase.clickYLocation)
+				Dropdown.closeAllOpen()
+				assertFocus(test, context, layerAlias, "control", testCase.controlType)
+			}
+
+			clickAndCloseTray("after the first click")
+			assertColors("after the first click", normalForeground, normalBackground)
+			pressKey(simScreen, tcell.KeyRune, 'x', tcell.ModNone)
+			assertColors("after a keystroke", expectedFocusedForeground, expectedFocusedBackground)
+			clickAndCloseTray("after the second click")
+			assertColors("after the second click", normalForeground, normalBackground)
+		})
+	}
+}
+
+/*
+TestFocusIndicatorIgnoresMovementAndProgrammaticFocus is a test which allows you to verify which input changes whether
+the keyboard focus indicator is shown: Tab shows it, mouse movement and the wheel leave it alone, a mouse press hides
+it, and focus moved by the application keeps whatever the user's last input decided.
+
+Example:
+
+	Expected Inputs:
+		Buttons a and b in the tab order. Tab onto a, move the mouse over b with no button held, scroll the wheel,
+		press and release the mouse on empty space, call SetFocus on b, then press Shift+Tab.
+
+	Expected Outputs:
+		After Tab, a's label cell has the focused colours, and still does after the movement and the wheel. After the
+		press on empty space, a is drawn in its normal colours. After SetFocus, b has focus but is drawn in its
+		normal colours. After Shift+Tab, a has focus and is drawn in the focused colours again.
+*/
+func TestFocusIndicatorIgnoresMovementAndProgrammaticFocus(test *testing.T) {
+	layerAlias, buttons, simScreen := setupTabOrderTest(test, "a", "b")
+	for index := range buttons {
+		if err := buttons[index].AddToTabIndex(); err != nil {
+			test.Fatalf("expected AddToTabIndex to succeed, got %v", err)
+		}
+	}
+	styleEntry := Buttons.Get(layerAlias, "a").StyleEntry
+	focusedForeground, focusedBackground := getFocusedColors(styleEntry.Button.ForegroundColor, styleEntry.Button.BackgroundColor,
+		styleEntry.Button.FocusedForegroundColor, styleEntry.Button.FocusedBackgroundColor)
+	assertLabelColors := func(context string, yLocation int, isFocusShown bool) {
+		test.Helper()
+		expectedForeground, expectedBackground := styleEntry.Button.ForegroundColor, styleEntry.Button.BackgroundColor
+		if isFocusShown {
+			expectedForeground, expectedBackground = focusedForeground, focusedBackground
+		}
+		foregroundColor, backgroundColor := getRenderedCellColors(4, yLocation)
+		if foregroundColor != expectedForeground || backgroundColor != expectedBackground {
+			test.Fatalf("%s: expected colours (%d, %d), got (%d, %d)", context, expectedForeground, expectedBackground, foregroundColor, backgroundColor)
+		}
+	}
+
+	pressTab(simScreen)
+	assertFocus(test, "after Tab", layerAlias, "a", constants.CellTypeButton)
+	assertLabelColors("after Tab", 2, true)
+	simScreen.InjectMouse(4, 5, tcell.ButtonNone, tcell.ModNone)
+	UpdateEventQueues()
+	simScreen.InjectMouse(4, 5, tcell.WheelDown, tcell.ModNone)
+	UpdateEventQueues()
+	assertLabelColors("after mouse movement and the wheel", 2, true)
+	clickAt(simScreen, 30, 2)
+	assertLabelColors("after a press on empty space", 2, false)
+	if err := SetFocus(&buttons[1]); err != nil {
+		test.Fatalf("expected SetFocus to succeed, got %v", err)
+	}
+	assertFocus(test, "after SetFocus", layerAlias, "b", constants.CellTypeButton)
+	assertLabelColors("after SetFocus following a click", 5, false)
+	pressKey(simScreen, tcell.KeyBacktab, 0, tcell.ModShift)
+	assertFocus(test, "after Shift+Tab", layerAlias, "a", constants.CellTypeButton)
+	assertLabelColors("after Shift+Tab", 2, true)
+}

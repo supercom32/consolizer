@@ -480,3 +480,137 @@ func TestDropdownEnterCommitsHighlightedItem(test *testing.T) {
 	}
 	assertKeyboardBuffer(test, "after Enter, Down, Enter")
 }
+
+/*
+TestDropdownSetSelectedItemIndexRejectsNegatives is a test which allows you to verify that SetSelectedItemIndex no
+longer stores a negative index other than minus one. A stored minus five used to become the tray's highlight on
+opening, and Up then set the tray's viewport to minus five, which panicked on the next screen update.
+
+Example:
+
+	Expected Inputs:
+		The test dropdown with four items and item 0 selected, focused. SetSelectedItemIndex(-5), then (4), then
+		(2), then (-1), then Enter to open the tray, Up, and Enter, updating the screen after each key.
+
+	Expected Outputs:
+		The index stays 0 after minus five and four, becomes 2, then minus one. Opening the tray and pressing Up
+		does not panic, and Enter commits item 0.
+*/
+func TestDropdownSetSelectedItemIndexRejectsNegatives(test *testing.T) {
+	layerAlias, styleEntry := setupInputTest(test)
+	addTestDropdown(layerAlias, styleEntry)
+	dropdown := DropdownInstanceType{BaseControlInstanceType{layerAlias: layerAlias, controlAlias: "dropdown", controlType: constants.TYPE_DROPDOWN}}
+	simScreen := startInputSimulation(test)
+	for _, step := range []struct {
+		itemIndex     int
+		expectedIndex int
+	}{
+		{-5, 0},
+		{4, 0},
+		{2, 2},
+		{constants.SELECTED_NONE, constants.SELECTED_NONE},
+	} {
+		dropdown.SetSelectedItemIndex(step.itemIndex)
+		if selectedIndex := dropdown.GetSelectedItemIndex(); selectedIndex != step.expectedIndex {
+			test.Fatalf("after SetSelectedItemIndex(%d): expected %d, got %d", step.itemIndex, step.expectedIndex, selectedIndex)
+		}
+	}
+	for _, key := range []tcell.Key{tcell.KeyEnter, tcell.KeyUp, tcell.KeyEnter} {
+		pressKey(simScreen, key, 0, tcell.ModNone)
+		UpdateDisplay(false)
+	}
+	if selectedIndex := dropdown.GetSelectedItemIndex(); selectedIndex != 0 {
+		test.Fatalf("expected item 0 to be committed, got %d", selectedIndex)
+	}
+}
+
+/*
+TestDropdownSetSelectionEntryResetsTray is a test which allows you to verify that replacing a dropdown's items resets
+its tray and scroll bar to fit them, whether the new list is shorter, empty, or set while the tray is open.
+
+Example:
+
+	Expected Inputs:
+		Case one: a dropdown with ten items and a three row tray, so its scroll bar is enabled, given two items. Case
+		two: the test dropdown with its tray open, given an empty list, then Up, Down and Enter with the screen
+		updated after each key.
+
+	Expected Outputs:
+		Case one: the scroll bar maximum is 0, it is disabled, and dragging its handle to the end leaves the tray's
+		viewport at 0. Case two: no key panics, the selected index stays minus one, GetValue is empty, and the tray's
+		scroll value is not negative.
+*/
+func TestDropdownSetSelectionEntryResetsTray(test *testing.T) {
+	test.Run("shorter list", func(test *testing.T) {
+		layerAlias, styleEntry := setupInputTest(test)
+		dropdown := Dropdown.Add(layerAlias, "long", styleEntry, getTestSelectionEntry(10), 2, 2, 3, 10, 0)
+		dropdownEntry := Dropdowns.Get(layerAlias, "long")
+		dropdown.SetSelectionEntry(getTestSelectionEntry(2))
+		scrollBarEntry := ScrollBars.Get(layerAlias, dropdownEntry.ScrollbarAlias)
+		if scrollBarEntry.MaxScrollValue != 0 || scrollBarEntry.IsEnabled {
+			test.Fatalf("expected maximum 0 and disabled, got %d and %t", scrollBarEntry.MaxScrollValue, scrollBarEntry.IsEnabled)
+		}
+		scrollBarEntry.IsEnabled = true
+		scrollBarEntry.HandlePosition = scrollBarEntry.Length - 3
+		scrollbar.computeValueByHandlePosition(layerAlias, dropdownEntry.ScrollbarAlias)
+		if scrollBarEntry.ScrollValue != 0 {
+			test.Fatalf("expected the scroll value to stay 0, got %d", scrollBarEntry.ScrollValue)
+		}
+	})
+	test.Run("empty list while open", func(test *testing.T) {
+		layerAlias, styleEntry := setupInputTest(test)
+		dropdownEntry := addTestDropdown(layerAlias, styleEntry)
+		dropdown := DropdownInstanceType{BaseControlInstanceType{layerAlias: layerAlias, controlAlias: "dropdown", controlType: constants.TYPE_DROPDOWN}}
+		simScreen := startInputSimulation(test)
+		pressKey(simScreen, tcell.KeyEnter, 0, tcell.ModNone)
+		if !dropdownEntry.IsTrayOpen {
+			test.Fatalf("expected Enter to open the tray")
+		}
+		dropdown.SetSelectionEntry(NewSelectionEntry())
+		for _, key := range []tcell.Key{tcell.KeyUp, tcell.KeyDown, tcell.KeyEnter} {
+			pressKey(simScreen, key, 0, tcell.ModNone)
+			UpdateDisplay(false)
+		}
+		if selectedIndex := dropdown.GetSelectedItemIndex(); selectedIndex != constants.SELECTED_NONE {
+			test.Fatalf("expected no selection on an empty dropdown, got %d", selectedIndex)
+		}
+		if value := dropdown.GetValue(); value != "" {
+			test.Fatalf("expected an empty value, got %q", value)
+		}
+		if scrollValue := ScrollBars.Get(layerAlias, dropdownEntry.ScrollbarAlias).ScrollValue; scrollValue < 0 {
+			test.Fatalf("expected a scroll value of at least 0, got %d", scrollValue)
+		}
+	})
+}
+
+/*
+TestDropdownAddValidatesDefaultItem is a test which allows you to verify that a dropdown's default item is validated
+when it is added, and that its tray starts out agreeing with it, so that closing the tray without picking anything
+keeps the default.
+
+Example:
+
+	Expected Inputs:
+		A dropdown with four items added with default item seven, and another added with default item two whose tray
+		is opened with Enter and then closed by closing every open dropdown.
+
+	Expected Outputs:
+		The first reports index minus one. The second still reports index 2 after its tray closes.
+*/
+func TestDropdownAddValidatesDefaultItem(test *testing.T) {
+	layerAlias, styleEntry := setupInputTest(test)
+	outOfRangeDropdown := Dropdown.Add(layerAlias, "outOfRange", styleEntry, getTestSelectionEntry(4), 2, 2, 3, 10, 7)
+	if selectedIndex := outOfRangeDropdown.GetSelectedItemIndex(); selectedIndex != constants.SELECTED_NONE {
+		test.Fatalf("expected an out of range default to be cleared, got %d", selectedIndex)
+	}
+	defaultDropdown := Dropdown.Add(layerAlias, "default", styleEntry, getTestSelectionEntry(4), 20, 2, 3, 10, 2)
+	simScreen := startInputSimulation(test)
+	if err := SetFocus(&defaultDropdown); err != nil {
+		test.Fatalf("expected SetFocus to succeed, got %v", err)
+	}
+	pressKey(simScreen, tcell.KeyEnter, 0, tcell.ModNone)
+	Dropdown.closeAllOpen()
+	if selectedIndex := defaultDropdown.GetSelectedItemIndex(); selectedIndex != 2 {
+		test.Fatalf("expected closing the tray without a pick to keep item 2, got %d", selectedIndex)
+	}
+}
