@@ -364,6 +364,7 @@ const CellTypeTooltip = 12
 const CellTypeFileMenuHeading = 13
 const CellTypeFileMenuItem = 14
 const CellTypeShadow = 15
+const CellTypeSelectorBorder = 16
 
 const CellControlIdUpScrollArrow = -1
 const CellControlIdDownScrollArrow = -2

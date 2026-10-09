@@ -614,3 +614,75 @@ func TestDropdownAddValidatesDefaultItem(test *testing.T) {
 		test.Fatalf("expected closing the tray without a pick to keep item 2, got %d", selectedIndex)
 	}
 }
+
+/*
+injectWheel is a method which allows you to inject a single mouse wheel notch at a location into the simulation screen
+and process it through the event queue, exactly as a real wheel movement would be handled.
+
+Example:
+
+	injectWheel(simScreen, 5, 4, tcell.WheelDown)
+*/
+func injectWheel(simScreen tcell.SimulationScreen, xLocation int, yLocation int, wheelButton tcell.ButtonMask) {
+	simScreen.InjectMouse(xLocation, yLocation, wheelButton, tcell.ModNone)
+	UpdateEventQueues()
+}
+
+/*
+TestDropdownWheelScrollsOpenTray is a test which allows you to verify that the mouse wheel scrolls an open dropdown
+tray one row per notch over its items, its scroll bar and its border, that the scroll bar follows the tray, that the
+hover highlight follows the item scrolled under the cursor, and that scrolling neither closes the tray nor changes the
+selection.
+
+Example:
+
+	Expected Inputs:
+		Dropdown at (2, 2) with items [Zero, One, Two, Three], a three row tray drawn from row 3, and item 0 selected.
+		A click on the dropdown opens the tray. Then wheel down twice and wheel up once over row 4, wheel down once
+		over the tray's scroll bar at column 14, wheel up once over the left border at (2, 4), and wheel down once
+		over the bottom border at (6, 6).
+
+	Expected Outputs:
+		Viewport 1 and highlight 2 after the first wheel down, still viewport 1 after the second, which is the
+		furthest the tray can scroll, then viewport 0 and highlight 1 after wheel up, viewport 1 after wheel down
+		over the scroll bar, viewport 0 over the left border, and viewport 1 over the bottom border, with the
+		highlight staying 1 away from the items. The scroll bar value equals the viewport each time, the tray stays
+		open, and item 0 stays selected.
+*/
+func TestDropdownWheelScrollsOpenTray(test *testing.T) {
+	layerAlias, styleEntry := setupInputTest(test)
+	dropdownEntry := addTestDropdown(layerAlias, styleEntry)
+	simScreen := startInputSimulation(test)
+	clickAt(simScreen, 2, 2)
+	if !dropdownEntry.IsTrayOpen {
+		test.Fatalf("expected the click to open the tray")
+	}
+	selectorEntry := Selectors.Get(layerAlias, dropdownEntry.SelectorAlias)
+	scrollBarEntry := ScrollBars.Get(layerAlias, dropdownEntry.ScrollbarAlias)
+	assertTray := func(context string, expectedViewportPosition int, expectedHighlighted int) {
+		test.Helper()
+		if !dropdownEntry.IsTrayOpen {
+			test.Fatalf("%s: expected the tray to stay open", context)
+		}
+		if scrollBarEntry.ScrollValue != expectedViewportPosition {
+			test.Fatalf("%s: expected scroll bar value %d, got %d", context, expectedViewportPosition, scrollBarEntry.ScrollValue)
+		}
+		if dropdownEntry.ItemSelected != 0 {
+			test.Fatalf("%s: expected the dropdown selection to stay 0, got %d", context, dropdownEntry.ItemSelected)
+		}
+		assertSelectorIndexes(test, context, selectorEntry, expectedHighlighted, 0, expectedViewportPosition)
+	}
+
+	injectWheel(simScreen, 5, 4, tcell.WheelDown)
+	assertTray("after wheel down", 1, 2)
+	injectWheel(simScreen, 5, 4, tcell.WheelDown)
+	assertTray("after wheel down at the end of the list", 1, 2)
+	injectWheel(simScreen, 5, 4, tcell.WheelUp)
+	assertTray("after wheel up", 0, 1)
+	injectWheel(simScreen, 14, 4, tcell.WheelDown)
+	assertTray("after wheel down over the scroll bar", 1, 1)
+	injectWheel(simScreen, 2, 4, tcell.WheelUp)
+	assertTray("after wheel up over the left border", 0, 1)
+	injectWheel(simScreen, 6, 6, tcell.WheelDown)
+	assertTray("after wheel down over the bottom border", 1, 1)
+}

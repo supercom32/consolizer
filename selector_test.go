@@ -968,3 +968,47 @@ func TestSelectorFocusFixesStaleHighlight(test *testing.T) {
 		test.Fatalf("expected GetAllItems to return a copy, but the selector now holds %q", selectorEntry.SelectionEntry.SelectionAlias[0])
 	}
 }
+
+/*
+TestSelectorWheelScrollsViewport is a test which allows you to verify that the mouse wheel scrolls a selector one row
+per notch within the range it can scroll to, that the scroll bar follows, that a selector which only highlights on a
+click keeps its highlight, and that the wheel does nothing over a selector whose items all fit.
+
+Example:
+
+	Expected Inputs:
+		Selector "list" at (2, 2) with ten items, four visible rows, a border, and highlighting on click only, so its
+		scroll bar is at column 13. Wheel down seven times over row 3, wheel up once over the scroll bar, then wheel
+		down over selector "short" at (20, 2) with two items and four visible rows.
+
+	Expected Outputs:
+		Viewport 6, the furthest it can scroll, after the seven notches, then 5 after wheel up, with the scroll bar
+		value equal to the viewport. The highlight and the selection both stay 0. "short" keeps viewport 0.
+*/
+func TestSelectorWheelScrollsViewport(test *testing.T) {
+	layerAlias, styleEntry := setupInputTest(test)
+	Selector.Add(layerAlias, "list", styleEntry, getTestSelectionEntry(10), 2, 2, 4, 10, 1, 0, 0, true, true)
+	Selector.Add(layerAlias, "short", styleEntry, getTestSelectionEntry(2), 20, 2, 4, 10, 1, 0, 0, false, true)
+	simScreen := startInputSimulation(test)
+	selectorEntry := Selectors.Get(layerAlias, "list")
+	scrollBarEntry := ScrollBars.Get(layerAlias, selectorEntry.ScrollbarAlias)
+
+	for notch := 0; notch < 7; notch++ {
+		injectWheel(simScreen, 4, 3, tcell.WheelDown)
+	}
+	assertSelectorIndexes(test, "after seven notches down", selectorEntry, 0, 0, 6)
+	if scrollBarEntry.ScrollValue != 6 {
+		test.Fatalf("after seven notches down: expected scroll bar value 6, got %d", scrollBarEntry.ScrollValue)
+	}
+
+	injectWheel(simScreen, 13, 3, tcell.WheelUp)
+	assertSelectorIndexes(test, "after wheel up over the scroll bar", selectorEntry, 0, 0, 5)
+	if scrollBarEntry.ScrollValue != 5 {
+		test.Fatalf("after wheel up over the scroll bar: expected scroll bar value 5, got %d", scrollBarEntry.ScrollValue)
+	}
+
+	injectWheel(simScreen, 22, 3, tcell.WheelDown)
+	if shortEntry := Selectors.Get(layerAlias, "short"); shortEntry.ViewportPosition != 0 {
+		test.Fatalf("expected the short selector to keep viewport 0, got %d", shortEntry.ViewportPosition)
+	}
+}

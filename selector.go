@@ -732,7 +732,11 @@ func (shared *selectorType) drawSelector(selectorAlias string, layerEntry *types
 				styleEntry.Window.LineDrawingTextForegroundColor, styleEntry.Window.LineDrawingTextBackgroundColor,
 				styleEntry.Selector.FocusedForegroundColor, styleEntry.Selector.FocusedBackgroundColor)
 		}
-		shared.drawSelectorBorder(layerEntry, borderStyleEntry, menuAttributeEntry, xLocation, yLocation, itemWidth, selectorHeight)
+		// Border cells, and the empty cells inside it, are tagged with the selector so the mouse wheel can scroll it there.
+		borderAttributeEntry := menuAttributeEntry
+		borderAttributeEntry.CellType = constants.CellTypeSelectorBorder
+		borderAttributeEntry.CellControlAlias = selectorAlias
+		shared.drawSelectorBorder(layerEntry, borderStyleEntry, borderAttributeEntry, xLocation, yLocation, itemWidth, selectorHeight)
 	}
 
 	currentYLocation := yLocation
@@ -1039,10 +1043,70 @@ func (shared *selectorType) updateKeyboardEvent(keystroke []rune) (bool, bool) {
 }
 
 /*
+updateWheelEvent is a method which allows you to scroll a visible selector by one row for each notch of the mouse
+wheel, when the cursor is over one of its items, its border, the empty rows inside its border, or its scroll bar. This
+is what scrolls an open dropdown tray, since the tray is a selector. Wheel up scrolls toward the first item and wheel down toward the last, the viewport stays
+within the range the selector can scroll to, and the scroll bar follows the viewport. It returns true only if the
+viewport moved. In addition, the following should be noted:
+
+  - When the cursor is over an item and the selector highlights on hover, the highlight moves to the item that has
+    scrolled under the cursor, so it does not stay on an item that may have scrolled out of view.
+
+  - Nothing is scrolled while a scroll bar is being dragged, so the wheel cannot fight the drag over the viewport.
+
+Example:
+
+	isUpdateRequired := Selector.updateWheelEvent(characterEntry, "Down")
+*/
+func (shared *selectorType) updateWheelEvent(characterEntry types.CharacterEntryType, wheelState string) bool {
+	if (wheelState != "Up" && wheelState != "Down") || getEventStateId() != constants.EventStateNone {
+		return false
+	}
+	layerAlias := characterEntry.LayerAlias
+	selectorAlias := characterEntry.AttributeEntry.CellControlAlias
+	isOverItem := characterEntry.AttributeEntry.CellType == constants.CellTypeSelectorItem
+	switch characterEntry.AttributeEntry.CellType {
+	case constants.CellTypeSelectorItem, constants.CellTypeSelectorBorder:
+	case constants.CellTypeScrollbar:
+		scrollBarEntry, isFound := ScrollBars.Lookup(layerAlias, selectorAlias)
+		if !isFound || scrollBarEntry.ParentControlType != constants.CellTypeSelectorItem {
+			return false
+		}
+		selectorAlias = scrollBarEntry.ParentControlAlias
+	default:
+		return false
+	}
+	selectorEntry, isFound := Selectors.Lookup(layerAlias, selectorAlias)
+	if !isFound || !selectorEntry.IsVisible {
+		return false
+	}
+	columnCount := shared.getColumnCount(selectorEntry)
+	previousViewportPosition := selectorEntry.ViewportPosition
+	if wheelState == "Up" {
+		selectorEntry.ViewportPosition -= columnCount
+	} else {
+		selectorEntry.ViewportPosition += columnCount
+	}
+	shared.normalizeIndexes(selectorEntry)
+	viewportShift := selectorEntry.ViewportPosition - previousViewportPosition
+	if viewportShift == 0 {
+		return false
+	}
+	if isOverItem && !selectorEntry.HighlightOnClickOnly {
+		hoveredItemIndex := characterEntry.AttributeEntry.CellControlId + viewportShift
+		if hoveredItemIndex >= 0 && hoveredItemIndex < shared.getItemCount(selectorEntry) {
+			selectorEntry.ItemHighlighted = hoveredItemIndex
+		}
+	}
+	shared.updateScrollbar(layerAlias, selectorEntry)
+	return true
+}
+
+/*
 updateMouseEvent is a method which allows you to update the state of all selectors according to the current mouse event
 state. Pressing on an item selects and highlights it, hovering highlights it unless the selector only highlights on a
-click, and dragging a scroll bar moves the viewport of the selector it belongs to. It returns true if the screen needs
-to be updated. In addition, the following should be noted:
+click, the mouse wheel scrolls the selector under the cursor, and dragging a scroll bar moves the viewport of the
+selector it belongs to. It returns true if the screen needs to be updated. In addition, the following should be noted:
 
   - The item under the cursor is taken from the last drawn screen, so a click or hover on an item that no longer
     exists, because the list was shortened and not yet redrawn, is ignored rather than stored.
@@ -1057,8 +1121,11 @@ func (shared *selectorType) updateMouseEvent() bool {
 	isScreenUpdateRequired := false
 	focusedLayerAlias := getFocusedControl().layerAlias
 	var characterEntry types.CharacterEntryType
-	mouseXLocation, mouseYLocation, buttonPressed, _ := GetMouseStatus()
+	mouseXLocation, mouseYLocation, buttonPressed, wheelState := GetMouseStatus()
 	characterEntry = getCellInformationUnderMouseCursor(mouseXLocation, mouseYLocation)
+	if shared.updateWheelEvent(characterEntry, wheelState) {
+		return true
+	}
 	if selectorEntry, isFound := Selectors.Lookup(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias); characterEntry.AttributeEntry.CellType == constants.CellTypeSelectorItem &&
 		getEventStateId() == constants.EventStateNone && isFound {
 		itemIndex := characterEntry.AttributeEntry.CellControlId
@@ -1096,7 +1163,8 @@ func (shared *selectorType) updateMouseEvent() bool {
 	} else {
 		previouslyHighlightedControl := getPreviouslyHighlightedControl()
 		if selectorEntry, isFound := Selectors.Lookup(previouslyHighlightedControl.layerAlias, previouslyHighlightedControl.controlAlias); previouslyHighlightedControl.controlType == constants.CellTypeSelectorItem &&
-			isFound && Selectors.IsExists(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias) {
+			isFound && characterEntry.AttributeEntry.CellType == constants.CellTypeSelectorItem &&
+			Selectors.IsExists(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias) {
 			// Only clear highlighting if HighlightOnClickOnly is false
 			if !selectorEntry.HighlightOnClickOnly {
 				selectorEntry.ItemHighlighted = constants.NullItemSelection
