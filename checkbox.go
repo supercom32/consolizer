@@ -69,20 +69,48 @@ func (shared *CheckboxInstanceType) SetState(isChecked bool) {
 }
 
 /*
-Add is a method which adds a checkbox to a given text layer. Once called, an instance of your control is
-returned which will allow you to read or manipulate the properties for it. The style of the checkbox will be determined
-by the style entry passed in. If you wish to remove a checkbox from a text layer, simply call 'DeleteCheckbox'. In
-addition, the following should be noted:
+SetLabelFirst is a method which allows you to choose whether the checkbox draws its label before its mark instead of
+after it. By default the mark is drawn at the checkbox's X location with the label two columns to its right. When
+label-first mode is enabled, the label is drawn at the checkbox's X location instead, followed by one space and then
+the mark. The change takes effect the next time the screen is updated. If the checkbox instance no longer exists, then
+the request is simply ignored. In addition, the following should be noted:
 
-- Checkboxes are not drawn physically to the text layer provided. Instead, they are rendered to the terminal at
-  the same time when the text layer is rendered. This allows you to create checkboxes without actually
-  overwriting the text layer data under it.
+  - The checkbox occupies the same columns in either mode, so its X location remains the left edge of the whole
+    control and its tooltip hover area does not need to change.
 
-- If the checkbox to be drawn falls outside the range of the provided layer, then only the visible portion of the
-  checkbox will be drawn.
+  - When the label is empty, the mark is drawn at the checkbox's X location in either mode.
 
 Example:
-    checkboxInstance := Checkbox.Add("layer1", "cb1", "Enable Feature", style, 5, 5, false, true)
+
+	checkboxInstance.SetLabelFirst(true)
+*/
+func (shared *CheckboxInstanceType) SetLabelFirst(isLabelFirst bool) {
+	if checkboxEntry, isFound := Checkboxes.Lookup(shared.layerAlias, shared.controlAlias); isFound {
+		checkboxEntry.IsLabelFirst = isLabelFirst
+	}
+}
+
+/*
+Add is a method which adds a checkbox to a given text layer. Once called, an instance of your control is returned
+which will allow you to read or manipulate the properties for it. The style of the checkbox will be determined by the
+style entry passed in. If you wish to remove a checkbox from a text layer, simply call 'DeleteCheckbox'. In addition,
+the following should be noted:
+
+  - Checkboxes are not drawn physically to the text layer provided. Instead, they are rendered to the terminal at
+    the same time when the text layer is rendered. This allows you to create checkboxes without actually
+    overwriting the text layer data under it.
+
+  - If the checkbox to be drawn falls outside the range of the provided layer, then only the visible portion of the
+    checkbox will be drawn.
+
+  - The checkbox is created with its mark drawn before its label. To draw the label before the mark instead, call
+    SetLabelFirst on the returned instance. In either mode the X location is the left edge of the whole control,
+    which spans the printed width of the label plus two columns, so the tooltip hover area created here stays
+    correct.
+
+Example:
+
+	checkboxInstance := Checkbox.Add("layer1", "cb1", "Enable Feature", style, 5, 5, false, true)
 */
 func (shared *checkboxType) Add(layerAlias string, checkboxAlias string, checkboxLabel string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, isSelected bool, isEnabled bool) CheckboxInstanceType {
 	checkboxEntry := types.NewCheckboxEntry()
@@ -148,7 +176,7 @@ Example:
 func (shared *checkboxType) drawOnLayer(layerEntry types.LayerEntryType) {
 	layerAlias := layerEntry.LayerAlias
 	for _, checkboxEntry := range Checkboxes.GetAllEntries(layerAlias) {
-		shared.draw(&layerEntry, checkboxEntry.Alias, checkboxEntry.Label, checkboxEntry.StyleEntry, checkboxEntry.XLocation, checkboxEntry.YLocation, checkboxEntry.IsSelected, checkboxEntry.IsEnabled)
+		shared.draw(&layerEntry, checkboxEntry.Alias, checkboxEntry.Label, checkboxEntry.StyleEntry, checkboxEntry.XLocation, checkboxEntry.YLocation, checkboxEntry.IsSelected, checkboxEntry.IsEnabled, checkboxEntry.IsLabelFirst)
 	}
 }
 
@@ -156,7 +184,17 @@ func (shared *checkboxType) drawOnLayer(layerEntry types.LayerEntryType) {
 draw is a method which allows you to draw a checkbox on a given text layer, in the style given by the style entry
 passed in. Checkboxes are not drawn physically to the text layer provided. Instead, they are rendered to the terminal
 at the same time as the text layer, so they never overwrite the layer data under them, and if the checkbox falls
-outside the range of the layer, only its visible portion is drawn. In addition, the following should be noted:
+outside the range of the layer, only its visible portion is drawn. By default the mark is drawn at xLocation and the
+label at xLocation+2. When isLabelFirst is true, the label is drawn at xLocation and the mark one space after it, at
+xLocation plus the printed width of the label plus one, so wide runes in the label stay aligned. In addition, the
+following should be noted:
+
+  - The label and the mark are both drawn with the checkbox's cell type, control alias, current mark state, and
+    focus colours, so a mouse click on either part toggles the checkbox and the focus highlight covers both parts
+    in either mode. The single separating column is not drawn, so the layer beneath shows through it, exactly as
+    in the default mode.
+
+  - When the label is empty, the mark is drawn at xLocation in either mode.
 
   - While the checkbox has focus, it is drawn with the style's focused colours, resolved by getFocusedColors so that
     focus stays visible even when the style does not set them. As described for setFocusIndicatorVisible, these
@@ -164,9 +202,9 @@ outside the range of the layer, only its visible portion is drawn. In addition, 
 
 Example:
 
-	Checkbox.draw(&myLayer, "cb1", "Enable Feature", style, 0, 0, false, true)
+	Checkbox.draw(&myLayer, "cb1", "Enable Feature", style, 0, 0, false, true, false)
 */
-func (shared *checkboxType) draw(layerEntry *types.LayerEntryType, checkboxAlias string, checkboxLabel string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, isSelected bool, isEnabled bool) {
+func (shared *checkboxType) draw(layerEntry *types.LayerEntryType, checkboxAlias string, checkboxLabel string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, isSelected bool, isEnabled bool, isLabelFirst bool) {
 	localStyleEntry := types.NewTuiStyleEntry(&styleEntry)
 	attributeEntry := types.NewAttributeEntry()
 	attributeEntry.ForegroundColor = localStyleEntry.Checkbox.ForegroundColor
@@ -178,17 +216,23 @@ func (shared *checkboxType) draw(layerEntry *types.LayerEntryType, checkboxAlias
 	attributeEntry.CellType = constants.CellTypeCheckbox
 	attributeEntry.CellControlAlias = checkboxAlias
 
-	var secondArrayOfRunes []rune
+	var markArrayOfRunes []rune
 	if isSelected {
-		secondArrayOfRunes = []rune{localStyleEntry.Checkbox.SelectedCharacter}
+		markArrayOfRunes = []rune{localStyleEntry.Checkbox.SelectedCharacter}
 		attributeEntry.CellControlId = constants.CellControlIdChecked
 	} else {
-		secondArrayOfRunes = []rune{localStyleEntry.Checkbox.UnselectedCharacter}
+		markArrayOfRunes = []rune{localStyleEntry.Checkbox.UnselectedCharacter}
 		attributeEntry.CellControlId = constants.CellControlIdUnchecked
 	}
-	layer.printLayer(layerEntry, attributeEntry, xLocation, yLocation, secondArrayOfRunes)
-	firstArrayOfRunes := stringformat.GetRunesFromString(checkboxLabel)
-	layer.printLayer(layerEntry, attributeEntry, xLocation+2, yLocation, firstArrayOfRunes)
+	labelArrayOfRunes := stringformat.GetRunesFromString(checkboxLabel)
+	if isLabelFirst && len(labelArrayOfRunes) > 0 {
+		labelWidth := stringformat.GetWidthOfRunesWhenPrinted(labelArrayOfRunes)
+		layer.printLayer(layerEntry, attributeEntry, xLocation, yLocation, labelArrayOfRunes)
+		layer.printLayer(layerEntry, attributeEntry, xLocation+labelWidth+1, yLocation, markArrayOfRunes)
+		return
+	}
+	layer.printLayer(layerEntry, attributeEntry, xLocation, yLocation, markArrayOfRunes)
+	layer.printLayer(layerEntry, attributeEntry, xLocation+2, yLocation, labelArrayOfRunes)
 }
 
 /*
