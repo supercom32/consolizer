@@ -1012,3 +1012,305 @@ func TestSelectorWheelScrollsViewport(test *testing.T) {
 		test.Fatalf("expected the short selector to keep viewport 0, got %d", shortEntry.ViewportPosition)
 	}
 }
+
+/*
+getSelectorBorderSpan is a method which allows you to find the first and last screen columns on a row whose cells are
+tagged as the border of the given selector. If no cell on the row belongs to that border, minus one is returned for
+both columns.
+
+Example:
+
+	firstColumn, lastColumn := getSelectorBorderSpan(1, "selector")
+*/
+func getSelectorBorderSpan(yLocation int, selectorAlias string) (int, int) {
+	firstColumn, lastColumn := -1, -1
+	for xLocation, characterEntry := range commonResource.screenLayer.CharacterMemory[yLocation] {
+		attributeEntry := characterEntry.AttributeEntry
+		if attributeEntry.CellType != constants.CellTypeSelectorBorder || attributeEntry.CellControlAlias != selectorAlias {
+			continue
+		}
+		if firstColumn == -1 {
+			firstColumn = xLocation
+		}
+		lastColumn = xLocation
+	}
+	return firstColumn, lastColumn
+}
+
+/*
+assertSelectorBorderSpan is a method which allows you to fail the test unless every row of a selector's border, from
+the row above its first item row to the row below its last, has its border cells running from exactly the expected
+first column to the expected last column.
+
+Example:
+
+	assertSelectorBorderSpan(test, "selector", 1, 4, 1, 32)
+*/
+func assertSelectorBorderSpan(test *testing.T, selectorAlias string, topYLocation int, bottomYLocation int, expectedFirstColumn int, expectedLastColumn int) {
+	test.Helper()
+	for yLocation := topYLocation; yLocation <= bottomYLocation; yLocation++ {
+		firstColumn, lastColumn := getSelectorBorderSpan(yLocation, selectorAlias)
+		if firstColumn != expectedFirstColumn || lastColumn != expectedLastColumn {
+			test.Fatalf("row %d: expected the border to span columns %d to %d, got %d to %d", yLocation,
+				expectedFirstColumn, expectedLastColumn, firstColumn, lastColumn)
+		}
+	}
+}
+
+/*
+getTestMultiColumnSelector is a method which allows you to add a bordered selector at (2, 2) with the six items "item0"
+to "item5", an item width of 10, three columns and two rows, so every item is visible, the scroll bar stays disabled,
+and item N is drawn on row 2+N/3 starting at column 2+10*(N%3).
+
+Example:
+
+	selector := getTestMultiColumnSelector(layerAlias, styleEntry)
+*/
+func getTestMultiColumnSelector(layerAlias string, styleEntry types.TuiStyleEntryType) SelectorInstanceType {
+	return Selector.Add(layerAlias, "selector", styleEntry, getTestSelectionEntry(6), 2, 2, 2, 10, 3, 0, constants.SELECTED_NONE, false, true)
+}
+
+/*
+TestSelectorMultiColumnBorderSpansAllColumns is a test which allows you to verify that a bordered selector with
+several columns draws its border around every column, not just the first.
+
+Example:
+
+	Expected Inputs:
+		Bordered selector at (2, 2) with six items, an item width of 10, three columns and two rows.
+
+	Expected Outputs:
+		On every row from 1 to 4, the selector's border cells run from column 1 to column 32, which is 32 cells, the
+		item width times three columns plus one cell on each side.
+*/
+func TestSelectorMultiColumnBorderSpansAllColumns(test *testing.T) {
+	layerAlias, styleEntry := setupInputTest(test)
+	getTestMultiColumnSelector(layerAlias, styleEntry)
+	UpdateDisplay(false)
+	assertSelectorBorderSpan(test, "selector", 1, 4, 1, 32)
+	if firstColumn, lastColumn := getSelectorBorderSpan(1, "selector"); lastColumn-firstColumn+1 != 32 {
+		test.Fatalf("expected the border to be 32 cells wide, got %d", lastColumn-firstColumn+1)
+	}
+}
+
+/*
+TestSelectorClickInThirdColumnSelectsItem is a test which allows you to verify that clicking an item in the third
+column of a multi-column selector selects that item.
+
+Example:
+
+	Expected Inputs:
+		Bordered selector at (2, 2) with items [item0 .. item5], an item width of 10, three columns and two rows.
+		A click at (25, 3), inside the third column of the second row.
+
+	Expected Outputs:
+		Item 5 is selected by a single click, and GetSelected returns ("item5", 5).
+*/
+func TestSelectorClickInThirdColumnSelectsItem(test *testing.T) {
+	layerAlias, styleEntry := setupInputTest(test)
+	selector := getTestMultiColumnSelector(layerAlias, styleEntry)
+	simScreen := startInputSimulation(test)
+	clickAt(simScreen, 25, 3)
+	if !selector.IsNewItemSelected() {
+		test.Fatalf("expected the click to select an item")
+	}
+	if source := selector.GetSelectionSource(); source != constants.SelectionSourceSingleClick {
+		test.Fatalf("expected selection source %d, got %d", constants.SelectionSourceSingleClick, source)
+	}
+	if alias, index := selector.GetSelected(); alias != "item5" || index != 5 {
+		test.Fatalf("expected (%q, %d), got (%q, %d)", "item5", 5, alias, index)
+	}
+}
+
+/*
+TestSelectorSingleColumnBorderIsUnchanged is a test which allows you to verify that a bordered single column selector
+still draws its border exactly one cell outside its one column.
+
+Example:
+
+	Expected Inputs:
+		Bordered selector at (2, 2) with items [Item A, Item B, Item C, Item D], an item width of 10, one column and
+		four rows.
+
+	Expected Outputs:
+		On every row from 1 to 6, the selector's border cells run from column 1 to column 12, which is 12 cells.
+*/
+func TestSelectorSingleColumnBorderIsUnchanged(test *testing.T) {
+	layerAlias, styleEntry := setupInputTest(test)
+	addTestSelector(layerAlias, styleEntry)
+	UpdateDisplay(false)
+	assertSelectorBorderSpan(test, "selector", 1, 6, 1, 12)
+}
+
+/*
+assertSelectorAttachedLayout is a method which allows you to fail the test unless a selector's scroll bar sits at the
+expected column and row with the expected length, and its tooltip's hotspot and tooltip area start at the selector's
+location and are as wide as its item area plus two columns.
+
+Example:
+
+	assertSelectorAttachedLayout(test, "after SetPosition", selectorEntry, 33, 1, 4)
+*/
+func assertSelectorAttachedLayout(test *testing.T, context string, layerAlias string, selectorEntry *types.SelectorEntryType, expectedXLocation int, expectedYLocation int, expectedLength int) {
+	test.Helper()
+	scrollBarEntry := ScrollBars.Get(layerAlias, selectorEntry.ScrollbarAlias)
+	if scrollBarEntry.XLocation != expectedXLocation || scrollBarEntry.YLocation != expectedYLocation || scrollBarEntry.Length != expectedLength {
+		test.Fatalf("%s: expected the scroll bar at (%d, %d) with length %d, got (%d, %d) with length %d", context,
+			expectedXLocation, expectedYLocation, expectedLength, scrollBarEntry.XLocation, scrollBarEntry.YLocation, scrollBarEntry.Length)
+	}
+	tooltipEntry := Tooltips.Get(layerAlias, selectorEntry.TooltipAlias)
+	expectedWidth := selectorEntry.Width + 2
+	if tooltipEntry.HotspotXLocation != selectorEntry.XLocation || tooltipEntry.HotspotYLocation != selectorEntry.YLocation ||
+		tooltipEntry.HotspotWidth != expectedWidth || tooltipEntry.TooltipXLocation != selectorEntry.XLocation ||
+		tooltipEntry.TooltipYLocation != selectorEntry.YLocation+1 || tooltipEntry.TooltipWidth != expectedWidth {
+		test.Fatalf("%s: expected the tooltip hotspot at (%d, %d) and tooltip at (%d, %d), both %d wide, got (%d, %d) %d wide and (%d, %d) %d wide",
+			context, selectorEntry.XLocation, selectorEntry.YLocation, selectorEntry.XLocation, selectorEntry.YLocation+1, expectedWidth,
+			tooltipEntry.HotspotXLocation, tooltipEntry.HotspotYLocation, tooltipEntry.HotspotWidth,
+			tooltipEntry.TooltipXLocation, tooltipEntry.TooltipYLocation, tooltipEntry.TooltipWidth)
+	}
+}
+
+/*
+TestSelectorSizeIsItemArea is a test which allows you to verify that GetSize and GetBounds report a selector's item
+area, its item width times its columns by its item rows, for both single and multi-column selectors.
+
+Example:
+
+	Expected Inputs:
+		A bordered three column selector at (2, 2) with an item width of 10 and two rows, and a single column
+		selector "single" at (2, 8) with an item width of 10 and four rows.
+
+	Expected Outputs:
+		GetSize returns (30, 2) and GetBounds returns (2, 2, 30, 2) for the first. GetSize returns (10, 4) for the
+		second.
+*/
+func TestSelectorSizeIsItemArea(test *testing.T) {
+	layerAlias, styleEntry := setupInputTest(test)
+	selector := getTestMultiColumnSelector(layerAlias, styleEntry)
+	if width, height := selector.GetSize(); width != 30 || height != 2 {
+		test.Fatalf("expected size (30, 2), got (%d, %d)", width, height)
+	}
+	if xLocation, yLocation, width, height := selector.GetBounds(); xLocation != 2 || yLocation != 2 || width != 30 || height != 2 {
+		test.Fatalf("expected bounds (2, 2, 30, 2), got (%d, %d, %d, %d)", xLocation, yLocation, width, height)
+	}
+	singleSelector := Selector.Add(layerAlias, "single", styleEntry, getTestSelectionEntry(4), 2, 8, 4, 10, 1, 0, 0, false, true)
+	if width, height := singleSelector.GetSize(); width != 10 || height != 4 {
+		test.Fatalf("expected size (10, 4), got (%d, %d)", width, height)
+	}
+}
+
+/*
+TestSelectorSetSizeResizesSelector is a test which allows you to verify that SetSize on a selector shares the width
+between its columns, changes its rows, and brings its border, scroll bar, tooltip and viewport in line, and that sizes
+which cannot be laid out are ignored.
+
+Example:
+
+	Expected Inputs:
+		Bordered selector at (2, 2) with items [item0 .. item5], an item width of 10, three columns and two rows.
+		SetSize(20, 1), then the viewport set to 3, then SetSize(2, 1), SetSize(18, 0), and finally SetSize(30, 2).
+
+	Expected Outputs:
+		After SetSize(20, 1): item width 6, size (18, 1), border columns 1 to 20 on rows 1 to 3, scroll bar enabled
+		at (21, 1) with length 3 and maximum 3, tooltip 20 wide. The two invalid sizes leave the size (18, 1) and the
+		viewport 3. After SetSize(30, 2): size (30, 2), viewport 0, scroll bar disabled at (33, 1) with length 4,
+		and the border back at columns 1 to 32 on rows 1 to 4.
+*/
+func TestSelectorSetSizeResizesSelector(test *testing.T) {
+	layerAlias, styleEntry := setupInputTest(test)
+	selector := getTestMultiColumnSelector(layerAlias, styleEntry)
+	selectorEntry := Selectors.Get(layerAlias, "selector")
+	scrollBarEntry := ScrollBars.Get(layerAlias, selectorEntry.ScrollbarAlias)
+
+	selector.SetSize(20, 1)
+	if selectorEntry.ItemWidth != 6 {
+		test.Fatalf("expected item width 6, got %d", selectorEntry.ItemWidth)
+	}
+	if width, height := selector.GetSize(); width != 18 || height != 1 {
+		test.Fatalf("expected size (18, 1), got (%d, %d)", width, height)
+	}
+	assertSelectorAttachedLayout(test, "after SetSize(20, 1)", layerAlias, selectorEntry, 21, 1, 3)
+	if !scrollBarEntry.IsEnabled || scrollBarEntry.MaxScrollValue != 3 {
+		test.Fatalf("expected an enabled scroll bar with maximum 3, got %t and %d", scrollBarEntry.IsEnabled, scrollBarEntry.MaxScrollValue)
+	}
+	UpdateDisplay(false)
+	assertSelectorBorderSpan(test, "selector", 1, 3, 1, 20)
+
+	selector.setViewport(3)
+	selector.SetSize(2, 1)
+	selector.SetSize(18, 0)
+	if width, height := selector.GetSize(); width != 18 || height != 1 {
+		test.Fatalf("expected invalid sizes to be ignored, got (%d, %d)", width, height)
+	}
+	if selectorEntry.ViewportPosition != 3 {
+		test.Fatalf("expected invalid sizes to keep viewport 3, got %d", selectorEntry.ViewportPosition)
+	}
+
+	selector.SetSize(30, 2)
+	if width, height := selector.GetSize(); width != 30 || height != 2 {
+		test.Fatalf("expected size (30, 2), got (%d, %d)", width, height)
+	}
+	if selectorEntry.ViewportPosition != 0 || scrollBarEntry.IsEnabled {
+		test.Fatalf("expected viewport 0 and a disabled scroll bar, got %d and %t", selectorEntry.ViewportPosition, scrollBarEntry.IsEnabled)
+	}
+	assertSelectorAttachedLayout(test, "after SetSize(30, 2)", layerAlias, selectorEntry, 33, 1, 4)
+	UpdateDisplay(false)
+	assertSelectorBorderSpan(test, "selector", 1, 4, 1, 32)
+}
+
+/*
+TestSelectorSetPositionAndBorderMoveAttachedControls is a test which allows you to verify that moving a selector, or
+turning its border off, moves its scroll bar and tooltip with it.
+
+Example:
+
+	Expected Inputs:
+		Bordered single column selector at (2, 2) with ten items, an item width of 10 and three rows, so its scroll
+		bar is enabled. SetPosition(5, 4), then SetBorderDrawn(false), then SetBorderDrawn(true).
+
+	Expected Outputs:
+		Scroll bar at (13, 1) with length 5 before moving, (16, 3) with length 5 after SetPosition, (14, 4) with
+		length 3 without the border, and (16, 3) with length 5 with it again. The tooltip starts at the selector
+		each time, and after moving the border is drawn from column 4 to 15 on rows 3 to 7.
+*/
+func TestSelectorSetPositionAndBorderMoveAttachedControls(test *testing.T) {
+	layerAlias, styleEntry := setupInputTest(test)
+	selector := Selector.Add(layerAlias, "selector", styleEntry, getTestSelectionEntry(10), 2, 2, 3, 10, 1, 0, constants.SELECTED_NONE, false, true)
+	selectorEntry := Selectors.Get(layerAlias, "selector")
+	assertSelectorAttachedLayout(test, "after Add", layerAlias, selectorEntry, 13, 1, 5)
+
+	selector.SetPosition(5, 4)
+	assertSelectorAttachedLayout(test, "after SetPosition", layerAlias, selectorEntry, 16, 3, 5)
+	UpdateDisplay(false)
+	assertSelectorBorderSpan(test, "selector", 3, 7, 4, 15)
+
+	selector.SetBorderDrawn(false)
+	assertSelectorAttachedLayout(test, "without border", layerAlias, selectorEntry, 14, 4, 3)
+	selector.SetBorderDrawn(true)
+	assertSelectorAttachedLayout(test, "with border again", layerAlias, selectorEntry, 16, 3, 5)
+}
+
+/*
+TestSelectorFocusSelectionWithNoColumns is a test which allows you to verify that FocusSelection centres the item on a
+selector added with a column count of zero, which is laid out as a single column.
+
+Example:
+
+	Expected Inputs:
+		Selector with items [item0 .. item9], three rows and a column count of 0. FocusSelection("item5").
+
+	Expected Outputs:
+		The viewport is 4, so item 5 is in the middle row, and the scroll bar value is 4.
+*/
+func TestSelectorFocusSelectionWithNoColumns(test *testing.T) {
+	layerAlias, styleEntry := setupInputTest(test)
+	selector := Selector.Add(layerAlias, "selector", styleEntry, getTestSelectionEntry(10), 2, 2, 3, 10, 0, 0, constants.SELECTED_NONE, false, true)
+	selectorEntry := Selectors.Get(layerAlias, "selector")
+	selector.FocusSelection("item5")
+	if selectorEntry.ViewportPosition != 4 {
+		test.Fatalf("expected viewport 4, got %d", selectorEntry.ViewportPosition)
+	}
+	if scrollValue := ScrollBars.Get(layerAlias, selectorEntry.ScrollbarAlias).ScrollValue; scrollValue != 4 {
+		test.Fatalf("expected scroll bar value 4, got %d", scrollValue)
+	}
+}

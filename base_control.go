@@ -111,15 +111,21 @@ func (shared *BaseControlInstanceType) GetBounds() (int, int, int, int) {
 }
 
 /*
-SetPosition is a method which allows you to set the X and Y coordinates of the control.
+SetPosition is a method which allows you to set the X and Y coordinates of the control. In addition, the following
+should be noted:
+
+  - The parts attached to a selector, textbox or dropdown, such as scroll bars, tooltips and a dropdown's tray, are
+    moved with it.
 
 Example:
-    control.SetPosition(10, 5)
+
+	control.SetPosition(10, 5)
 */
 func (shared *BaseControlInstanceType) SetPosition(x, y int) *BaseControlInstanceType {
 	if control := shared.getBaseControl(); control != nil {
 		control.XLocation = x
 		control.YLocation = y
+		shared.updateLayout()
 	}
 	return shared
 }
@@ -151,12 +157,37 @@ func (shared *BaseControlInstanceType) GetSize() (int, int) {
 }
 
 /*
-SetSize is a method which allows you to set the width and height of the control.
+SetSize is a method which allows you to set the width and height of the control. For a selector, textbox or dropdown,
+the parts attached to it, such as scroll bars, tooltips and a dropdown's tray, are resized to match, and a size it
+cannot be laid out at is ignored. In addition, the following should be noted:
+
+  - For a selector, the size is that of its item area, not counting its border: the height is its number of item
+    rows, and the width is shared equally between its columns, rounded down to a multiple of the column count. A
+    height below one, or a width too narrow to give every column at least one cell, is ignored.
+
+  - For a textbox, the size is that of its text area, not counting its border. A width or height below one is
+    ignored. The viewport is pulled back if it would scroll past the end of the text.
+
+  - For a dropdown, the width is that of the closed box including its arrow, which the tray opens at too, and the
+    height is the number of rows the tray shows, since the closed box is always one row tall. A width below four,
+    which leaves no room for the selected item, or a height below one is ignored.
 
 Example:
-    control.SetSize(20, 10)
+
+	control.SetSize(20, 10)
 */
 func (shared *BaseControlInstanceType) SetSize(width, height int) *BaseControlInstanceType {
+	switch shared.controlType {
+	case constants.TYPE_SELECTOR:
+		Selector.setSize(shared.layerAlias, shared.controlAlias, width, height)
+		return shared
+	case constants.TYPE_TEXTBOX:
+		textbox.setSize(shared.layerAlias, shared.controlAlias, width, height)
+		return shared
+	case constants.TYPE_DROPDOWN:
+		Dropdown.setSize(shared.layerAlias, shared.controlAlias, width, height)
+		return shared
+	}
 	if control := shared.getBaseControl(); control != nil {
 		control.Width = width
 		control.Height = height
@@ -240,16 +271,48 @@ func (shared *BaseControlInstanceType) GetLabel() string {
 }
 
 /*
-SetBorderDrawn is a method which allows you to specify whether a border should be drawn around the control.
+SetBorderDrawn is a method which allows you to specify whether a border should be drawn around the control. In
+addition, the following should be noted:
+
+  - For a selector or textbox, its scroll bars are moved to match, since they sit outside the border when one is
+    drawn.
 
 Example:
-    control.SetBorderDrawn(true)
+
+	control.SetBorderDrawn(true)
 */
 func (shared *BaseControlInstanceType) SetBorderDrawn(drawn bool) *BaseControlInstanceType {
 	if control := shared.getBaseControl(); control != nil {
 		control.IsBorderDrawn = drawn
+		shared.updateLayout()
 	}
 	return shared
+}
+
+/*
+updateLayout is a method which allows you to bring the parts attached to this control, such as the scroll bars and
+tooltips of a selector or textbox and the tray of a dropdown, back in line with its position, size and border after
+one of them has changed. Controls with nothing attached that depends on their geometry are left unchanged.
+
+Example:
+
+	shared.updateLayout()
+*/
+func (shared *BaseControlInstanceType) updateLayout() {
+	switch shared.controlType {
+	case constants.TYPE_SELECTOR:
+		if selectorEntry, isFound := Selectors.Lookup(shared.layerAlias, shared.controlAlias); isFound {
+			Selector.updateLayout(shared.layerAlias, selectorEntry)
+		}
+	case constants.TYPE_TEXTBOX:
+		if textboxEntry, isFound := Textboxes.Lookup(shared.layerAlias, shared.controlAlias); isFound {
+			textbox.updateLayout(shared.layerAlias, textboxEntry)
+		}
+	case constants.TYPE_DROPDOWN:
+		if dropdownEntry, isFound := Dropdowns.Lookup(shared.layerAlias, shared.controlAlias); isFound {
+			Dropdown.updateLayout(shared.layerAlias, dropdownEntry)
+		}
+	}
 }
 
 /*

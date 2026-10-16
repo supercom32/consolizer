@@ -232,8 +232,9 @@ func (shared *dropdownType) getItemCount(dropdownEntry *types.DropdownEntryType)
 SetSelectionEntry is a method which allows you to replace the list of items a dropdown offers. The selected item is
 cleared, and the dropdown's tray is reset to match the new list: its highlight is cleared, it scrolls back to the
 first item, and its scroll bar is resized, enabled only while the items overflow the tray, and shown only while the
-tray is open. This is safe to call whether the tray is open or closed, and with an empty list. In addition, the
-following should be noted:
+tray is open. The tray is widened by one column when its scroll bar is not needed, and narrowed again when it is, so
+the tray always lines up with the dropdown. This is safe to call whether the tray is open or closed, and with an
+empty list. In addition, the following should be noted:
 
   - The dropdown keeps its own copy of the item slices, so changing the slices of the entry passed in afterwards
     does not change the dropdown.
@@ -255,7 +256,78 @@ func (shared *DropdownInstanceType) SetSelectionEntry(selectionEntry types.Selec
 	selectorEntry.ItemSelected = constants.SELECTED_NONE
 	selectorEntry.ItemHighlighted = constants.NullItemSelection
 	selectorEntry.ViewportPosition = 0
-	Selector.updateScrollbar(shared.layerAlias, selectorEntry)
+	Dropdown.updateLayout(shared.layerAlias, dropdownEntry)
+}
+
+// dropdownBoxExtraWidth is the number of columns a dropdown's box is wider than its item width: one column of padding
+// on each side of the selected item, where the tray's border sits when it opens, plus one for the arrow.
+const dropdownBoxExtraWidth = 3
+
+/*
+getTrayGeometry is a method which allows you to obtain where a dropdown's tray belongs, as the column and row of the
+tray's first item and the tray's item width. The tray opens one row below the dropdown, with its border lined up with
+the dropdown's left edge, so its items start one column in. While the items overflow the tray, its scroll bar sits
+in the column under the dropdown's arrow and the items are as wide as the dropdown's item width. When every item
+fits, there is no scroll bar, so the items are one column wider to fill that column instead.
+
+Example:
+
+	trayXLocation, trayYLocation, trayItemWidth := Dropdown.getTrayGeometry(dropdownEntry)
+*/
+func (shared *dropdownType) getTrayGeometry(dropdownEntry *types.DropdownEntryType) (int, int, int) {
+	trayItemWidth := dropdownEntry.ItemWidth
+	if shared.getItemCount(dropdownEntry) <= dropdownEntry.Height {
+		trayItemWidth++
+	}
+	return dropdownEntry.XLocation + 1, dropdownEntry.YLocation + 1, trayItemWidth
+}
+
+/*
+updateLayout is a method which allows you to bring everything derived from a dropdown's position, size and items back
+in line with them, and is called whenever any of those change after the dropdown is added. The tray is moved, given
+the dropdown's number of rows, and widened or narrowed to fit its scroll bar, and the tray's own scroll bar, tooltip
+and viewport follow it. The dropdown's tooltip is moved and resized to match. In addition, the following should be
+noted:
+
+  - This is safe whether the tray is open or closed. An open tray is redrawn in its new place on the next screen
+    update, and a closed tray keeps its scroll bar hidden.
+
+Example:
+
+	Dropdown.updateLayout("layer1", dropdownEntry)
+*/
+func (shared *dropdownType) updateLayout(layerAlias string, dropdownEntry *types.DropdownEntryType) {
+	if selectorEntry, isFound := Selectors.Lookup(layerAlias, dropdownEntry.SelectorAlias); isFound {
+		selectorEntry.XLocation, selectorEntry.YLocation, selectorEntry.ItemWidth = shared.getTrayGeometry(dropdownEntry)
+		selectorEntry.Height = dropdownEntry.Height
+		Selector.updateLayout(layerAlias, selectorEntry)
+	}
+	if tooltipEntry, isFound := Tooltips.Lookup(layerAlias, dropdownEntry.TooltipAlias); isFound {
+		tooltipEntry.HotspotXLocation, tooltipEntry.HotspotYLocation, tooltipEntry.HotspotWidth = dropdownEntry.XLocation, dropdownEntry.YLocation, dropdownEntry.ItemWidth
+		tooltipEntry.TooltipXLocation, tooltipEntry.TooltipYLocation, tooltipEntry.TooltipWidth = dropdownEntry.XLocation, dropdownEntry.YLocation+2, dropdownEntry.ItemWidth
+	}
+}
+
+/*
+setSize is a method which allows you to resize a dropdown. The width is that of the whole box shown while the dropdown
+is closed, including its arrow, and the tray opens at the same width. The height is the number of item rows the tray
+shows when it opens, since the closed box is always one row tall. The tray, its scroll bar and both tooltips are then
+updated to match. A width too narrow to leave at least one column for the selected item, a height below one, or a
+dropdown that does not exist leaves everything unchanged.
+
+Example:
+
+	Dropdown.setSize("layer1", "myDropdown", 20, 6)
+*/
+func (shared *dropdownType) setSize(layerAlias string, dropdownAlias string, width int, height int) {
+	dropdownEntry, isFound := Dropdowns.Lookup(layerAlias, dropdownAlias)
+	if !isFound || width <= dropdownBoxExtraWidth || height < 1 {
+		return
+	}
+	dropdownEntry.ItemWidth = width - dropdownBoxExtraWidth
+	dropdownEntry.Width = width
+	dropdownEntry.Height = height
+	shared.updateLayout(layerAlias, dropdownEntry)
 }
 
 /*
@@ -294,17 +366,11 @@ func (shared *dropdownType) Add(layerAlias string, dropdownAlias string, styleEn
 	Dropdowns.Add(layerAlias, dropdownAlias, &newDropdownEntry)
 
 	dropdownEntry := Dropdowns.Get(layerAlias, dropdownAlias)
-	dropdownEntry.ScrollbarAlias = stringformat.GetLastSortedUUID()
-	// Here we add +2 to x to account for the scroll bar being outside the Selector border on ether side. Also, we
-	// minus the scroll bar max selection size by the height of the Selector, so we don't scroll over values
-	// which do not change viewport.
-	selectorWidth := itemWidth
-	if len(selectionEntry.SelectionValue) <= selectorHeight {
-		selectorWidth = selectorWidth + 1
-	}
+	dropdownEntry.Width = itemWidth + dropdownBoxExtraWidth
+	dropdownEntry.Height = selectorHeight
 	dropdownEntry.SelectorAlias = stringformat.GetLastSortedUUID()
-	// Here we add +1 to x and y to account for borders around the selection.
-	Selector.Add(layerAlias, dropdownEntry.SelectorAlias, styleEntry, selectionEntry, xLocation+1, yLocation+1, selectorHeight, selectorWidth, 1, 0, 0, false, true)
+	trayXLocation, trayYLocation, trayItemWidth := shared.getTrayGeometry(dropdownEntry)
+	Selector.Add(layerAlias, dropdownEntry.SelectorAlias, styleEntry, selectionEntry, trayXLocation, trayYLocation, selectorHeight, trayItemWidth, 1, 0, 0, false, true)
 	selectorEntry := Selectors.Get(layerAlias, dropdownEntry.SelectorAlias)
 	selectorEntry.IsVisible = false
 	// The tray starts out agreeing with the dropdown, so closing it without a pick cannot change the selection.
@@ -312,7 +378,7 @@ func (shared *dropdownType) Add(layerAlias string, dropdownAlias string, styleEn
 	dropdownEntry.ScrollbarAlias = selectorEntry.ScrollbarAlias
 	scrollBarEntry := ScrollBars.Get(layerAlias, dropdownEntry.ScrollbarAlias)
 	scrollBarEntry.IsVisible = false
-	if len(selectionEntry.SelectionValue) <= selectorHeight {
+	if shared.getItemCount(dropdownEntry) <= selectorHeight {
 		scrollBarEntry.IsEnabled = false
 	}
 

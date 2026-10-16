@@ -333,7 +333,8 @@ func (shared *SelectorInstanceType) FocusSelection(selectionAlias string) {
 		}
 
 		// Calculate the number of items visible in the viewport
-		visibleItems := selectorEntry.Height * selectorEntry.NumberOfColumns
+		visibleRowCount := getClampedIndex(selectorEntry.Height, 1, selectorEntry.Height)
+		visibleItems := visibleRowCount * Selector.getColumnCount(selectorEntry)
 
 		// Center the item where possible. The viewport is kept in range and on a row boundary by normalizeIndexes.
 		selectorEntry.ViewportPosition = itemIndex - (visibleItems / 2)
@@ -497,30 +498,21 @@ func (shared *selectorType) Add(layerAlias string, selectorAlias string, styleEn
 	// Use the generic memory manager to add the selector entry
 	Selectors.Add(layerAlias, selectorAlias, &newSelectorEntry)
 
-	tooltipInstance := Tooltip.Add(layerAlias, newSelectorEntry.TooltipAlias, "", styleEntry,
-		newSelectorEntry.XLocation, newSelectorEntry.YLocation,
-		newSelectorEntry.ItemWidth*newSelectorEntry.NumberOfColumns+2, 1,
-		newSelectorEntry.XLocation, newSelectorEntry.YLocation+1,
-		newSelectorEntry.ItemWidth*newSelectorEntry.NumberOfColumns+2, 3,
+	selectorEntry := Selectors.Get(layerAlias, selectorAlias)
+	selectorEntry.Width = shared.getSelectorWidth(selectorEntry)
+
+	hotspotXLocation, hotspotYLocation, hotspotWidth, tooltipYLocation := shared.getTooltipGeometry(selectorEntry)
+	tooltipInstance := Tooltip.Add(layerAlias, selectorEntry.TooltipAlias, "", styleEntry,
+		hotspotXLocation, hotspotYLocation, hotspotWidth, 1,
+		hotspotXLocation, tooltipYLocation, hotspotWidth, 3,
 		false, true, constants.DefaultTooltipHoverTime)
 	tooltipInstance.SetEnabled(false)
 	tooltipInstance.setParentControlAlias(selectorAlias)
-	selectorEntry := Selectors.Get(layerAlias, selectorAlias)
 	selectorEntry.ScrollbarAlias = stringformat.GetLastSortedUUID()
 
-	// Position scrollbar at the edge of the selector area
-	scrollBarXLocation := xLocation + (itemWidth * numberOfColumns) - 1
-	scrollBarYLocation := yLocation
-	scrollBarHeight := selectorHeight
-
-	if isBorderDrawn {
-		scrollBarXLocation = xLocation + (itemWidth * numberOfColumns) + 1
-		scrollBarYLocation = scrollBarYLocation - 1
-		scrollBarHeight = selectorHeight + 2
-	}
-
 	// scrollbar.Add stores one less than the maximum value it is given, so one is added to the largest viewport position.
-	scrollbar.Add(layerAlias, selectorEntry.ScrollbarAlias, styleEntry, scrollBarXLocation, scrollBarYLocation, scrollBarHeight,
+	scrollBarXLocation, scrollBarYLocation, scrollBarLength := shared.getScrollbarGeometry(selectorEntry)
+	scrollbar.Add(layerAlias, selectorEntry.ScrollbarAlias, styleEntry, scrollBarXLocation, scrollBarYLocation, scrollBarLength,
 		shared.getMaxViewportPosition(selectorEntry)+1, 0, shared.getColumnCount(selectorEntry), false)
 	scrollBarEntry := ScrollBars.Get(layerAlias, selectorEntry.ScrollbarAlias)
 
@@ -593,28 +585,27 @@ func (shared *selectorType) setupSelectorAttributes(styleEntry types.TuiStyleEnt
 }
 
 /*
-drawSelectorBorder is a method which allows you to draw a border around a selector on the specified text layer. In
-addition, the following should be noted:
+drawSelectorBorder is a method which allows you to draw a border around a selector on the specified text layer. The
+border is drawn one cell outside the selector area, so it spans selectorWidth plus two columns and selectorHeight plus
+two rows, and the area it encloses is first filled with spaces using the provided attribute entry. If IsShadowDrawn is
+enabled, the border is drawn with a shadow using drawWindow, otherwise it is drawn using drawBorder. In addition, the
+following should be noted:
 
-- The border is drawn using the border characters defined in the style entry.
-
-- The border is drawn one character outside the selector area.
-
-- The background of the border area is filled with spaces using the provided attribute entry.
-
-- If IsShadowDrawn is enabled, a shadow is drawn using drawWindow, otherwise a border is drawn using drawBorder.
+  - The selectorWidth is the width of the whole selector, which is its item width multiplied by its number of
+    columns, not the width of a single item.
 
 Example:
-    Selector.drawSelectorBorder(&layerEntry, style, attr, 0, 0, 20, 10)
+
+	Selector.drawSelectorBorder(&layerEntry, style, attr, 0, 0, 20, 10)
 */
 func (shared *selectorType) drawSelectorBorder(layerEntry *types.LayerEntryType, styleEntry types.TuiStyleEntryType,
-	attributeEntry types.AttributeEntryType, xLocation int, yLocation int, itemWidth int, selectorHeight int) {
-	fillArea(layerEntry, attributeEntry, " ", xLocation-1, yLocation-1, itemWidth+2, selectorHeight+2, constants.NullCellControlLocation)
+	attributeEntry types.AttributeEntryType, xLocation int, yLocation int, selectorWidth int, selectorHeight int) {
+	fillArea(layerEntry, attributeEntry, " ", xLocation-1, yLocation-1, selectorWidth+2, selectorHeight+2, constants.NullCellControlLocation)
 
 	if styleEntry.Selector.IsShadowDrawn {
-		drawWindow(layerEntry, styleEntry, attributeEntry, xLocation-1, yLocation-1, itemWidth+2, selectorHeight+2, false)
+		drawWindow(layerEntry, styleEntry, attributeEntry, xLocation-1, yLocation-1, selectorWidth+2, selectorHeight+2, false)
 	} else {
-		drawBorder(layerEntry, styleEntry, attributeEntry, xLocation-1, yLocation-1, itemWidth+2, selectorHeight+2, false)
+		drawBorder(layerEntry, styleEntry, attributeEntry, xLocation-1, yLocation-1, selectorWidth+2, selectorHeight+2, false)
 	}
 }
 
@@ -736,7 +727,8 @@ func (shared *selectorType) drawSelector(selectorAlias string, layerEntry *types
 		borderAttributeEntry := menuAttributeEntry
 		borderAttributeEntry.CellType = constants.CellTypeSelectorBorder
 		borderAttributeEntry.CellControlAlias = selectorAlias
-		shared.drawSelectorBorder(layerEntry, borderStyleEntry, borderAttributeEntry, xLocation, yLocation, itemWidth, selectorHeight)
+		selectorWidth := itemWidth * shared.getColumnCount(selectorEntry)
+		shared.drawSelectorBorder(layerEntry, borderStyleEntry, borderAttributeEntry, xLocation, yLocation, selectorWidth, selectorHeight)
 	}
 
 	currentYLocation := yLocation
@@ -834,6 +826,100 @@ Example:
 */
 func (shared *selectorType) getColumnCount(selectorEntry *types.SelectorEntryType) int {
 	return getClampedIndex(selectorEntry.NumberOfColumns, 1, selectorEntry.NumberOfColumns)
+}
+
+/*
+getSelectorWidth is a method which allows you to obtain the width of a selector's item area, which is its item width
+multiplied by its number of columns, treating a column count below one as a single column. The border, when drawn, and
+a scroll bar placed outside it are not included, in the same way that a selector's height counts only its item rows.
+
+Example:
+
+	selectorWidth := Selector.getSelectorWidth(selectorEntry)
+*/
+func (shared *selectorType) getSelectorWidth(selectorEntry *types.SelectorEntryType) int {
+	return selectorEntry.ItemWidth * shared.getColumnCount(selectorEntry)
+}
+
+/*
+getScrollbarGeometry is a method which allows you to obtain where a selector's scroll bar belongs, as its column, its
+top row and its length. Without a border, the scroll bar covers the last column of the item area and is as tall as the
+item rows. With a border, it sits one column to the right of the right border, starting on the top border row and
+spanning the full height of the border.
+
+Example:
+
+	xLocation, yLocation, length := Selector.getScrollbarGeometry(selectorEntry)
+*/
+func (shared *selectorType) getScrollbarGeometry(selectorEntry *types.SelectorEntryType) (int, int, int) {
+	selectorWidth := shared.getSelectorWidth(selectorEntry)
+	if selectorEntry.IsBorderDrawn {
+		return selectorEntry.XLocation + selectorWidth + 1, selectorEntry.YLocation - 1, selectorEntry.Height + 2
+	}
+	return selectorEntry.XLocation + selectorWidth - 1, selectorEntry.YLocation, selectorEntry.Height
+}
+
+/*
+getTooltipGeometry is a method which allows you to obtain where a selector's tooltip belongs, as the column and row of
+its one row hotspot, the width shared by the hotspot and the tooltip, and the row the three row tooltip is drawn
+from, which is the row below the hotspot. Both are as wide as the item area plus two columns.
+
+Example:
+
+	hotspotXLocation, hotspotYLocation, width, tooltipYLocation := Selector.getTooltipGeometry(selectorEntry)
+*/
+func (shared *selectorType) getTooltipGeometry(selectorEntry *types.SelectorEntryType) (int, int, int, int) {
+	return selectorEntry.XLocation, selectorEntry.YLocation, shared.getSelectorWidth(selectorEntry) + 2, selectorEntry.YLocation + 1
+}
+
+/*
+updateLayout is a method which allows you to bring everything derived from a selector's position, size, column count
+and border back in line with them, and is called whenever any of those change after the selector is added. The
+selector's width is recomputed, its scroll bar and tooltip are moved and resized to match, its viewport and item
+indexes are brought back into range for the number of rows now visible, and its scroll bar is updated to match.
+
+Example:
+
+	Selector.updateLayout("Layer1", selectorEntry)
+*/
+func (shared *selectorType) updateLayout(layerAlias string, selectorEntry *types.SelectorEntryType) {
+	selectorEntry.Width = shared.getSelectorWidth(selectorEntry)
+	if scrollBarEntry, isFound := ScrollBars.Lookup(layerAlias, selectorEntry.ScrollbarAlias); isFound {
+		scrollBarEntry.XLocation, scrollBarEntry.YLocation, scrollBarEntry.Length = shared.getScrollbarGeometry(selectorEntry)
+	}
+	if tooltipEntry, isFound := Tooltips.Lookup(layerAlias, selectorEntry.TooltipAlias); isFound {
+		hotspotXLocation, hotspotYLocation, width, tooltipYLocation := shared.getTooltipGeometry(selectorEntry)
+		tooltipEntry.HotspotXLocation, tooltipEntry.HotspotYLocation, tooltipEntry.HotspotWidth = hotspotXLocation, hotspotYLocation, width
+		tooltipEntry.TooltipXLocation, tooltipEntry.TooltipYLocation, tooltipEntry.TooltipWidth = hotspotXLocation, tooltipYLocation, width
+	}
+	shared.normalizeIndexes(selectorEntry)
+	shared.updateScrollbar(layerAlias, selectorEntry)
+}
+
+/*
+setSize is a method which allows you to resize a selector's item area to a given width and height, where the height is
+the number of item rows and the width is shared equally between its columns. The item width becomes the width divided
+by the number of columns, rounded down, so the selector's width is the largest multiple of its column count that does
+not exceed the width given. The scroll bar, tooltip and viewport are then updated to match. A height below one, a
+width too narrow to give every column at least one cell, or a selector that does not exist leaves everything
+unchanged.
+
+Example:
+
+	Selector.setSize("Layer1", "Selector1", 30, 5)
+*/
+func (shared *selectorType) setSize(layerAlias string, selectorAlias string, width int, height int) {
+	selectorEntry, isFound := Selectors.Lookup(layerAlias, selectorAlias)
+	if !isFound {
+		return
+	}
+	columnCount := shared.getColumnCount(selectorEntry)
+	if height < 1 || width < columnCount {
+		return
+	}
+	selectorEntry.ItemWidth = width / columnCount
+	selectorEntry.Height = height
+	shared.updateLayout(layerAlias, selectorEntry)
 }
 
 /*

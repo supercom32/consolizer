@@ -790,3 +790,152 @@ func TestDropdownFocusedControlAliasMatchesGetAlias(test *testing.T) {
 		test.Fatalf("expected GetAlias to return %q, got %q", "dropdown", alias)
 	}
 }
+
+/*
+assertDropdownTray is a method which allows you to fail the test unless a dropdown's tray starts at the expected
+column and row with the expected item width and number of rows, and its scroll bar is enabled or disabled as expected
+and sits at the expected column.
+
+Example:
+
+	assertDropdownTray(test, "after Add", layerAlias, dropdownEntry, 3, 3, 10, 3, true, 14)
+*/
+func assertDropdownTray(test *testing.T, context string, layerAlias string, dropdownEntry *types.DropdownEntryType, expectedXLocation int,
+	expectedYLocation int, expectedItemWidth int, expectedHeight int, expectedScrollbarEnabled bool, expectedScrollbarXLocation int) {
+	test.Helper()
+	selectorEntry := Selectors.Get(layerAlias, dropdownEntry.SelectorAlias)
+	if selectorEntry.XLocation != expectedXLocation || selectorEntry.YLocation != expectedYLocation ||
+		selectorEntry.ItemWidth != expectedItemWidth || selectorEntry.Height != expectedHeight {
+		test.Fatalf("%s: expected the tray at (%d, %d) with item width %d and %d rows, got (%d, %d) with item width %d and %d rows",
+			context, expectedXLocation, expectedYLocation, expectedItemWidth, expectedHeight,
+			selectorEntry.XLocation, selectorEntry.YLocation, selectorEntry.ItemWidth, selectorEntry.Height)
+	}
+	scrollBarEntry := ScrollBars.Get(layerAlias, dropdownEntry.ScrollbarAlias)
+	if scrollBarEntry.IsEnabled != expectedScrollbarEnabled || scrollBarEntry.XLocation != expectedScrollbarXLocation {
+		test.Fatalf("%s: expected the tray scroll bar enabled %t at column %d, got enabled %t at column %d", context,
+			expectedScrollbarEnabled, expectedScrollbarXLocation, scrollBarEntry.IsEnabled, scrollBarEntry.XLocation)
+	}
+}
+
+/*
+TestDropdownSetSizeResizesBoxAndTray is a test which allows you to verify that a dropdown's size is the width of its
+closed box, arrow included, by the number of rows its tray shows, and that SetSize resizes the box and the tray
+together while ignoring sizes that cannot be laid out.
+
+Example:
+
+	Expected Inputs:
+		Dropdown at (2, 2) with items [Zero, One, Two, Three], item width 10 and a three row tray. SetSize(20, 6),
+		then SetSize(3, 6) and SetSize(20, 0), then SetSize(13, 2).
+
+	Expected Outputs:
+		GetSize is (13, 3) after Add. After SetSize(20, 6): size (20, 6), item width 17, the closed box covers
+		columns 2 to 21 of row 2, and the tray is at (3, 3) with item width 18 and six rows and no scroll bar,
+		since all four items fit; opened, its border runs from column 2 to 21 on rows 3 to 9. The invalid sizes
+		leave the size (20, 6). After SetSize(13, 2): the tray has item width 10 and two rows, and its scroll bar is
+		enabled at column 14, under the arrow.
+*/
+func TestDropdownSetSizeResizesBoxAndTray(test *testing.T) {
+	layerAlias, styleEntry := setupInputTest(test)
+	dropdownEntry := addTestDropdown(layerAlias, styleEntry)
+	dropdown := DropdownInstanceType{BaseControlInstanceType{layerAlias: layerAlias, controlAlias: "dropdown", controlType: constants.TYPE_DROPDOWN}}
+	if width, height := dropdown.GetSize(); width != 13 || height != 3 {
+		test.Fatalf("expected size (13, 3) after Add, got (%d, %d)", width, height)
+	}
+
+	dropdown.SetSize(20, 6)
+	if width, height := dropdown.GetSize(); width != 20 || height != 6 || dropdownEntry.ItemWidth != 17 {
+		test.Fatalf("expected size (20, 6) with item width 17, got (%d, %d) with item width %d", width, height, dropdownEntry.ItemWidth)
+	}
+	assertDropdownTray(test, "after SetSize(20, 6)", layerAlias, dropdownEntry, 3, 3, 18, 6, false, 22)
+	UpdateDisplay(false)
+	boxFirstColumn, boxLastColumn := -1, -1
+	for xLocation, characterEntry := range commonResource.screenLayer.CharacterMemory[2] {
+		if characterEntry.AttributeEntry.CellType == constants.CellTypeDropdown && characterEntry.AttributeEntry.CellControlAlias == "dropdown" {
+			if boxFirstColumn == -1 {
+				boxFirstColumn = xLocation
+			}
+			boxLastColumn = xLocation
+		}
+	}
+	if boxFirstColumn != 2 || boxLastColumn != 21 {
+		test.Fatalf("expected the closed box on columns 2 to 21, got %d to %d", boxFirstColumn, boxLastColumn)
+	}
+	dropdownEntry.IsTrayOpen = true
+	Selectors.Get(layerAlias, dropdownEntry.SelectorAlias).IsVisible = true
+	UpdateDisplay(false)
+	assertSelectorBorderSpan(test, dropdownEntry.SelectorAlias, 3, 9, 2, 21)
+
+	dropdown.SetSize(3, 6)
+	dropdown.SetSize(20, 0)
+	if width, height := dropdown.GetSize(); width != 20 || height != 6 {
+		test.Fatalf("expected invalid sizes to be ignored, got (%d, %d)", width, height)
+	}
+
+	dropdown.SetSize(13, 2)
+	assertDropdownTray(test, "after SetSize(13, 2)", layerAlias, dropdownEntry, 3, 3, 10, 2, true, 14)
+}
+
+/*
+TestDropdownSetPositionMovesTray is a test which allows you to verify that moving a dropdown moves its tray, the
+tray's scroll bar and the dropdown's tooltip with it, so the tray opens under the dropdown and its items can be
+clicked there.
+
+Example:
+
+	Expected Inputs:
+		Dropdown at (2, 2) with items [Zero, One, Two, Three], item width 10, a three row tray, and item 0 selected.
+		SetPosition(5, 4), then a click on the dropdown at (5, 4) and a click on the tray's second row at (8, 6).
+
+	Expected Outputs:
+		The tray is at (6, 5) with item width 10 and three rows, its scroll bar is enabled at column 17, and the
+		tooltip hotspot is at (5, 4). The first click opens the tray, and the second selects ("one", 1).
+*/
+func TestDropdownSetPositionMovesTray(test *testing.T) {
+	layerAlias, styleEntry := setupInputTest(test)
+	dropdownEntry := addTestDropdown(layerAlias, styleEntry)
+	dropdown := DropdownInstanceType{BaseControlInstanceType{layerAlias: layerAlias, controlAlias: "dropdown", controlType: constants.TYPE_DROPDOWN}}
+	dropdown.SetPosition(5, 4)
+	assertDropdownTray(test, "after SetPosition", layerAlias, dropdownEntry, 6, 5, 10, 3, true, 17)
+	tooltipEntry := Tooltips.Get(layerAlias, dropdownEntry.TooltipAlias)
+	if tooltipEntry.HotspotXLocation != 5 || tooltipEntry.HotspotYLocation != 4 {
+		test.Fatalf("expected the tooltip hotspot at (5, 4), got (%d, %d)", tooltipEntry.HotspotXLocation, tooltipEntry.HotspotYLocation)
+	}
+
+	simScreen := startInputSimulation(test)
+	clickAt(simScreen, 5, 4)
+	if !dropdownEntry.IsTrayOpen {
+		test.Fatalf("expected the click on the moved dropdown to open its tray")
+	}
+	clickAt(simScreen, 8, 6)
+	UpdateDisplay(false)
+	if alias, index := dropdown.GetSelected(); alias != "one" || index != 1 {
+		test.Fatalf("expected (%q, %d), got (%q, %d)", "one", 1, alias, index)
+	}
+}
+
+/*
+TestDropdownSetSelectionEntryRefitsTrayWidth is a test which allows you to verify that replacing a dropdown's items
+widens its tray by one column when the scroll bar is no longer needed, and narrows it again when it is, so the tray
+always lines up with the dropdown's box.
+
+Example:
+
+	Expected Inputs:
+		Dropdown at (2, 2) with items [Zero, One, Two, Three], item width 10 and a three row tray. SetSelectionEntry
+		with two items, then with five items.
+
+	Expected Outputs:
+		Tray item width 10 with the scroll bar enabled at column 14 after Add, 11 with the scroll bar disabled
+		after two items, and 10 with the scroll bar enabled at column 14 again after five items.
+*/
+func TestDropdownSetSelectionEntryRefitsTrayWidth(test *testing.T) {
+	layerAlias, styleEntry := setupInputTest(test)
+	dropdownEntry := addTestDropdown(layerAlias, styleEntry)
+	dropdown := DropdownInstanceType{BaseControlInstanceType{layerAlias: layerAlias, controlAlias: "dropdown", controlType: constants.TYPE_DROPDOWN}}
+	assertDropdownTray(test, "after Add", layerAlias, dropdownEntry, 3, 3, 10, 3, true, 14)
+	dropdown.SetSelectionEntry(getTestSelectionEntry(2))
+	assertDropdownTray(test, "with two items", layerAlias, dropdownEntry, 3, 3, 11, 3, false, 15)
+	dropdown.SetSelectionEntry(getTestSelectionEntry(5))
+	assertDropdownTray(test, "with five items", layerAlias, dropdownEntry, 3, 3, 10, 3, true, 14)
+}

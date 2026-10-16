@@ -104,41 +104,55 @@ func (shared *TextboxInstanceType) EnableTooltip(enabled bool) *TextboxInstanceT
 }
 
 /*
-SetText is a method which allows you to set the text for a textbox. If the textbox instance no longer exists, then no
-operation takes place. In addition, the following should be noted:
+SetText is a method which allows you to replace all of the text in a textbox. Lines are separated by newline
+characters, and Windows style carriage return and newline pairs are treated as a single newline. The cursor, viewport
+and any highlight are reset to the start of the text, and the scroll bars are updated to fit it. If the textbox
+instance no longer exists, then no operation takes place. In addition, the following should be noted:
 
-- Text can be broken up into multiple lines by using the '\n' escape sequence.
-
-- Each line is stored with a trailing blank sentinel rune, matching lines produced by typing, so the caret can
-  rest past the last character and editing (delete, backspace, insert) behaves the same on set and typed text.
+  - Each line is stored with a trailing blank sentinel rune, matching lines produced by typing, so the caret can
+    rest past the last character and editing behaves the same on set and typed text. GetText leaves the sentinel
+    out, so it returns the text given here, with any carriage return and newline pairs as single newlines.
 
 Example:
-    textbox.SetText("Hello\nWorld")
+
+	textbox.SetText("Hello\nWorld")
 */
 func (shared *TextboxInstanceType) SetText(text string) *TextboxInstanceType {
 	if textboxEntry, isFound := Textboxes.Lookup(shared.layerAlias, shared.controlAlias); isFound {
-		textData := strings.Split(text, "\n")
-		for _, currentLine := range textData {
-			textboxEntry.TextData = append(textboxEntry.TextData, append(stringformat.GetRunesFromString(currentLine), ' '))
+		lines := strings.Split(strings.ReplaceAll(text, "\r\n", "\n"), "\n")
+		textData := make([][]rune, 0, len(lines))
+		for _, currentLine := range lines {
+			textData = append(textData, append(stringformat.GetRunesFromString(currentLine), ' '))
 		}
+		textboxEntry.TextData = textData
+		textboxEntry.CursorXLocation, textboxEntry.CursorYLocation = 0, 0
+		textboxEntry.ViewportXLocation, textboxEntry.ViewportYLocation = 0, 0
+		textboxEntry.HighlightStartX, textboxEntry.HighlightStartY = 0, 0
+		textboxEntry.HighlightEndX, textboxEntry.HighlightEndY = 0, 0
+		textboxEntry.IsHighlightActive = false
+		textboxEntry.IsHighlightModeToggled = false
 		textbox.setTextboxMaxScrollBarValues(shared.layerAlias, shared.controlAlias)
+		textbox.updateScrollbarBasedOnTextboxViewport(shared.layerAlias, shared.controlAlias)
 	}
 	return shared
 }
 
 /*
-GetText is a method which allows you to retrieve the text from a textbox. If the textbox instance no longer exists,
-then an empty string is returned. In addition, the following should be noted:
-
-- The text is returned as a single string, with lines separated by newline characters.
+GetText is a method which allows you to retrieve all of the text in a textbox, with its lines separated by newline
+characters. The trailing blank sentinel rune each line is stored with is left out, so the text returned is exactly
+what was typed or given to SetText. If the textbox instance no longer exists, then an empty string is returned.
 
 Example:
-    text := textbox.GetText()
+
+	text := textbox.GetText()
 */
 func (shared *TextboxInstanceType) GetText() string {
 	if textboxEntry, isFound := Textboxes.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 		var text strings.Builder
 		for i, line := range textboxEntry.TextData {
+			if lineLength := len(line); lineLength > 0 && line[lineLength-1] == ' ' {
+				line = line[:lineLength-1]
+			}
 			text.WriteString(string(line))
 			if i < len(textboxEntry.TextData)-1 {
 				text.WriteString("\n")
@@ -569,6 +583,96 @@ func (shared *textboxType) setTextboxMaxScrollBarValues(layerAlias string, textb
 }
 
 /*
+getScrollbarGeometry is a method which allows you to obtain where a textbox's two scroll bars belong, as the column,
+row and length of the horizontal scroll bar followed by the column, row and length of the vertical one. Without a
+border, the horizontal scroll bar runs along the row below the text area and the vertical one down the column to its
+right, each as long as the text area. With a border, both move one cell further out and lengthen by two cells so
+they run along the outside of the border.
+
+Example:
+
+	hXLocation, hYLocation, hLength, vXLocation, vYLocation, vLength := textbox.getScrollbarGeometry(textboxEntry)
+*/
+func (shared *textboxType) getScrollbarGeometry(textboxEntry *types.TextboxEntryType) (int, int, int, int, int, int) {
+	hScrollbarXLocation := textboxEntry.XLocation
+	hScrollbarYLocation := textboxEntry.YLocation + textboxEntry.Height
+	hScrollbarLength := textboxEntry.Width
+	vScrollbarXLocation := textboxEntry.XLocation + textboxEntry.Width
+	vScrollbarYLocation := textboxEntry.YLocation
+	vScrollbarLength := textboxEntry.Height
+	if textboxEntry.IsBorderDrawn {
+		hScrollbarXLocation--
+		hScrollbarYLocation++
+		hScrollbarLength += 2
+		vScrollbarXLocation++
+		vScrollbarYLocation--
+		vScrollbarLength += 2
+	}
+	return hScrollbarXLocation, hScrollbarYLocation, hScrollbarLength, vScrollbarXLocation, vScrollbarYLocation, vScrollbarLength
+}
+
+/*
+updateLayout is a method which allows you to bring everything derived from a textbox's position, size and border back
+in line with them, and is called whenever any of those change after the textbox is added. Its scroll bars and tooltip
+are moved and resized to match, the scroll bar ranges are recomputed for the new text area, the viewport is pulled
+back so it never scrolls past the end of the text, and the scroll bar handles are moved to match the viewport. In
+addition, the following should be noted:
+
+  - The viewport is only pulled back into range, not moved to the cursor, so a textbox that is moved or resized
+    keeps showing the same text wherever that still fits.
+
+Example:
+
+	textbox.updateLayout("layer1", textboxEntry)
+*/
+func (shared *textboxType) updateLayout(layerAlias string, textboxEntry *types.TextboxEntryType) {
+	hScrollbarXLocation, hScrollbarYLocation, hScrollbarLength, vScrollbarXLocation, vScrollbarYLocation, vScrollbarLength := shared.getScrollbarGeometry(textboxEntry)
+	hScrollBarEntry, isHorizontalFound := ScrollBars.Lookup(layerAlias, textboxEntry.HorizontalScrollbarAlias)
+	if isHorizontalFound {
+		hScrollBarEntry.XLocation, hScrollBarEntry.YLocation, hScrollBarEntry.Length = hScrollbarXLocation, hScrollbarYLocation, hScrollbarLength
+	}
+	vScrollBarEntry, isVerticalFound := ScrollBars.Lookup(layerAlias, textboxEntry.VerticalScrollbarAlias)
+	if isVerticalFound {
+		vScrollBarEntry.XLocation, vScrollBarEntry.YLocation, vScrollBarEntry.Length = vScrollbarXLocation, vScrollbarYLocation, vScrollbarLength
+	}
+	if tooltipEntry, isFound := Tooltips.Lookup(layerAlias, textboxEntry.TooltipAlias); isFound {
+		tooltipEntry.HotspotXLocation, tooltipEntry.HotspotYLocation = textboxEntry.XLocation, textboxEntry.YLocation
+		tooltipEntry.HotspotWidth, tooltipEntry.HotspotHeight = textboxEntry.Width, textboxEntry.Height
+		tooltipEntry.TooltipXLocation, tooltipEntry.TooltipYLocation = textboxEntry.XLocation, textboxEntry.YLocation+1
+		tooltipEntry.TooltipWidth, tooltipEntry.TooltipHeight = textboxEntry.Width, textboxEntry.Height
+	}
+	shared.setTextboxMaxScrollBarValues(layerAlias, textboxEntry.Alias)
+	if isVerticalFound {
+		textboxEntry.ViewportYLocation = getClampedIndex(textboxEntry.ViewportYLocation, 0, vScrollBarEntry.MaxScrollValue)
+	}
+	if textboxEntry.IsWordWrapEnabled {
+		textboxEntry.ViewportXLocation = 0
+	} else if isHorizontalFound {
+		textboxEntry.ViewportXLocation = getClampedIndex(textboxEntry.ViewportXLocation, 0, hScrollBarEntry.MaxScrollValue)
+	}
+	shared.updateScrollbarBasedOnTextboxViewport(layerAlias, textboxEntry.Alias)
+}
+
+/*
+setSize is a method which allows you to resize a textbox's text area, not counting its border, to a given width and
+height in cells, and then brings its scroll bars, tooltip and viewport in line with the new size. A width or height
+below one, or a textbox that does not exist, leaves everything unchanged.
+
+Example:
+
+	textbox.setSize("layer1", "textbox1", 40, 10)
+*/
+func (shared *textboxType) setSize(layerAlias string, textboxAlias string, width int, height int) {
+	textboxEntry, isFound := Textboxes.Lookup(layerAlias, textboxAlias)
+	if !isFound || width < 1 || height < 1 {
+		return
+	}
+	textboxEntry.Width = width
+	textboxEntry.Height = height
+	shared.updateLayout(layerAlias, textboxEntry)
+}
+
+/*
 Add is a method which allows you to add a text box to a text layer. Once called, an instance of your control is
 returned which will allow you to read or manipulate the properties for it. The Style of the text box will be determined
 by the style entry passed in. If you wish to remove a text box from a text layer, simply call 'DeleteTextBox'. In addition, the following should be noted:
@@ -608,20 +712,7 @@ func (shared *textboxType) Add(layerAlias string, textboxAlias string, styleEntr
 	textboxEntry.TextData = append(textboxEntry.TextData, stringformat.GetRunesFromString(" "))
 	textboxEntry.HorizontalScrollbarAlias = stringformat.GetLastSortedUUID()
 	textboxEntry.VerticalScrollbarAlias = stringformat.GetLastSortedUUID()
-	hScrollbarWidth := width
-	hScrollbarXLocation := xLocation
-	hScrollbarYLocation := yLocation + height
-	vScrollbarHeight := height
-	vScrollbarXLocation := xLocation + width
-	vScrollbarYLocation := yLocation
-	if isBorderDrawn == true {
-		hScrollbarYLocation++
-		hScrollbarXLocation--
-		vScrollbarXLocation++
-		vScrollbarYLocation--
-		hScrollbarWidth = hScrollbarWidth + 2
-		vScrollbarHeight = vScrollbarHeight + 2
-	}
+	hScrollbarXLocation, hScrollbarYLocation, hScrollbarWidth, vScrollbarXLocation, vScrollbarYLocation, vScrollbarHeight := shared.getScrollbarGeometry(textboxEntry)
 	scrollbar.Add(layerAlias, textboxEntry.HorizontalScrollbarAlias, styleEntry, hScrollbarXLocation, hScrollbarYLocation, hScrollbarWidth, 0, 0, 1, true)
 	scrollbar.Add(layerAlias, textboxEntry.VerticalScrollbarAlias, styleEntry, vScrollbarXLocation, vScrollbarYLocation, vScrollbarHeight, 0, 0, 1, false)
 
@@ -1806,10 +1897,17 @@ func (shared *textboxType) getHighlightedText(textboxEntry *types.TextboxEntryTy
 
 /*
 deleteHighlightedText is a method which allows you to delete the highlighted text of a textbox, on one line or across
-several, and move the cursor to where the deleted text began. In addition, the following should be noted:
+several, and move the cursor to where the deleted text began. The highlight runs from its earlier end to its later end,
+both included. When it spans several lines, the text before it on the first line and the text after it on the last
+line are joined into one line, and every line in between is removed, as in a typical text editor. Highlight positions
+outside the text are clamped into it first. In addition, the following should be noted:
 
   - Deleting a whole line, its trailing blank sentinel included, leaves that line empty, so the sentinel is restored
-    and the cursor is clamped to the line, never left at minus one.
+    and the cursor is clamped to the line, never left at minus one. The line break after the last highlighted line
+    is not deleted, so the line after the highlight stays a separate line.
+
+  - A sentinel is added back only to a line whose sentinel the deletion removed. Whether a line already ends in a
+    space is never used to decide, since a real trailing space would then be taken for the sentinel and lost.
 
 Example:
 
@@ -1837,62 +1935,45 @@ func (shared *textboxType) deleteHighlightedText(textboxEntry *types.TextboxEntr
 	}
 
 	// Ensure we don't exceed array bounds
-	if highlightStartY >= len(textboxEntry.TextData) {
-		highlightStartY = len(textboxEntry.TextData) - 1
+	if len(textboxEntry.TextData) == 0 {
+		textboxEntry.TextData = [][]rune{{' '}}
 	}
-	if highlightEndY >= len(textboxEntry.TextData) {
-		highlightEndY = len(textboxEntry.TextData) - 1
+	highlightStartY = getClampedIndex(highlightStartY, 0, len(textboxEntry.TextData)-1)
+	highlightEndY = getClampedIndex(highlightEndY, 0, len(textboxEntry.TextData)-1)
+	for _, lineIndex := range []int{highlightStartY, highlightEndY} {
+		if len(textboxEntry.TextData[lineIndex]) == 0 {
+			textboxEntry.TextData[lineIndex] = []rune{' '}
+		}
 	}
+	highlightStartX = getClampedIndex(highlightStartX, 0, len(textboxEntry.TextData[highlightStartY])-1)
+	highlightEndX = getClampedIndex(highlightEndX, 0, len(textboxEntry.TextData[highlightEndY])-1)
 
 	// If the highlight is on a single line
 	if highlightStartY == highlightEndY {
-		// Ensure we don't exceed line bounds
-		if highlightStartX >= len(textboxEntry.TextData[highlightStartY]) {
-			highlightStartX = len(textboxEntry.TextData[highlightStartY]) - 1
-		}
-		if highlightEndX >= len(textboxEntry.TextData[highlightStartY]) {
-			highlightEndX = len(textboxEntry.TextData[highlightStartY]) - 1
-		}
-
-		// Delete the highlighted portion of the line
+		// Delete the highlighted portion of the line. A highlight reaching the last rune deletes the sentinel, so it
+		// is put back, which keeps a real trailing space from being mistaken for it.
 		line := textboxEntry.TextData[highlightStartY]
-		if highlightStartX < len(line) {
-			if highlightEndX+1 < len(line) {
-				textboxEntry.TextData[highlightStartY] = append(line[:highlightStartX], line[highlightEndX+1:]...)
-			} else {
-				textboxEntry.TextData[highlightStartY] = line[:highlightStartX]
-			}
+		if highlightEndX+1 < len(line) {
+			textboxEntry.TextData[highlightStartY] = append(line[:highlightStartX], line[highlightEndX+1:]...)
+		} else {
+			textboxEntry.TextData[highlightStartY] = append(append([]rune{}, line[:highlightStartX]...), ' ')
 		}
 	} else {
-		// Multi-line highlight
-		// Create a new slice to hold the result
-		newTextData := make([][]rune, 0, len(textboxEntry.TextData))
-
-		// Add lines before the highlight
-		if highlightStartY > 0 {
-			newTextData = append(newTextData, textboxEntry.TextData[:highlightStartY]...)
+		// Multi-line highlight: the first line up to the highlight is joined to the rest of the last line after it,
+		// and the lines in between are removed. The rest of the last line carries that line's sentinel, unless the
+		// highlight reached it, in which case a sentinel is added back.
+		startLine := textboxEntry.TextData[highlightStartY]
+		endLine := textboxEntry.TextData[highlightEndY]
+		joinedLine := append([]rune{}, startLine[:highlightStartX]...)
+		if highlightEndX+1 < len(endLine) {
+			joinedLine = append(joinedLine, endLine[highlightEndX+1:]...)
+		} else {
+			joinedLine = append(joinedLine, ' ')
 		}
-
-		// Handle the first line of the highlight
-		if highlightStartX > 0 && highlightStartX < len(textboxEntry.TextData[highlightStartY]) {
-			newTextData = append(newTextData, textboxEntry.TextData[highlightStartY][:highlightStartX])
-		}
-
-		// Handle the last line of the highlight
-		if highlightEndY < len(textboxEntry.TextData) && highlightEndX+1 < len(textboxEntry.TextData[highlightEndY]) {
-			newTextData = append(newTextData, textboxEntry.TextData[highlightEndY][highlightEndX+1:])
-		}
-
-		// Add lines after the highlight
-		if highlightEndY+1 < len(textboxEntry.TextData) {
-			newTextData = append(newTextData, textboxEntry.TextData[highlightEndY+1:]...)
-		}
-
-		// If we ended up with no lines, add a blank line
-		if len(newTextData) == 0 {
-			newTextData = append(newTextData, []rune{' '})
-		}
-
+		newTextData := make([][]rune, 0, len(textboxEntry.TextData)-(highlightEndY-highlightStartY))
+		newTextData = append(newTextData, textboxEntry.TextData[:highlightStartY]...)
+		newTextData = append(newTextData, joinedLine)
+		newTextData = append(newTextData, textboxEntry.TextData[highlightEndY+1:]...)
 		textboxEntry.TextData = newTextData
 	}
 
@@ -1912,13 +1993,6 @@ func (shared *textboxType) deleteHighlightedText(textboxEntry *types.TextboxEntr
 		textboxEntry.TextData[textboxEntry.CursorYLocation] = []rune{' '}
 	}
 	textboxEntry.CursorXLocation = getClampedIndex(textboxEntry.CursorXLocation, 0, len(textboxEntry.TextData[textboxEntry.CursorYLocation])-1)
-
-	// Ensure each line ends with a space character for the cursor
-	for i := 0; i < len(textboxEntry.TextData); i++ {
-		if len(textboxEntry.TextData[i]) == 0 || textboxEntry.TextData[i][len(textboxEntry.TextData[i])-1] != ' ' {
-			textboxEntry.TextData[i] = append(textboxEntry.TextData[i], ' ')
-		}
-	}
 
 	// Turn off highlighting mode
 	textboxEntry.IsHighlightActive = false

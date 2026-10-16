@@ -5,6 +5,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/supercom32/consolizer/constants"
 	"github.com/supercom32/consolizer/stringformat"
+	"github.com/supercom32/consolizer/types"
 	"testing"
 )
 
@@ -815,15 +816,16 @@ func TestTextboxArrowDownWrapOffMovesLogicalLine(test *testing.T) {
 }
 
 /*
-TestTextboxSetTextLinesEndWithSentinel is a test which verifies that SetText stores each line with the trailing
-blank sentinel rune, the same shape typed lines have, so a caret can rest past the last character.
+TestTextboxSetTextLinesEndWithSentinel is a test which verifies that SetText replaces the blank line a new textbox
+starts with, and stores each line with the trailing blank sentinel rune, the same shape typed lines have, so a caret
+can rest past the last character.
 
 Example:
 
 	Expected Inputs:
-	    A textbox on which SetText("abc\nde") is called.
+	    A new textbox on which SetText("abc\nde") is called.
 	Expected Outputs:
-	    The two non-seed lines are the rune slices [a b c space] and [d e space].
+	    The text is exactly the two rune slices [a b c space] and [d e space], with no blank line before them.
 */
 func TestTextboxSetTextLinesEndWithSentinel(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup(test)
@@ -831,9 +833,7 @@ func TestTextboxSetTextLinesEndWithSentinel(test *testing.T) {
 	textboxInstance.SetText("abc\nde")
 	textboxEntry := Textboxes.Get(textboxInstance.layerAlias, textboxInstance.controlAlias)
 
-	lines := textboxEntry.TextData
-	assert.Equal(test, []rune("abc "), lines[len(lines)-2])
-	assert.Equal(test, []rune("de "), lines[len(lines)-1])
+	assert.Equal(test, [][]rune{[]rune("abc "), []rune("de ")}, textboxEntry.TextData)
 }
 
 /*
@@ -844,12 +844,11 @@ character and advances the caret.
 Example:
 
 	Expected Inputs:
-	    A width 20 textbox whose only content line is set to "X"; the caret is put on the 'X', "delete" is
-	    pressed, then the character 'Y' is typed.
+	    A width 20 textbox whose text is set to "X", which leaves the caret on the 'X'. "delete" is pressed, then
+	    the character 'Y' is typed.
 	Expected Outputs:
-	    After "delete": the line is the single rune slice [space], CursorXLocation 0, CursorYLocation the last
-	    line index.
-	    After typing 'Y': the line is [Y space] and CursorXLocation is 1.
+	    After "delete": the text is the single line [space], with the cursor at line 0, column 0.
+	    After typing 'Y': the text is the single line [Y space], CursorXLocation is 1, and GetText returns "Y".
 */
 func TestTextboxDeleteLastCharacterThenType(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup(test)
@@ -857,18 +856,16 @@ func TestTextboxDeleteLastCharacterThenType(test *testing.T) {
 	setFocusedControl(layer1.layerAlias, textboxInstance.controlAlias, constants.CellTypeTextbox)
 	textboxInstance.SetText("X")
 	textboxEntry := Textboxes.Get(textboxInstance.layerAlias, textboxInstance.controlAlias)
-	lastLineIndex := len(textboxEntry.TextData) - 1
-	textboxEntry.CursorYLocation = lastLineIndex
-	textboxEntry.CursorXLocation = 0
 
 	textbox.UpdateKeyboardEventManually(textboxInstance.layerAlias, textboxInstance.controlAlias, []rune("delete"))
-	assert.Equal(test, []rune(" "), textboxEntry.TextData[lastLineIndex])
+	assert.Equal(test, [][]rune{[]rune(" ")}, textboxEntry.TextData)
 	assert.Equal(test, 0, textboxEntry.CursorXLocation)
-	assert.Equal(test, lastLineIndex, textboxEntry.CursorYLocation)
+	assert.Equal(test, 0, textboxEntry.CursorYLocation)
 
 	textbox.UpdateKeyboardEventManually(textboxInstance.layerAlias, textboxInstance.controlAlias, []rune("Y"))
-	assert.Equal(test, []rune("Y "), textboxEntry.TextData[lastLineIndex])
+	assert.Equal(test, [][]rune{[]rune("Y ")}, textboxEntry.TextData)
 	assert.Equal(test, 1, textboxEntry.CursorXLocation)
+	assert.Equal(test, "Y", textboxInstance.GetText())
 }
 
 /*
@@ -915,4 +912,292 @@ func TestTextboxStaleCursorIsClamped(test *testing.T) {
 				string(textboxEntry.TextData[0]), textboxEntry.CursorYLocation, textboxEntry.CursorXLocation)
 		}
 	})
+}
+
+/*
+assertTextboxScrollbarLayout is a method which allows you to fail the test unless a textbox's horizontal and vertical
+scroll bars sit at the expected columns and rows with the expected lengths, given as horizontal column, row and
+length followed by vertical column, row and length.
+
+Example:
+
+	assertTextboxScrollbarLayout(test, "after Add", layerAlias, textboxEntry, 1, 6, 12, 13, 1, 5)
+*/
+func assertTextboxScrollbarLayout(test *testing.T, context string, layerAlias string, textboxEntry *types.TextboxEntryType,
+	hXLocation int, hYLocation int, hLength int, vXLocation int, vYLocation int, vLength int) {
+	test.Helper()
+	hEntry := ScrollBars.Get(layerAlias, textboxEntry.HorizontalScrollbarAlias)
+	vEntry := ScrollBars.Get(layerAlias, textboxEntry.VerticalScrollbarAlias)
+	if hEntry.XLocation != hXLocation || hEntry.YLocation != hYLocation || hEntry.Length != hLength {
+		test.Fatalf("%s: expected the horizontal scroll bar at (%d, %d) with length %d, got (%d, %d) with length %d", context,
+			hXLocation, hYLocation, hLength, hEntry.XLocation, hEntry.YLocation, hEntry.Length)
+	}
+	if vEntry.XLocation != vXLocation || vEntry.YLocation != vYLocation || vEntry.Length != vLength {
+		test.Fatalf("%s: expected the vertical scroll bar at (%d, %d) with length %d, got (%d, %d) with length %d", context,
+			vXLocation, vYLocation, vLength, vEntry.XLocation, vEntry.YLocation, vEntry.Length)
+	}
+}
+
+/*
+TestTextboxSetSizePositionAndBorderMoveScrollbars is a test which allows you to verify that moving a textbox,
+resizing it, and turning its border off each move its scroll bars and tooltip with it, and that sizes below one cell
+are ignored.
+
+Example:
+
+	Expected Inputs:
+		Bordered textbox at (2, 2), 10 wide and 3 tall. SetPosition(4, 3), then SetSize(15, 4), then SetSize(0, 4)
+		and SetSize(15, 0), then SetBorderDrawn(false).
+
+	Expected Outputs:
+		Horizontal scroll bar (column, row, length) and vertical scroll bar after each step:
+		after Add (1, 6, 12) and (13, 1, 5); after SetPosition (3, 7, 12) and (15, 2, 5); after SetSize (3, 8, 17)
+		and (20, 2, 6), with the tooltip hotspot at (4, 3) sized 15 by 4; the invalid sizes leave the size (15, 4);
+		without the border (4, 7, 15) and (19, 3, 4).
+*/
+func TestTextboxSetSizePositionAndBorderMoveScrollbars(test *testing.T) {
+	layerAlias, styleEntry := setupInputTest(test)
+	textboxInstance := textbox.Add(layerAlias, "textbox", styleEntry, 2, 2, 10, 3, true)
+	textboxEntry := Textboxes.Get(layerAlias, "textbox")
+	assertTextboxScrollbarLayout(test, "after Add", layerAlias, textboxEntry, 1, 6, 12, 13, 1, 5)
+
+	textboxInstance.SetPosition(4, 3)
+	assertTextboxScrollbarLayout(test, "after SetPosition", layerAlias, textboxEntry, 3, 7, 12, 15, 2, 5)
+
+	textboxInstance.SetSize(15, 4)
+	assertTextboxScrollbarLayout(test, "after SetSize", layerAlias, textboxEntry, 3, 8, 17, 20, 2, 6)
+	tooltipEntry := Tooltips.Get(layerAlias, textboxEntry.TooltipAlias)
+	if tooltipEntry.HotspotXLocation != 4 || tooltipEntry.HotspotYLocation != 3 || tooltipEntry.HotspotWidth != 15 || tooltipEntry.HotspotHeight != 4 {
+		test.Fatalf("expected the tooltip hotspot at (4, 3) sized 15 by 4, got (%d, %d) sized %d by %d", tooltipEntry.HotspotXLocation,
+			tooltipEntry.HotspotYLocation, tooltipEntry.HotspotWidth, tooltipEntry.HotspotHeight)
+	}
+
+	textboxInstance.SetSize(0, 4)
+	textboxInstance.SetSize(15, 0)
+	if width, height := textboxInstance.GetSize(); width != 15 || height != 4 {
+		test.Fatalf("expected invalid sizes to be ignored, got (%d, %d)", width, height)
+	}
+
+	textboxInstance.SetBorderDrawn(false)
+	assertTextboxScrollbarLayout(test, "without border", layerAlias, textboxEntry, 4, 7, 15, 19, 3, 4)
+}
+
+/*
+TestTextboxSetSizePullsViewportBack is a test which allows you to verify that resizing a scrolled textbox keeps the
+viewport where it is while it is still in range, pulls it back when the larger text area would scroll past the end of
+the text, and turns the scroll bars off once all the text fits.
+
+Example:
+
+	Expected Inputs:
+		Textbox at (2, 2), 10 wide and 3 tall, holding "line0" to "line9" and a line of 25 x characters, so 11
+		rows whose widest is 26 columns with its sentinel. The viewport is set to (12, 8), the furthest down it can
+		scroll. Then SetSize(10, 8), then SetSize(30, 12).
+
+	Expected Outputs:
+		After SetSize(10, 8): viewport (12, 3), with both scroll bars enabled and their values matching. After
+		SetSize(30, 12): viewport (0, 0) with both scroll bars disabled.
+*/
+func TestTextboxSetSizePullsViewportBack(test *testing.T) {
+	layerAlias, styleEntry := setupInputTest(test)
+	textboxInstance := textbox.Add(layerAlias, "textbox", styleEntry, 2, 2, 10, 3, false)
+	textboxInstance.SetText("line0\nline1\nline2\nline3\nline4\nline5\nline6\nline7\nline8\nline9\nxxxxxxxxxxxxxxxxxxxxxxxxx")
+	textboxInstance.SetViewport(12, 8)
+	textboxEntry := Textboxes.Get(layerAlias, "textbox")
+	hEntry := ScrollBars.Get(layerAlias, textboxEntry.HorizontalScrollbarAlias)
+	vEntry := ScrollBars.Get(layerAlias, textboxEntry.VerticalScrollbarAlias)
+
+	textboxInstance.SetSize(10, 8)
+	if textboxEntry.ViewportXLocation != 12 || textboxEntry.ViewportYLocation != 3 {
+		test.Fatalf("expected viewport (12, 3), got (%d, %d)", textboxEntry.ViewportXLocation, textboxEntry.ViewportYLocation)
+	}
+	if !hEntry.IsEnabled || !vEntry.IsEnabled || hEntry.ScrollValue != 12 || vEntry.ScrollValue != 3 {
+		test.Fatalf("expected both scroll bars enabled with values 12 and 3, got %t %t with values %d and %d",
+			hEntry.IsEnabled, vEntry.IsEnabled, hEntry.ScrollValue, vEntry.ScrollValue)
+	}
+
+	textboxInstance.SetSize(30, 12)
+	if textboxEntry.ViewportXLocation != 0 || textboxEntry.ViewportYLocation != 0 {
+		test.Fatalf("expected viewport (0, 0), got (%d, %d)", textboxEntry.ViewportXLocation, textboxEntry.ViewportYLocation)
+	}
+	if hEntry.IsEnabled || vEntry.IsEnabled {
+		test.Fatalf("expected both scroll bars disabled, got %t and %t", hEntry.IsEnabled, vEntry.IsEnabled)
+	}
+}
+
+/*
+TestTextboxSetTextReplacesTextAndResetsState is a test which allows you to verify that SetText replaces any text
+already in a textbox rather than adding to it, and moves the cursor, viewport and highlight back to the start.
+
+Example:
+
+	Expected Inputs:
+		Textbox 10 wide and 2 tall holding "line0" to "line5", with its cursor at (3, 5), its viewport at (2, 4)
+		and a highlight from (1, 1) to (3, 5) that is active and toggled on. Then SetText("new"), then SetText("").
+
+	Expected Outputs:
+		After SetText("new"): the text is the single line [n e w space], the cursor and viewport are at (0, 0),
+		the highlight is off with every highlight position 0, the vertical scroll bar is disabled, and GetText
+		returns "new". After SetText(""): the text is the single line [space] and GetText returns "".
+*/
+func TestTextboxSetTextReplacesTextAndResetsState(test *testing.T) {
+	layerAlias, styleEntry := setupInputTest(test)
+	textboxInstance := textbox.Add(layerAlias, "textbox", styleEntry, 2, 2, 10, 2, false)
+	textboxInstance.SetText("line0\nline1\nline2\nline3\nline4\nline5")
+	textboxEntry := Textboxes.Get(layerAlias, "textbox")
+	textboxEntry.CursorXLocation, textboxEntry.CursorYLocation = 3, 5
+	textboxEntry.ViewportXLocation, textboxEntry.ViewportYLocation = 2, 4
+	textboxEntry.HighlightStartX, textboxEntry.HighlightStartY = 1, 1
+	textboxEntry.HighlightEndX, textboxEntry.HighlightEndY = 3, 5
+	textboxEntry.IsHighlightActive, textboxEntry.IsHighlightModeToggled = true, true
+
+	textboxInstance.SetText("new")
+	assert.Equal(test, [][]rune{[]rune("new ")}, textboxEntry.TextData)
+	if textboxEntry.CursorXLocation != 0 || textboxEntry.CursorYLocation != 0 ||
+		textboxEntry.ViewportXLocation != 0 || textboxEntry.ViewportYLocation != 0 {
+		test.Fatalf("expected the cursor and viewport at (0, 0), got (%d, %d) and (%d, %d)", textboxEntry.CursorXLocation,
+			textboxEntry.CursorYLocation, textboxEntry.ViewportXLocation, textboxEntry.ViewportYLocation)
+	}
+	if textboxEntry.IsHighlightActive || textboxEntry.IsHighlightModeToggled || textboxEntry.HighlightStartX != 0 ||
+		textboxEntry.HighlightStartY != 0 || textboxEntry.HighlightEndX != 0 || textboxEntry.HighlightEndY != 0 {
+		test.Fatalf("expected the highlight to be cleared, got active %t, toggled %t, from (%d, %d) to (%d, %d)",
+			textboxEntry.IsHighlightActive, textboxEntry.IsHighlightModeToggled, textboxEntry.HighlightStartX,
+			textboxEntry.HighlightStartY, textboxEntry.HighlightEndX, textboxEntry.HighlightEndY)
+	}
+	if ScrollBars.Get(layerAlias, textboxEntry.VerticalScrollbarAlias).IsEnabled {
+		test.Fatalf("expected the vertical scroll bar to be disabled once the text fits")
+	}
+	assert.Equal(test, "new", textboxInstance.GetText())
+
+	textboxInstance.SetText("")
+	assert.Equal(test, [][]rune{[]rune(" ")}, textboxEntry.TextData)
+	assert.Equal(test, "", textboxInstance.GetText())
+}
+
+/*
+TestTextboxGetTextReturnsSetText is a test which allows you to verify that GetText returns the text given to SetText,
+without the blank sentinel each line is stored with, including real trailing and leading spaces, empty lines and
+wide characters, and that carriage return and newline pairs come back as single newlines.
+
+Example:
+
+	Expected Inputs:
+		SetText with each of "", "abc", "abc\nde", "trailing space \n  indented", "\n\nmiddle\n\n", "中文\nEnglish",
+		and "one\r\ntwo".
+
+	Expected Outputs:
+		GetText returns each input unchanged, except "one\r\ntwo", which comes back as "one\ntwo".
+*/
+func TestTextboxGetTextReturnsSetText(test *testing.T) {
+	layerAlias, styleEntry := setupInputTest(test)
+	textboxInstance := textbox.Add(layerAlias, "textbox", styleEntry, 2, 2, 20, 4, false)
+	for _, testCase := range []struct {
+		text         string
+		expectedText string
+	}{
+		{"", ""},
+		{"abc", "abc"},
+		{"abc\nde", "abc\nde"},
+		{"trailing space \n  indented", "trailing space \n  indented"},
+		{"\n\nmiddle\n\n", "\n\nmiddle\n\n"},
+		{"中文\nEnglish", "中文\nEnglish"},
+		{"one\r\ntwo", "one\ntwo"},
+	} {
+		textboxInstance.SetText(testCase.text)
+		if text := textboxInstance.GetText(); text != testCase.expectedText {
+			test.Fatalf("SetText(%q): expected GetText to return %q, got %q", testCase.text, testCase.expectedText, text)
+		}
+	}
+}
+
+/*
+TestTextboxDeleteHighlightKeepsRealTrailingSpace is a test which allows you to verify that deleting a highlight that
+runs to the end of a line puts the line's sentinel back even when the text left behind ends in a real space, so the
+space is not mistaken for the sentinel and lost.
+
+Example:
+
+	Expected Inputs:
+		Textbox holding "ab c", stored as [a b space c space]. A highlight from column 3, the 'c', to column 4,
+		the sentinel, is deleted.
+
+	Expected Outputs:
+		The line is [a b space space], the cursor is at line 0, column 3, and GetText returns "ab ".
+*/
+func TestTextboxDeleteHighlightKeepsRealTrailingSpace(test *testing.T) {
+	layerAlias, styleEntry := setupInputTest(test)
+	textboxInstance := textbox.Add(layerAlias, "textbox", styleEntry, 2, 2, 20, 4, false)
+	textboxInstance.SetText("ab c")
+	textboxEntry := Textboxes.Get(layerAlias, "textbox")
+	textboxEntry.IsHighlightActive = true
+	textboxEntry.HighlightStartX, textboxEntry.HighlightStartY = 3, 0
+	textboxEntry.CursorXLocation, textboxEntry.CursorYLocation = 4, 0
+	textbox.deleteHighlightedText(textboxEntry)
+	assert.Equal(test, [][]rune{[]rune("ab  ")}, textboxEntry.TextData)
+	if textboxEntry.CursorXLocation != 3 || textboxEntry.CursorYLocation != 0 {
+		test.Fatalf("expected the cursor at line 0, column 3, got line %d, column %d", textboxEntry.CursorYLocation, textboxEntry.CursorXLocation)
+	}
+	assert.Equal(test, "ab ", textboxInstance.GetText())
+}
+
+/*
+TestTextboxDeleteMultiLineHighlightJoinsLines is a test which allows you to verify that deleting a highlight spanning
+several lines joins the text before it on the first line to the text after it on the last line, removes every line in
+between, keeps a single sentinel on the joined line, and moves the cursor to where the highlight began.
+
+Example:
+
+	Expected Inputs:
+		Each case sets the text, then the highlight start and the cursor, given as (column, line), and deletes:
+		"abc\ndef" from (1, 0) to (1, 1); "abc\nmid\ndef" from (1, 0) to (0, 2); "abc\ndef" with the cursor at
+		(1, 0) before the highlight start at (1, 1); "abc\ndef" from (3, 0), the first line's sentinel, to (0, 1);
+		"abc\ndef\nzzz" from (0, 0) to (3, 1), the second line's sentinel; and "abc\ndef" from (-5, -1) to (40, 9),
+		both out of range.
+
+	Expected Outputs:
+		Text and cursor (column, line) after each: ["af "] at (1, 0); ["aef "] at (1, 0); ["af "] at (1, 0);
+		["abcef "] at (3, 0); [" ", "zzz "] at (0, 0); and [" "] at (0, 0), with GetText returning "af", "aef",
+		"af", "abcef", "\nzzz" and "" respectively.
+*/
+func TestTextboxDeleteMultiLineHighlightJoinsLines(test *testing.T) {
+	testCases := []struct {
+		name              string
+		text              string
+		highlightStartX   int
+		highlightStartY   int
+		cursorXLocation   int
+		cursorYLocation   int
+		expectedTextData  [][]rune
+		expectedCursorX   int
+		expectedCursorY   int
+		expectedFinalText string
+	}{
+		{"two lines", "abc\ndef", 1, 0, 1, 1, [][]rune{[]rune("af ")}, 1, 0, "af"},
+		{"three lines", "abc\nmid\ndef", 1, 0, 0, 2, [][]rune{[]rune("aef ")}, 1, 0, "aef"},
+		{"cursor before highlight start", "abc\ndef", 1, 1, 1, 0, [][]rune{[]rune("af ")}, 1, 0, "af"},
+		{"starting on the first line's sentinel", "abc\ndef", 3, 0, 0, 1, [][]rune{[]rune("abcef ")}, 3, 0, "abcef"},
+		{"through the last line's sentinel", "abc\ndef\nzzz", 0, 0, 3, 1, [][]rune{[]rune(" "), []rune("zzz ")}, 0, 0, "\nzzz"},
+		{"out of range positions", "abc\ndef", -5, -1, 40, 9, [][]rune{[]rune(" ")}, 0, 0, ""},
+	}
+	for _, testCase := range testCases {
+		test.Run(testCase.name, func(test *testing.T) {
+			layerAlias, styleEntry := setupInputTest(test)
+			textboxInstance := textbox.Add(layerAlias, "textbox", styleEntry, 2, 2, 20, 4, false)
+			textboxInstance.SetText(testCase.text)
+			textboxEntry := Textboxes.Get(layerAlias, "textbox")
+			textboxEntry.IsHighlightActive = true
+			textboxEntry.HighlightStartX, textboxEntry.HighlightStartY = testCase.highlightStartX, testCase.highlightStartY
+			textboxEntry.CursorXLocation, textboxEntry.CursorYLocation = testCase.cursorXLocation, testCase.cursorYLocation
+			textbox.deleteHighlightedText(textboxEntry)
+			assert.Equal(test, testCase.expectedTextData, textboxEntry.TextData)
+			if textboxEntry.CursorXLocation != testCase.expectedCursorX || textboxEntry.CursorYLocation != testCase.expectedCursorY {
+				test.Fatalf("expected the cursor at column %d, line %d, got column %d, line %d", testCase.expectedCursorX,
+					testCase.expectedCursorY, textboxEntry.CursorXLocation, textboxEntry.CursorYLocation)
+			}
+			assert.Equal(test, testCase.expectedFinalText, textboxInstance.GetText())
+			if textboxEntry.IsHighlightActive {
+				test.Fatalf("expected the highlight to be turned off")
+			}
+		})
+	}
 }
