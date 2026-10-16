@@ -73,9 +73,13 @@ func TestDropdownWithDefaultSelection(test *testing.T) {
 		fmt.Println("Dropdown selection value is incorrect")
 	}
 
-	// Verify the selected alias
-	if !assert.Equal(test, "item2", dropdownInstance.GetAlias(), "Dropdown should have 'item2' alias selected") {
+	// Verify the selected alias and index
+	selectedAlias, selectedIndex := dropdownInstance.GetSelected()
+	if !assert.Equal(test, "item2", selectedAlias, "Dropdown should have 'item2' alias selected") {
 		fmt.Println("Dropdown selection alias is incorrect")
+	}
+	if !assert.Equal(test, 1, selectedIndex, "Dropdown should have index 1 selected") {
+		fmt.Println("Dropdown selection index is incorrect")
 	}
 }
 
@@ -685,4 +689,104 @@ func TestDropdownWheelScrollsOpenTray(test *testing.T) {
 	assertTray("after wheel up over the left border", 0, 1)
 	injectWheel(simScreen, 6, 6, tcell.WheelDown)
 	assertTray("after wheel down over the bottom border", 1, 1)
+}
+
+/*
+TestDropdownGetAliasReturnsControlAlias is a test which allows you to verify that a dropdown's GetAlias returns the
+alias the dropdown was added with, and never the alias of its selected item, whatever is selected.
+
+Example:
+
+	Expected Inputs:
+		Dropdown added with alias "dropdown" and items [zero, one, two, three], item 0 selected. The selection is
+		then set to 0, 3, and constants.SELECTED_NONE in turn.
+
+	Expected Outputs:
+		GetAlias returns "dropdown" after each step.
+*/
+func TestDropdownGetAliasReturnsControlAlias(test *testing.T) {
+	layerAlias, styleEntry := setupInputTest(test)
+	addTestDropdown(layerAlias, styleEntry)
+	dropdown := DropdownInstanceType{BaseControlInstanceType{layerAlias: layerAlias, controlAlias: "dropdown", controlType: constants.TYPE_DROPDOWN}}
+	for _, itemIndex := range []int{0, 3, constants.SELECTED_NONE} {
+		dropdown.SetSelectedItemIndex(itemIndex)
+		if alias := dropdown.GetAlias(); alias != "dropdown" {
+			test.Fatalf("after SetSelectedItemIndex(%d): expected alias %q, got %q", itemIndex, "dropdown", alias)
+		}
+	}
+}
+
+/*
+TestDropdownGetSelectedFollowsSelection is a test which allows you to verify that a dropdown's GetSelected reports the
+alias and index of the item set by SetSelectedItemIndex, reports an empty alias and constants.SELECTED_NONE when
+nothing is selected, and ignores an index that is out of range.
+
+Example:
+
+	Expected Inputs:
+		Dropdown with items [zero, one, two, three] and item 0 selected. SetSelectedItemIndex is called with 2, 4,
+		constants.SELECTED_NONE, and 3 in turn. A second dropdown is then added with an empty item list.
+
+	Expected Outputs:
+		("zero", 0) before any call, then ("two", 2), ("two", 2) since 4 is out of range and ignored,
+		("", -1), and ("three", 3). The empty dropdown reports ("", -1).
+*/
+func TestDropdownGetSelectedFollowsSelection(test *testing.T) {
+	layerAlias, styleEntry := setupInputTest(test)
+	addTestDropdown(layerAlias, styleEntry)
+	dropdown := DropdownInstanceType{BaseControlInstanceType{layerAlias: layerAlias, controlAlias: "dropdown", controlType: constants.TYPE_DROPDOWN}}
+	assertSelected := func(context string, expectedAlias string, expectedIndex int) {
+		test.Helper()
+		if alias, index := dropdown.GetSelected(); alias != expectedAlias || index != expectedIndex {
+			test.Fatalf("%s: expected (%q, %d), got (%q, %d)", context, expectedAlias, expectedIndex, alias, index)
+		}
+	}
+	assertSelected("default selection", "zero", 0)
+	for _, step := range []struct {
+		itemIndex     int
+		expectedAlias string
+		expectedIndex int
+	}{
+		{2, "two", 2},
+		{4, "two", 2},
+		{constants.SELECTED_NONE, "", constants.SELECTED_NONE},
+		{3, "three", 3},
+	} {
+		dropdown.SetSelectedItemIndex(step.itemIndex)
+		assertSelected(fmt.Sprintf("after SetSelectedItemIndex(%d)", step.itemIndex), step.expectedAlias, step.expectedIndex)
+	}
+
+	emptyDropdown := Dropdown.Add(layerAlias, "empty", styleEntry, types.NewSelectionEntry(), 2, 8, 3, 10, constants.SELECTED_NONE)
+	if alias, index := emptyDropdown.GetSelected(); alias != "" || index != constants.SELECTED_NONE {
+		test.Fatalf("empty dropdown: expected (%q, %d), got (%q, %d)", "", constants.SELECTED_NONE, alias, index)
+	}
+}
+
+/*
+TestDropdownFocusedControlAliasMatchesGetAlias is a test which allows you to verify that the control alias
+GetFocusedControl reports for a focused dropdown equals that dropdown's GetAlias, even when an item with a different
+alias is selected.
+
+Example:
+
+	Expected Inputs:
+		Dropdown added with alias "dropdown" and items [zero, one, two, three], focused with SetFocus, with item 2
+		selected.
+
+	Expected Outputs:
+		GetFocusedControl returns (layer alias, "dropdown", constants.CellTypeDropdown), and its control alias
+		equals GetAlias.
+*/
+func TestDropdownFocusedControlAliasMatchesGetAlias(test *testing.T) {
+	layerAlias, styleEntry := setupInputTest(test)
+	addTestDropdown(layerAlias, styleEntry)
+	dropdown := DropdownInstanceType{BaseControlInstanceType{layerAlias: layerAlias, controlAlias: "dropdown", controlType: constants.TYPE_DROPDOWN}}
+	dropdown.SetSelectedItemIndex(2)
+	if err := SetFocus(&dropdown); err != nil {
+		test.Fatalf("expected the dropdown to take focus, got %v", err)
+	}
+	assertFocus(test, "focused dropdown", layerAlias, dropdown.GetAlias(), constants.CellTypeDropdown)
+	if alias := dropdown.GetAlias(); alias != "dropdown" {
+		test.Fatalf("expected GetAlias to return %q, got %q", "dropdown", alias)
+	}
 }

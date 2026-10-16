@@ -166,25 +166,22 @@ func (shared *DropdownInstanceType) GetValue() string {
 }
 
 /*
-GetAlias is a method which retrieves the currently selected alias from a dropdown. In addition, the
-following should be noted:
-
-- Returns the internal alias of the currently selected item.
-
-- If the dropdown does not exist, returns an empty string.
-
-- The alias is typically used for programmatic access to the selection.
+GetSelected is a method which allows you to retrieve the currently selected item of a dropdown, as its alias and its
+zero based index. If nothing is selected, the recorded selection is out of range, or the dropdown does not exist, an
+empty string and constants.SELECTED_NONE are returned. Use GetAlias to obtain the alias of the dropdown control itself.
 
 Example:
-    alias := dropdown.GetAlias()
+
+	alias, index := dropdown.GetSelected()
 */
-func (shared *DropdownInstanceType) GetAlias() string {
-	dropdownEntry := Dropdowns.Get(shared.layerAlias, shared.controlAlias)
-	if len(dropdownEntry.SelectionEntry.SelectionAlias) != 0 &&
-		dropdownEntry.ItemSelected >= 0 && dropdownEntry.ItemSelected < len(dropdownEntry.SelectionEntry.SelectionAlias) {
-		return dropdownEntry.SelectionEntry.SelectionAlias[dropdownEntry.ItemSelected]
+func (shared *DropdownInstanceType) GetSelected() (string, int) {
+	if dropdownEntry, isFound := Dropdowns.Lookup(shared.layerAlias, shared.controlAlias); isFound {
+		itemSelected := dropdownEntry.ItemSelected
+		if itemSelected >= 0 && itemSelected < Dropdown.getItemCount(dropdownEntry) {
+			return dropdownEntry.SelectionEntry.SelectionAlias[itemSelected], itemSelected
+		}
 	}
-	return ""
+	return "", constants.SELECTED_NONE
 }
 
 /*
