@@ -27,7 +27,7 @@ type checkboxType struct{}
 
 var Checkbox checkboxType
 
-var Checkboxes = memory.NewControlMemoryManager[types.CheckboxEntryType]()
+var checkboxRegistry = memory.NewControlMemoryManager[types.CheckboxEntryType]()
 
 /*
 Delete is a method which removes a checkbox instance from its memory manager.
@@ -36,7 +36,8 @@ Example:
     checkbox.Delete()
 */
 func (shared *CheckboxInstanceType) Delete() *CheckboxInstanceType {
-	shared.BaseControlInstanceType.Delete()
+	defer lockUIState()()
+	shared.BaseControlInstanceType.delete()
 	return nil
 }
 
@@ -48,7 +49,8 @@ Example:
     isSelected := checkbox.IsSelected()
 */
 func (shared *CheckboxInstanceType) IsSelected() bool {
-	if checkboxEntry, isFound := Checkboxes.Lookup(shared.layerAlias, shared.controlAlias); isFound {
+	defer lockUIState()()
+	if checkboxEntry, isFound := checkboxRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 		if checkboxEntry.IsSelected == true {
 			return true
 		}
@@ -63,7 +65,8 @@ Example:
     checkbox.SetState(true)
 */
 func (shared *CheckboxInstanceType) SetState(isChecked bool) {
-	if checkboxEntry, isFound := Checkboxes.Lookup(shared.layerAlias, shared.controlAlias); isFound {
+	defer lockUIState()()
+	if checkboxEntry, isFound := checkboxRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 		checkboxEntry.IsSelected = isChecked
 	}
 }
@@ -85,9 +88,26 @@ Example:
 	checkboxInstance.SetLabelFirst(true)
 */
 func (shared *CheckboxInstanceType) SetLabelFirst(isLabelFirst bool) {
-	if checkboxEntry, isFound := Checkboxes.Lookup(shared.layerAlias, shared.controlAlias); isFound {
+	defer lockUIState()()
+	if checkboxEntry, isFound := checkboxRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 		checkboxEntry.IsLabelFirst = isLabelFirst
 	}
+}
+
+/*
+IsLabelFirst is a method which allows you to check whether a checkbox draws its label before its box rather than
+after it, as set with SetLabelFirst. If the checkbox does not exist, false is returned.
+
+Example:
+
+	isLabelFirst := checkbox.IsLabelFirst()
+*/
+func (shared *CheckboxInstanceType) IsLabelFirst() bool {
+	defer lockUIState()()
+	if checkboxEntry, isFound := checkboxRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound {
+		return checkboxEntry.IsLabelFirst
+	}
+	return false
 }
 
 /*
@@ -113,6 +133,19 @@ Example:
 	checkboxInstance := Checkbox.Add("layer1", "cb1", "Enable Feature", style, 5, 5, false, true)
 */
 func (shared *checkboxType) Add(layerAlias string, checkboxAlias string, checkboxLabel string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, isSelected bool, isEnabled bool) CheckboxInstanceType {
+	defer lockUIState()()
+	return shared.add(layerAlias, checkboxAlias, checkboxLabel, styleEntry, xLocation, yLocation, isSelected, isEnabled)
+}
+
+/*
+add is a method which allows you to do exactly what Add does, for a caller that already holds uiStateMutex, such as
+another entry point of the package that has taken the lock itself.
+
+Example:
+
+	Checkbox.add(layerAlias, checkboxAlias, checkboxLabel, styleEntry, xLocation, yLocation, isSelected, isEnabled)
+*/
+func (shared *checkboxType) add(layerAlias string, checkboxAlias string, checkboxLabel string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, isSelected bool, isEnabled bool) CheckboxInstanceType {
 	checkboxEntry := types.NewCheckboxEntry()
 	checkboxEntry.Alias = checkboxAlias
 	checkboxEntry.StyleEntry = styleEntry
@@ -126,16 +159,16 @@ func (shared *checkboxType) Add(layerAlias string, checkboxAlias string, checkbo
 	arrayOfRunes := stringformat.GetRunesFromString(checkboxLabel)
 	labelWidth := stringformat.GetWidthOfRunesWhenPrinted(arrayOfRunes)
 	// Create associated tooltip (always created but disabled by default)
-	tooltipInstance := Tooltip.Add(layerAlias, checkboxEntry.TooltipAlias, "", styleEntry,
+	tooltipInstance := Tooltip.add(layerAlias, checkboxEntry.TooltipAlias, "", styleEntry,
 		checkboxEntry.XLocation, checkboxEntry.YLocation,
 		labelWidth+2, 1,
 		checkboxEntry.XLocation, checkboxEntry.YLocation+1,
 		labelWidth+2, 3,
 		false, true, constants.DefaultTooltipHoverTime)
-	tooltipInstance.SetEnabled(false)
+	tooltipInstance.setEnabled(false)
 	tooltipInstance.setParentControlAlias(checkboxAlias)
 	// Use the ControlMemoryManager to add the checkbox entry
-	Checkboxes.Add(layerAlias, checkboxAlias, &checkboxEntry)
+	checkboxRegistry.Add(layerAlias, checkboxAlias, &checkboxEntry)
 	var checkboxInstance CheckboxInstanceType
 	checkboxInstance.layerAlias = layerAlias
 	checkboxInstance.controlAlias = checkboxAlias
@@ -153,7 +186,8 @@ Example:
     Checkbox.Delete("layer1", "cb1")
 */
 func (shared *checkboxType) Delete(layerAlias string, checkboxAlias string) {
-	Checkboxes.Remove(layerAlias, checkboxAlias)
+	defer lockUIState()()
+	checkboxRegistry.Remove(layerAlias, checkboxAlias)
 	clearStaleControlReferences(layerAlias, checkboxAlias, constants.CellTypeCheckbox)
 }
 
@@ -164,7 +198,8 @@ Example:
     Checkbox.DeleteAll("layer1")
 */
 func (shared *checkboxType) DeleteAll(layerAlias string) {
-	removeAllControlsAndClearCells(Checkboxes, layerAlias, constants.CellTypeCheckbox, func(entry *types.CheckboxEntryType) string { return entry.Alias })
+	defer lockUIState()()
+	removeAllControlsAndClearCells(checkboxRegistry, layerAlias, constants.CellTypeCheckbox, func(entry *types.CheckboxEntryType) string { return entry.Alias })
 }
 
 /*
@@ -175,7 +210,7 @@ Example:
 */
 func (shared *checkboxType) drawOnLayer(layerEntry types.LayerEntryType) {
 	layerAlias := layerEntry.LayerAlias
-	for _, checkboxEntry := range Checkboxes.GetAllEntries(layerAlias) {
+	for _, checkboxEntry := range checkboxRegistry.GetAllEntries(layerAlias) {
 		shared.draw(&layerEntry, checkboxEntry.Alias, checkboxEntry.Label, checkboxEntry.StyleEntry, checkboxEntry.XLocation, checkboxEntry.YLocation, checkboxEntry.IsSelected, checkboxEntry.IsEnabled, checkboxEntry.IsLabelFirst)
 	}
 }
@@ -252,7 +287,7 @@ func (shared *checkboxType) updateKeyboardEvent(keystroke []rune) (bool, bool) {
 	if focusedControl.controlType != constants.CellTypeCheckbox || !isControlFocusable(focusedControl) {
 		return false, false
 	}
-	checkboxEntry, isFound := Checkboxes.Lookup(focusedControl.layerAlias, focusedControl.controlAlias)
+	checkboxEntry, isFound := checkboxRegistry.Lookup(focusedControl.layerAlias, focusedControl.controlAlias)
 	if !isFound {
 		return false, false
 	}
@@ -275,7 +310,7 @@ func (shared *checkboxType) updateMouseEvent() bool {
 	controlAlias := characterEntry.AttributeEntry.CellControlAlias
 	if characterEntry.AttributeEntry.CellType == constants.CellTypeCheckbox && characterEntry.AttributeEntry.CellControlId != constants.NullCellId {
 		_, _, previousButtonPressed, _ := GetPreviousMouseStatus()
-		if checkboxEntry, isFound := Checkboxes.Lookup(layerAlias, controlAlias); buttonPressed != 0 && previousButtonPressed == 0 && isFound {
+		if checkboxEntry, isFound := checkboxRegistry.Lookup(layerAlias, controlAlias); buttonPressed != 0 && previousButtonPressed == 0 && isFound {
 			if !checkboxEntry.IsEnabled {
 				return isUpdateRequired
 			}

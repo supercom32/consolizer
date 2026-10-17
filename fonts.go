@@ -414,12 +414,27 @@ func (manager *fontType) renderGlyph(layerEntry *types.LayerEntryType, font *typ
 }
 
 /*
-PrintText is a method which allows you to render a string onto a layer using the specified font.
+PrintText is a method which allows you to render a string onto a layer using the specified font. It is safe to call
+from any goroutine, since the layer is drawn on under the package's UI lock.
 
 Example:
-    Font.PrintText(layerEntry, fontInstance, 0, 0, "Hello")
+
+	Font.PrintText(layerEntry, fontInstance, 0, 0, "Hello")
 */
 func (manager *fontType) PrintText(layerEntry *types.LayerEntryType, fontInstance fontInstanceType, xLocation, yLocation int, textToPrint string) {
+	defer lockUIState()()
+	manager.printText(layerEntry, fontInstance, xLocation, yLocation, textToPrint)
+}
+
+/*
+printText is a method which allows you to render a string onto a layer using the specified font exactly as PrintText
+does, for a caller that already holds uiStateMutex.
+
+Example:
+
+	Font.printText(layerEntry, fontInstance, 0, 0, "Hello")
+*/
+func (manager *fontType) printText(layerEntry *types.LayerEntryType, fontInstance fontInstanceType, xLocation, yLocation int, textToPrint string) {
 	fontFamily := getFontFamilyFromMemory(fontInstance.fontAlias)
 	if fontInstance.fontIndex >= len(fontFamily.Fonts) {
 		safeSttyPanic(fmt.Sprintf("Font index %d not found in font alias '%s'.", fontInstance.fontIndex, fontInstance.fontAlias))
@@ -436,10 +451,14 @@ func (manager *fontType) PrintText(layerEntry *types.LayerEntryType, fontInstanc
 PrintTextDialog is a method which allows you to render a string onto a layer with a typewriter effect using the
 specified font. In addition, the following should be noted:
 
-- If widthOfLineInCharacters is greater than 0, text will wrap after that many characters.
+  - If widthOfLineInCharacters is greater than 0, text will wrap after that many characters.
+
+  - It must not be called while holding the package's UI lock. Each glyph is drawn under that lock, and the lock is
+    released while waiting out the delay, so input keeps being handled and the key that skips the dialog arrives.
 
 Example:
-    Font.PrintTextDialog(layerEntry, fontInstance, 0, 0, 40, 100, true, "Typewriter text")
+
+	Font.PrintTextDialog(layerEntry, fontInstance, 0, 0, 40, 100, true, "Typewriter text")
 */
 func (manager *fontType) PrintTextDialog(layerEntry *types.LayerEntryType, fontInstance fontInstanceType, xLocation, yLocation, widthOfLineInCharacters, printDelayInMilliseconds int, isSkipable bool, textToPrint string) {
 	fontFamily := getFontFamilyFromMemory(fontInstance.fontAlias)
@@ -449,32 +468,35 @@ func (manager *fontType) PrintTextDialog(layerEntry *types.LayerEntryType, fontI
 	font := fontFamily.Fonts[fontInstance.fontIndex]
 
 	if printDelayInMilliseconds <= 0 {
-		if widthOfLineInCharacters <= 0 {
-			// Inline the PrintText functionality
-			currentXLocation := xLocation
-			for _, character := range textToPrint {
-				characterWidth := manager.renderGlyph(layerEntry, font, character, currentXLocation, yLocation)
-				currentXLocation += characterWidth
-			}
-		} else {
-			// Implement non-typewriter font printing with line wrapping
-			currentXLocation := xLocation
-			currentYLocation := yLocation
-			characterCount := 0
-
-			for _, character := range textToPrint {
-				// Check if we need to wrap to the next line
-				if characterCount >= widthOfLineInCharacters {
-					characterCount = 0
-					currentXLocation = xLocation
-					currentYLocation += font.Height + 1 // Move down by font height + 1
+		func() {
+			defer lockUIState()()
+			if widthOfLineInCharacters <= 0 {
+				// Inline the PrintText functionality
+				currentXLocation := xLocation
+				for _, character := range textToPrint {
+					characterWidth := manager.renderGlyph(layerEntry, font, character, currentXLocation, yLocation)
+					currentXLocation += characterWidth
 				}
+			} else {
+				// Implement non-typewriter font printing with line wrapping
+				currentXLocation := xLocation
+				currentYLocation := yLocation
+				characterCount := 0
 
-				characterWidth := manager.renderGlyph(layerEntry, font, character, currentXLocation, currentYLocation)
-				currentXLocation += characterWidth
-				characterCount++
+				for _, character := range textToPrint {
+					// Check if we need to wrap to the next line
+					if characterCount >= widthOfLineInCharacters {
+						characterCount = 0
+						currentXLocation = xLocation
+						currentYLocation += font.Height + 1 // Move down by font height + 1
+					}
+
+					characterWidth := manager.renderGlyph(layerEntry, font, character, currentXLocation, currentYLocation)
+					currentXLocation += characterWidth
+					characterCount++
+				}
 			}
-		}
+		}()
 		return
 	}
 
@@ -491,8 +513,11 @@ func (manager *fontType) PrintTextDialog(layerEntry *types.LayerEntryType, fontI
 			currentYLocation += font.Height + 1 // Move down by font height + 1
 		}
 
-		characterWidth := manager.renderGlyph(layerEntry, font, character, currentXLocation, currentYLocation)
-		currentXLocation += characterWidth
+		// The glyph is drawn under the UI lock, which is released while waiting out the delay below.
+		func() {
+			defer lockUIState()()
+			currentXLocation += manager.renderGlyph(layerEntry, font, character, currentXLocation, currentYLocation)
+		}()
 		characterCount++
 
 		// Check for skip input

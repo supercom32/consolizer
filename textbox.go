@@ -25,17 +25,19 @@ textboxType is a structure which contains the methods for managing textboxes.
 type textboxType struct{}
 
 var textbox textboxType
-var Textboxes = memory.NewControlMemoryManager[types.TextboxEntryType]()
+var textboxRegistry = memory.NewControlMemoryManager[types.TextboxEntryType]()
 
 /*
-GetTextbox is a method which allows you to retrieve a textbox entry by its layer and alias.
+getTextbox is a method which allows you to retrieve the entry holding a textbox's state by its layer and alias. If the
+textbox does not exist, the program fails with a fatal error. The caller must hold uiStateMutex.
 
 Example:
-    textbox := GetTextbox("layer1", "textbox1")
+
+	textboxEntry := getTextbox("layer1", "textbox1")
 */
-func GetTextbox(layerAlias string, textboxAlias string) *types.TextboxEntryType {
+func getTextbox(layerAlias string, textboxAlias string) *types.TextboxEntryType {
 	// Use the generic memory manager to retrieve the textbox entry
-	textboxEntry, isFound := Textboxes.Lookup(layerAlias, textboxAlias)
+	textboxEntry, isFound := textboxRegistry.Lookup(layerAlias, textboxAlias)
 	if !isFound {
 		safeSttyPanic(fmt.Sprintf("The requested text with alias '%s' on layer '%s' could not be returned since it does not exist.", textboxAlias, layerAlias))
 	}
@@ -50,7 +52,7 @@ Example:
 */
 func IsTextboxExists(layerAlias string, textboxAlias string) bool {
 	// Use the generic memory manager to check existence
-	return Textboxes.IsExists(layerAlias, textboxAlias)
+	return textboxRegistry.IsExists(layerAlias, textboxAlias)
 }
 
 /*
@@ -67,6 +69,7 @@ Example:
     textbox.GetTooltip().SetText("This is a tooltip")
 */
 func (shared *TextboxInstanceType) GetTooltip() *TextboxInstanceType {
+	defer lockUIState()()
 	// No need to retrieve the tooltip, just return self for chaining
 	return shared
 }
@@ -78,11 +81,12 @@ Example:
     textbox.SetTooltipText("This is a tooltip")
 */
 func (shared *TextboxInstanceType) SetTooltipText(text string) *TextboxInstanceType {
-	if textboxEntry, isFound := Textboxes.Lookup(shared.layerAlias, shared.controlAlias); isFound {
+	defer lockUIState()()
+	if textboxEntry, isFound := textboxRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 		var tooltipInstance TooltipInstanceType
 		tooltipInstance.layerAlias = shared.layerAlias
 		tooltipInstance.controlAlias = textboxEntry.TooltipAlias
-		tooltipInstance.SetValue(text)
+		tooltipInstance.setValue(text)
 	}
 	return shared
 }
@@ -94,11 +98,12 @@ Example:
     textbox.EnableTooltip(true)
 */
 func (shared *TextboxInstanceType) EnableTooltip(enabled bool) *TextboxInstanceType {
-	if textboxEntry, isFound := Textboxes.Lookup(shared.layerAlias, shared.controlAlias); isFound {
+	defer lockUIState()()
+	if textboxEntry, isFound := textboxRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 		var tooltipInstance TooltipInstanceType
 		tooltipInstance.layerAlias = shared.layerAlias
 		tooltipInstance.controlAlias = textboxEntry.TooltipAlias
-		tooltipInstance.SetEnabled(enabled)
+		tooltipInstance.setEnabled(enabled)
 	}
 	return shared
 }
@@ -118,7 +123,8 @@ Example:
 	textbox.SetText("Hello\nWorld")
 */
 func (shared *TextboxInstanceType) SetText(text string) *TextboxInstanceType {
-	if textboxEntry, isFound := Textboxes.Lookup(shared.layerAlias, shared.controlAlias); isFound {
+	defer lockUIState()()
+	if textboxEntry, isFound := textboxRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 		lines := strings.Split(strings.ReplaceAll(text, "\r\n", "\n"), "\n")
 		textData := make([][]rune, 0, len(lines))
 		for _, currentLine := range lines {
@@ -147,7 +153,8 @@ Example:
 	text := textbox.GetText()
 */
 func (shared *TextboxInstanceType) GetText() string {
-	if textboxEntry, isFound := Textboxes.Lookup(shared.layerAlias, shared.controlAlias); isFound {
+	defer lockUIState()()
+	if textboxEntry, isFound := textboxRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 		var text strings.Builder
 		for i, line := range textboxEntry.TextData {
 			if lineLength := len(line); lineLength > 0 && line[lineLength-1] == ' ' {
@@ -171,7 +178,8 @@ Example:
     textbox.SetViewport(0, 0)
 */
 func (shared *TextboxInstanceType) SetViewport(xLocation int, yLocation int) *TextboxInstanceType {
-	if textboxEntry, isFound := Textboxes.Lookup(shared.layerAlias, shared.controlAlias); isFound {
+	defer lockUIState()()
+	if textboxEntry, isFound := textboxRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 		textboxEntry.ViewportXLocation = xLocation
 		textboxEntry.ViewportYLocation = yLocation
 	}
@@ -192,13 +200,14 @@ Example:
     textbox.SetWordWrap(true)
 */
 func (shared *TextboxInstanceType) SetWordWrap(enabled bool) *TextboxInstanceType {
-	if textboxEntry, isFound := Textboxes.Lookup(shared.layerAlias, shared.controlAlias); isFound {
+	defer lockUIState()()
+	if textboxEntry, isFound := textboxRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 		textboxEntry.IsWordWrapEnabled = enabled
 
 		// Update scrollbar visibility
 		if enabled {
 			// Hide horizontal scrollbar when word wrap is enabled
-			if hScrollBarEntry, isFound := ScrollBars.Lookup(shared.layerAlias, textboxEntry.HorizontalScrollbarAlias); isFound {
+			if hScrollBarEntry, isFound := scrollbarRegistry.Lookup(shared.layerAlias, textboxEntry.HorizontalScrollbarAlias); isFound {
 				hScrollBarEntry.IsVisible = false
 				hScrollBarEntry.IsEnabled = false
 			}
@@ -222,10 +231,222 @@ Example:
     textbox.SetAutoIndent(true)
 */
 func (shared *TextboxInstanceType) SetAutoIndent(enabled bool) *TextboxInstanceType {
-	if textboxEntry, isFound := Textboxes.Lookup(shared.layerAlias, shared.controlAlias); isFound {
+	defer lockUIState()()
+	if textboxEntry, isFound := textboxRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 		textboxEntry.IsAutoIndentEnabled = enabled
 	}
 	return shared
+}
+
+/*
+GetCursorPosition is a method which allows you to obtain where a textbox's cursor is, as the zero based index of the
+character within its line and the zero based index of the line. The character index counts runes, not screen
+columns, and may equal the length of the line, which places the cursor just after its last character. If the textbox
+does not exist, zero and zero are returned.
+
+Example:
+
+	characterIndex, lineIndex := textbox.GetCursorPosition()
+*/
+func (shared *TextboxInstanceType) GetCursorPosition() (int, int) {
+	defer lockUIState()()
+	if textboxEntry, isFound := textboxRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound {
+		return textboxEntry.CursorXLocation, textboxEntry.CursorYLocation
+	}
+	return 0, 0
+}
+
+/*
+SetCursorPosition is a method which allows you to move a textbox's cursor to a character within a line, given as the
+zero based index of the character within the line and the zero based index of the line, as returned by
+GetCursorPosition. A line index outside the text is moved to the nearest line, and a character index outside its line
+to the nearest position in it, which may be just after the line's last character. The textbox scrolls to show the
+cursor, and its scroll bars follow. If the textbox does not exist, no operation occurs.
+
+Example:
+
+	textbox.SetCursorPosition(0, 2)
+*/
+func (shared *TextboxInstanceType) SetCursorPosition(characterIndex int, lineIndex int) {
+	defer lockUIState()()
+	if textboxEntry, isFound := textboxRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound {
+		textbox.updateCursor(textboxEntry, getClampedIndex(characterIndex, 0, characterIndex), lineIndex)
+		textbox.updateViewport(textboxEntry)
+		textbox.updateScrollbarBasedOnTextboxViewport(shared.layerAlias, shared.controlAlias)
+	}
+}
+
+/*
+GetViewport is a method which allows you to obtain how far a textbox is scrolled, as the screen column offset of its
+first visible column and the index of its first visible row. With word wrap enabled, rows are wrapped rows rather than
+lines, and the column offset is always zero. If the textbox does not exist, zero and zero are returned.
+
+Example:
+
+	columnOffset, rowIndex := textbox.GetViewport()
+*/
+func (shared *TextboxInstanceType) GetViewport() (int, int) {
+	defer lockUIState()()
+	if textboxEntry, isFound := textboxRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound {
+		return textboxEntry.ViewportXLocation, textboxEntry.ViewportYLocation
+	}
+	return 0, 0
+}
+
+/*
+IsWordWrapEnabled is a method which allows you to check whether a textbox wraps long lines onto further rows, as set
+with SetWordWrap. If the textbox does not exist, false is returned.
+
+Example:
+
+	isWrapped := textbox.IsWordWrapEnabled()
+*/
+func (shared *TextboxInstanceType) IsWordWrapEnabled() bool {
+	defer lockUIState()()
+	if textboxEntry, isFound := textboxRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound {
+		return textboxEntry.IsWordWrapEnabled
+	}
+	return false
+}
+
+/*
+IsAutoIndentEnabled is a method which allows you to check whether a new line in a textbox starts with the indentation
+of the line before it, as set with SetAutoIndent. If the textbox does not exist, false is returned.
+
+Example:
+
+	isIndented := textbox.IsAutoIndentEnabled()
+*/
+func (shared *TextboxInstanceType) IsAutoIndentEnabled() bool {
+	defer lockUIState()()
+	if textboxEntry, isFound := textboxRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound {
+		return textboxEntry.IsAutoIndentEnabled
+	}
+	return false
+}
+
+/*
+GetSelectedText is a method which allows you to obtain the text currently selected in a textbox, whether the user
+selected it or it was set with SetSelection. Lines are separated by newline characters, and the blank sentinel each
+line is stored with is left out, so a selection that runs to the end of its last line does not end with a newline. If
+nothing is selected, or the textbox does not exist, an empty string is returned.
+
+Example:
+
+	selectedText := textbox.GetSelectedText()
+*/
+func (shared *TextboxInstanceType) GetSelectedText() string {
+	defer lockUIState()()
+	textboxEntry, isFound := textboxRegistry.Lookup(shared.layerAlias, shared.controlAlias)
+	if !isFound {
+		return ""
+	}
+	return textbox.getSelectedText(textboxEntry)
+}
+
+/*
+getSelectedText is a method which allows you to obtain the text selected in a textbox exactly as GetSelectedText
+returns it, with lines separated by newline characters and each line's blank sentinel left out, for a caller that
+already holds uiStateMutex. Copy and cut use it for the text they put on the clipboard. If nothing is selected, an
+empty string is returned.
+
+Example:
+
+	selectedText := textbox.getSelectedText(textboxEntry)
+*/
+func (shared *textboxType) getSelectedText(textboxEntry *types.TextboxEntryType) string {
+	if !textboxEntry.IsHighlightActive || len(textboxEntry.TextData) == 0 {
+		return ""
+	}
+	startX, startY, endX, endY := shared.getSelectionBounds(textboxEntry)
+	var selectedText strings.Builder
+	for lineIndex := startY; lineIndex <= endY; lineIndex++ {
+		line := textboxEntry.TextData[lineIndex]
+		// The last rune of every line is its sentinel, which is never part of the text.
+		lineEnd := len(line) - 1
+		firstIndex, lastIndex := 0, lineEnd-1
+		if lineIndex == startY {
+			firstIndex = startX
+		}
+		if lineIndex == endY {
+			lastIndex = getClampedIndex(endX, -1, lineEnd-1)
+		}
+		if firstIndex <= lastIndex {
+			selectedText.WriteString(string(line[firstIndex : lastIndex+1]))
+		}
+		if lineIndex < endY {
+			selectedText.WriteString("\n")
+		}
+	}
+	return selectedText.String()
+}
+
+/*
+SetSelection is a method which allows you to select text in a textbox, from one character to another, both included,
+each given as the zero based index of the character within its line and the zero based index of the line, as for
+SetCursorPosition. The ends may be given in either order. Positions outside the text are moved to the nearest valid
+position. The cursor is placed at the second position given, the textbox scrolls to show it, and the selection is
+drawn and then used by copy, cut, and deletion exactly as one the user made. If the textbox does not exist, no
+operation occurs.
+
+Example:
+
+	textbox.SetSelection(0, 0, 4, 0)
+*/
+func (shared *TextboxInstanceType) SetSelection(startCharacterIndex int, startLineIndex int, endCharacterIndex int, endLineIndex int) {
+	defer lockUIState()()
+	textboxEntry, isFound := textboxRegistry.Lookup(shared.layerAlias, shared.controlAlias)
+	if !isFound {
+		return
+	}
+	textbox.updateCursor(textboxEntry, getClampedIndex(startCharacterIndex, 0, startCharacterIndex), startLineIndex)
+	textboxEntry.HighlightStartX, textboxEntry.HighlightStartY = textboxEntry.CursorXLocation, textboxEntry.CursorYLocation
+	textbox.updateCursor(textboxEntry, getClampedIndex(endCharacterIndex, 0, endCharacterIndex), endLineIndex)
+	textboxEntry.HighlightEndX, textboxEntry.HighlightEndY = textboxEntry.CursorXLocation, textboxEntry.CursorYLocation
+	textboxEntry.IsHighlightActive = true
+	textboxEntry.IsHighlightModeToggled = false
+	textbox.updateViewport(textboxEntry)
+	textbox.updateScrollbarBasedOnTextboxViewport(shared.layerAlias, shared.controlAlias)
+}
+
+/*
+ClearSelection is a method which allows you to clear any text selected in a textbox, leaving the text and the cursor
+where they are. If the textbox does not exist, no operation occurs.
+
+Example:
+
+	textbox.ClearSelection()
+*/
+func (shared *TextboxInstanceType) ClearSelection() {
+	defer lockUIState()()
+	if textboxEntry, isFound := textboxRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound {
+		textboxEntry.IsHighlightActive = false
+		textboxEntry.IsHighlightModeToggled = false
+	}
+}
+
+/*
+getSelectionBounds is a method which allows you to obtain a textbox's selection as its earlier end and its later end,
+each as a character index and a line index, with both ends brought inside the text. The selection runs between its
+recorded start and the cursor, in whichever order they fall. The caller must hold uiStateMutex and the textbox must
+hold at least one line.
+
+Example:
+
+	startX, startY, endX, endY := textbox.getSelectionBounds(textboxEntry)
+*/
+func (shared *textboxType) getSelectionBounds(textboxEntry *types.TextboxEntryType) (int, int, int, int) {
+	startX, startY := textboxEntry.HighlightStartX, textboxEntry.HighlightStartY
+	endX, endY := textboxEntry.CursorXLocation, textboxEntry.CursorYLocation
+	if endY < startY || (endY == startY && endX < startX) {
+		startX, startY, endX, endY = endX, endY, startX, startY
+	}
+	lastLineIndex := len(textboxEntry.TextData) - 1
+	startY = getClampedIndex(startY, 0, lastLineIndex)
+	endY = getClampedIndex(endY, 0, lastLineIndex)
+	startX = getClampedIndex(startX, 0, len(textboxEntry.TextData[startY])-1)
+	endX = getClampedIndex(endX, 0, len(textboxEntry.TextData[endY])-1)
+	return startX, startY, endX, endY
 }
 
 /*
@@ -465,19 +686,19 @@ Example:
     textbox.updateScrollbarBasedOnTextboxViewport("layer1", "textbox1")
 */
 func (shared *textboxType) updateScrollbarBasedOnTextboxViewport(layerAlias string, textboxAlias string) {
-	textboxEntry, isFound := Textboxes.Lookup(layerAlias, textboxAlias)
+	textboxEntry, isFound := textboxRegistry.Lookup(layerAlias, textboxAlias)
 	if !isFound {
 		return
 	}
 
 	// Update horizontal scrollbar if it exists
-	if horizontalScrollbarEntry, isFound := ScrollBars.Lookup(layerAlias, textboxEntry.HorizontalScrollbarAlias); isFound {
+	if horizontalScrollbarEntry, isFound := scrollbarRegistry.Lookup(layerAlias, textboxEntry.HorizontalScrollbarAlias); isFound {
 		horizontalScrollbarEntry.ScrollValue = textboxEntry.ViewportXLocation
 		scrollbar.computeHandlePositionByScrollValue(layerAlias, textboxEntry.HorizontalScrollbarAlias)
 	}
 
 	// Update vertical scrollbar if it exists
-	if verticalScrollbarEntry, isFound := ScrollBars.Lookup(layerAlias, textboxEntry.VerticalScrollbarAlias); isFound {
+	if verticalScrollbarEntry, isFound := scrollbarRegistry.Lookup(layerAlias, textboxEntry.VerticalScrollbarAlias); isFound {
 		verticalScrollbarEntry.ScrollValue = textboxEntry.ViewportYLocation
 		scrollbar.computeHandlePositionByScrollValue(layerAlias, textboxEntry.VerticalScrollbarAlias)
 	}
@@ -492,7 +713,7 @@ Example:
     maxWidth := textbox.getMaxHorizontalTextValue("layer1", "textbox1")
 */
 func (shared *textboxType) getMaxHorizontalTextValue(layerAlias string, textboxAlias string) int {
-	textboxEntry, isFound := Textboxes.Lookup(layerAlias, textboxAlias)
+	textboxEntry, isFound := textboxRegistry.Lookup(layerAlias, textboxAlias)
 	if !isFound {
 		return 0
 	}
@@ -526,7 +747,7 @@ Example:
     textbox.setTextboxMaxScrollBarValues("layer1", "textbox1")
 */
 func (shared *textboxType) setTextboxMaxScrollBarValues(layerAlias string, textboxAlias string) {
-	textboxEntry, isFound := Textboxes.Lookup(layerAlias, textboxAlias)
+	textboxEntry, isFound := textboxRegistry.Lookup(layerAlias, textboxAlias)
 	if !isFound {
 		return
 	}
@@ -547,11 +768,11 @@ func (shared *textboxType) setTextboxMaxScrollBarValues(layerAlias string, textb
 	}
 
 	// Check if horizontal and vertical scrollbars exist
-	hScrollBarEntry, isFound := ScrollBars.Lookup(layerAlias, textboxEntry.HorizontalScrollbarAlias)
+	hScrollBarEntry, isFound := scrollbarRegistry.Lookup(layerAlias, textboxEntry.HorizontalScrollbarAlias)
 	if !isFound {
 		return
 	}
-	vScrollBarEntry, isFound := ScrollBars.Lookup(layerAlias, textboxEntry.VerticalScrollbarAlias)
+	vScrollBarEntry, isFound := scrollbarRegistry.Lookup(layerAlias, textboxEntry.VerticalScrollbarAlias)
 	if !isFound {
 		return
 	}
@@ -627,15 +848,15 @@ Example:
 */
 func (shared *textboxType) updateLayout(layerAlias string, textboxEntry *types.TextboxEntryType) {
 	hScrollbarXLocation, hScrollbarYLocation, hScrollbarLength, vScrollbarXLocation, vScrollbarYLocation, vScrollbarLength := shared.getScrollbarGeometry(textboxEntry)
-	hScrollBarEntry, isHorizontalFound := ScrollBars.Lookup(layerAlias, textboxEntry.HorizontalScrollbarAlias)
+	hScrollBarEntry, isHorizontalFound := scrollbarRegistry.Lookup(layerAlias, textboxEntry.HorizontalScrollbarAlias)
 	if isHorizontalFound {
 		hScrollBarEntry.XLocation, hScrollBarEntry.YLocation, hScrollBarEntry.Length = hScrollbarXLocation, hScrollbarYLocation, hScrollbarLength
 	}
-	vScrollBarEntry, isVerticalFound := ScrollBars.Lookup(layerAlias, textboxEntry.VerticalScrollbarAlias)
+	vScrollBarEntry, isVerticalFound := scrollbarRegistry.Lookup(layerAlias, textboxEntry.VerticalScrollbarAlias)
 	if isVerticalFound {
 		vScrollBarEntry.XLocation, vScrollBarEntry.YLocation, vScrollBarEntry.Length = vScrollbarXLocation, vScrollbarYLocation, vScrollbarLength
 	}
-	if tooltipEntry, isFound := Tooltips.Lookup(layerAlias, textboxEntry.TooltipAlias); isFound {
+	if tooltipEntry, isFound := tooltipRegistry.Lookup(layerAlias, textboxEntry.TooltipAlias); isFound {
 		tooltipEntry.HotspotXLocation, tooltipEntry.HotspotYLocation = textboxEntry.XLocation, textboxEntry.YLocation
 		tooltipEntry.HotspotWidth, tooltipEntry.HotspotHeight = textboxEntry.Width, textboxEntry.Height
 		tooltipEntry.TooltipXLocation, tooltipEntry.TooltipYLocation = textboxEntry.XLocation, textboxEntry.YLocation+1
@@ -663,7 +884,7 @@ Example:
 	textbox.setSize("layer1", "textbox1", 40, 10)
 */
 func (shared *textboxType) setSize(layerAlias string, textboxAlias string, width int, height int) {
-	textboxEntry, isFound := Textboxes.Lookup(layerAlias, textboxAlias)
+	textboxEntry, isFound := textboxRegistry.Lookup(layerAlias, textboxAlias)
 	if !isFound || width < 1 || height < 1 {
 		return
 	}
@@ -698,17 +919,17 @@ func (shared *textboxType) Add(layerAlias string, textboxAlias string, styleEntr
 	newTextboxEntry.IsBorderDrawn = isBorderDrawn
 	newTextboxEntry.TooltipAlias = stringformat.GetLastSortedUUID()
 
-	tooltipInstance := Tooltip.Add(layerAlias, newTextboxEntry.TooltipAlias, "", styleEntry,
+	tooltipInstance := Tooltip.add(layerAlias, newTextboxEntry.TooltipAlias, "", styleEntry,
 		newTextboxEntry.XLocation, newTextboxEntry.YLocation,
 		newTextboxEntry.Width, newTextboxEntry.Height,
 		newTextboxEntry.XLocation, newTextboxEntry.YLocation+1,
 		newTextboxEntry.Width, newTextboxEntry.Height,
 		false, true, constants.DefaultTooltipHoverTime)
-	tooltipInstance.SetEnabled(false)
+	tooltipInstance.setEnabled(false)
 	tooltipInstance.setParentControlAlias(textboxAlias)
 	// Use the generic memory manager to add the textbox entry
-	Textboxes.Add(layerAlias, textboxAlias, &newTextboxEntry)
-	textboxEntry := Textboxes.Get(layerAlias, textboxAlias)
+	textboxRegistry.Add(layerAlias, textboxAlias, &newTextboxEntry)
+	textboxEntry := textboxRegistry.Get(layerAlias, textboxAlias)
 	textboxEntry.TextData = append(textboxEntry.TextData, stringformat.GetRunesFromString(" "))
 	textboxEntry.HorizontalScrollbarAlias = stringformat.GetLastSortedUUID()
 	textboxEntry.VerticalScrollbarAlias = stringformat.GetLastSortedUUID()
@@ -717,13 +938,13 @@ func (shared *textboxType) Add(layerAlias string, textboxAlias string, styleEntr
 	scrollbar.Add(layerAlias, textboxEntry.VerticalScrollbarAlias, styleEntry, vScrollbarXLocation, vScrollbarYLocation, vScrollbarHeight, 0, 0, 1, false)
 
 	// Set parent control information for scrollbars
-	hScrollbarEntry := ScrollBars.Get(layerAlias, textboxEntry.HorizontalScrollbarAlias)
+	hScrollbarEntry := scrollbarRegistry.Get(layerAlias, textboxEntry.HorizontalScrollbarAlias)
 	if hScrollbarEntry != nil {
 		hScrollbarEntry.ParentControlAlias = textboxAlias
 		hScrollbarEntry.ParentControlType = constants.CellTypeTextbox
 	}
 
-	vScrollbarEntry := ScrollBars.Get(layerAlias, textboxEntry.VerticalScrollbarAlias)
+	vScrollbarEntry := scrollbarRegistry.Get(layerAlias, textboxEntry.VerticalScrollbarAlias)
 	if vScrollbarEntry != nil {
 		vScrollbarEntry.ParentControlAlias = textboxAlias
 		vScrollbarEntry.ParentControlType = constants.CellTypeTextbox
@@ -746,7 +967,7 @@ Example:
     textbox.Delete("layer1", "textbox1")
 */
 func (shared *textboxType) Delete(layerAlias string, textboxAlias string) {
-	Textboxes.Remove(layerAlias, textboxAlias)
+	textboxRegistry.Remove(layerAlias, textboxAlias)
 	clearStaleControlReferences(layerAlias, textboxAlias, constants.CellTypeTextbox)
 }
 
@@ -764,7 +985,7 @@ Example:
     textbox.DeleteAll("layer1")
 */
 func (shared *textboxType) DeleteAll(layerAlias string) {
-	removeAllControlsAndClearCells(Textboxes, layerAlias, constants.CellTypeTextbox, func(entry *types.TextboxEntryType) string { return entry.Alias })
+	removeAllControlsAndClearCells(textboxRegistry, layerAlias, constants.CellTypeTextbox, func(entry *types.TextboxEntryType) string { return entry.Alias })
 }
 
 /*
@@ -781,7 +1002,7 @@ Example:
 */
 func (shared *textboxType) drawOnLayer(layerEntry types.LayerEntryType) {
 	layerAlias := layerEntry.LayerAlias
-	for _, currentTextBoxEntry := range Textboxes.GetAllEntries(layerAlias) {
+	for _, currentTextBoxEntry := range textboxRegistry.GetAllEntries(layerAlias) {
 		shared.draw(&layerEntry, currentTextBoxEntry.Alias)
 	}
 }
@@ -979,7 +1200,7 @@ Example:
     textbox.draw(&layerEntry, "textbox1")
 */
 func (shared *textboxType) draw(layerEntry *types.LayerEntryType, textboxAlias string) {
-	textboxEntry := Textboxes.Get(layerEntry.LayerAlias, textboxAlias)
+	textboxEntry := textboxRegistry.Get(layerEntry.LayerAlias, textboxAlias)
 	attributeEntry := types.NewAttributeEntry()
 	attributeEntry.ForegroundColor = textboxEntry.StyleEntry.Textbox.ForegroundColor
 	attributeEntry.BackgroundColor = textboxEntry.StyleEntry.Textbox.BackgroundColor
@@ -1200,7 +1421,7 @@ func (shared *textboxType) printControlText(layerEntry *types.LayerEntryType, te
 		attributeEntry.CellControlLocation = logicalLineIndex
 		// If the textbox being drawn is focused, render the cursor as well.
 		if isControlCurrentlyFocused(layerEntry.LayerAlias, textboxAlias, constants.CellTypeTextbox) {
-			textboxEntry := Textboxes.Get(layerEntry.LayerAlias, textboxAlias)
+			textboxEntry := textboxRegistry.Get(layerEntry.LayerAlias, textboxAlias)
 			if textboxEntry.IsHighlightActive {
 				// Check if current position is within highlight range
 				isHighlighted := false
@@ -1459,7 +1680,7 @@ func (shared *textboxType) UpdateKeyboardEventManually(layerAlias string, textbo
 	isScreenUpdateRequired := false
 	isKeystrokeConsumed := false
 	keystrokeAsString := string(keystroke)
-	textboxEntry, isFound := Textboxes.Lookup(layerAlias, textboxAlias)
+	textboxEntry, isFound := textboxRegistry.Lookup(layerAlias, textboxAlias)
 	if !isFound {
 		return isScreenUpdateRequired, isKeystrokeConsumed
 	}
@@ -1489,14 +1710,12 @@ func (shared *textboxType) UpdateKeyboardEventManually(layerAlias string, textbo
 	case "ctrl+c", "ctrl+insert": // Copy
 		if textboxEntry.IsHighlightActive {
 			// Get highlighted text and copy to clipboard
-			clipboardText := shared.getHighlightedText(textboxEntry)
+			clipboardText := shared.getSelectedText(textboxEntry)
 			err := clipboard.WriteAll(clipboardText)
 			if err != nil {
-				RestoreTerminalSettings()
-				fmt.Println("Clipboard write error:", err)
-				safeSttyPanic(err)
-				// Handle clipboard write error (could log it)
-				// fmt.Println("Clipboard write error:", err)
+				// safeSttyPanic restores the terminal itself. RestoreTerminalSettings must not be called here, since it
+				// waits for the event goroutine to stop and this runs on that goroutine.
+				safeSttyPanic(fmt.Errorf("clipboard write error: %w", err))
 			}
 		}
 		isScreenUpdateRequired = true
@@ -1505,7 +1724,7 @@ func (shared *textboxType) UpdateKeyboardEventManually(layerAlias string, textbo
 	case "ctrl+x": // Cut
 		if textboxEntry.IsHighlightActive {
 			// Get highlighted text, copy to clipboard, then delete
-			clipboardText := shared.getHighlightedText(textboxEntry)
+			clipboardText := shared.getSelectedText(textboxEntry)
 			err := clipboard.WriteAll(clipboardText)
 			if err != nil {
 				// Handle clipboard write error (could log it)
@@ -1659,7 +1878,7 @@ func (shared *textboxType) UpdateKeyboardEventManually(layerAlias string, textbo
 		// Update scrollbar visibility
 		if textboxEntry.IsWordWrapEnabled {
 			// Hide horizontal scrollbar when word wrap is enabled
-			hScrollBarEntry := ScrollBars.Get(layerAlias, textboxEntry.HorizontalScrollbarAlias)
+			hScrollBarEntry := scrollbarRegistry.Get(layerAlias, textboxEntry.HorizontalScrollbarAlias)
 			if hScrollBarEntry != nil {
 				hScrollBarEntry.IsVisible = false
 				hScrollBarEntry.IsEnabled = false
@@ -1801,98 +2020,10 @@ func (shared *textboxType) UpdateKeyboardEvent(keystroke []rune) (bool, bool) {
 	focusedLayerAlias := focusedControl.layerAlias
 	focusedControlAlias := focusedControl.controlAlias
 	focusedControlType := focusedControl.controlType
-	if focusedControlType != constants.CellTypeTextbox || !Textboxes.IsExists(focusedLayerAlias, focusedControlAlias) {
+	if focusedControlType != constants.CellTypeTextbox || !textboxRegistry.IsExists(focusedLayerAlias, focusedControlAlias) {
 		return false, false
 	}
 	return shared.UpdateKeyboardEventManually(focusedLayerAlias, focusedControlAlias, keystroke)
-}
-
-/*
-getHighlightedText is a method which allows you to retrieve the text that is currently highlighted in the textbox. In
-addition, the following should be noted:
-
-- This is used for clipboard operations like copy and cut.
-
-Example:
-    text := textbox.getHighlightedText(entry)
-*/
-func (shared *textboxType) getHighlightedText(textboxEntry *types.TextboxEntryType) string {
-	if !textboxEntry.IsHighlightActive {
-		return ""
-	}
-
-	// Determine the correct start and end positions for highlighting
-	var highlightStartX, highlightEndX, highlightStartY, highlightEndY int
-
-	// If cursor is to the left of the start position
-	if textboxEntry.CursorYLocation < textboxEntry.HighlightStartY ||
-		(textboxEntry.CursorYLocation == textboxEntry.HighlightStartY &&
-			textboxEntry.CursorXLocation < textboxEntry.HighlightStartX) {
-		// Cursor is ambassador the highlight start, so swap the positions
-		highlightStartX = textboxEntry.CursorXLocation
-		highlightStartY = textboxEntry.CursorYLocation
-		highlightEndX = textboxEntry.HighlightStartX
-		highlightEndY = textboxEntry.HighlightStartY
-	} else {
-		// Cursor is after or at the highlight start
-		highlightStartX = textboxEntry.HighlightStartX
-		highlightStartY = textboxEntry.HighlightStartY
-		highlightEndX = textboxEntry.CursorXLocation
-		highlightEndY = textboxEntry.CursorYLocation
-	}
-
-	// Ensure we don't exceed array bounds
-	if highlightStartY >= len(textboxEntry.TextData) {
-		highlightStartY = len(textboxEntry.TextData) - 1
-	}
-	if highlightEndY >= len(textboxEntry.TextData) {
-		highlightEndY = len(textboxEntry.TextData) - 1
-	}
-
-	// Build the highlighted text
-	var result strings.Builder
-
-	// If the highlight is on a single line
-	if highlightStartY == highlightEndY {
-		// Ensure we don't exceed line bounds
-		if highlightStartX >= len(textboxEntry.TextData[highlightStartY]) {
-			highlightStartX = len(textboxEntry.TextData[highlightStartY]) - 1
-		}
-		if highlightEndX >= len(textboxEntry.TextData[highlightStartY]) {
-			highlightEndX = len(textboxEntry.TextData[highlightStartY]) - 1
-		}
-
-		// Get the highlighted portion of the line
-		line := textboxEntry.TextData[highlightStartY]
-		if highlightStartX < len(line) && highlightEndX < len(line) {
-			result.WriteString(string(line[highlightStartX : highlightEndX+1]))
-		}
-	} else {
-		// Multi-line highlight
-
-		// First line
-		if highlightStartY < len(textboxEntry.TextData) && highlightStartX < len(textboxEntry.TextData[highlightStartY]) {
-			result.WriteString(string(textboxEntry.TextData[highlightStartY][highlightStartX:]))
-			result.WriteString("\n")
-		}
-
-		// Middle lines
-		for y := highlightStartY + 1; y < highlightEndY; y++ {
-			if y < len(textboxEntry.TextData) {
-				result.WriteString(string(textboxEntry.TextData[y]))
-				result.WriteString("\n")
-			}
-		}
-
-		// Last line
-		if highlightEndY < len(textboxEntry.TextData) && highlightEndY > highlightStartY {
-			if highlightEndX+1 <= len(textboxEntry.TextData[highlightEndY]) {
-				result.WriteString(string(textboxEntry.TextData[highlightEndY][:highlightEndX+1]))
-			}
-		}
-	}
-
-	return result.String()
 }
 
 /*
@@ -2015,7 +2146,7 @@ func (shared *textboxType) updateMouseEvent() bool {
 	characterEntry := getCellInformationUnderMouseCursor(mouseXLocation, mouseYLocation)
 	layerAlias := characterEntry.LayerAlias
 	// If your clicking on a text box and not in the drag and drop event state.
-	if textboxEntry, isFound := Textboxes.Lookup(layerAlias, characterEntry.AttributeEntry.CellControlAlias); buttonPressed != 0 &&
+	if textboxEntry, isFound := textboxRegistry.Lookup(layerAlias, characterEntry.AttributeEntry.CellControlAlias); buttonPressed != 0 &&
 		characterEntry.AttributeEntry.CellType == constants.CellTypeTextbox &&
 		getEventStateId() != constants.EventStateDragAndDropScrollbar &&
 		getEventStateId() != constants.EventStateDragAndDrop && // Add check for layer drag and drop
@@ -2047,15 +2178,15 @@ func (shared *textboxType) updateMouseEvent() bool {
 	if buttonPressed != 0 && (getEventStateId() == constants.EventStateDragAndDropScrollbar ||
 		characterEntry.AttributeEntry.CellType == constants.CellTypeScrollbar) {
 		isMatchFound := false
-		for _, currentTextBoxEntry := range Textboxes.GetAllEntries(layerAlias) {
+		for _, currentTextBoxEntry := range textboxRegistry.GetAllEntries(layerAlias) {
 			textboxEntry := currentTextBoxEntry
 
 			// Skip if horizontal or vertical scrollbar doesn't exist
-			hScrollBarEntry, isFound := ScrollBars.Lookup(layerAlias, textboxEntry.HorizontalScrollbarAlias)
+			hScrollBarEntry, isFound := scrollbarRegistry.Lookup(layerAlias, textboxEntry.HorizontalScrollbarAlias)
 			if !isFound {
 				continue
 			}
-			vScrollBarEntry, isFound := ScrollBars.Lookup(layerAlias, textboxEntry.VerticalScrollbarAlias)
+			vScrollBarEntry, isFound := scrollbarRegistry.Lookup(layerAlias, textboxEntry.VerticalScrollbarAlias)
 			if !isFound {
 				continue
 			}

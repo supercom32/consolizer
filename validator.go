@@ -27,7 +27,7 @@ Example:
 */
 func validateLayerLocationByLayerAlias(layerAlias string, xLocation int, yLocation int) {
 	validateLayer(layerAlias)
-	layerEntry := Layers.Get(layerAlias)
+	layerEntry := layerRegistry.Get(layerAlias)
 	validateLayerLocationByLayerEntry(layerEntry, xLocation, yLocation)
 }
 
@@ -116,7 +116,7 @@ Example:
     validateLayer("backgroundLayer")
 */
 func validateLayer(layerAlias string) {
-	if !Layers.IsExists(layerAlias) {
+	if !layerRegistry.IsExists(layerAlias) {
 		safeSttyPanic(fmt.Sprintf("The specified layer '%s' does not exist.", layerAlias))
 	}
 }
@@ -129,7 +129,7 @@ Example:
     validatorTextField("loginLayer", "usernameField")
 */
 func validatorTextField(layerAlias string, textFieldAlias string) {
-	if !(TextFields.IsExists(layerAlias, textFieldAlias)) {
+	if !(textFieldRegistry.IsExists(layerAlias, textFieldAlias)) {
 		safeSttyPanic(fmt.Sprintf("The text field '%s' under layer '%s' could not be obtained since it does not exist!", textFieldAlias, layerAlias))
 	}
 }
@@ -142,22 +142,26 @@ Example:
     validatorMenu("mainLayer", "fileMenu")
 */
 func validatorMenu(layerAlias string, menuAlias string) {
-	if !(Selectors.IsExists(layerAlias, menuAlias)) {
+	if !(selectorRegistry.IsExists(layerAlias, menuAlias)) {
 		safeSttyPanic(fmt.Sprintf("The menu '%s' under layer '%s' could not be obtained since it does not exist!", menuAlias, layerAlias))
 	}
 }
 
 /*
-safeSttyPanic is a method which allows you to restore original terminal settings and then generate a panic with the
-provided message. In addition, the following should be noted:
+safeSttyPanic is a method which allows you to fail with a fatal error, putting the terminal back into a usable state
+first and then panicking with the provided message. The terminal is restored by tryRestoreTerminalAfterFatalError,
+which never waits, so this is safe to call while any lock is held and from any goroutine, including the event goroutine.
+In addition, the following should be noted:
 
-- This is used to ensure the terminal is left in a usable state when a fatal error occurs.
+  - If the display lock is busy, for example because the error was found while drawing, the screen is released by
+    the panic guard of lockUIState once the panic has unwound the locks, rather than here.
 
 Example:
-    safeSttyPanic("A fatal error has occurred.")
+
+	safeSttyPanic("A fatal error has occurred.")
 */
 func safeSttyPanic(panicMessage interface{}) {
-	RestoreTerminalSettings()
+	tryRestoreTerminalAfterFatalError()
 	panic(panicMessage)
 }
 

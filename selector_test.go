@@ -188,7 +188,7 @@ func TestFocusSelectionInitialPosition(test *testing.T) {
 	selectorFieldInstance := layer1.AddSelector(styleEntry, selectionEntry, 2, 2, 4, 25, 1, 0, 0, true, true)
 
 	// Get the selector entry to check viewport position
-	selectorEntry := GetSelector(layer1.layerAlias, selectorFieldInstance.controlAlias)
+	selectorEntry := getSelector(layer1.layerAlias, selectorFieldInstance.controlAlias)
 
 	// Initial viewport position should be 0
 	assert.Equal(test, 0, selectorEntry.ViewportPosition, "Initial viewport position should be 0")
@@ -233,7 +233,7 @@ func TestFocusSelectionMiddleItem(test *testing.T) {
 	selectorFieldInstance := layer1.AddSelector(styleEntry, selectionEntry, 2, 2, 4, 25, 1, 0, 0, true, true)
 
 	// Get the selector entry to check viewport position
-	selectorEntry := GetSelector(layer1.layerAlias, selectorFieldInstance.controlAlias)
+	selectorEntry := getSelector(layer1.layerAlias, selectorFieldInstance.controlAlias)
 
 	// Focus on an item in the middle (Alias 10)
 	selectorFieldInstance.FocusSelection("Alias 10")
@@ -285,7 +285,7 @@ func TestFocusSelectionEndItem(test *testing.T) {
 	selectorFieldInstance := layer1.AddSelector(styleEntry, selectionEntry, 2, 2, 4, 25, 1, 0, 0, true, true)
 
 	// Get the selector entry to check viewport position
-	selectorEntry := GetSelector(layer1.layerAlias, selectorFieldInstance.controlAlias)
+	selectorEntry := getSelector(layer1.layerAlias, selectorFieldInstance.controlAlias)
 
 	// Focus on an item near the end (Alias 18)
 	selectorFieldInstance.FocusSelection("Alias 18")
@@ -337,7 +337,7 @@ func TestFocusSelectionBeginningItem(test *testing.T) {
 	selectorFieldInstance := layer1.AddSelector(styleEntry, selectionEntry, 2, 2, 4, 25, 1, 0, 0, true, true)
 
 	// Get the selector entry to check viewport position
-	selectorEntry := GetSelector(layer1.layerAlias, selectorFieldInstance.controlAlias)
+	selectorEntry := getSelector(layer1.layerAlias, selectorFieldInstance.controlAlias)
 
 	// Focus on an item near the beginning (Alias 2)
 	selectorFieldInstance.FocusSelection("Alias 2")
@@ -387,7 +387,7 @@ func TestFocusSelectionNonExistentItem(test *testing.T) {
 	selectorFieldInstance := layer1.AddSelector(styleEntry, selectionEntry, 2, 2, 4, 25, 1, 0, 0, true, true)
 
 	// Get the selector entry to check viewport position
-	selectorEntry := GetSelector(layer1.layerAlias, selectorFieldInstance.controlAlias)
+	selectorEntry := getSelector(layer1.layerAlias, selectorFieldInstance.controlAlias)
 
 	// Set a known initial position
 	selectorFieldInstance.FocusSelection("Alias 5")
@@ -626,7 +626,7 @@ func TestSelectorEmptyListReceivesFocusAndArrowKeys(test *testing.T) {
 	pressTab(simScreen)
 	assertFocus(test, "after Tab", layerAlias, "signed", constants.CellTypeSelectorItem)
 
-	signedEntry := Selectors.Get(layerAlias, "signed")
+	signedEntry := selectorRegistry.Get(layerAlias, "signed")
 	for _, key := range []tcell.Key{tcell.KeyUp, tcell.KeyDown, tcell.KeyLeft, tcell.KeyRight, tcell.KeyEnter} {
 		pressKey(simScreen, key, 0, tcell.ModNone)
 		UpdateDisplay(false)
@@ -661,7 +661,7 @@ func TestSelectorRefilledWhileFocused(test *testing.T) {
 		test.Fatalf("expected SetFocus to succeed, got %v", err)
 	}
 	selector.SetSelectionEntry(getTestSelectionEntry(6))
-	selectorEntry := Selectors.Get(layerAlias, "list")
+	selectorEntry := selectorRegistry.Get(layerAlias, "list")
 	assertSelectorIndexes(test, "after refill", selectorEntry, 0, constants.SELECTED_NONE, 0)
 	for _, step := range []struct {
 		key                 tcell.Key
@@ -743,7 +743,7 @@ func TestSelectorKeyboardEdgeCases(test *testing.T) {
 			layerAlias, styleEntry := setupInputTest(test)
 			Selector.Add(layerAlias, "list", styleEntry, getTestSelectionEntry(testCase.itemCount), 2, 2, testCase.height, 6, testCase.columnCount, 0, 0, false, true)
 			startInputSimulation(test)
-			selectorEntry := Selectors.Get(layerAlias, "list")
+			selectorEntry := selectorRegistry.Get(layerAlias, "list")
 			selectorEntry.ItemHighlighted = testCase.highlighted
 			selectorEntry.ItemSelected = testCase.selected
 			selectorEntry.ViewportPosition = testCase.viewportPosition
@@ -753,7 +753,7 @@ func TestSelectorKeyboardEdgeCases(test *testing.T) {
 			if isConsumed != testCase.expectedConsumed {
 				test.Fatalf("%s: expected consumed %t, got %t", testCase.name, testCase.expectedConsumed, isConsumed)
 			}
-			if scrollBarEntry, isFound := ScrollBars.Lookup(layerAlias, selectorEntry.ScrollbarAlias); isFound && scrollBarEntry.IsEnabled &&
+			if scrollBarEntry, isFound := scrollbarRegistry.Lookup(layerAlias, selectorEntry.ScrollbarAlias); isFound && scrollBarEntry.IsEnabled &&
 				scrollBarEntry.ScrollValue != selectorEntry.ViewportPosition {
 				test.Fatalf("%s: expected scroll value %d to follow the viewport, got %d", testCase.name, selectorEntry.ViewportPosition, scrollBarEntry.ScrollValue)
 			}
@@ -777,7 +777,7 @@ Example:
 func TestSelectorDrawWithOutOfRangeState(test *testing.T) {
 	layerAlias, styleEntry := setupInputTest(test)
 	Selector.Add(layerAlias, "list", styleEntry, getTestSelectionEntry(4), 2, 2, 4, 10, 1, 0, 0, false, true)
-	selectorEntry := GetSelector(layerAlias, "list")
+	selectorEntry := getSelector(layerAlias, "list")
 	selectorEntry.ViewportPosition = -5
 	selectorEntry.ItemHighlighted = 9
 	UpdateDisplay(false)
@@ -820,7 +820,7 @@ func TestSelectorAddCorrectsOutOfRangeArguments(test *testing.T) {
 			layerAlias, styleEntry := setupInputTest(test)
 			Selector.Add(layerAlias, "list", styleEntry, getTestSelectionEntry(testCase.itemCount), 2, 2, 4, 10, 1, testCase.viewportPosition, testCase.highlighted, false, true)
 			UpdateDisplay(false)
-			assertSelectorIndexes(test, testCase.name, Selectors.Get(layerAlias, "list"), testCase.expectedHighlighted, testCase.expectedSelected, 0)
+			assertSelectorIndexes(test, testCase.name, selectorRegistry.Get(layerAlias, "list"), testCase.expectedHighlighted, testCase.expectedSelected, 0)
 		})
 	}
 }
@@ -846,8 +846,8 @@ func TestSelectorDeleteItemKeepsIndexesInRange(test *testing.T) {
 	selector := Selector.Add(layerAlias, "list", styleEntry, NewSelectionEntry(), 2, 2, 3, 10, 1, 0, 0, false, true)
 	applicationEntry := getTestSelectionEntry(10)
 	selector.SetSelectionEntry(applicationEntry)
-	selector.setViewport(7)
-	selectorEntry := Selectors.Get(layerAlias, "list")
+	selector.SetViewport(7)
+	selectorEntry := selectorRegistry.Get(layerAlias, "list")
 	selectorEntry.ItemHighlighted = 9
 	selectorEntry.ItemSelected = 9
 	for remainingItems := 9; remainingItems >= 0; remainingItems-- {
@@ -863,7 +863,7 @@ func TestSelectorDeleteItemKeepsIndexesInRange(test *testing.T) {
 		if selectorEntry.ItemHighlighted >= remainingItems || selectorEntry.ItemSelected >= remainingItems {
 			test.Fatalf("with %d items: highlight %d or selection %d is out of range", remainingItems, selectorEntry.ItemHighlighted, selectorEntry.ItemSelected)
 		}
-		scrollBarEntry := ScrollBars.Get(layerAlias, selectorEntry.ScrollbarAlias)
+		scrollBarEntry := scrollbarRegistry.Get(layerAlias, selectorEntry.ScrollbarAlias)
 		if scrollBarEntry.MaxScrollValue != maxViewportPosition {
 			test.Fatalf("with %d items: expected scroll bar maximum %d, got %d", remainingItems, maxViewportPosition, scrollBarEntry.MaxScrollValue)
 		}
@@ -893,7 +893,7 @@ Example:
 func TestSelectorScrollbarRangeMatchesItems(test *testing.T) {
 	layerAlias, styleEntry := setupInputTest(test)
 	selector := Selector.Add(layerAlias, "list", styleEntry, NewSelectionEntry(), 2, 2, 3, 10, 1, 0, 0, false, true)
-	scrollBarEntry := ScrollBars.Get(layerAlias, Selectors.Get(layerAlias, "list").ScrollbarAlias)
+	scrollBarEntry := scrollbarRegistry.Get(layerAlias, selectorRegistry.Get(layerAlias, "list").ScrollbarAlias)
 	selector.SetSelectionEntry(getTestSelectionEntry(10))
 	if scrollBarEntry.MaxScrollValue != 7 || !scrollBarEntry.IsEnabled {
 		test.Fatalf("after ten items: expected maximum 7 and enabled, got %d and %t", scrollBarEntry.MaxScrollValue, scrollBarEntry.IsEnabled)
@@ -930,7 +930,7 @@ func TestSelectorClickOnStaleItemIsIgnored(test *testing.T) {
 	SetMouseStatus(3, 5, 0, "")
 	SetMouseStatus(3, 5, 1, "")
 	Selector.updateMouseEvent()
-	selectorEntry := Selectors.Get(layerAlias, "selector")
+	selectorEntry := selectorRegistry.Get(layerAlias, "selector")
 	if selectorEntry.ItemSelected != constants.SELECTED_NONE || selectorEntry.ItemHighlighted > 0 || selector.IsNewItemSelected() {
 		test.Fatalf("expected the stale click to be ignored, got highlighted %d, selected %d, new selection %t",
 			selectorEntry.ItemHighlighted, selectorEntry.ItemSelected, selector.IsNewItemSelected())
@@ -954,7 +954,7 @@ func TestSelectorFocusFixesStaleHighlight(test *testing.T) {
 	layerAlias, styleEntry := setupInputTest(test)
 	selector := Selector.Add(layerAlias, "list", styleEntry, getTestSelectionEntry(3), 2, 2, 4, 10, 1, 0, 0, false, true)
 	selector.Select("item2")
-	selectorEntry := GetSelector(layerAlias, "list")
+	selectorEntry := getSelector(layerAlias, "list")
 	selectorEntry.ItemHighlighted = 10
 	if err := SetFocus(&selector); err != nil {
 		test.Fatalf("expected SetFocus to succeed, got %v", err)
@@ -990,8 +990,8 @@ func TestSelectorWheelScrollsViewport(test *testing.T) {
 	Selector.Add(layerAlias, "list", styleEntry, getTestSelectionEntry(10), 2, 2, 4, 10, 1, 0, 0, true, true)
 	Selector.Add(layerAlias, "short", styleEntry, getTestSelectionEntry(2), 20, 2, 4, 10, 1, 0, 0, false, true)
 	simScreen := startInputSimulation(test)
-	selectorEntry := Selectors.Get(layerAlias, "list")
-	scrollBarEntry := ScrollBars.Get(layerAlias, selectorEntry.ScrollbarAlias)
+	selectorEntry := selectorRegistry.Get(layerAlias, "list")
+	scrollBarEntry := scrollbarRegistry.Get(layerAlias, selectorEntry.ScrollbarAlias)
 
 	for notch := 0; notch < 7; notch++ {
 		injectWheel(simScreen, 4, 3, tcell.WheelDown)
@@ -1008,7 +1008,7 @@ func TestSelectorWheelScrollsViewport(test *testing.T) {
 	}
 
 	injectWheel(simScreen, 22, 3, tcell.WheelDown)
-	if shortEntry := Selectors.Get(layerAlias, "short"); shortEntry.ViewportPosition != 0 {
+	if shortEntry := selectorRegistry.Get(layerAlias, "short"); shortEntry.ViewportPosition != 0 {
 		test.Fatalf("expected the short selector to keep viewport 0, got %d", shortEntry.ViewportPosition)
 	}
 }
@@ -1153,12 +1153,12 @@ Example:
 */
 func assertSelectorAttachedLayout(test *testing.T, context string, layerAlias string, selectorEntry *types.SelectorEntryType, expectedXLocation int, expectedYLocation int, expectedLength int) {
 	test.Helper()
-	scrollBarEntry := ScrollBars.Get(layerAlias, selectorEntry.ScrollbarAlias)
+	scrollBarEntry := scrollbarRegistry.Get(layerAlias, selectorEntry.ScrollbarAlias)
 	if scrollBarEntry.XLocation != expectedXLocation || scrollBarEntry.YLocation != expectedYLocation || scrollBarEntry.Length != expectedLength {
 		test.Fatalf("%s: expected the scroll bar at (%d, %d) with length %d, got (%d, %d) with length %d", context,
 			expectedXLocation, expectedYLocation, expectedLength, scrollBarEntry.XLocation, scrollBarEntry.YLocation, scrollBarEntry.Length)
 	}
-	tooltipEntry := Tooltips.Get(layerAlias, selectorEntry.TooltipAlias)
+	tooltipEntry := tooltipRegistry.Get(layerAlias, selectorEntry.TooltipAlias)
 	expectedWidth := selectorEntry.Width + 2
 	if tooltipEntry.HotspotXLocation != selectorEntry.XLocation || tooltipEntry.HotspotYLocation != selectorEntry.YLocation ||
 		tooltipEntry.HotspotWidth != expectedWidth || tooltipEntry.TooltipXLocation != selectorEntry.XLocation ||
@@ -1219,8 +1219,8 @@ Example:
 func TestSelectorSetSizeResizesSelector(test *testing.T) {
 	layerAlias, styleEntry := setupInputTest(test)
 	selector := getTestMultiColumnSelector(layerAlias, styleEntry)
-	selectorEntry := Selectors.Get(layerAlias, "selector")
-	scrollBarEntry := ScrollBars.Get(layerAlias, selectorEntry.ScrollbarAlias)
+	selectorEntry := selectorRegistry.Get(layerAlias, "selector")
+	scrollBarEntry := scrollbarRegistry.Get(layerAlias, selectorEntry.ScrollbarAlias)
 
 	selector.SetSize(20, 1)
 	if selectorEntry.ItemWidth != 6 {
@@ -1236,7 +1236,7 @@ func TestSelectorSetSizeResizesSelector(test *testing.T) {
 	UpdateDisplay(false)
 	assertSelectorBorderSpan(test, "selector", 1, 3, 1, 20)
 
-	selector.setViewport(3)
+	selector.SetViewport(3)
 	selector.SetSize(2, 1)
 	selector.SetSize(18, 0)
 	if width, height := selector.GetSize(); width != 18 || height != 1 {
@@ -1276,7 +1276,7 @@ Example:
 func TestSelectorSetPositionAndBorderMoveAttachedControls(test *testing.T) {
 	layerAlias, styleEntry := setupInputTest(test)
 	selector := Selector.Add(layerAlias, "selector", styleEntry, getTestSelectionEntry(10), 2, 2, 3, 10, 1, 0, constants.SELECTED_NONE, false, true)
-	selectorEntry := Selectors.Get(layerAlias, "selector")
+	selectorEntry := selectorRegistry.Get(layerAlias, "selector")
 	assertSelectorAttachedLayout(test, "after Add", layerAlias, selectorEntry, 13, 1, 5)
 
 	selector.SetPosition(5, 4)
@@ -1305,12 +1305,293 @@ Example:
 func TestSelectorFocusSelectionWithNoColumns(test *testing.T) {
 	layerAlias, styleEntry := setupInputTest(test)
 	selector := Selector.Add(layerAlias, "selector", styleEntry, getTestSelectionEntry(10), 2, 2, 3, 10, 0, 0, constants.SELECTED_NONE, false, true)
-	selectorEntry := Selectors.Get(layerAlias, "selector")
+	selectorEntry := selectorRegistry.Get(layerAlias, "selector")
 	selector.FocusSelection("item5")
 	if selectorEntry.ViewportPosition != 4 {
 		test.Fatalf("expected viewport 4, got %d", selectorEntry.ViewportPosition)
 	}
-	if scrollValue := ScrollBars.Get(layerAlias, selectorEntry.ScrollbarAlias).ScrollValue; scrollValue != 4 {
+	if scrollValue := scrollbarRegistry.Get(layerAlias, selectorEntry.ScrollbarAlias).ScrollValue; scrollValue != 4 {
 		test.Fatalf("expected scroll bar value 4, got %d", scrollValue)
+	}
+}
+
+/*
+addViewportTestSelector is a method which allows you to add a bordered selector "list" at (2, 2) with the items
+"item0" to "itemN-1", an item width of 6, the given number of rows and columns, nothing highlighted or selected, and
+highlighting on hover, so item N is drawn on row 2+(N-viewport)/columns starting at column 2+6*(N%columns).
+
+Example:
+
+	selector := addViewportTestSelector(layerAlias, styleEntry, 10, 3, 1)
+*/
+func addViewportTestSelector(layerAlias string, styleEntry types.TuiStyleEntryType, itemCount int, rowCount int, columnCount int) SelectorInstanceType {
+	return Selector.Add(layerAlias, "list", styleEntry, getTestSelectionEntry(itemCount), 2, 2, rowCount, 6, columnCount, 0, constants.SELECTED_NONE, false, true)
+}
+
+/*
+assertSelectorViewport is a method which allows you to fail the test unless GetViewport returns the expected viewport
+position and the selector's scroll bar value matches it.
+
+Example:
+
+	assertSelectorViewport(test, "after Down", layerAlias, selector, 2)
+*/
+func assertSelectorViewport(test *testing.T, context string, layerAlias string, selector SelectorInstanceType, expectedViewportPosition int) {
+	test.Helper()
+	if viewportPosition := selector.GetViewport(); viewportPosition != expectedViewportPosition {
+		test.Fatalf("%s: expected viewport %d, got %d", context, expectedViewportPosition, viewportPosition)
+	}
+	selectorEntry := selectorRegistry.Get(layerAlias, selector.GetAlias())
+	if scrollValue := scrollbarRegistry.Get(layerAlias, selectorEntry.ScrollbarAlias).ScrollValue; scrollValue != expectedViewportPosition {
+		test.Fatalf("%s: expected scroll bar value %d, got %d", context, expectedViewportPosition, scrollValue)
+	}
+}
+
+/*
+TestSelectorGetViewportFollowsNavigation is a test which allows you to verify that GetViewport reports the viewport
+after it is moved by the arrow keys, the mouse wheel and FocusSelection, on single and multi-column selectors.
+
+Example:
+
+	Expected Inputs:
+		Single column: ten items and three rows, focused, then Down four times, wheel down once over (3, 3), and
+		FocusSelection("item9"). Multi-column: twelve items, three columns and two rows, focused, then Down twice,
+		wheel down once over (3, 3), and FocusSelection("item1").
+
+	Expected Outputs:
+		Single column: viewport 0 on focus, 2 after the keys, 3 after the wheel, and 7 after FocusSelection, which
+		is the furthest it can scroll. Multi-column: viewport 0 on focus, 3 after the keys, 6 after the wheel, and 0
+		after FocusSelection. The scroll bar value matches the viewport each time.
+*/
+func TestSelectorGetViewportFollowsNavigation(test *testing.T) {
+	test.Run("single column", func(test *testing.T) {
+		layerAlias, styleEntry := setupInputTest(test)
+		selector := addViewportTestSelector(layerAlias, styleEntry, 10, 3, 1)
+		simScreen := startInputSimulation(test)
+		if err := SetFocus(&selector); err != nil {
+			test.Fatalf("expected the selector to take focus, got %v", err)
+		}
+		assertSelectorViewport(test, "on focus", layerAlias, selector, 0)
+		for range 4 {
+			pressKey(simScreen, tcell.KeyDown, 0, tcell.ModNone)
+		}
+		assertSelectorViewport(test, "after Down four times", layerAlias, selector, 2)
+		injectWheel(simScreen, 3, 3, tcell.WheelDown)
+		assertSelectorViewport(test, "after wheel down", layerAlias, selector, 3)
+		selector.FocusSelection("item9")
+		assertSelectorViewport(test, "after FocusSelection", layerAlias, selector, 7)
+	})
+	test.Run("multi-column", func(test *testing.T) {
+		layerAlias, styleEntry := setupInputTest(test)
+		selector := addViewportTestSelector(layerAlias, styleEntry, 12, 2, 3)
+		simScreen := startInputSimulation(test)
+		if err := SetFocus(&selector); err != nil {
+			test.Fatalf("expected the selector to take focus, got %v", err)
+		}
+		assertSelectorViewport(test, "on focus", layerAlias, selector, 0)
+		for range 2 {
+			pressKey(simScreen, tcell.KeyDown, 0, tcell.ModNone)
+		}
+		assertSelectorViewport(test, "after Down twice", layerAlias, selector, 3)
+		injectWheel(simScreen, 3, 3, tcell.WheelDown)
+		assertSelectorViewport(test, "after wheel down", layerAlias, selector, 6)
+		selector.FocusSelection("item1")
+		assertSelectorViewport(test, "after FocusSelection", layerAlias, selector, 0)
+	})
+}
+
+/*
+TestSelectorSetViewportClampsAndAlignsToRows is a test which allows you to verify that SetViewport clamps the position
+to the range the selector can scroll to, moves it back to the start of its row on a multi-column selector, moves the
+scroll bar to match, and leaves the highlight alone.
+
+Example:
+
+	Expected Inputs:
+		Single column: ten items and three rows with item 1 highlighted, then SetViewport with -4, 50 and 5.
+		Multi-column: twelve items, three columns and two rows, then SetViewport with 4, 100 and -1.
+
+	Expected Outputs:
+		Single column: viewport 0, 7 and 5, with item 1 still highlighted. Multi-column: viewport 3, 6 and 0. The
+		scroll bar value matches the viewport each time.
+*/
+func TestSelectorSetViewportClampsAndAlignsToRows(test *testing.T) {
+	test.Run("single column", func(test *testing.T) {
+		layerAlias, styleEntry := setupInputTest(test)
+		selector := addViewportTestSelector(layerAlias, styleEntry, 10, 3, 1)
+		selector.SetHighlighted(1)
+		for _, step := range []struct{ viewportPosition, expected int }{{-4, 0}, {50, 7}, {5, 5}} {
+			selector.SetViewport(step.viewportPosition)
+			assertSelectorViewport(test, fmt.Sprintf("SetViewport(%d)", step.viewportPosition), layerAlias, selector, step.expected)
+		}
+		if highlighted := selector.GetHighlighted(); highlighted != 1 {
+			test.Fatalf("expected item 1 to stay highlighted, got %d", highlighted)
+		}
+	})
+	test.Run("multi-column", func(test *testing.T) {
+		layerAlias, styleEntry := setupInputTest(test)
+		selector := addViewportTestSelector(layerAlias, styleEntry, 12, 2, 3)
+		for _, step := range []struct{ viewportPosition, expected int }{{4, 3}, {100, 6}, {-1, 0}} {
+			selector.SetViewport(step.viewportPosition)
+			assertSelectorViewport(test, fmt.Sprintf("SetViewport(%d)", step.viewportPosition), layerAlias, selector, step.expected)
+		}
+	})
+}
+
+/*
+TestSelectorSetHighlightedScrollsIntoView is a test which allows you to verify that SetHighlighted highlights an item,
+scrolls the fewest rows needed to show it, moves the scroll bar to match, clamps an index past the end to the last
+item, clears the highlight for a negative index, and never changes the selection or the new selection flag.
+
+Example:
+
+	Expected Inputs:
+		Single column: ten items and three rows, item 2 selected with the new selection flag set, then
+		SetHighlighted with 8, 1, 40 and -3. Multi-column: twelve items, three columns and two rows, then
+		SetHighlighted with 10 and 4.
+
+	Expected Outputs:
+		Single column, as (highlight, viewport): (8, 6), (1, 1), (9, 7), then (-1, 7), with the scroll bar value
+		matching the viewport, and item 2 still selected with the flag still set after every step. Multi-column:
+		(10, 6), then (4, 3).
+*/
+func TestSelectorSetHighlightedScrollsIntoView(test *testing.T) {
+	test.Run("single column", func(test *testing.T) {
+		layerAlias, styleEntry := setupInputTest(test)
+		selector := addViewportTestSelector(layerAlias, styleEntry, 10, 3, 1)
+		selectorEntry := selectorRegistry.Get(layerAlias, "list")
+		selectorEntry.ItemSelected = 2
+		selectorEntry.IsNewItemSelected = true
+		for _, step := range []struct{ itemIndex, expectedHighlighted, expectedViewport int }{
+			{8, 8, 6}, {1, 1, 1}, {40, 9, 7}, {-3, constants.SELECTED_NONE, 7},
+		} {
+			context := fmt.Sprintf("SetHighlighted(%d)", step.itemIndex)
+			selector.SetHighlighted(step.itemIndex)
+			if highlighted := selector.GetHighlighted(); highlighted != step.expectedHighlighted {
+				test.Fatalf("%s: expected highlight %d, got %d", context, step.expectedHighlighted, highlighted)
+			}
+			assertSelectorViewport(test, context, layerAlias, selector, step.expectedViewport)
+			if selectorEntry.ItemSelected != 2 || !selectorEntry.IsNewItemSelected {
+				test.Fatalf("%s: expected item 2 to stay selected with the flag set, got %d and %t", context,
+					selectorEntry.ItemSelected, selectorEntry.IsNewItemSelected)
+			}
+		}
+	})
+	test.Run("multi-column", func(test *testing.T) {
+		layerAlias, styleEntry := setupInputTest(test)
+		selector := addViewportTestSelector(layerAlias, styleEntry, 12, 2, 3)
+		for _, step := range []struct{ itemIndex, expectedViewport int }{{10, 6}, {4, 3}} {
+			context := fmt.Sprintf("SetHighlighted(%d)", step.itemIndex)
+			selector.SetHighlighted(step.itemIndex)
+			if highlighted := selector.GetHighlighted(); highlighted != step.itemIndex {
+				test.Fatalf("%s: expected highlight %d, got %d", context, step.itemIndex, highlighted)
+			}
+			assertSelectorViewport(test, context, layerAlias, selector, step.expectedViewport)
+		}
+	})
+}
+
+/*
+TestSelectorHighlightEdgeCases is a test which allows you to verify that SetHighlighted on a selector with no items
+leaves nothing highlighted, and that GetHighlighted reports an out of range highlight as none without changing it.
+
+Example:
+
+	Expected Inputs:
+		A selector "empty" with no items given SetHighlighted(0). A selector with ten items whose stored highlight is
+		set directly to 20.
+
+	Expected Outputs:
+		The empty selector reports constants.SELECTED_NONE and viewport 0. The other reports constants.SELECTED_NONE
+		while its stored highlight stays 20.
+*/
+func TestSelectorHighlightEdgeCases(test *testing.T) {
+	layerAlias, styleEntry := setupInputTest(test)
+	emptySelector := Selector.Add(layerAlias, "empty", styleEntry, NewSelectionEntry(), 2, 8, 1, 6, 1, 0, constants.SELECTED_NONE, false, true)
+	emptySelector.SetHighlighted(0)
+	if highlighted := emptySelector.GetHighlighted(); highlighted != constants.SELECTED_NONE {
+		test.Fatalf("expected no highlight on an empty selector, got %d", highlighted)
+	}
+	if viewportPosition := emptySelector.GetViewport(); viewportPosition != 0 {
+		test.Fatalf("expected viewport 0 on an empty selector, got %d", viewportPosition)
+	}
+
+	selector := addViewportTestSelector(layerAlias, styleEntry, 10, 3, 1)
+	selectorEntry := selectorRegistry.Get(layerAlias, "list")
+	selectorEntry.ItemHighlighted = 20
+	if highlighted := selector.GetHighlighted(); highlighted != constants.SELECTED_NONE {
+		test.Fatalf("expected an out of range highlight to be reported as none, got %d", highlighted)
+	}
+	if selectorEntry.ItemHighlighted != 20 {
+		test.Fatalf("expected GetHighlighted to leave the stored highlight at 20, got %d", selectorEntry.ItemHighlighted)
+	}
+}
+
+/*
+TestSelectorViewportAndHighlightOnMissingSelector is a test which allows you to verify that GetViewport,
+SetViewport, GetHighlighted and SetHighlighted do nothing, and do not panic, on a selector that was never added or
+has been deleted.
+
+Example:
+
+	Expected Inputs:
+		An instance for the alias "missing", which was never added, and an instance for "list", added and then
+		deleted. Each calls SetViewport(3) and SetHighlighted(2), then GetViewport and GetHighlighted.
+
+	Expected Outputs:
+		No panic. GetViewport returns 0 and GetHighlighted returns constants.SELECTED_NONE for both.
+*/
+func TestSelectorViewportAndHighlightOnMissingSelector(test *testing.T) {
+	layerAlias, styleEntry := setupInputTest(test)
+	deletedSelector := addViewportTestSelector(layerAlias, styleEntry, 10, 3, 1)
+	Selector.Delete(layerAlias, "list")
+	missingSelector := SelectorInstanceType{BaseControlInstanceType{layerAlias: layerAlias, controlAlias: "missing", controlType: constants.TYPE_SELECTOR}}
+	for _, selector := range []SelectorInstanceType{missingSelector, deletedSelector} {
+		selector.SetViewport(3)
+		selector.SetHighlighted(2)
+		if viewportPosition := selector.GetViewport(); viewportPosition != 0 {
+			test.Fatalf("%q: expected viewport 0, got %d", selector.GetAlias(), viewportPosition)
+		}
+		if highlighted := selector.GetHighlighted(); highlighted != constants.SELECTED_NONE {
+			test.Fatalf("%q: expected no highlight, got %d", selector.GetAlias(), highlighted)
+		}
+	}
+}
+
+/*
+TestSelectorClickOnlyAndColumnMethods is a test which allows you to verify that a selector's highlight on click only
+setting and its column count can be read and set through its methods, that changing the column count resizes the
+selector, and that a count below one is ignored.
+
+Example:
+
+	Expected Inputs:
+		The bordered three column selector with an item width of 10. SetHighlightOnClickOnly(true), then
+		SetColumnCount(2), then SetColumnCount(0).
+
+	Expected Outputs:
+		IsHighlightOnClickOnly reads false, then true. GetColumnCount reads 3, then 2 with a width of 20, and still 2
+		after the invalid count.
+*/
+func TestSelectorClickOnlyAndColumnMethods(test *testing.T) {
+	layerAlias, styleEntry := setupInputTest(test)
+	selector := getTestMultiColumnSelector(layerAlias, styleEntry)
+	if selector.IsHighlightOnClickOnly() {
+		test.Fatalf("expected highlight on click only to start off")
+	}
+	selector.SetHighlightOnClickOnly(true)
+	if !selector.IsHighlightOnClickOnly() {
+		test.Fatalf("expected highlight on click only to read true once set")
+	}
+	if columnCount := selector.GetColumnCount(); columnCount != 3 {
+		test.Fatalf("expected 3 columns, got %d", columnCount)
+	}
+	selector.SetColumnCount(2)
+	if width, _ := selector.GetSize(); selector.GetColumnCount() != 2 || width != 20 {
+		test.Fatalf("expected 2 columns and a width of 20, got %d and %d", selector.GetColumnCount(), width)
+	}
+	selector.SetColumnCount(0)
+	if columnCount := selector.GetColumnCount(); columnCount != 2 {
+		test.Fatalf("expected an invalid column count to be ignored, got %d", columnCount)
 	}
 }

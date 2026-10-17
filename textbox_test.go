@@ -2,6 +2,7 @@ package consolizer
 
 import (
 	"fmt"
+	"github.com/atotto/clipboard"
 	"github.com/stretchr/testify/assert"
 	"github.com/supercom32/consolizer/constants"
 	"github.com/supercom32/consolizer/stringformat"
@@ -271,7 +272,7 @@ func TestTextboxAsciiCharacterization(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup(test)
 	textboxInstance := layer1.AddTextbox(styleEntry, 2, 2, 10, 3, false)
 	setFocusedControl(layer1.layerAlias, textboxInstance.controlAlias, constants.CellTypeTextbox)
-	textboxEntry := Textboxes.Get(textboxInstance.layerAlias, textboxInstance.controlAlias)
+	textboxEntry := textboxRegistry.Get(textboxInstance.layerAlias, textboxInstance.controlAlias)
 
 	textbox.UpdateKeyboardEventTextboxWithString("abcdefghijkl")
 	assert.Equal(test, "abcdefghijkl ", string(textboxEntry.TextData[0]))
@@ -321,7 +322,7 @@ func TestTextboxCjkInsertDeleteBackspace(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup(test)
 	textboxInstance := layer1.AddTextbox(styleEntry, 2, 2, 12, 4, false)
 	setFocusedControl(layer1.layerAlias, textboxInstance.controlAlias, constants.CellTypeTextbox)
-	textboxEntry := Textboxes.Get(textboxInstance.layerAlias, textboxInstance.controlAlias)
+	textboxEntry := textboxRegistry.Get(textboxInstance.layerAlias, textboxInstance.controlAlias)
 
 	textbox.UpdateKeyboardEventTextboxWithString("中文")
 	textbox.UpdateKeyboardEvent([]rune("enter"))
@@ -363,7 +364,7 @@ func TestTextboxCjkHorizontalWindow(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup(test)
 	textboxInstance := layer1.AddTextbox(styleEntry, 2, 2, 6, 4, false)
 	setFocusedControl(layer1.layerAlias, textboxInstance.controlAlias, constants.CellTypeTextbox)
-	textboxEntry := Textboxes.Get(textboxInstance.layerAlias, textboxInstance.controlAlias)
+	textboxEntry := textboxRegistry.Get(textboxInstance.layerAlias, textboxInstance.controlAlias)
 	textboxEntry.TextData = [][]rune{[]rune("中文中文中文")}
 	textboxEntry.CursorXLocation = 0
 	textboxEntry.CursorYLocation = 0
@@ -445,7 +446,7 @@ func TestTextboxCjkClickCoordinates(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup(test)
 	textboxInstance := layer1.AddTextbox(styleEntry, 2, 2, 10, 4, false)
 	setFocusedControl(layer1.layerAlias, textboxInstance.controlAlias, constants.CellTypeTextbox)
-	textboxEntry := Textboxes.Get(textboxInstance.layerAlias, textboxInstance.controlAlias)
+	textboxEntry := textboxRegistry.Get(textboxInstance.layerAlias, textboxInstance.controlAlias)
 	textboxEntry.TextData = [][]rune{[]rune("中文字 ")}
 	textboxEntry.CursorXLocation = 0
 	textboxEntry.CursorYLocation = 0
@@ -483,14 +484,14 @@ func TestTextboxCjkVerticalScrollUnaffected(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup(test)
 	textboxInstance := layer1.AddTextbox(styleEntry, 2, 2, 6, 4, false)
 	setFocusedControl(layer1.layerAlias, textboxInstance.controlAlias, constants.CellTypeTextbox)
-	textboxEntry := Textboxes.Get(textboxInstance.layerAlias, textboxInstance.controlAlias)
+	textboxEntry := textboxRegistry.Get(textboxInstance.layerAlias, textboxInstance.controlAlias)
 	textboxEntry.TextData = nil
 	for lineIndex := 0; lineIndex < 8; lineIndex++ {
 		textboxEntry.TextData = append(textboxEntry.TextData, []rune("中文中"))
 	}
 	textbox.setTextboxMaxScrollBarValues(textboxInstance.layerAlias, textboxInstance.controlAlias)
 
-	verticalScrollbarEntry := ScrollBars.Get(textboxInstance.layerAlias, textboxEntry.VerticalScrollbarAlias)
+	verticalScrollbarEntry := scrollbarRegistry.Get(textboxInstance.layerAlias, textboxEntry.VerticalScrollbarAlias)
 	assert.Equal(test, len(textboxEntry.TextData)-textboxEntry.Height, verticalScrollbarEntry.MaxScrollValue)
 	assert.Equal(test, 4, verticalScrollbarEntry.MaxScrollValue)
 }
@@ -511,7 +512,7 @@ func TestTextboxCjkCursorRendering(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup(test)
 	textboxInstance := layer1.AddTextbox(styleEntry, 2, 2, 10, 4, false)
 	setFocusedControl(layer1.layerAlias, textboxInstance.controlAlias, constants.CellTypeTextbox)
-	textboxEntry := Textboxes.Get(textboxInstance.layerAlias, textboxInstance.controlAlias)
+	textboxEntry := textboxRegistry.Get(textboxInstance.layerAlias, textboxInstance.controlAlias)
 	textboxEntry.TextData = [][]rune{[]rune("中文字 ")}
 	textboxEntry.CursorXLocation = 1
 	textboxEntry.CursorYLocation = 0
@@ -591,7 +592,7 @@ func TestTextboxWordWrapClickPlacesCursor(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup(test)
 	textboxInstance := layer1.AddTextbox(styleEntry, 2, 2, 10, 4, false)
 	setFocusedControl(layer1.layerAlias, textboxInstance.controlAlias, constants.CellTypeTextbox)
-	textboxEntry := Textboxes.Get(textboxInstance.layerAlias, textboxInstance.controlAlias)
+	textboxEntry := textboxRegistry.Get(textboxInstance.layerAlias, textboxInstance.controlAlias)
 	textboxInstance.SetWordWrap(true)
 	textboxEntry.TextData = [][]rune{[]rune("abcdefghij klmnop qrstuv wxyz 0123456789")}
 	textboxEntry.CursorXLocation = 0
@@ -627,7 +628,7 @@ func TestTextboxWordWrapCursorStaysVisible(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup(test)
 	textboxInstance := layer1.AddTextbox(styleEntry, 2, 2, 10, 2, false)
 	setFocusedControl(layer1.layerAlias, textboxInstance.controlAlias, constants.CellTypeTextbox)
-	textboxEntry := Textboxes.Get(textboxInstance.layerAlias, textboxInstance.controlAlias)
+	textboxEntry := textboxRegistry.Get(textboxInstance.layerAlias, textboxInstance.controlAlias)
 	textboxInstance.SetWordWrap(true)
 	textboxEntry.TextData = [][]rune{[]rune("abcdefghij klmnop qrstuv wxyz 0123456789")}
 	textboxEntry.CursorYLocation = 0
@@ -668,13 +669,13 @@ func TestTextboxWordWrapScrollbarUnits(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup(test)
 	textboxInstance := layer1.AddTextbox(styleEntry, 2, 2, 10, 2, false)
 	setFocusedControl(layer1.layerAlias, textboxInstance.controlAlias, constants.CellTypeTextbox)
-	textboxEntry := Textboxes.Get(textboxInstance.layerAlias, textboxInstance.controlAlias)
+	textboxEntry := textboxRegistry.Get(textboxInstance.layerAlias, textboxInstance.controlAlias)
 	textboxInstance.SetWordWrap(true)
 	textboxEntry.TextData = [][]rune{[]rune("abcdefghij klmnop qrstuv wxyz 0123456789")}
 	textbox.setTextboxMaxScrollBarValues(textboxInstance.layerAlias, textboxInstance.controlAlias)
 
-	verticalScrollbarEntry := ScrollBars.Get(textboxInstance.layerAlias, textboxEntry.VerticalScrollbarAlias)
-	horizontalScrollbarEntry := ScrollBars.Get(textboxInstance.layerAlias, textboxEntry.HorizontalScrollbarAlias)
+	verticalScrollbarEntry := scrollbarRegistry.Get(textboxInstance.layerAlias, textboxEntry.VerticalScrollbarAlias)
+	horizontalScrollbarEntry := scrollbarRegistry.Get(textboxInstance.layerAlias, textboxEntry.HorizontalScrollbarAlias)
 	assert.Equal(test, 4-textboxEntry.Height, verticalScrollbarEntry.MaxScrollValue)
 	assert.Equal(test, 2, verticalScrollbarEntry.MaxScrollValue)
 	assert.False(test, horizontalScrollbarEntry.IsEnabled)
@@ -697,7 +698,7 @@ func TestTextboxWordWrapInsertKeepsCursorOnRune(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup(test)
 	textboxInstance := layer1.AddTextbox(styleEntry, 2, 2, 10, 3, false)
 	setFocusedControl(layer1.layerAlias, textboxInstance.controlAlias, constants.CellTypeTextbox)
-	textboxEntry := Textboxes.Get(textboxInstance.layerAlias, textboxInstance.controlAlias)
+	textboxEntry := textboxRegistry.Get(textboxInstance.layerAlias, textboxInstance.controlAlias)
 	textboxInstance.SetWordWrap(true)
 	textboxEntry.TextData = [][]rune{[]rune("abcdefghij klmnop qrstuv")}
 	textboxEntry.CursorYLocation = 0
@@ -761,7 +762,7 @@ func TestTextboxWordWrapArrowDownStepsWrappedRows(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup(test)
 	textboxInstance := layer1.AddTextbox(styleEntry, 2, 2, 10, 2, false)
 	setFocusedControl(layer1.layerAlias, textboxInstance.controlAlias, constants.CellTypeTextbox)
-	textboxEntry := Textboxes.Get(textboxInstance.layerAlias, textboxInstance.controlAlias)
+	textboxEntry := textboxRegistry.Get(textboxInstance.layerAlias, textboxInstance.controlAlias)
 	textboxInstance.SetWordWrap(true)
 	textboxEntry.TextData = [][]rune{[]rune("abcdefghij klmnop qrstuv wxyz 0123456789")}
 	textboxEntry.CursorYLocation = 0
@@ -801,7 +802,7 @@ func TestTextboxArrowDownWrapOffMovesLogicalLine(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup(test)
 	textboxInstance := layer1.AddTextbox(styleEntry, 2, 2, 20, 4, false)
 	setFocusedControl(layer1.layerAlias, textboxInstance.controlAlias, constants.CellTypeTextbox)
-	textboxEntry := Textboxes.Get(textboxInstance.layerAlias, textboxInstance.controlAlias)
+	textboxEntry := textboxRegistry.Get(textboxInstance.layerAlias, textboxInstance.controlAlias)
 	textboxEntry.TextData = [][]rune{[]rune("first line of text "), []rune("second line here "), []rune("third line as well ")}
 	textboxEntry.CursorYLocation = 0
 	textboxEntry.CursorXLocation = 4
@@ -831,7 +832,7 @@ func TestTextboxSetTextLinesEndWithSentinel(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup(test)
 	textboxInstance := layer1.AddTextbox(styleEntry, 2, 2, 20, 4, false)
 	textboxInstance.SetText("abc\nde")
-	textboxEntry := Textboxes.Get(textboxInstance.layerAlias, textboxInstance.controlAlias)
+	textboxEntry := textboxRegistry.Get(textboxInstance.layerAlias, textboxInstance.controlAlias)
 
 	assert.Equal(test, [][]rune{[]rune("abc "), []rune("de ")}, textboxEntry.TextData)
 }
@@ -855,7 +856,7 @@ func TestTextboxDeleteLastCharacterThenType(test *testing.T) {
 	textboxInstance := layer1.AddTextbox(styleEntry, 2, 2, 20, 4, false)
 	setFocusedControl(layer1.layerAlias, textboxInstance.controlAlias, constants.CellTypeTextbox)
 	textboxInstance.SetText("X")
-	textboxEntry := Textboxes.Get(textboxInstance.layerAlias, textboxInstance.controlAlias)
+	textboxEntry := textboxRegistry.Get(textboxInstance.layerAlias, textboxInstance.controlAlias)
 
 	textbox.UpdateKeyboardEventManually(textboxInstance.layerAlias, textboxInstance.controlAlias, []rune("delete"))
 	assert.Equal(test, [][]rune{[]rune(" ")}, textboxEntry.TextData)
@@ -888,7 +889,7 @@ func TestTextboxStaleCursorIsClamped(test *testing.T) {
 		layerAlias, styleEntry := setupInputTest(test)
 		textboxInstance := textbox.Add(layerAlias, "box", styleEntry, 2, 2, 20, 5, false)
 		textboxInstance.SetText("ab")
-		textboxEntry := GetTextbox(layerAlias, "box")
+		textboxEntry := getTextbox(layerAlias, "box")
 		textboxEntry.CursorYLocation = 9
 		textboxEntry.CursorXLocation = 40
 		textbox.UpdateKeyboardEventManually(layerAlias, "box", []rune("right"))
@@ -901,7 +902,7 @@ func TestTextboxStaleCursorIsClamped(test *testing.T) {
 	test.Run("whole line highlighted and deleted", func(test *testing.T) {
 		layerAlias, styleEntry := setupInputTest(test)
 		textbox.Add(layerAlias, "box", styleEntry, 2, 2, 20, 5, false)
-		textboxEntry := GetTextbox(layerAlias, "box")
+		textboxEntry := getTextbox(layerAlias, "box")
 		textboxEntry.TextData = [][]rune{[]rune("ab ")}
 		textboxEntry.IsHighlightActive = true
 		textboxEntry.HighlightStartX, textboxEntry.HighlightStartY = 0, 0
@@ -926,8 +927,8 @@ Example:
 func assertTextboxScrollbarLayout(test *testing.T, context string, layerAlias string, textboxEntry *types.TextboxEntryType,
 	hXLocation int, hYLocation int, hLength int, vXLocation int, vYLocation int, vLength int) {
 	test.Helper()
-	hEntry := ScrollBars.Get(layerAlias, textboxEntry.HorizontalScrollbarAlias)
-	vEntry := ScrollBars.Get(layerAlias, textboxEntry.VerticalScrollbarAlias)
+	hEntry := scrollbarRegistry.Get(layerAlias, textboxEntry.HorizontalScrollbarAlias)
+	vEntry := scrollbarRegistry.Get(layerAlias, textboxEntry.VerticalScrollbarAlias)
 	if hEntry.XLocation != hXLocation || hEntry.YLocation != hYLocation || hEntry.Length != hLength {
 		test.Fatalf("%s: expected the horizontal scroll bar at (%d, %d) with length %d, got (%d, %d) with length %d", context,
 			hXLocation, hYLocation, hLength, hEntry.XLocation, hEntry.YLocation, hEntry.Length)
@@ -958,7 +959,7 @@ Example:
 func TestTextboxSetSizePositionAndBorderMoveScrollbars(test *testing.T) {
 	layerAlias, styleEntry := setupInputTest(test)
 	textboxInstance := textbox.Add(layerAlias, "textbox", styleEntry, 2, 2, 10, 3, true)
-	textboxEntry := Textboxes.Get(layerAlias, "textbox")
+	textboxEntry := textboxRegistry.Get(layerAlias, "textbox")
 	assertTextboxScrollbarLayout(test, "after Add", layerAlias, textboxEntry, 1, 6, 12, 13, 1, 5)
 
 	textboxInstance.SetPosition(4, 3)
@@ -966,7 +967,7 @@ func TestTextboxSetSizePositionAndBorderMoveScrollbars(test *testing.T) {
 
 	textboxInstance.SetSize(15, 4)
 	assertTextboxScrollbarLayout(test, "after SetSize", layerAlias, textboxEntry, 3, 8, 17, 20, 2, 6)
-	tooltipEntry := Tooltips.Get(layerAlias, textboxEntry.TooltipAlias)
+	tooltipEntry := tooltipRegistry.Get(layerAlias, textboxEntry.TooltipAlias)
 	if tooltipEntry.HotspotXLocation != 4 || tooltipEntry.HotspotYLocation != 3 || tooltipEntry.HotspotWidth != 15 || tooltipEntry.HotspotHeight != 4 {
 		test.Fatalf("expected the tooltip hotspot at (4, 3) sized 15 by 4, got (%d, %d) sized %d by %d", tooltipEntry.HotspotXLocation,
 			tooltipEntry.HotspotYLocation, tooltipEntry.HotspotWidth, tooltipEntry.HotspotHeight)
@@ -1003,9 +1004,9 @@ func TestTextboxSetSizePullsViewportBack(test *testing.T) {
 	textboxInstance := textbox.Add(layerAlias, "textbox", styleEntry, 2, 2, 10, 3, false)
 	textboxInstance.SetText("line0\nline1\nline2\nline3\nline4\nline5\nline6\nline7\nline8\nline9\nxxxxxxxxxxxxxxxxxxxxxxxxx")
 	textboxInstance.SetViewport(12, 8)
-	textboxEntry := Textboxes.Get(layerAlias, "textbox")
-	hEntry := ScrollBars.Get(layerAlias, textboxEntry.HorizontalScrollbarAlias)
-	vEntry := ScrollBars.Get(layerAlias, textboxEntry.VerticalScrollbarAlias)
+	textboxEntry := textboxRegistry.Get(layerAlias, "textbox")
+	hEntry := scrollbarRegistry.Get(layerAlias, textboxEntry.HorizontalScrollbarAlias)
+	vEntry := scrollbarRegistry.Get(layerAlias, textboxEntry.VerticalScrollbarAlias)
 
 	textboxInstance.SetSize(10, 8)
 	if textboxEntry.ViewportXLocation != 12 || textboxEntry.ViewportYLocation != 3 {
@@ -1044,7 +1045,7 @@ func TestTextboxSetTextReplacesTextAndResetsState(test *testing.T) {
 	layerAlias, styleEntry := setupInputTest(test)
 	textboxInstance := textbox.Add(layerAlias, "textbox", styleEntry, 2, 2, 10, 2, false)
 	textboxInstance.SetText("line0\nline1\nline2\nline3\nline4\nline5")
-	textboxEntry := Textboxes.Get(layerAlias, "textbox")
+	textboxEntry := textboxRegistry.Get(layerAlias, "textbox")
 	textboxEntry.CursorXLocation, textboxEntry.CursorYLocation = 3, 5
 	textboxEntry.ViewportXLocation, textboxEntry.ViewportYLocation = 2, 4
 	textboxEntry.HighlightStartX, textboxEntry.HighlightStartY = 1, 1
@@ -1064,7 +1065,7 @@ func TestTextboxSetTextReplacesTextAndResetsState(test *testing.T) {
 			textboxEntry.IsHighlightActive, textboxEntry.IsHighlightModeToggled, textboxEntry.HighlightStartX,
 			textboxEntry.HighlightStartY, textboxEntry.HighlightEndX, textboxEntry.HighlightEndY)
 	}
-	if ScrollBars.Get(layerAlias, textboxEntry.VerticalScrollbarAlias).IsEnabled {
+	if scrollbarRegistry.Get(layerAlias, textboxEntry.VerticalScrollbarAlias).IsEnabled {
 		test.Fatalf("expected the vertical scroll bar to be disabled once the text fits")
 	}
 	assert.Equal(test, "new", textboxInstance.GetText())
@@ -1128,7 +1129,7 @@ func TestTextboxDeleteHighlightKeepsRealTrailingSpace(test *testing.T) {
 	layerAlias, styleEntry := setupInputTest(test)
 	textboxInstance := textbox.Add(layerAlias, "textbox", styleEntry, 2, 2, 20, 4, false)
 	textboxInstance.SetText("ab c")
-	textboxEntry := Textboxes.Get(layerAlias, "textbox")
+	textboxEntry := textboxRegistry.Get(layerAlias, "textbox")
 	textboxEntry.IsHighlightActive = true
 	textboxEntry.HighlightStartX, textboxEntry.HighlightStartY = 3, 0
 	textboxEntry.CursorXLocation, textboxEntry.CursorYLocation = 4, 0
@@ -1184,7 +1185,7 @@ func TestTextboxDeleteMultiLineHighlightJoinsLines(test *testing.T) {
 			layerAlias, styleEntry := setupInputTest(test)
 			textboxInstance := textbox.Add(layerAlias, "textbox", styleEntry, 2, 2, 20, 4, false)
 			textboxInstance.SetText(testCase.text)
-			textboxEntry := Textboxes.Get(layerAlias, "textbox")
+			textboxEntry := textboxRegistry.Get(layerAlias, "textbox")
 			textboxEntry.IsHighlightActive = true
 			textboxEntry.HighlightStartX, textboxEntry.HighlightStartY = testCase.highlightStartX, testCase.highlightStartY
 			textboxEntry.CursorXLocation, textboxEntry.CursorYLocation = testCase.cursorXLocation, testCase.cursorYLocation
@@ -1199,5 +1200,157 @@ func TestTextboxDeleteMultiLineHighlightJoinsLines(test *testing.T) {
 				test.Fatalf("expected the highlight to be turned off")
 			}
 		})
+	}
+}
+
+/*
+TestTextboxCursorSelectionAndSettings is a test which allows you to verify that a textbox's cursor, scroll position,
+word wrap and auto indent settings, and selection can be read and set through its methods, with positions clamped to
+the text, and that a deleted textbox is ignored.
+
+Example:
+
+	Expected Inputs:
+		A textbox 20 wide and 4 tall holding "hello" and "world wide". SetCursorPosition with (3, 1), (99, 5) and
+		(-4, -2). SetWordWrap(true) and SetAutoIndent(true). SetSelection with (1, 0, 2, 1), (2, 1, 1, 0),
+		(0, 1, 99, 1) and (5, 0, 0, 1), then ClearSelection. Then Delete and every getter again.
+
+	Expected Outputs:
+		The cursor reads (0, 0) after SetText, then (3, 1), (10, 1) and (0, 0), and the viewport (0, 0). Both settings
+		read true once set. The selected text, both ends included, is "ello\nwor" with the cursor at (2, 1),
+		"ello\nwor" with the cursor at (1, 0), "world wide", and "\nw", then "" after ClearSelection. A deleted textbox reads (0, 0), false and "".
+*/
+func TestTextboxCursorSelectionAndSettings(test *testing.T) {
+	layerAlias, styleEntry := setupInputTest(test)
+	textboxInstance := textbox.Add(layerAlias, "textbox", styleEntry, 2, 2, 20, 4, false)
+	textboxInstance.SetText("hello\nworld wide")
+	assertCursor := func(context string, expectedCharacterIndex int, expectedLineIndex int) {
+		test.Helper()
+		if characterIndex, lineIndex := textboxInstance.GetCursorPosition(); characterIndex != expectedCharacterIndex || lineIndex != expectedLineIndex {
+			test.Fatalf("%s: expected the cursor at (%d, %d), got (%d, %d)", context, expectedCharacterIndex, expectedLineIndex, characterIndex, lineIndex)
+		}
+	}
+	assertCursor("after SetText", 0, 0)
+	for _, step := range []struct{ characterIndex, lineIndex, expectedCharacterIndex, expectedLineIndex int }{
+		{3, 1, 3, 1}, {99, 5, 10, 1}, {-4, -2, 0, 0},
+	} {
+		textboxInstance.SetCursorPosition(step.characterIndex, step.lineIndex)
+		assertCursor(fmt.Sprintf("SetCursorPosition(%d, %d)", step.characterIndex, step.lineIndex), step.expectedCharacterIndex, step.expectedLineIndex)
+	}
+	if columnOffset, rowIndex := textboxInstance.GetViewport(); columnOffset != 0 || rowIndex != 0 {
+		test.Fatalf("expected the viewport at (0, 0), got (%d, %d)", columnOffset, rowIndex)
+	}
+	if textboxInstance.IsWordWrapEnabled() || textboxInstance.IsAutoIndentEnabled() {
+		test.Fatalf("expected word wrap and auto indent to start off")
+	}
+	textboxInstance.SetWordWrap(true)
+	textboxInstance.SetAutoIndent(true)
+	if !textboxInstance.IsWordWrapEnabled() || !textboxInstance.IsAutoIndentEnabled() {
+		test.Fatalf("expected word wrap and auto indent to read true once set")
+	}
+	textboxInstance.SetWordWrap(false)
+
+	for _, step := range []struct {
+		startCharacterIndex, startLineIndex, endCharacterIndex, endLineIndex int
+		expectedText                                                         string
+		expectedCursorCharacterIndex, expectedCursorLineIndex                int
+	}{
+		{1, 0, 2, 1, "ello\nwor", 2, 1},
+		{2, 1, 1, 0, "ello\nwor", 1, 0},
+		{0, 1, 99, 1, "world wide", 10, 1},
+		{5, 0, 0, 1, "\nw", 0, 1},
+	} {
+		context := fmt.Sprintf("SetSelection(%d, %d, %d, %d)", step.startCharacterIndex, step.startLineIndex, step.endCharacterIndex, step.endLineIndex)
+		textboxInstance.SetSelection(step.startCharacterIndex, step.startLineIndex, step.endCharacterIndex, step.endLineIndex)
+		if selectedText := textboxInstance.GetSelectedText(); selectedText != step.expectedText {
+			test.Fatalf("%s: expected the selected text %q, got %q", context, step.expectedText, selectedText)
+		}
+		assertCursor(context, step.expectedCursorCharacterIndex, step.expectedCursorLineIndex)
+	}
+	textboxInstance.ClearSelection()
+	if selectedText := textboxInstance.GetSelectedText(); selectedText != "" {
+		test.Fatalf("expected no selected text after ClearSelection, got %q", selectedText)
+	}
+
+	textbox.Delete(layerAlias, "textbox")
+	textboxInstance.SetCursorPosition(1, 1)
+	textboxInstance.SetSelection(0, 0, 1, 0)
+	textboxInstance.ClearSelection()
+	characterIndex, lineIndex := textboxInstance.GetCursorPosition()
+	if characterIndex != 0 || lineIndex != 0 || textboxInstance.IsWordWrapEnabled() || textboxInstance.GetSelectedText() != "" {
+		test.Fatalf("expected a deleted textbox to read (0, 0), false and an empty selection")
+	}
+}
+
+/*
+TestTextboxCopiedTextHasNoSentinels is a test which allows you to verify that the text copy and cut take from a
+textbox, the same text GetSelectedText returns, never includes the blank sentinel each line is stored with, including
+when the selection runs through the end of a line.
+
+Example:
+
+	Expected Inputs:
+		A textbox holding "hello" and "world". Selections from (0, 0) to (5, 1), which ends on the second line's
+		sentinel, from (5, 0) to (5, 0), only the first line's sentinel, and from (2, 0) to (5, 0).
+
+	Expected Outputs:
+		The text taken is "hello\nworld", "", and "llo", with no trailing spaces.
+*/
+func TestTextboxCopiedTextHasNoSentinels(test *testing.T) {
+	layerAlias, styleEntry := setupInputTest(test)
+	textboxInstance := textbox.Add(layerAlias, "textbox", styleEntry, 2, 2, 20, 4, false)
+	textboxInstance.SetText("hello\nworld")
+	for _, step := range []struct {
+		startCharacterIndex, startLineIndex, endCharacterIndex, endLineIndex int
+		expectedText                                                         string
+	}{
+		{0, 0, 5, 1, "hello\nworld"},
+		{5, 0, 5, 0, ""},
+		{2, 0, 5, 0, "llo"},
+	} {
+		textboxInstance.SetSelection(step.startCharacterIndex, step.startLineIndex, step.endCharacterIndex, step.endLineIndex)
+		copiedText := func() string {
+			defer lockUIState()()
+			return textbox.getSelectedText(textboxRegistry.Get(layerAlias, "textbox"))
+		}()
+		if copiedText != step.expectedText {
+			test.Fatalf("selection (%d, %d) to (%d, %d): expected the copied text %q, got %q", step.startCharacterIndex,
+				step.startLineIndex, step.endCharacterIndex, step.endLineIndex, step.expectedText, copiedText)
+		}
+	}
+}
+
+/*
+TestTextboxCopyAndCutPutCleanTextOnClipboard is a test which allows you to verify that Ctrl+C and Ctrl+X put the
+selected text on the system clipboard without the blank sentinels the textbox stores lines with, and that cut also
+removes the text. In addition, the following should be noted:
+
+  - The test skips itself when no system clipboard utility is available, since the clipboard cannot be written or
+    read back then.
+
+Example:
+
+	Expected Inputs:
+		A textbox holding "hello" and "world" with everything selected, from (0, 0) to (5, 1). Ctrl+C, then Ctrl+X.
+
+	Expected Outputs:
+		The clipboard holds "hello\nworld" after each key, and after the cut the textbox holds a single empty line.
+*/
+func TestTextboxCopyAndCutPutCleanTextOnClipboard(test *testing.T) {
+	if err := clipboard.WriteAll(""); err != nil {
+		test.Skipf("skipping clipboard test: no system clipboard utility is available in this environment: %v", err)
+	}
+	layerAlias, styleEntry := setupInputTest(test)
+	textboxInstance := textbox.Add(layerAlias, "textbox", styleEntry, 2, 2, 20, 4, false)
+	textboxInstance.SetText("hello\nworld")
+	for _, key := range []string{"ctrl+c", "ctrl+x"} {
+		textboxInstance.SetSelection(0, 0, 5, 1)
+		textbox.UpdateKeyboardEventManually(layerAlias, "textbox", []rune(key))
+		if clipboardText, err := clipboard.ReadAll(); err != nil || clipboardText != "hello\nworld" {
+			test.Fatalf("%s: expected the clipboard to hold %q, got %q (%v)", key, "hello\nworld", clipboardText, err)
+		}
+	}
+	if text := textboxInstance.GetText(); text != "" {
+		test.Fatalf("expected the cut to leave the textbox empty, got %q", text)
 	}
 }

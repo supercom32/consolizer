@@ -622,19 +622,24 @@ func fillArea(layerEntry *types.LayerEntryType, attributeEntry types.AttributeEn
 }
 
 /*
-fillAreaWithControlAlias is a method which fills an area of a given text layer with a control alias and
-cell type. This is useful for marking areas for interactivity without drawing characters.
+fillAreaWithControlAlias is a method which allows you to mark an area of a given text layer, starting at the given
+column and row and spanning the given width and height, with a control alias and cell type, so that the area responds
+to the mouse as that control without any characters being drawn. Cells of the area that fall outside the layer are
+skipped.
 
 Example:
-    fillAreaWithControlAlias(layer, constants.CellTypeButton, "btnSubmit", 10, 5, 10, 1, 0)
+
+	fillAreaWithControlAlias(layer, constants.CellTypeButton, "btnSubmit", 10, 5, 10, 1, 0)
 */
 func fillAreaWithControlAlias(layerEntry *types.LayerEntryType, cellType int, cellControlAlias string, xLocation int, yLocation int, width int, height int, startingControlLocation int) {
 	characterMemory := layerEntry.CharacterMemory
 	for currentRow := 0; currentRow < height; currentRow++ {
+		cellYLocation := yLocation + currentRow
 		for currentColumn := 0; currentColumn < width; currentColumn++ {
-			if yLocation >= 0 && yLocation < layerEntry.Height && xLocation+currentColumn >= 0 && xLocation+currentColumn < layerEntry.Width {
-				characterMemory[currentRow][currentColumn].AttributeEntry.CellType = cellType
-				characterMemory[currentRow][currentColumn].AttributeEntry.CellControlAlias = cellControlAlias
+			cellXLocation := xLocation + currentColumn
+			if cellYLocation >= 0 && cellYLocation < layerEntry.Height && cellXLocation >= 0 && cellXLocation < layerEntry.Width {
+				characterMemory[cellYLocation][cellXLocation].AttributeEntry.CellType = cellType
+				characterMemory[cellYLocation][cellXLocation].AttributeEntry.CellControlAlias = cellControlAlias
 			}
 		}
 	}

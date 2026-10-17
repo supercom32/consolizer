@@ -270,7 +270,7 @@ func addTestDropdown(layerAlias string, styleEntry types.TuiStyleEntryType) *typ
 	selectionEntry.Add("three", "Three")
 	dropdownInstance := Dropdown.Add(layerAlias, "dropdown", styleEntry, selectionEntry, 2, 2, 3, 10, 0)
 	dropdownInstance.GetFocus()
-	return Dropdowns.Get(layerAlias, "dropdown")
+	return dropdownRegistry.Get(layerAlias, "dropdown")
 }
 
 /*
@@ -392,4 +392,32 @@ func assertPressed(test *testing.T, context string, anyButton ButtonInstanceType
 		test.Fatalf("%s: expected pressed button (%q, %q), got (%q, %q)", context, expectedLayerAlias, expectedButtonAlias,
 			pressedLayerAlias, pressedButtonAlias)
 	}
+}
+
+/*
+lockedTextFieldKeyboardEvent is a method which allows you to pass a keystroke to the focused text field's keyboard
+handler from a test, holding the UI lock as the event goroutine does when it calls the handler. It returns whether a
+screen update is required and whether the keystroke was consumed.
+
+Example:
+
+	isUpdateRequired, isConsumed := lockedTextFieldKeyboardEvent([]rune("a"))
+*/
+func lockedTextFieldKeyboardEvent(keystroke []rune) (bool, bool) {
+	defer lockUIState()()
+	return TextField.updateKeyboardEvent(keystroke)
+}
+
+/*
+lockedTooltipMouseEvent is a method which allows you to run the tooltip hover state machine once from a test, holding
+the UI lock as the event and periodic goroutines do when they run it, so a test call never overlaps the background
+periodic goroutine's own call. It returns whether a screen update is required.
+
+Example:
+
+	isUpdateRequired := lockedTooltipMouseEvent()
+*/
+func lockedTooltipMouseEvent() bool {
+	defer lockUIState()()
+	return Tooltip.updateMouseEvent()
 }

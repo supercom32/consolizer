@@ -8,17 +8,26 @@ import (
 )
 
 /*
-printDialog is a method which writes text to the terminal screen via a typewriter effect. This is useful
-for video games or other applications that may require printing text in a dialog box.
+printDialog is a method which writes text to the terminal screen via a typewriter effect. This is useful for video
+games or other applications that may require printing text in a dialog box. With a delay, one character is printed
+at a time, the screen is redrawn and the delay is waited out, and the remaining characters are printed at once if
+the dialog is skippable and Enter is pressed or a mouse button is held. In addition, the following should be noted:
+
+  - The caller must not hold uiStateMutex. Each character is printed under the lock, and the lock is released while
+    waiting out the delay and checking for the skip key, so input keeps being handled while the dialog prints and
+    the key that skips it can be delivered at all.
 
 Example:
-    printDialog(layer, attr, 0, 0, 20, 50, true, "Hello {{red}}World{{/}}")
+
+	printDialog(layer, attr, 0, 0, 20, 50, true, "Hello {{red}}World{{/}}")
 */
 func printDialog(layerEntry *types.LayerEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, widthOfLineInCharacters int, printDelayInMilliseconds int, isSkipable bool, textToPrint string) {
 	// If no delay is requested, just print the text normally and return
 	if printDelayInMilliseconds <= 0 {
-		arrayOfRunes := stringformat.GetRunesFromString(textToPrint)
-		layer.print(layerEntry, attributeEntry, xLocation, yLocation, arrayOfRunes, widthOfLineInCharacters, true)
+		func() {
+			defer lockUIState()()
+			layer.print(layerEntry, attributeEntry, xLocation, yLocation, stringformat.GetRunesFromString(textToPrint), widthOfLineInCharacters, true)
+		}()
 		return
 	}
 
@@ -26,7 +35,6 @@ func printDialog(layerEntry *types.LayerEntryType, attributeEntry types.Attribut
 	isPrintDelaySkipped := false
 	cursorXLocation := xLocation
 	cursorYLocation := yLocation
-	characterMemory := layerEntry.CharacterMemory
 
 	// For markup
 	currentAttributeEntry := attributeEntry
@@ -35,68 +43,77 @@ func printDialog(layerEntry *types.LayerEntryType, attributeEntry types.Attribut
 	arrayOfRunes := stringformat.GetRunesFromString(textToPrint)
 
 	for currentCharacterIndex := 0; currentCharacterIndex < len(arrayOfRunes); currentCharacterIndex++ {
-		currentCharacter := arrayOfRunes[currentCharacterIndex]
+		// The character is printed under the UI lock. False means nothing was printed that needs a pause.
+		isPauseRequired := func() bool {
+			defer lockUIState()()
+			currentCharacter := arrayOfRunes[currentCharacterIndex]
 
-		// Handle word wrapping if enabled
-		if widthOfLineInCharacters > 0 && currentCharacter == ' ' {
-			// Check if the word fits within the remaining space on the current line.
-			var wordWidth int
-			wordWidth = calculateWordWidth(arrayOfRunes, currentCharacterIndex, true)
+			// Handle word wrapping if enabled
+			if widthOfLineInCharacters > 0 && currentCharacter == ' ' {
+				// Check if the word fits within the remaining space on the current line.
+				var wordWidth int
+				wordWidth = calculateWordWidth(arrayOfRunes, currentCharacterIndex, true)
 
-			if cursorXLocation+wordWidth >= xLocation+widthOfLineInCharacters || cursorXLocation+wordWidth >= layerEntry.Width {
-				// Word doesn't fit, move to the next line.
-				cursorXLocation = xLocation
-				cursorYLocation++
-				if cursorYLocation >= layerEntry.Height {
-					cursorYLocation--
+				if cursorXLocation+wordWidth >= xLocation+widthOfLineInCharacters || cursorXLocation+wordWidth >= layerEntry.Width {
+					// Word doesn't fit, move to the next line.
+					cursorXLocation = xLocation
+					cursorYLocation++
+					if cursorYLocation >= layerEntry.Height {
+						cursorYLocation--
+					}
 				}
 			}
-		}
 
-		// Skip the first blank space at the start of a line if one exists and word wrap is enabled
-		if widthOfLineInCharacters > 0 && currentCharacter == ' ' && cursorXLocation == xLocation {
-			continue
-		}
+			// Skip the first blank space at the start of a line if one exists and word wrap is enabled
+			if widthOfLineInCharacters > 0 && currentCharacter == ' ' && cursorXLocation == xLocation {
+				return false
+			}
 
-		// Handle markup
-		if currentCharacter == '{' && currentCharacterIndex+1 < len(arrayOfRunes) && arrayOfRunes[currentCharacterIndex+1] == '{' {
-			tagStartIndex := currentCharacterIndex + 2
-			foundClosing := false
-			for j := tagStartIndex; j < len(arrayOfRunes)-1; j++ {
-				if arrayOfRunes[j] == '}' && arrayOfRunes[j+1] == '}' {
-					tagContent := string(arrayOfRunes[tagStartIndex:j])
-					currentAttributeEntry = getDialogAttributeEntry(tagContent, attributeEntry)
-					currentCharacterIndex = j + 1
-					foundClosing = true
-					break
+			// Handle markup
+			if currentCharacter == '{' && currentCharacterIndex+1 < len(arrayOfRunes) && arrayOfRunes[currentCharacterIndex+1] == '{' {
+				tagStartIndex := currentCharacterIndex + 2
+				foundClosing := false
+				for j := tagStartIndex; j < len(arrayOfRunes)-1; j++ {
+					if arrayOfRunes[j] == '}' && arrayOfRunes[j+1] == '}' {
+						tagContent := string(arrayOfRunes[tagStartIndex:j])
+						currentAttributeEntry = getDialogAttributeEntry(tagContent, attributeEntry)
+						currentCharacterIndex = j + 1
+						foundClosing = true
+						break
+					}
+				}
+				if foundClosing {
+					return false
 				}
 			}
-			if foundClosing {
-				continue
-			}
-		}
 
-		// Print the character
-		if cursorXLocation >= 0 && cursorXLocation < layerEntry.Width && cursorYLocation >= 0 && cursorYLocation < layerEntry.Height {
-			columnsConsumed := putRune(characterMemory, cursorXLocation, cursorYLocation, currentCharacter, currentAttributeEntry, layerEntry.Width, layerEntry.Height)
-			if columnsConsumed == 1 && stringformat.IsRuneCharacterWide(currentCharacter) {
-				// A wide rune whose placeholder would fall past the right edge.
-				cursorXLocation++
+			// Print the character
+			if cursorXLocation >= 0 && cursorXLocation < layerEntry.Width && cursorYLocation >= 0 && cursorYLocation < layerEntry.Height {
+				columnsConsumed := putRune(layerEntry.CharacterMemory, cursorXLocation, cursorYLocation, currentCharacter, currentAttributeEntry, layerEntry.Width, layerEntry.Height)
+				if columnsConsumed == 1 && stringformat.IsRuneCharacterWide(currentCharacter) {
+					// A wide rune whose placeholder would fall past the right edge.
+					cursorXLocation++
+					if widthOfLineInCharacters > 0 {
+						return false
+					}
+				} else {
+					cursorXLocation += columnsConsumed - 1
+				}
+			}
+
+			cursorXLocation++
+
+			// Handle line wrapping for basic printing
+			if cursorXLocation >= layerEntry.Width {
 				if widthOfLineInCharacters > 0 {
-					continue
+					return false
 				}
-			} else {
-				cursorXLocation += columnsConsumed - 1
 			}
-		}
 
-		cursorXLocation++
-
-		// Handle line wrapping for basic printing
-		if cursorXLocation >= layerEntry.Width {
-			if widthOfLineInCharacters > 0 {
-				continue
-			}
+			return true
+		}()
+		if !isPauseRequired {
+			continue
 		}
 
 		// Check for skip input

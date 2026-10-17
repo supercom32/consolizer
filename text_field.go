@@ -19,7 +19,7 @@ type TextFieldInstanceType struct {
 
 type textFieldType struct{}
 
-var TextFields = memory.NewControlMemoryManager[types.TextFieldEntryType]()
+var textFieldRegistry = memory.NewControlMemoryManager[types.TextFieldEntryType]()
 var TextField textFieldType
 
 // ============================================================================
@@ -39,7 +39,8 @@ Example:
     value := textField.GetValue()
 */
 func (shared *TextFieldInstanceType) GetValue() string {
-	if textFieldEntry, isFound := TextFields.Lookup(shared.layerAlias, shared.controlAlias); isFound {
+	defer lockUIState()()
+	if textFieldEntry, isFound := textFieldRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 		validatorTextField(shared.layerAlias, shared.controlAlias)
 		value := textFieldEntry.CurrentValue
 		if len(value) > 0 {
@@ -57,7 +58,8 @@ Example:
     textField.SetLocation(10, 5)
 */
 func (shared *TextFieldInstanceType) SetLocation(xLocation int, yLocation int) {
-	if textFieldEntry, isFound := TextFields.Lookup(shared.layerAlias, shared.controlAlias); isFound {
+	defer lockUIState()()
+	if textFieldEntry, isFound := textFieldRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 		validatorTextField(shared.layerAlias, shared.controlAlias)
 		validateLayerLocationByLayerAlias(shared.layerAlias, xLocation, yLocation)
 		textFieldEntry.XLocation = xLocation
@@ -86,6 +88,19 @@ Example:
     textFieldInstance := TextField.Add("Layer1", "Text1", style, 0, 0, 20, 100, false, "", true)
 */
 func (shared *textFieldType) Add(layerAlias string, textFieldAlias string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, maxLengthAllowed int, IsPasswordProtected bool, defaultValue string, isEnabled bool) TextFieldInstanceType {
+	defer lockUIState()()
+	return shared.add(layerAlias, textFieldAlias, styleEntry, xLocation, yLocation, width, maxLengthAllowed, IsPasswordProtected, defaultValue, isEnabled)
+}
+
+/*
+add is a method which allows you to do exactly what Add does, for a caller that already holds uiStateMutex, such as
+another entry point of the package that has taken the lock itself.
+
+Example:
+
+	TextField.add(layerAlias, textFieldAlias, styleEntry, xLocation, yLocation, width, maxLengthAllowed, IsPasswordProtected, defaultValue, isEnabled)
+*/
+func (shared *textFieldType) add(layerAlias string, textFieldAlias string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, maxLengthAllowed int, IsPasswordProtected bool, defaultValue string, isEnabled bool) TextFieldInstanceType {
 	validateLayerLocationByLayerAlias(layerAlias, xLocation, yLocation)
 	validateTextFieldWidth(width)
 	// This is required so that the cursor appears at the end of your text field.
@@ -99,21 +114,21 @@ func (shared *textFieldType) Add(layerAlias string, textFieldAlias string, style
 	textFieldEntry.MaxLengthAllowed = maxLengthAllowed
 	textFieldEntry.IsPasswordProtected = IsPasswordProtected
 	textFieldEntry.CurrentValue = []rune(defaultValueWithTrailingBlank)
-	textFieldEntry.DefaultValue = defaultValueWithTrailingBlank
+	textFieldEntry.DefaultValue = defaultValue
 	textFieldEntry.IsEnabled = isEnabled
 	textFieldEntry.TooltipAlias = stringformat.GetLastSortedUUID()
 
 	// Create associated tooltip (always created but disabled by default)
-	tooltipInstance := Tooltip.Add(layerAlias, textFieldEntry.TooltipAlias, "", styleEntry,
+	tooltipInstance := Tooltip.add(layerAlias, textFieldEntry.TooltipAlias, "", styleEntry,
 		textFieldEntry.XLocation, textFieldEntry.YLocation,
 		textFieldEntry.Width, 1,
 		textFieldEntry.XLocation, textFieldEntry.YLocation+1,
 		textFieldEntry.Width, 3,
 		false, true, constants.DefaultTooltipHoverTime)
-	tooltipInstance.SetEnabled(false)
+	tooltipInstance.setEnabled(false)
 	tooltipInstance.setParentControlAlias(textFieldAlias)
 	// Use the generic memory manager to add the text field entry
-	TextFields.Add(layerAlias, textFieldAlias, &textFieldEntry)
+	textFieldRegistry.Add(layerAlias, textFieldAlias, &textFieldEntry)
 
 	var textFieldInstance TextFieldInstanceType
 	textFieldInstance.layerAlias = layerAlias
@@ -135,8 +150,9 @@ Example:
     TextField.Delete("Layer1", "Text1")
 */
 func (shared *textFieldType) Delete(layerAlias string, textFieldAlias string) {
+	defer lockUIState()()
 	validatorTextField(layerAlias, textFieldAlias)
-	TextFields.Remove(layerAlias, textFieldAlias)
+	textFieldRegistry.Remove(layerAlias, textFieldAlias)
 	clearStaleControlReferences(layerAlias, textFieldAlias, constants.CellTypeTextField)
 }
 
@@ -153,7 +169,8 @@ Example:
     TextField.DeleteAll("Layer1")
 */
 func (shared *textFieldType) DeleteAll(layerAlias string) {
-	removeAllControlsAndClearCells(TextFields, layerAlias, constants.CellTypeTextField, func(entry *types.TextFieldEntryType) string { return entry.Alias })
+	defer lockUIState()()
+	removeAllControlsAndClearCells(textFieldRegistry, layerAlias, constants.CellTypeTextField, func(entry *types.TextFieldEntryType) string { return entry.Alias })
 }
 
 /*
@@ -171,7 +188,7 @@ Example:
 */
 func (shared *textFieldType) drawOnLayer(layerEntry types.LayerEntryType) {
 	layerAlias := layerEntry.LayerAlias
-	for _, currentTextFieldEntry := range TextFields.GetAllEntries(layerAlias) {
+	for _, currentTextFieldEntry := range textFieldRegistry.GetAllEntries(layerAlias) {
 		textFieldEntry := currentTextFieldEntry
 		shared.drawInputString(&layerEntry, textFieldEntry.StyleEntry, textFieldEntry.Alias, textFieldEntry.XLocation, textFieldEntry.YLocation, textFieldEntry.Width, textFieldEntry.ViewportPosition, textFieldEntry.CurrentValue)
 	}
@@ -198,7 +215,7 @@ func (shared *textFieldType) drawInputString(layerEntry *types.LayerEntryType, s
 	// never split across the right edge.
 	stringPosition = getClampedIndex(stringPosition, 0, len(inputValue)-1)
 	runesToDraw, _ := stringformat.GetRunesThatFitInColumnCountFromStart(inputValue[stringPosition:], width)
-	textFieldEntry := TextFields.Get(layerEntry.LayerAlias, textFieldAlias)
+	textFieldEntry := textFieldRegistry.Get(layerEntry.LayerAlias, textFieldAlias)
 	focusedControl := getFocusedControl()
 	focusedLayerAlias := focusedControl.layerAlias
 	focusedControlAlias := focusedControl.controlAlias
@@ -410,7 +427,7 @@ func (shared *textFieldType) updateKeyboardEventManually(layerAlias string, text
 	keystrokeAsString := string(keystroke)
 	isScreenUpdateRequired := false
 	isKeystrokeConsumed := false
-	textFieldEntry, isFound := TextFields.Lookup(layerAlias, textFieldAlias)
+	textFieldEntry, isFound := textFieldRegistry.Lookup(layerAlias, textFieldAlias)
 	if !isFound || !textFieldEntry.IsEnabled {
 		return false, false
 	}
@@ -447,22 +464,7 @@ func (shared *textFieldType) updateKeyboardEventManually(layerAlias string, text
 	case "ctrl+c", "ctrl+insert": // Copy
 		// Copy highlighted text
 		if textFieldEntry.IsHighlightActive {
-			start := textFieldEntry.HighlightStart
-			end := textFieldEntry.HighlightEnd
-			if start > end {
-				start, end = end, start
-			}
-
-			// Ensure we don't exceed array bounds
-			if end >= len(textFieldEntry.CurrentValue) {
-				end = len(textFieldEntry.CurrentValue) - 1
-			}
-			if start < 0 {
-				start = 0
-			}
-
-			highlightedText := string(textFieldEntry.CurrentValue[start : end+1])
-			err := clipboard.WriteAll(highlightedText)
+			err := clipboard.WriteAll(shared.getSelectedText(textFieldEntry))
 			if err != nil {
 				panic(1)
 				// Handle clipboard write error (could log it)
@@ -490,8 +492,7 @@ func (shared *textFieldType) updateKeyboardEventManually(layerAlias string, text
 			}
 
 			// Copy to clipboard before deleting
-			highlightedText := string(textFieldEntry.CurrentValue[start : end+1])
-			err := clipboard.WriteAll(highlightedText)
+			err := clipboard.WriteAll(shared.getSelectedText(textFieldEntry))
 			if err != nil {
 				// Handle clipboard write error (could log it)
 				// fmt.Println("Clipboard write error:", err)
@@ -754,6 +755,10 @@ noted:
     cursor is re-clamped before this method returns, so the correction is drawn in the same screen update as the
     keystroke.
 
+  - The hook is application code, so it is called with uiStateMutex released and may call any exported function.
+    The field is looked up again afterwards, and the correction is applied only if the field still exists and
+    still holds the value the hook was given, so a hook can never overwrite a newer value with a stale correction.
+
 Example:
 
 	updateRequired, consumed := TextField.updateKeyboardEvent([]rune("a"))
@@ -763,26 +768,42 @@ func (shared *textFieldType) updateKeyboardEvent(keystroke []rune) (bool, bool) 
 	focusedLayerAlias := focusedControl.layerAlias
 	focusedControlAlias := focusedControl.controlAlias
 	focusedControlType := focusedControl.controlType
-	textFieldEntry, isFound := TextFields.Lookup(focusedLayerAlias, focusedControlAlias)
+	textFieldEntry, isFound := textFieldRegistry.Lookup(focusedLayerAlias, focusedControlAlias)
 	if focusedControlType != constants.CellTypeTextField || !isFound {
 		return false, false
 	}
 	isScreenUpdateRequired, isKeystrokeConsumed := shared.updateKeyboardEventManually(focusedLayerAlias, focusedControlAlias, keystroke)
-	if textFieldEntry.OnValueChanged != nil {
-		currentValue := textFieldEntry.CurrentValue
-		if len(currentValue) > 0 {
-			currentValue = currentValue[:len(currentValue)-1]
-		}
-		currentValueAsString := string(currentValue)
-		correctedValue := textFieldEntry.OnValueChanged(currentValueAsString)
-		if correctedValue != currentValueAsString {
-			textFieldEntry.CurrentValue = []rune(correctedValue + " ")
-			shared.updateCursor(textFieldEntry)
-			shared.updateViewport(textFieldEntry)
-			isScreenUpdateRequired = true
-		}
+	onValueChanged := textFieldEntry.OnValueChanged
+	if onValueChanged == nil {
+		return isScreenUpdateRequired, isKeystrokeConsumed
 	}
-	return isScreenUpdateRequired, isKeystrokeConsumed
+	currentValueAsString := shared.getTrimmedValue(textFieldEntry)
+	var correctedValue string
+	callWithUIStateUnlocked(func() { correctedValue = onValueChanged(currentValueAsString) })
+	textFieldEntry, isFound = textFieldRegistry.Lookup(focusedLayerAlias, focusedControlAlias)
+	if !isFound || correctedValue == currentValueAsString || shared.getTrimmedValue(textFieldEntry) != currentValueAsString {
+		return isScreenUpdateRequired, isKeystrokeConsumed
+	}
+	textFieldEntry.CurrentValue = []rune(correctedValue + " ")
+	shared.updateCursor(textFieldEntry)
+	shared.updateViewport(textFieldEntry)
+	return true, isKeystrokeConsumed
+}
+
+/*
+getTrimmedValue is a method which allows you to obtain a text field's current value as a string without the trailing
+blank sentinel rune its value is stored with.
+
+Example:
+
+	value := TextField.getTrimmedValue(textFieldEntry)
+*/
+func (shared *textFieldType) getTrimmedValue(textFieldEntry *types.TextFieldEntryType) string {
+	currentValue := textFieldEntry.CurrentValue
+	if len(currentValue) > 0 {
+		currentValue = currentValue[:len(currentValue)-1]
+	}
+	return string(currentValue)
 }
 
 /*
@@ -801,7 +822,7 @@ func (shared *textFieldType) updateMouseEvent() bool {
 	if buttonPressed != 0 && getEventStateId() != constants.EventStateDragAndDropScrollbar &&
 		getEventStateId() != constants.EventStateDragAndDrop {
 		characterEntry = getCellInformationUnderMouseCursor(mouseXLocation, mouseYLocation)
-		if textFieldEntry, isFound := TextFields.Lookup(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias); characterEntry.AttributeEntry.CellType == constants.CellTypeTextField && isFound {
+		if textFieldEntry, isFound := textFieldRegistry.Lookup(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias); characterEntry.AttributeEntry.CellType == constants.CellTypeTextField && isFound {
 			if !textFieldEntry.IsEnabled {
 				return isScreenUpdateRequired
 			}
@@ -817,7 +838,7 @@ func (shared *textFieldType) updateMouseEvent() bool {
 	// field it happens to pass over.
 	if getEventStateId() == constants.EventStateDragAndDrop && getDraggedLayerAlias() == "" && getFocusedControl().controlType == constants.CellTypeTextField {
 		characterEntry = getCellInformationUnderMouseCursor(mouseXLocation, mouseYLocation)
-		if textFieldEntry, isFound := TextFields.Lookup(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias); characterEntry.AttributeEntry.CellType == constants.CellTypeTextField && isFound {
+		if textFieldEntry, isFound := textFieldRegistry.Lookup(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias); characterEntry.AttributeEntry.CellType == constants.CellTypeTextField && isFound {
 			if !textFieldEntry.IsEnabled {
 				return isScreenUpdateRequired
 			}
@@ -878,7 +899,8 @@ Example:
 	textField.SetValue("New Value")
 */
 func (shared *TextFieldInstanceType) SetValue(value string) *TextFieldInstanceType {
-	if textFieldEntry, isFound := TextFields.Lookup(shared.layerAlias, shared.controlAlias); isFound {
+	defer lockUIState()()
+	if textFieldEntry, isFound := textFieldRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 		validatorTextField(shared.layerAlias, shared.controlAlias)
 		textFieldEntry.CurrentValue = []rune(value + " ")
 		textFieldEntry.CursorPosition = len(textFieldEntry.CurrentValue) - 1
@@ -890,6 +912,172 @@ func (shared *TextFieldInstanceType) SetValue(value string) *TextFieldInstanceTy
 }
 
 /*
+GetCursorPosition is a method which allows you to obtain the zero based rune position of a text field's cursor within
+its value. The position may equal the length of the value, which places the cursor just after its last character. If
+the text field does not exist, 0 is returned.
+
+Example:
+
+	cursorPosition := textField.GetCursorPosition()
+*/
+func (shared *TextFieldInstanceType) GetCursorPosition() int {
+	defer lockUIState()()
+	if textFieldEntry, isFound := textFieldRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound {
+		return textFieldEntry.CursorPosition
+	}
+	return 0
+}
+
+/*
+GetViewportPosition is a method which allows you to obtain the zero based rune position of the first character shown
+in a text field, which moves as the field scrolls to keep its cursor visible. If the text field does not exist, 0 is
+returned.
+
+Example:
+
+	viewportPosition := textField.GetViewportPosition()
+*/
+func (shared *TextFieldInstanceType) GetViewportPosition() int {
+	defer lockUIState()()
+	if textFieldEntry, isFound := textFieldRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound {
+		return textFieldEntry.ViewportPosition
+	}
+	return 0
+}
+
+/*
+GetMaxLength is a method which allows you to obtain the maximum number of characters a text field accepts, as given
+when it was added or set with SetMaxLength. If the text field does not exist, 0 is returned.
+
+Example:
+
+	maxLength := textField.GetMaxLength()
+*/
+func (shared *TextFieldInstanceType) GetMaxLength() int {
+	defer lockUIState()()
+	if textFieldEntry, isFound := textFieldRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound {
+		return textFieldEntry.MaxLengthAllowed
+	}
+	return 0
+}
+
+/*
+GetDefaultValue is a method which allows you to obtain a text field's default value, as given when it was added or
+set with SetDefaultValue. If the text field does not exist, an empty string is returned.
+
+Example:
+
+	defaultValue := textField.GetDefaultValue()
+*/
+func (shared *TextFieldInstanceType) GetDefaultValue() string {
+	defer lockUIState()()
+	if textFieldEntry, isFound := textFieldRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound {
+		return textFieldEntry.DefaultValue
+	}
+	return ""
+}
+
+/*
+IsPasswordProtected is a method which allows you to check whether a text field masks its contents, as given when it
+was added or set with SetPasswordProtected. If the text field does not exist, false is returned.
+
+Example:
+
+	isMasked := textField.IsPasswordProtected()
+*/
+func (shared *TextFieldInstanceType) IsPasswordProtected() bool {
+	defer lockUIState()()
+	if textFieldEntry, isFound := textFieldRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound {
+		return textFieldEntry.IsPasswordProtected
+	}
+	return false
+}
+
+/*
+GetSelectedText is a method which allows you to obtain the text currently selected in a text field, whether the user
+selected it or it was set with SetSelection. The blank sentinel the value is stored with is never included. If nothing
+is selected, or the text field does not exist, an empty string is returned.
+
+Example:
+
+	selectedText := textField.GetSelectedText()
+*/
+func (shared *TextFieldInstanceType) GetSelectedText() string {
+	defer lockUIState()()
+	textFieldEntry, isFound := textFieldRegistry.Lookup(shared.layerAlias, shared.controlAlias)
+	if !isFound {
+		return ""
+	}
+	return TextField.getSelectedText(textFieldEntry)
+}
+
+/*
+getSelectedText is a method which allows you to obtain the text selected in a text field exactly as GetSelectedText
+returns it, without the blank sentinel the value is stored with, for a caller that already holds uiStateMutex. Copy
+and cut use it for the text they put on the clipboard. If nothing is selected, an empty string is returned.
+
+Example:
+
+	selectedText := TextField.getSelectedText(textFieldEntry)
+*/
+func (shared *textFieldType) getSelectedText(textFieldEntry *types.TextFieldEntryType) string {
+	if !textFieldEntry.IsHighlightActive {
+		return ""
+	}
+	start, end := textFieldEntry.HighlightStart, textFieldEntry.HighlightEnd
+	if start > end {
+		start, end = end, start
+	}
+	// The last rune of the value is its sentinel, which is never part of the text.
+	lastCharacterIndex := len(textFieldEntry.CurrentValue) - 2
+	start = getClampedIndex(start, 0, start)
+	end = getClampedIndex(end, -1, lastCharacterIndex)
+	if start > end {
+		return ""
+	}
+	return string(textFieldEntry.CurrentValue[start : end+1])
+}
+
+/*
+SetSelection is a method which allows you to select the characters of a text field from one zero based rune position
+to another, both included. The positions may be given in either order, and are clamped to the field's value. The
+cursor is placed at the second position given and the field scrolls to show it, and the selection is drawn and then
+used by copy, cut, and deletion exactly as one the user made. If the text field does not exist, no operation occurs.
+
+Example:
+
+	textField.SetSelection(0, 4)
+*/
+func (shared *TextFieldInstanceType) SetSelection(startPosition int, endPosition int) {
+	defer lockUIState()()
+	if textFieldEntry, isFound := textFieldRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound {
+		textFieldEntry.HighlightStart = startPosition
+		textFieldEntry.HighlightEnd = endPosition
+		textFieldEntry.CursorPosition = endPosition
+		textFieldEntry.IsHighlightActive = true
+		textFieldEntry.IsHighlightModeToggled = false
+		TextField.normalizeIndexes(textFieldEntry)
+		TextField.updateViewport(textFieldEntry)
+	}
+}
+
+/*
+ClearSelection is a method which allows you to clear any text selected in a text field, leaving its value and cursor
+where they are. If the text field does not exist, no operation occurs.
+
+Example:
+
+	textField.ClearSelection()
+*/
+func (shared *TextFieldInstanceType) ClearSelection() {
+	defer lockUIState()()
+	if textFieldEntry, isFound := textFieldRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound {
+		textFieldEntry.IsHighlightActive = false
+		textFieldEntry.IsHighlightModeToggled = false
+	}
+}
+
+/*
 SetDefaultValue is a method which sets the default value of your text field. In addition, the following should be noted:
 
 - The default value will be used when the text field is reset.
@@ -898,7 +1086,8 @@ Example:
     textField.SetDefaultValue("Default")
 */
 func (shared *TextFieldInstanceType) SetDefaultValue(value string) *TextFieldInstanceType {
-	if textFieldEntry, isFound := TextFields.Lookup(shared.layerAlias, shared.controlAlias); isFound {
+	defer lockUIState()()
+	if textFieldEntry, isFound := textFieldRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 		validatorTextField(shared.layerAlias, shared.controlAlias)
 		textFieldEntry.DefaultValue = value
 	}
@@ -912,7 +1101,8 @@ Example:
     textField.SetMaxLength(50)
 */
 func (shared *TextFieldInstanceType) SetMaxLength(length int) *TextFieldInstanceType {
-	if textFieldEntry, isFound := TextFields.Lookup(shared.layerAlias, shared.controlAlias); isFound {
+	defer lockUIState()()
+	if textFieldEntry, isFound := textFieldRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 		validatorTextField(shared.layerAlias, shared.controlAlias)
 		textFieldEntry.MaxLengthAllowed = length
 	}
@@ -931,7 +1121,8 @@ Example:
     textField.SetPasswordProtected(true)
 */
 func (shared *TextFieldInstanceType) SetPasswordProtected(isProtected bool) *TextFieldInstanceType {
-	if textFieldEntry, isFound := TextFields.Lookup(shared.layerAlias, shared.controlAlias); isFound {
+	defer lockUIState()()
+	if textFieldEntry, isFound := textFieldRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 		validatorTextField(shared.layerAlias, shared.controlAlias)
 		textFieldEntry.IsPasswordProtected = isProtected
 	}
@@ -953,6 +1144,9 @@ the field should actually hold; returning the same value is a no-op. In addition
     value it receives, or guard any state it must touch with a lock. It should also return quickly, since no further
     input is processed until it does.
 
+  - The hook is called with the package's UI lock released, so it may call any exported function, including ones
+    on this text field. Its correction is applied only if the field still holds the value the hook was given.
+
   - Passing nil removes any previously set hook.
 
 Example:
@@ -962,7 +1156,8 @@ Example:
 	})
 */
 func (shared *TextFieldInstanceType) SetOnValueChanged(fn func(current string) string) *TextFieldInstanceType {
-	if textFieldEntry, isFound := TextFields.Lookup(shared.layerAlias, shared.controlAlias); isFound {
+	defer lockUIState()()
+	if textFieldEntry, isFound := textFieldRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 		validatorTextField(shared.layerAlias, shared.controlAlias)
 		textFieldEntry.OnValueChanged = fn
 	}
@@ -979,7 +1174,8 @@ Example:
 	textField.SetCursorPosition(10)
 */
 func (shared *TextFieldInstanceType) SetCursorPosition(position int) *TextFieldInstanceType {
-	if textFieldEntry, isFound := TextFields.Lookup(shared.layerAlias, shared.controlAlias); isFound {
+	defer lockUIState()()
+	if textFieldEntry, isFound := textFieldRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 		validatorTextField(shared.layerAlias, shared.controlAlias)
 		textFieldEntry.CursorPosition = position
 		TextField.normalizeIndexes(textFieldEntry)
@@ -998,7 +1194,8 @@ Example:
 	textField.SetViewportPosition(5)
 */
 func (shared *TextFieldInstanceType) SetViewportPosition(position int) *TextFieldInstanceType {
-	if textFieldEntry, isFound := TextFields.Lookup(shared.layerAlias, shared.controlAlias); isFound {
+	defer lockUIState()()
+	if textFieldEntry, isFound := textFieldRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 		validatorTextField(shared.layerAlias, shared.controlAlias)
 		textFieldEntry.ViewportPosition = position
 		TextField.normalizeIndexes(textFieldEntry)
@@ -1016,6 +1213,7 @@ Example:
     textField.GetTooltip()
 */
 func (shared *TextFieldInstanceType) GetTooltip() *TextFieldInstanceType {
+	defer lockUIState()()
 	// No need to retrieve the tooltip, just return self for chaining
 	return shared
 }
@@ -1027,11 +1225,12 @@ Example:
     textField.SetTooltipText("Helpful info")
 */
 func (shared *TextFieldInstanceType) SetTooltipText(text string) *TextFieldInstanceType {
-	if textFieldEntry, isFound := TextFields.Lookup(shared.layerAlias, shared.controlAlias); isFound {
+	defer lockUIState()()
+	if textFieldEntry, isFound := textFieldRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 		var tooltipInstance TooltipInstanceType
 		tooltipInstance.layerAlias = shared.layerAlias
 		tooltipInstance.controlAlias = textFieldEntry.TooltipAlias
-		tooltipInstance.SetValue(text)
+		tooltipInstance.setValue(text)
 	}
 	return shared
 }
@@ -1043,11 +1242,12 @@ Example:
     textField.EnableTooltip(true)
 */
 func (shared *TextFieldInstanceType) EnableTooltip(enabled bool) *TextFieldInstanceType {
-	if textFieldEntry, isFound := TextFields.Lookup(shared.layerAlias, shared.controlAlias); isFound {
+	defer lockUIState()()
+	if textFieldEntry, isFound := textFieldRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 		var tooltipInstance TooltipInstanceType
 		tooltipInstance.layerAlias = shared.layerAlias
 		tooltipInstance.controlAlias = textFieldEntry.TooltipAlias
-		tooltipInstance.SetEnabled(enabled)
+		tooltipInstance.setEnabled(enabled)
 	}
 	return shared
 }

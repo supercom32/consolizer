@@ -205,49 +205,49 @@ Example:
 	isFocusable := isControlFocusable(getFocusedControl())
 */
 func isControlFocusable(entry controlIdentifierType) bool {
-	if Layers == nil || entry.controlAlias == "" {
+	if layerRegistry == nil || entry.controlAlias == "" {
 		return false
 	}
-	layerEntry, isFound := Layers.Lookup(entry.layerAlias)
+	layerEntry, isFound := layerRegistry.Lookup(entry.layerAlias)
 	if !isFound || !layerEntry.IsVisible {
 		return false
 	}
 	var baseControl *types.BaseControlType
 	switch entry.controlType {
 	case constants.CellTypeButton:
-		if controlEntry, isFound := Buttons.Lookup(entry.layerAlias, entry.controlAlias); isFound {
+		if controlEntry, isFound := buttonRegistry.Lookup(entry.layerAlias, entry.controlAlias); isFound {
 			baseControl = &controlEntry.BaseControlType
 		}
 	case constants.CellTypeCheckbox:
-		if controlEntry, isFound := Checkboxes.Lookup(entry.layerAlias, entry.controlAlias); isFound {
+		if controlEntry, isFound := checkboxRegistry.Lookup(entry.layerAlias, entry.controlAlias); isFound {
 			baseControl = &controlEntry.BaseControlType
 		}
 	case constants.CellTypeDropdown:
-		if controlEntry, isFound := Dropdowns.Lookup(entry.layerAlias, entry.controlAlias); isFound {
+		if controlEntry, isFound := dropdownRegistry.Lookup(entry.layerAlias, entry.controlAlias); isFound {
 			baseControl = &controlEntry.BaseControlType
 		}
 	case constants.CellTypeScrollbar:
-		if controlEntry, isFound := ScrollBars.Lookup(entry.layerAlias, entry.controlAlias); isFound {
+		if controlEntry, isFound := scrollbarRegistry.Lookup(entry.layerAlias, entry.controlAlias); isFound {
 			baseControl = &controlEntry.BaseControlType
 		}
 	case constants.CellTypeSelectorItem:
-		if controlEntry, isFound := Selectors.Lookup(entry.layerAlias, entry.controlAlias); isFound {
+		if controlEntry, isFound := selectorRegistry.Lookup(entry.layerAlias, entry.controlAlias); isFound {
 			baseControl = &controlEntry.BaseControlType
 		}
 	case constants.CellTypeTextField:
-		if controlEntry, isFound := TextFields.Lookup(entry.layerAlias, entry.controlAlias); isFound {
+		if controlEntry, isFound := textFieldRegistry.Lookup(entry.layerAlias, entry.controlAlias); isFound {
 			baseControl = &controlEntry.BaseControlType
 		}
 	case constants.CellTypeTextbox:
-		if controlEntry, isFound := Textboxes.Lookup(entry.layerAlias, entry.controlAlias); isFound {
+		if controlEntry, isFound := textboxRegistry.Lookup(entry.layerAlias, entry.controlAlias); isFound {
 			baseControl = &controlEntry.BaseControlType
 		}
 	case constants.CellTypeRadioButton:
-		if controlEntry, isFound := RadioButtons.Lookup(entry.layerAlias, entry.controlAlias); isFound {
+		if controlEntry, isFound := radioButtonRegistry.Lookup(entry.layerAlias, entry.controlAlias); isFound {
 			baseControl = &controlEntry.BaseControlType
 		}
 	case constants.CellTypeFileMenuHeading:
-		fileMenuEntry, isFound := FileMenus.Lookup(entry.layerAlias, entry.controlAlias)
+		fileMenuEntry, isFound := fileMenuRegistry.Lookup(entry.layerAlias, entry.controlAlias)
 		return isFound && fileMenuEntry.IsEnabled
 	}
 	return baseControl != nil && baseControl.IsVisible && baseControl.IsEnabled
@@ -264,23 +264,23 @@ Example:
 func isControlExists(entry controlIdentifierType) bool {
 	switch entry.controlType {
 	case constants.CellTypeButton:
-		return Buttons.IsExists(entry.layerAlias, entry.controlAlias)
+		return buttonRegistry.IsExists(entry.layerAlias, entry.controlAlias)
 	case constants.CellTypeCheckbox:
-		return Checkboxes.IsExists(entry.layerAlias, entry.controlAlias)
+		return checkboxRegistry.IsExists(entry.layerAlias, entry.controlAlias)
 	case constants.CellTypeDropdown:
-		return Dropdowns.IsExists(entry.layerAlias, entry.controlAlias)
+		return dropdownRegistry.IsExists(entry.layerAlias, entry.controlAlias)
 	case constants.CellTypeScrollbar:
-		return ScrollBars.IsExists(entry.layerAlias, entry.controlAlias)
+		return scrollbarRegistry.IsExists(entry.layerAlias, entry.controlAlias)
 	case constants.CellTypeSelectorItem:
-		return Selectors.IsExists(entry.layerAlias, entry.controlAlias)
+		return selectorRegistry.IsExists(entry.layerAlias, entry.controlAlias)
 	case constants.CellTypeTextField:
-		return TextFields.IsExists(entry.layerAlias, entry.controlAlias)
+		return textFieldRegistry.IsExists(entry.layerAlias, entry.controlAlias)
 	case constants.CellTypeTextbox:
-		return Textboxes.IsExists(entry.layerAlias, entry.controlAlias)
+		return textboxRegistry.IsExists(entry.layerAlias, entry.controlAlias)
 	case constants.CellTypeRadioButton:
-		return RadioButtons.IsExists(entry.layerAlias, entry.controlAlias)
+		return radioButtonRegistry.IsExists(entry.layerAlias, entry.controlAlias)
 	case constants.CellTypeFileMenuHeading:
-		return FileMenus.IsExists(entry.layerAlias, entry.controlAlias)
+		return fileMenuRegistry.IsExists(entry.layerAlias, entry.controlAlias)
 	}
 	return false
 }
@@ -297,7 +297,7 @@ func getRadioGroupId(entry controlIdentifierType) (int, bool) {
 	if entry.controlType != constants.CellTypeRadioButton {
 		return 0, false
 	}
-	radioButtonEntry, isFound := RadioButtons.Lookup(entry.layerAlias, entry.controlAlias)
+	radioButtonEntry, isFound := radioButtonRegistry.Lookup(entry.layerAlias, entry.controlAlias)
 	if !isFound {
 		return 0, false
 	}
@@ -313,7 +313,7 @@ Example:
 	isInside := isLayerInsideLayer("dialogButtons", "dialog")
 */
 func isLayerInsideLayer(layerAlias string, ancestorAlias string) bool {
-	if Layers == nil {
+	if layerRegistry == nil {
 		return false
 	}
 	visitedAliases := map[string]bool{}
@@ -322,7 +322,7 @@ func isLayerInsideLayer(layerAlias string, ancestorAlias string) bool {
 			return true
 		}
 		visitedAliases[currentAlias] = true
-		layerEntry, isFound := Layers.Lookup(currentAlias)
+		layerEntry, isFound := layerRegistry.Lookup(currentAlias)
 		if !isFound {
 			return false
 		}
@@ -432,7 +432,7 @@ func (shared *focusManagerType) setFocusLocked(control controlIdentifierType) {
 	}
 	shared.focusedControl = control
 	if control.controlType == constants.CellTypeSelectorItem {
-		if selectorEntry, isFound := Selectors.Lookup(control.layerAlias, control.controlAlias); isFound {
+		if selectorEntry, isFound := selectorRegistry.Lookup(control.layerAlias, control.controlAlias); isFound {
 			Selector.highlightStartingItem(selectorEntry)
 		}
 	}
@@ -649,13 +649,13 @@ func (shared *focusManagerType) getActiveScopeAliasLocked() string {
 	if shared.focusedControl.controlAlias != "" {
 		return shared.focusedControl.layerAlias
 	}
-	if Layers == nil {
+	if layerRegistry == nil {
 		return ""
 	}
 	sortedLayers := layer.GetSortedLayerMemoryAliasSlice()
 	for index := len(sortedLayers) - 1; index >= 0; index-- {
 		layerAlias := sortedLayers[index].Key
-		layerEntry, isFound := Layers.Lookup(layerAlias)
+		layerEntry, isFound := layerRegistry.Lookup(layerAlias)
 		if !isFound || !layerEntry.IsVisible {
 			continue
 		}
@@ -737,7 +737,7 @@ Example:
 	focusManager.reconcileLocked()
 */
 func (shared *focusManagerType) reconcileLocked() {
-	if Layers == nil {
+	if layerRegistry == nil {
 		return
 	}
 	for layerAlias := range shared.modalLayers {
@@ -747,7 +747,7 @@ func (shared *focusManagerType) reconcileLocked() {
 	}
 	isModalActive := func(layerAlias string) bool {
 		_, isMarked := shared.modalLayers[layerAlias]
-		layerEntry, isFound := Layers.Lookup(layerAlias)
+		layerEntry, isFound := layerRegistry.Lookup(layerAlias)
 		return isMarked && isFound && layerEntry.IsVisible
 	}
 	var focusToRestore *controlIdentifierType
@@ -806,10 +806,10 @@ func (shared *focusManagerType) reconcileLocked() {
 			}
 		}
 		scope.stops = remainingStops
-		if scope.defaultButton != "" && !Buttons.IsExists(layerAlias, scope.defaultButton) {
+		if scope.defaultButton != "" && !buttonRegistry.IsExists(layerAlias, scope.defaultButton) {
 			scope.defaultButton = ""
 		}
-		if scope.cancelButton != "" && !Buttons.IsExists(layerAlias, scope.cancelButton) {
+		if scope.cancelButton != "" && !buttonRegistry.IsExists(layerAlias, scope.cancelButton) {
 			scope.cancelButton = ""
 		}
 	}
@@ -904,12 +904,12 @@ func focusControlFromClick(characterEntry types.CharacterEntryType) {
 	}
 	target := controlIdentifierType{layerAlias: layerAlias, controlAlias: controlAlias, controlType: cellType}
 	if cellType == constants.CellTypeSelectorItem {
-		for _, dropdownEntry := range Dropdowns.GetAllEntries(layerAlias) {
+		for _, dropdownEntry := range dropdownRegistry.GetAllEntries(layerAlias) {
 			if dropdownEntry.SelectorAlias == controlAlias {
 				target = controlIdentifierType{layerAlias: layerAlias, controlAlias: dropdownEntry.Alias, controlType: constants.CellTypeDropdown}
 			}
 		}
-		for _, fileMenuEntry := range FileMenus.GetAllEntries(layerAlias) {
+		for _, fileMenuEntry := range fileMenuRegistry.GetAllEntries(layerAlias) {
 			for _, selectorAlias := range fileMenuEntry.SelectorAliases {
 				if selectorAlias == controlAlias {
 					return
@@ -1083,7 +1083,7 @@ func setScopeButton(layerAlias string, button *ButtonInstanceType, isDefault boo
 		if button.layerAlias != layerAlias {
 			return fmt.Errorf("the button '%s' belongs to layer '%s', so it cannot be a default or cancel button of layer '%s'", button.controlAlias, button.layerAlias, layerAlias)
 		}
-		if !Buttons.IsExists(button.layerAlias, button.controlAlias) {
+		if !buttonRegistry.IsExists(button.layerAlias, button.controlAlias) {
 			return fmt.Errorf("the button '%s' on layer '%s' does not exist", button.controlAlias, button.layerAlias)
 		}
 		buttonAlias = button.controlAlias
@@ -1163,6 +1163,7 @@ Example:
 	ClearTabIndex()
 */
 func ClearTabIndex() {
+	defer lockUIState()()
 	focusManager.mutex.Lock()
 	defer focusManager.mutex.Unlock()
 	focusManager.scopes = map[string]*focusScopeType{}
@@ -1192,6 +1193,7 @@ Example:
 	layerAlias, controlAlias, controlType := GetFocusedControl()
 */
 func GetFocusedControl() (string, string, int) {
+	defer lockUIState()()
 	defer focusManager.beginChange()()
 	focusManager.reconcileLocked()
 	focusedControl := focusManager.focusedControl
@@ -1211,6 +1213,19 @@ Example:
 	err := SetFocus(&nameTextField)
 */
 func SetFocus(control FocusableControlType) error {
+	defer lockUIState()()
+	return setFocus(control)
+}
+
+/*
+setFocus is a method which allows you to do exactly what SetFocus does, for a caller that already holds uiStateMutex,
+such as another entry point of the package that has taken the lock itself.
+
+Example:
+
+	setFocus(control)
+*/
+func setFocus(control FocusableControlType) error {
 	if control == nil {
 		return fmt.Errorf("a control must be given to receive focus")
 	}
@@ -1240,6 +1255,19 @@ Example:
 	isMoved := FocusNext()
 */
 func FocusNext() bool {
+	defer lockUIState()()
+	return focusNext()
+}
+
+/*
+focusNext is a method which allows you to move focus exactly as FocusNext does, for a caller that already holds
+uiStateMutex, such as the event goroutine handling Tab. It returns true if a stop took focus.
+
+Example:
+
+	isMoved := focusNext()
+*/
+func focusNext() bool {
 	defer focusManager.beginChange()()
 	focusManager.reconcileLocked()
 	return focusManager.moveFocusLocked(1)
@@ -1255,6 +1283,19 @@ Example:
 	isMoved := FocusPrevious()
 */
 func FocusPrevious() bool {
+	defer lockUIState()()
+	return focusPrevious()
+}
+
+/*
+focusPrevious is a method which allows you to move focus exactly as FocusPrevious does, for a caller that already holds
+uiStateMutex, such as the event goroutine handling Shift+Tab. It returns true if a stop took focus.
+
+Example:
+
+	isMoved := focusPrevious()
+*/
+func focusPrevious() bool {
 	defer focusManager.beginChange()()
 	focusManager.reconcileLocked()
 	return focusManager.moveFocusLocked(-1)
@@ -1279,6 +1320,7 @@ Example:
 	}
 */
 func GetFocusChange() (FocusChangeType, bool) {
+	defer lockUIState()()
 	focusManager.mutex.Lock()
 	defer focusManager.mutex.Unlock()
 	if len(focusManager.changeQueue) == 0 {

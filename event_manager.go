@@ -63,21 +63,23 @@ var resizeDebounceTimer *time.Timer
 
 /*
 UpdatePeriodicEvents is a method which triggers periodic events such as tooltip updates and keyboard state clearing.
+The tooltip update and any redraw it needs run under the UI lock, so they never overlap input handling or the
+application's own calls.
 
 Example:
-    UpdatePeriodicEvents()
+
+	UpdatePeriodicEvents()
 */
 func UpdatePeriodicEvents() {
 	elapsedTime := time.Since(eventIntervalTime)
 	if elapsedTime >= 500*time.Millisecond {
 		eventIntervalTime = time.Now()
-		isScreenUpdateRequired := false
-		if Tooltip.updateMouseEvent() {
-			isScreenUpdateRequired = true
-		}
-		if isScreenUpdateRequired == true {
-			UpdateDisplay(false)
-		}
+		func() {
+			defer lockUIState()()
+			if Tooltip.updateMouseEvent() {
+				updateDisplayLocked(false)
+			}
+		}()
 	}
 
 	// Clear key states periodically to handle key releases
@@ -94,6 +96,10 @@ change. In addition, the following should be noted:
   - Every keystroke shows the keyboard focus indicator and every mouse button press hides it, as described for
     setFocusIndicatorVisible, and the screen is redrawn when that changes how the focused control looks.
 
+  - The UI lock is taken once the event has arrived, not while waiting for it, and is held until the event has
+    been handled and the screen redrawn, so the application's own calls never see an event half handled. The
+    redraw after a resize runs later on a timer goroutine and takes the lock itself.
+
 Example:
 
 	UpdateEventQueues()
@@ -105,6 +111,9 @@ func UpdateEventQueues() {
 	}
 
 	event := commonResource.screen.PollEvent()
+	// The UI lock is taken only once an event has arrived, never while waiting for one, and is held until the event
+	// has been handled and the screen redrawn.
+	defer lockUIState()()
 	switch event := event.(type) {
 	case *tcell.EventResize:
 		newWidth, newHeight := event.Size()
@@ -114,6 +123,8 @@ func UpdateEventQueues() {
 			resizeDebounceTimer.Stop()
 		}
 		resizeDebounceTimer = time.AfterFunc(resizeDebounceDelay, func() {
+			// The new size is read by layout code under the UI lock, so it is changed under it too.
+			defer lockUIState()()
 			// commonResource.displayUpdate is the same lock UpdateDisplay holds for its entire duration. Taking
 			// it here serializes this Sync() (and the terminalWidth/terminalHeight update below) against a
 			// concurrent UpdateDisplay call on another goroutine, which would otherwise let two goroutines drive
@@ -135,10 +146,10 @@ func UpdateEventQueues() {
 			}
 			commonResource.screen.Sync()
 			commonResource.displayUpdate.Unlock()
-			// Called outside the lock above since the write lock is not reentrant and UpdateDisplay acquires the
-			// same lock itself. Without this, the display would stay stale until whatever unrelated event
-			// happens to trigger the next UpdateDisplay call, such as a keypress.
-			UpdateDisplay(false)
+			// Called outside the display lock above since it is not reentrant and the redraw takes it itself.
+			// Without this, the display would stay stale until whatever unrelated event happens to trigger the
+			// next UpdateDisplay call, such as a keypress.
+			updateDisplayLocked(false)
 		})
 	case *tcell.EventKey:
 		isScreenUpdateRequired := false
@@ -161,13 +172,13 @@ func UpdateEventQueues() {
 		case "tab":
 			// An open dropdown tray belongs to the control losing focus, so it is closed before focus moves on.
 			Dropdown.closeAllOpen()
-			FocusNext()
+			focusNext()
 			keystroke = nil
 			isScreenUpdateRequired = true
 			isKeystrokeConsumed = true
 		case "backtab", "shift+backtab", "shift+tab":
 			Dropdown.closeAllOpen()
-			FocusPrevious()
+			focusPrevious()
 			keystroke = nil
 			isScreenUpdateRequired = true
 			isKeystrokeConsumed = true
@@ -184,7 +195,7 @@ func UpdateEventQueues() {
 			}
 		}
 		if isScreenUpdateRequired == true {
-			UpdateDisplay(false)
+			updateDisplayLocked(false)
 		}
 		// Only add keystroke to buffer if it wasn't consumed by a control
 		if !isKeystrokeConsumed && keystroke != nil {
@@ -236,7 +247,7 @@ func UpdateEventQueues() {
 			characterEntry := getCellInformationUnderMouseCursor(mouseXLocation, mouseYLocation)
 			if !isLayerAcceptingInput(characterEntry.LayerAlias) {
 				if isRelease && Button.clearAllPressedButtons() {
-					UpdateDisplay(false)
+					updateDisplayLocked(false)
 				}
 				return
 			}
@@ -308,7 +319,7 @@ func UpdateEventQueues() {
 		}
 		// LogInfo("mouse event dropdownb")
 		if isScreenUpdateRequired {
-			UpdateDisplay(false)
+			updateDisplayLocked(false)
 		}
 	}
 }
@@ -539,7 +550,7 @@ func bringLayerToFrontIfRequired() {
 			buttonHistory.clear()
 		}
 		// Protect against layer deletions.
-		layerEntry, isFound := Layers.Lookup(characterEntry.LayerAlias)
+		layerEntry, isFound := layerRegistry.Lookup(characterEntry.LayerAlias)
 		if !isFound {
 			return
 		}
@@ -571,14 +582,14 @@ Example:
     isInteractiveLayerOffscreen("layer1")
 */
 func isInteractiveLayerOffscreen(layerAlias string) bool {
-	layerEntry, isFound := Layers.Lookup(layerAlias)
+	layerEntry, isFound := layerRegistry.Lookup(layerAlias)
 	if !isFound {
 		return false
 	}
 	viewportWidth := commonResource.terminalWidth
 	viewportHeight := commonResource.terminalHeight
 	if layerEntry.ParentAlias != "" {
-		if parentEntry, isFound := Layers.Lookup(layerEntry.ParentAlias); isFound {
+		if parentEntry, isFound := layerRegistry.Lookup(layerEntry.ParentAlias); isFound {
 			viewportWidth = parentEntry.Width
 			viewportHeight = parentEntry.Height
 		}

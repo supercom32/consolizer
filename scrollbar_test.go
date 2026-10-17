@@ -369,7 +369,7 @@ func TestScrollbarValueNeverNegative(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup(test)
 	layerAlias := layer1.GetAlias()
 	scrollbar.Add(layerAlias, "negative", styleEntry, 0, 0, 10, -2, 0, 1, false)
-	scrollbarEntry := ScrollBars.Get(layerAlias, "negative")
+	scrollbarEntry := scrollbarRegistry.Get(layerAlias, "negative")
 	scrollbarEntry.HandlePosition = scrollbarEntry.Length - 3
 	scrollbar.computeValueByHandlePosition(layerAlias, "negative")
 	if scrollbarEntry.ScrollValue != 0 {
@@ -382,7 +382,51 @@ func TestScrollbarValueNeverNegative(test *testing.T) {
 		test.Fatalf("expected a disabled scroll bar to correct value minus four to 0, got %d", scrollbarEntry.ScrollValue)
 	}
 	scrollbar.Add(layerAlias, "short", styleEntry, 5, 0, 2, 6, 5, 1, false)
-	if handlePosition := ScrollBars.Get(layerAlias, "short").HandlePosition; handlePosition != 0 {
+	if handlePosition := scrollbarRegistry.Get(layerAlias, "short").HandlePosition; handlePosition != 0 {
 		test.Fatalf("expected the handle of a scroll bar too short for a track to stay at 0, got %d", handlePosition)
+	}
+}
+
+/*
+TestScrollbarValueMethods is a test which allows you to verify that a scroll bar's value and maximum can be read and
+set through its methods, that values outside the range are clamped, and that a deleted scroll bar is ignored.
+
+Example:
+
+	Expected Inputs:
+		A vertical scroll bar added with a maximum of 100. SetValue with 50, 200 and -5, then SetValue(50) and
+		SetMaxValue(20), then SetMaxValue(-3), then Delete and every method again.
+
+	Expected Outputs:
+		GetMaxValue is 99 and GetValue 0 after adding. The values read back are 50, 99 and 0, then 20 with a maximum of
+		20, then 0 with a maximum of 0. After Delete, GetValue and GetMaxValue return 0 and the setters do nothing.
+*/
+func TestScrollbarValueMethods(test *testing.T) {
+	layerAlias, styleEntry := setupInputTest(test)
+	layerInstance := &LayerInstanceType{layerAlias: layerAlias}
+	scrollbarInstance := layerInstance.AddScrollbar(styleEntry, 2, 2, 10, 100, 0, 1, false)
+	if maxValue, value := scrollbarInstance.GetMaxValue(), scrollbarInstance.GetValue(); maxValue != 99 || value != 0 {
+		test.Fatalf("expected maximum 99 and value 0 after adding, got %d and %d", maxValue, value)
+	}
+	for _, step := range []struct{ value, expected int }{{50, 50}, {200, 99}, {-5, 0}} {
+		scrollbarInstance.SetValue(step.value)
+		if value := scrollbarInstance.GetValue(); value != step.expected {
+			test.Fatalf("SetValue(%d): expected %d, got %d", step.value, step.expected, value)
+		}
+	}
+	scrollbarInstance.SetValue(50)
+	scrollbarInstance.SetMaxValue(20)
+	if maxValue, value := scrollbarInstance.GetMaxValue(), scrollbarInstance.GetValue(); maxValue != 20 || value != 20 {
+		test.Fatalf("expected maximum 20 and value 20 after lowering the maximum, got %d and %d", maxValue, value)
+	}
+	scrollbarInstance.SetMaxValue(-3)
+	if maxValue, value := scrollbarInstance.GetMaxValue(), scrollbarInstance.GetValue(); maxValue != 0 || value != 0 {
+		test.Fatalf("expected maximum 0 and value 0 after a negative maximum, got %d and %d", maxValue, value)
+	}
+	scrollbarInstance.Delete()
+	scrollbarInstance.SetValue(5)
+	scrollbarInstance.SetMaxValue(5)
+	if maxValue, value := scrollbarInstance.GetMaxValue(), scrollbarInstance.GetValue(); maxValue != 0 || value != 0 {
+		test.Fatalf("expected 0 and 0 for a deleted scroll bar, got %d and %d", maxValue, value)
 	}
 }

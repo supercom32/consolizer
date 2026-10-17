@@ -28,7 +28,7 @@ func TestLayerInitialization(t *testing.T) {
 	defer RestoreTerminalSettings()
 	// Test initialization
 	layer.ReInitializeScreenMemory()
-	if Layers == nil {
+	if layerRegistry == nil {
 		t.Error("Layers should not be nil after initialization")
 	}
 	DeleteAllLayers()
@@ -264,7 +264,7 @@ func TestLayerZOrder(t *testing.T) {
 
 	// Test SetHighestZOrderNumber
 	layer.SetHighestZOrderNumber("layer1", "")
-	layer1 := Layers.Get("layer1")
+	layer1 := layerRegistry.Get("layer1")
 	if !layer1.IsTopmost {
 		t.Error("Layer1 should be topmost after setting highest z-order")
 	}
@@ -296,20 +296,20 @@ func TestLayerInstanceMethods(t *testing.T) {
 
 	// Test visibility
 	layerInstance.SetIsVisible(false)
-	layerEntry := Layers.Get(layerInstance.layerAlias)
+	layerEntry := layerRegistry.Get(layerInstance.layerAlias)
 	if layerEntry.IsVisible {
 		t.Error("Layer should not be visible after SetIsVisible(false)")
 	}
 
 	// Test movement
 	layerInstance.MoveLayerByAbsoluteValue(5, 5)
-	layerEntry = Layers.Get(layerInstance.layerAlias)
+	layerEntry = layerRegistry.Get(layerInstance.layerAlias)
 	if layerEntry.ScreenXLocation != 5 || layerEntry.ScreenYLocation != 5 {
 		t.Error("Layer should be moved to absolute position (5,5)")
 	}
 
 	layerInstance.MoveLayerByRelativeValue(1, 1)
-	layerEntry = Layers.Get(layerInstance.layerAlias)
+	layerEntry = layerRegistry.Get(layerInstance.layerAlias)
 	if layerEntry.ScreenXLocation != 6 || layerEntry.ScreenYLocation != 6 {
 		t.Error("Layer should be moved by relative position (1,1)")
 	}
@@ -398,7 +398,7 @@ func TestPrintMethod(t *testing.T) {
 	// Test 1: Basic printing
 	layerInstance.Locate(0, 0)
 	layerInstance.Print("Basic text")
-	layerEntry := Layers.Get(layerInstance.layerAlias)
+	layerEntry := layerRegistry.Get(layerInstance.layerAlias)
 
 	// Verify basic text was printed correctly
 	for i := 0; i < 9; i++ {
@@ -561,14 +561,14 @@ func TestLayerGlobalMethods(t *testing.T) {
 
 	// Test layerInstance.MoveLayerByAbsoluteValue
 	layerInstance.MoveLayerByAbsoluteValue(5, 5)
-	layerEntry := Layers.Get(layerAlias)
+	layerEntry := layerRegistry.Get(layerAlias)
 	if layerEntry.ScreenXLocation != 5 || layerEntry.ScreenYLocation != 5 {
 		t.Error("Layer should be moved to absolute position (5,5)")
 	}
 
 	// Test layerInstance.MoveLayerByRelativeValue
 	layerInstance.MoveLayerByRelativeValue(1, 1)
-	layerEntry = Layers.Get(layerAlias)
+	layerEntry = layerRegistry.Get(layerAlias)
 	if layerEntry.ScreenXLocation != 6 || layerEntry.ScreenYLocation != 6 {
 		t.Error("Layer should be moved by relative position (1,1)")
 	}
@@ -583,14 +583,14 @@ func TestLayerGlobalMethods(t *testing.T) {
 	layer.Add("test1", 0, 0, 10, 10, 1, "")
 	layer.Add("test2", 0, 0, 10, 10, 2, "")
 	DeleteAllLayers()
-	if len(Layers.GetAllEntries()) != 0 {
+	if len(layerRegistry.GetAllEntries()) != 0 {
 		t.Error("All layers should be deleted")
 	}
 
 	// Test setLayerIsVisible
 	layer.Add("test", 0, 0, 10, 10, 1, "")
 	setLayerIsVisible("test", false)
-	layerEntry = Layers.Get("test")
+	layerEntry = layerRegistry.Get("test")
 	if layerEntry.IsVisible {
 		t.Error("Layer should not be visible after setLayerIsVisible(false)")
 	}
@@ -769,54 +769,54 @@ func TestComplexControlManagement(t *testing.T) {
 
 	// Delete child1 layer and verify its controls are deleted
 	child1Layer.Delete()
-	if Buttons.IsExists(child1Layer.layerAlias, child1Button.controlAlias) {
+	if buttonRegistry.IsExists(child1Layer.layerAlias, child1Button.controlAlias) {
 		t.Error("Child1 button should be deleted when child1 layer is deleted")
 	}
-	if Labels.IsExists(child1Layer.layerAlias, child1Label.controlAlias) {
+	if labelRegistry.IsExists(child1Layer.layerAlias, child1Label.controlAlias) {
 		t.Error("Child1 label should be deleted when child1 layer is deleted")
 	}
-	if ProgressBars.IsExists(child1Layer.layerAlias, child1ProgressBar.controlAlias) {
+	if progressBarRegistry.IsExists(child1Layer.layerAlias, child1ProgressBar.controlAlias) {
 		t.Error("Child1 progress bar should be deleted when child1 layer is deleted")
 	}
 
 	// Verify controls on other layers still exist
-	if !Buttons.IsExists(rootLayer.layerAlias, rootButton.controlAlias) {
+	if !buttonRegistry.IsExists(rootLayer.layerAlias, rootButton.controlAlias) {
 		t.Error("Root button should still exist after deleting child1 layer")
 	}
-	if !Labels.IsExists(rootLayer.layerAlias, rootLabel.controlAlias) {
+	if !labelRegistry.IsExists(rootLayer.layerAlias, rootLabel.controlAlias) {
 		t.Error("Root label should still exist after deleting child1 layer")
 	}
-	if !Checkboxes.IsExists(rootLayer.layerAlias, rootCheckbox.controlAlias) {
+	if !checkboxRegistry.IsExists(rootLayer.layerAlias, rootCheckbox.controlAlias) {
 		t.Error("Root checkbox should still exist after deleting child1 layer")
 	}
-	if !Buttons.IsExists(child2Layer.layerAlias, child2Button.controlAlias) {
+	if !buttonRegistry.IsExists(child2Layer.layerAlias, child2Button.controlAlias) {
 		t.Error("Child2 button should still exist after deleting child1 layer")
 	}
-	if !RadioButtons.IsExists(child2Layer.layerAlias, child2RadioButton.controlAlias) {
+	if !radioButtonRegistry.IsExists(child2Layer.layerAlias, child2RadioButton.controlAlias) {
 		t.Error("Child2 radio button should still exist after deleting child1 layer")
 	}
-	if !ScrollBars.IsExists(child2Layer.layerAlias, child2Scrollbar.controlAlias) {
+	if !scrollbarRegistry.IsExists(child2Layer.layerAlias, child2Scrollbar.controlAlias) {
 		t.Error("Child2 scrollbar should still exist after deleting child1 layer")
 	}
 
 	// Delete root layer and verify all controls are deleted
 	rootLayer.Delete()
-	if Buttons.IsExists(rootLayer.layerAlias, rootButton.controlAlias) {
+	if buttonRegistry.IsExists(rootLayer.layerAlias, rootButton.controlAlias) {
 		t.Error("Root button should be deleted when root layer is deleted")
 	}
-	if Labels.IsExists(rootLayer.layerAlias, rootLabel.controlAlias) {
+	if labelRegistry.IsExists(rootLayer.layerAlias, rootLabel.controlAlias) {
 		t.Error("Root label should be deleted when root layer is deleted")
 	}
-	if Checkboxes.IsExists(rootLayer.layerAlias, rootCheckbox.controlAlias) {
+	if checkboxRegistry.IsExists(rootLayer.layerAlias, rootCheckbox.controlAlias) {
 		t.Error("Root checkbox should be deleted when root layer is deleted")
 	}
-	if Buttons.IsExists(child2Layer.layerAlias, child2Button.controlAlias) {
+	if buttonRegistry.IsExists(child2Layer.layerAlias, child2Button.controlAlias) {
 		t.Error("Child2 button should be deleted when root layer is deleted")
 	}
-	if RadioButtons.IsExists(child2Layer.layerAlias, child2RadioButton.controlAlias) {
+	if radioButtonRegistry.IsExists(child2Layer.layerAlias, child2RadioButton.controlAlias) {
 		t.Error("Child2 radio button should be deleted when root layer is deleted")
 	}
-	if ScrollBars.IsExists(child2Layer.layerAlias, child2Scrollbar.controlAlias) {
+	if scrollbarRegistry.IsExists(child2Layer.layerAlias, child2Scrollbar.controlAlias) {
 		t.Error("Child2 scrollbar should be deleted when root layer is deleted")
 	}
 	DeleteAllLayers()
@@ -855,12 +855,12 @@ func TestLayerAndControlPropertyStability(t *testing.T) {
 	childButton.SetEnabled(false)
 
 	// Verify control properties are maintained
-	rootButtonEntry := Buttons.Get(rootLayer.layerAlias, rootButton.controlAlias)
+	rootButtonEntry := buttonRegistry.Get(rootLayer.layerAlias, rootButton.controlAlias)
 	if rootButtonEntry.IsEnabled {
 		t.Error("Root button should be disabled")
 	}
 
-	childButtonEntry := Buttons.Get(childLayer.layerAlias, childButton.controlAlias)
+	childButtonEntry := buttonRegistry.Get(childLayer.layerAlias, childButton.controlAlias)
 	if childButtonEntry.IsEnabled {
 		t.Error("Child button should be disabled")
 	}
@@ -870,19 +870,19 @@ func TestLayerAndControlPropertyStability(t *testing.T) {
 	childLayer.MoveLayerByAbsoluteValue(2, 2)
 
 	// Verify layer positions
-	rootLayerEntry := Layers.Get(rootLayer.layerAlias)
+	rootLayerEntry := layerRegistry.Get(rootLayer.layerAlias)
 	if rootLayerEntry.ScreenXLocation != 5 || rootLayerEntry.ScreenYLocation != 5 {
 		t.Error("Root layer should be moved to position (5,5)")
 	}
 
-	childLayerEntry := Layers.Get(childLayer.layerAlias)
+	childLayerEntry := layerRegistry.Get(childLayer.layerAlias)
 	if childLayerEntry.ScreenXLocation != 2 || childLayerEntry.ScreenYLocation != 2 {
 		t.Error("Child layer should be moved to position (2,2)")
 	}
 
 	// Change z-order and verify
 	layer.SetHighestZOrderNumber(childLayer.layerAlias, rootLayer.layerAlias)
-	childLayerEntry = Layers.Get(childLayer.layerAlias)
+	childLayerEntry = layerRegistry.Get(childLayer.layerAlias)
 	if !childLayerEntry.IsTopmost {
 		t.Error("Child layer should be topmost after setting highest z-order")
 	}
@@ -894,12 +894,12 @@ func TestLayerAndControlPropertyStability(t *testing.T) {
 	newChildLayer := AddLayer(0, 0, 15, 15, 1, newRootLayer)
 
 	// Verify new layers have correct properties
-	newRootLayerEntry := Layers.Get(newRootLayer.layerAlias)
+	newRootLayerEntry := layerRegistry.Get(newRootLayer.layerAlias)
 	if newRootLayerEntry.ScreenXLocation != 0 || newRootLayerEntry.ScreenYLocation != 0 {
 		t.Error("New root layer should have default position (0,0)")
 	}
 
-	newChildLayerEntry := Layers.Get(newChildLayer.layerAlias)
+	newChildLayerEntry := layerRegistry.Get(newChildLayer.layerAlias)
 	if newChildLayerEntry.ParentAlias != newRootLayer.layerAlias {
 		t.Error("New child layer should have correct parent")
 	}
@@ -954,34 +954,34 @@ func TestLayerAndControlMemoryLeaks(t *testing.T) {
 		}
 
 		// Verify no controls remain
-		if len(Buttons.GetAllEntriesOverall()) > 0 {
+		if len(buttonRegistry.GetAllEntriesOverall()) > 0 {
 			t.Errorf("Buttons should be deleted for layer %d", i)
 		}
-		if len(Labels.GetAllEntriesOverall()) > 0 {
+		if len(labelRegistry.GetAllEntriesOverall()) > 0 {
 			t.Errorf("Labels should be deleted for layer %d", i)
 		}
-		if len(Checkboxes.GetAllEntriesOverall()) > 0 {
+		if len(checkboxRegistry.GetAllEntriesOverall()) > 0 {
 			t.Errorf("Checkboxes should be deleted for layer %d", i)
 		}
-		if len(ProgressBars.GetAllEntriesOverall()) > 0 {
+		if len(progressBarRegistry.GetAllEntriesOverall()) > 0 {
 			t.Errorf("Progress bars should be deleted for layer %d", i)
 		}
 	}
 
 	// Verify no layers or controls remain
-	if len(Layers.GetAllEntries()) > 0 {
+	if len(layerRegistry.GetAllEntries()) > 0 {
 		t.Errorf("No layers should remain after deletion")
 	}
-	if len(Buttons.GetAllEntriesOverall()) > 0 {
+	if len(buttonRegistry.GetAllEntriesOverall()) > 0 {
 		t.Errorf("No buttons should remain after deletion")
 	}
-	if len(Labels.GetAllEntriesOverall()) > 0 {
+	if len(labelRegistry.GetAllEntriesOverall()) > 0 {
 		t.Errorf("No labels should remain after deletion")
 	}
-	if len(Checkboxes.GetAllEntriesOverall()) > 0 {
+	if len(checkboxRegistry.GetAllEntriesOverall()) > 0 {
 		t.Errorf("No checkboxes should remain after deletion")
 	}
-	if len(ProgressBars.GetAllEntriesOverall()) > 0 {
+	if len(progressBarRegistry.GetAllEntriesOverall()) > 0 {
 		t.Errorf("No progress bars should remain after deletion")
 	}
 	DeleteAllLayers()
@@ -1065,15 +1065,15 @@ func TestComplexInterleavedOperations(t *testing.T) {
 	child2Layer.AddTooltip("Child2 Tooltip", styleEntry2, 0, 0, 10, 1, 0, 0, 10, 1, false, true, 1500)
 
 	// Verify child2 controls after creation
-	child2ButtonEntry := Buttons.Get(child2Layer.layerAlias, child2Button.controlAlias)
+	child2ButtonEntry := buttonRegistry.Get(child2Layer.layerAlias, child2Button.controlAlias)
 	if child2ButtonEntry.StyleEntry.Button.ForegroundColor != constants.ColorYellow {
 		t.Error("Child2 button should maintain its yellow foreground color")
 	}
-	child2CheckboxEntry := Checkboxes.Get(child2Layer.layerAlias, child2Checkbox.controlAlias)
+	child2CheckboxEntry := checkboxRegistry.Get(child2Layer.layerAlias, child2Checkbox.controlAlias)
 	if child2CheckboxEntry.IsSelected {
 		t.Error("Child2 checkbox should be unchecked")
 	}
-	child2ProgressBarEntry := ProgressBars.Get(child2Layer.layerAlias, child2ProgressBar.controlAlias)
+	child2ProgressBarEntry := progressBarRegistry.Get(child2Layer.layerAlias, child2ProgressBar.controlAlias)
 	if child2ProgressBarEntry.Value != 25 {
 		t.Error("Child2 progress bar should be at 25%")
 	}
@@ -1135,15 +1135,15 @@ func TestComplexInterleavedOperations(t *testing.T) {
 	root3Layer.MoveLayerByAbsoluteValue(10, 10)
 
 	// Verify control properties after moving layers
-	root1ButtonEntry := Buttons.Get(root1Layer.layerAlias, root1Button.controlAlias)
+	root1ButtonEntry := buttonRegistry.Get(root1Layer.layerAlias, root1Button.controlAlias)
 	if root1ButtonEntry.StyleEntry.Button.ForegroundColor != constants.ColorRed {
 		t.Error("Root1 button should maintain its red foreground color after move")
 	}
-	root1CheckboxEntry := Checkboxes.Get(root1Layer.layerAlias, root1Checkbox.controlAlias)
+	root1CheckboxEntry := checkboxRegistry.Get(root1Layer.layerAlias, root1Checkbox.controlAlias)
 	if !root1CheckboxEntry.IsSelected {
 		t.Error("Root1 checkbox should remain checked after move")
 	}
-	root1ProgressBarEntry := ProgressBars.Get(root1Layer.layerAlias, root1ProgressBar.controlAlias)
+	root1ProgressBarEntry := progressBarRegistry.Get(root1Layer.layerAlias, root1ProgressBar.controlAlias)
 	if root1ProgressBarEntry.Value != 75 {
 		t.Error("Root1 progress bar should maintain 75% after move")
 	}
@@ -1172,20 +1172,20 @@ func TestComplexInterleavedOperations(t *testing.T) {
 	}
 
 	// Verify root3 layer position and control properties
-	root3Entry := Layers.Get(root3Layer.layerAlias)
+	root3Entry := layerRegistry.Get(root3Layer.layerAlias)
 	if root3Entry.ScreenXLocation != 10 || root3Entry.ScreenYLocation != 10 {
 		t.Error("Root3 layer should maintain its position")
 	}
 
-	root3ButtonEntry := Buttons.Get(root3Layer.layerAlias, root3Button.controlAlias)
+	root3ButtonEntry := buttonRegistry.Get(root3Layer.layerAlias, root3Button.controlAlias)
 	if root3ButtonEntry.StyleEntry.Button.ForegroundColor != constants.ColorYellow {
 		t.Error("Root3 button should maintain its yellow foreground color")
 	}
-	root3CheckboxEntry := Checkboxes.Get(root3Layer.layerAlias, root3Checkbox.controlAlias)
+	root3CheckboxEntry := checkboxRegistry.Get(root3Layer.layerAlias, root3Checkbox.controlAlias)
 	if !root3CheckboxEntry.IsSelected {
 		t.Error("Root3 checkbox should remain checked")
 	}
-	root3ProgressBarEntry := ProgressBars.Get(root3Layer.layerAlias, root3ProgressBar.controlAlias)
+	root3ProgressBarEntry := progressBarRegistry.Get(root3Layer.layerAlias, root3ProgressBar.controlAlias)
 	if root3ProgressBarEntry.Value != 90 {
 		t.Error("Root3 progress bar should maintain 90%")
 	}
@@ -1203,15 +1203,15 @@ func TestComplexInterleavedOperations(t *testing.T) {
 	root3Child2.AddTooltip("Root3 Child2 Tooltip", styleEntry2, 0, 0, 10, 1, 0, 0, 10, 1, true, true, 4000)
 
 	// Verify root3Child2 controls after creation
-	root3Child2ButtonEntry := Buttons.Get(root3Child2.layerAlias, root3Child2Button.controlAlias)
+	root3Child2ButtonEntry := buttonRegistry.Get(root3Child2.layerAlias, root3Child2Button.controlAlias)
 	if root3Child2ButtonEntry.StyleEntry.Button.ForegroundColor != constants.ColorYellow {
 		t.Error("Root3 Child2 button should have yellow foreground color")
 	}
-	root3Child2CheckboxEntry := Checkboxes.Get(root3Child2.layerAlias, root3Child2Checkbox.controlAlias)
+	root3Child2CheckboxEntry := checkboxRegistry.Get(root3Child2.layerAlias, root3Child2Checkbox.controlAlias)
 	if !root3Child2CheckboxEntry.IsSelected {
 		t.Error("Root3 Child2 checkbox should be checked")
 	}
-	root3Child2ProgressBarEntry := ProgressBars.Get(root3Child2.layerAlias, root3Child2ProgressBar.controlAlias)
+	root3Child2ProgressBarEntry := progressBarRegistry.Get(root3Child2.layerAlias, root3Child2ProgressBar.controlAlias)
 	if root3Child2ProgressBarEntry.Value != 60 {
 		t.Error("Root3 Child2 progress bar should be at 60%")
 	}
@@ -1226,11 +1226,11 @@ func TestComplexInterleavedOperations(t *testing.T) {
 	}
 
 	// Verify root3 and root3Child2 controls still have correct properties
-	root3ButtonEntry = Buttons.Get(root3Layer.layerAlias, root3Button.controlAlias)
+	root3ButtonEntry = buttonRegistry.Get(root3Layer.layerAlias, root3Button.controlAlias)
 	if root3ButtonEntry.StyleEntry.Button.ForegroundColor != constants.ColorYellow {
 		t.Error("Root3 button should maintain its yellow foreground color after child deletion")
 	}
-	root3Child2ButtonEntry = Buttons.Get(root3Child2.layerAlias, root3Child2Button.controlAlias)
+	root3Child2ButtonEntry = buttonRegistry.Get(root3Child2.layerAlias, root3Child2Button.controlAlias)
 	if root3Child2ButtonEntry.StyleEntry.Button.ForegroundColor != constants.ColorYellow {
 		t.Error("Root3 Child2 button should maintain its yellow foreground color after sibling deletion")
 	}
@@ -1558,7 +1558,7 @@ func TestCaptureScreenClearsControlMetadata(test *testing.T) {
 	buttonLayer.Delete()
 	UpdateDisplay(false)
 
-	captureLayerEntry := Layers.Get(captureLayer.layerAlias)
+	captureLayerEntry := layerRegistry.Get(captureLayer.layerAlias)
 	for row := range captureLayerEntry.CharacterMemory {
 		for column := range captureLayerEntry.CharacterMemory[row] {
 			attributeEntry := captureLayerEntry.CharacterMemory[row][column].AttributeEntry
@@ -1659,7 +1659,7 @@ func TestCaptureScreenClipsToOverlapWithScreen(test *testing.T) {
 	layerWidth := 16
 	layerHeight := 9
 	captureLayer := AddLayer(-2, -1, layerWidth, layerHeight, 2, nil)
-	captureLayerEntry := Layers.Get(captureLayer.layerAlias)
+	captureLayerEntry := layerRegistry.Get(captureLayer.layerAlias)
 	sentinel := rune('X')
 	for row := range captureLayerEntry.CharacterMemory {
 		for column := range captureLayerEntry.CharacterMemory[row] {
@@ -1767,7 +1767,7 @@ func TestCaptureScreenPreservesWideRunePlaceholders(test *testing.T) {
 	err := captureLayer.CaptureScreen()
 	assert.NoError(test, err, "Capturing a frame containing a wide rune must not return an error.")
 
-	captureLayerEntry := Layers.Get(captureLayer.layerAlias)
+	captureLayerEntry := layerRegistry.Get(captureLayer.layerAlias)
 	for column := 0; column < width; column++ {
 		assert.Equalf(test, expectedRow[column].Character, captureLayerEntry.CharacterMemory[1][column].Character, "Character mismatch at column %d.", column)
 	}

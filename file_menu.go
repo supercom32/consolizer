@@ -1,6 +1,7 @@
 package consolizer
 
 import (
+	"fmt"
 	"github.com/supercom32/consolizer/constants"
 	"github.com/supercom32/consolizer/memory"
 	"github.com/supercom32/consolizer/stringformat"
@@ -25,7 +26,7 @@ type fileMenuType struct {
 FileMenu is a structure which represents a singleton instance of fileMenuType.
 */
 var FileMenu fileMenuType
-var FileMenus = memory.NewControlMemoryManager[types.FileMenuEntryType]()
+var fileMenuRegistry = memory.NewControlMemoryManager[types.FileMenuEntryType]()
 
 /*
 Delete is a method which allows you to remove a file menu instance from memory. In addition, the following should be
@@ -39,7 +40,8 @@ Example:
     fileMenu.Delete()
 */
 func (shared *FileMenuInstanceType) Delete() *FileMenuInstanceType {
-	shared.BaseControlInstanceType.Delete()
+	defer lockUIState()()
+	shared.BaseControlInstanceType.delete()
 	return nil
 }
 
@@ -66,6 +68,21 @@ Example:
 func (shared *fileMenuType) Add(layerAlias string, menuAlias string, styleEntry types.TuiStyleEntryType,
 	menuHeadings []string, menuSelections []types.SelectionEntryType, xLocation int, yLocation int,
 	isEnabled bool) FileMenuInstanceType {
+	defer lockUIState()()
+	return shared.add(layerAlias, menuAlias, styleEntry, menuHeadings, menuSelections, xLocation, yLocation, isEnabled)
+}
+
+/*
+add is a method which allows you to do exactly what Add does, for a caller that already holds uiStateMutex, such as
+another entry point of the package that has taken the lock itself.
+
+Example:
+
+	FileMenu.add(layerAlias, menuAlias, styleEntry, menuHeadings, menuSelections, xLocation, yLocation, isEnabled)
+*/
+func (shared *fileMenuType) add(layerAlias string, menuAlias string, styleEntry types.TuiStyleEntryType,
+	menuHeadings []string, menuSelections []types.SelectionEntryType, xLocation int, yLocation int,
+	isEnabled bool) FileMenuInstanceType {
 
 	fileMenuEntry := types.NewFileMenuEntry()
 	fileMenuEntry.LayerAlias = layerAlias
@@ -80,8 +97,32 @@ func (shared *fileMenuType) Add(layerAlias string, menuAlias string, styleEntry 
 	fileMenuEntry.IsSubmenuOpen = false
 	fileMenuEntry.IsEnabled = isEnabled
 
-	// Create selectors for each menu heading
-	for i, selection := range menuSelections {
+	shared.createSubmenus(&fileMenuEntry)
+
+	// Store the file menu entry in memory
+	fileMenuRegistry.Add(layerAlias, menuAlias, &fileMenuEntry)
+
+	// Create and return a file menu instance
+	var fileMenuInstance FileMenuInstanceType
+	fileMenuInstance.layerAlias = layerAlias
+	fileMenuInstance.controlAlias = menuAlias
+	fileMenuInstance.controlType = constants.TYPE_FILEMENU
+	return fileMenuInstance
+}
+
+/*
+createSubmenus is a method which allows you to create the hidden selector that serves as the submenu of each of a file
+menu's headings, from its headings and selections, and record their aliases in the entry. Each submenu is placed
+directly under its heading and made wide enough for its longest item. The caller must hold uiStateMutex, and the entry
+must have exactly one selection for each heading.
+
+Example:
+
+	FileMenu.createSubmenus(fileMenuEntry)
+*/
+func (shared *fileMenuType) createSubmenus(fileMenuEntry *types.FileMenuEntryType) {
+	fileMenuEntry.SelectorAliases = nil
+	for i, selection := range fileMenuEntry.MenuSelections {
 		// Calculate max width needed for this selector based on the longest dropdown menu item
 		maxWidth := 0
 		for _, item := range selection.SelectionValue {
@@ -91,34 +132,124 @@ func (shared *fileMenuType) Add(layerAlias string, menuAlias string, styleEntry 
 		}
 		maxWidth += 4 // Add padding
 
-		// Calculate position for this selector
-		selectorX := xLocation
-		// Sum the widths of all headings before this one
+		// Sum the widths of all headings before this one to place the selector under its heading
+		selectorX := fileMenuEntry.XLocation
 		for j := 0; j < i; j++ {
-			selectorX += len(menuHeadings[j]) + 2 // Add padding
+			selectorX += len(fileMenuEntry.MenuHeadings[j]) + 2 // Add padding
 		}
 
-		// Create a selector for this heading
 		selectorAlias := stringformat.GetLastSortedUUID()
 		fileMenuEntry.SelectorAliases = append(fileMenuEntry.SelectorAliases, selectorAlias)
-
-		// Add the selector (initially hidden)
-		// Position the selector directly beneath the header
-		selectorInstance := Selector.Add(layerAlias, selectorAlias, styleEntry, selection,
-			selectorX+1, yLocation+2, len(selection.SelectionAlias), maxWidth, 1, 0, 0, false, true)
-		selectorInstance.Unselect()
-		selectorInstance.SetVisible(false)
+		// The selector starts hidden, directly beneath the heading.
+		selectorInstance := Selector.add(fileMenuEntry.LayerAlias, selectorAlias, fileMenuEntry.StyleEntry, selection,
+			selectorX+1, fileMenuEntry.YLocation+2, len(selection.SelectionAlias), maxWidth, 1, 0, 0, false, true)
+		selectorInstance.unselect()
+		selectorInstance.setVisible(false)
 	}
+}
 
-	// Store the file menu entry in memory
-	FileMenus.Add(layerAlias, menuAlias, &fileMenuEntry)
+/*
+SetMenus is a method which allows you to replace a file menu's headings and the items under each of them. Any open
+submenu is closed and any pending selection is discarded. An error is returned, and the file menu is left unchanged,
+if the number of headings and the number of selections differ. If the file menu does not exist, nothing happens and
+no error is returned.
 
-	// Create and return a file menu instance
-	var fileMenuInstance FileMenuInstanceType
-	fileMenuInstance.layerAlias = layerAlias
-	fileMenuInstance.controlAlias = menuAlias
-	fileMenuInstance.controlType = constants.TYPE_FILEMENU
-	return fileMenuInstance
+Example:
+
+	err := fileMenu.SetMenus([]string{"File", "Edit"}, []types.SelectionEntryType{fileItems, editItems})
+*/
+func (shared *FileMenuInstanceType) SetMenus(menuHeadings []string, menuSelections []types.SelectionEntryType) error {
+	defer lockUIState()()
+	if len(menuHeadings) != len(menuSelections) {
+		return fmt.Errorf("a file menu needs one selection for each heading, but %d headings and %d selections were given", len(menuHeadings), len(menuSelections))
+	}
+	fileMenuEntry, isFound := fileMenuRegistry.Lookup(shared.layerAlias, shared.controlAlias)
+	if !isFound {
+		return nil
+	}
+	for _, selectorAlias := range fileMenuEntry.SelectorAliases {
+		Selector.delete(shared.layerAlias, selectorAlias)
+	}
+	fileMenuEntry.MenuHeadings = append([]string(nil), menuHeadings...)
+	fileMenuEntry.MenuSelections = append([]types.SelectionEntryType(nil), menuSelections...)
+	fileMenuEntry.ActiveHeadingIndex = -1
+	fileMenuEntry.IsSubmenuOpen = false
+	FileMenu.createSubmenus(fileMenuEntry)
+	return nil
+}
+
+/*
+Open is a method which allows you to open the submenu under one of a file menu's headings, given by its zero based
+index, as clicking the heading does. Any other open submenu is closed first. A heading index that does not exist, a
+disabled file menu, or a file menu that does not exist leaves everything unchanged.
+
+Example:
+
+	fileMenu.Open(0)
+*/
+func (shared *FileMenuInstanceType) Open(headingIndex int) {
+	defer lockUIState()()
+	fileMenuEntry, isFound := fileMenuRegistry.Lookup(shared.layerAlias, shared.controlAlias)
+	if !isFound || !fileMenuEntry.IsEnabled || headingIndex < 0 || headingIndex >= len(fileMenuEntry.SelectorAliases) {
+		return
+	}
+	FileMenu.closeAllOpenMenus()
+	fileMenuEntry.ActiveHeadingIndex = headingIndex
+	fileMenuEntry.IsSubmenuOpen = true
+}
+
+/*
+Close is a method which allows you to close a file menu's open submenu, if it has one. If the file menu does not
+exist, no operation occurs.
+
+Example:
+
+	fileMenu.Close()
+*/
+func (shared *FileMenuInstanceType) Close() {
+	defer lockUIState()()
+	if fileMenuEntry, isFound := fileMenuRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound {
+		fileMenuEntry.IsSubmenuOpen = false
+		fileMenuEntry.ActiveHeadingIndex = -1
+	}
+}
+
+/*
+SetEnabled is a method which allows you to enable or disable a file menu. A disabled file menu is not drawn, cannot be
+opened, and cannot take focus, so disabling it closes its open submenu and moves focus away from it if it had focus.
+If the file menu does not exist, no operation occurs.
+
+Example:
+
+	fileMenu.SetEnabled(false)
+*/
+func (shared *FileMenuInstanceType) SetEnabled(isEnabled bool) *FileMenuInstanceType {
+	defer lockUIState()()
+	if fileMenuEntry, isFound := fileMenuRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound {
+		fileMenuEntry.IsEnabled = isEnabled
+		if !isEnabled {
+			fileMenuEntry.IsSubmenuOpen = false
+			fileMenuEntry.ActiveHeadingIndex = -1
+		}
+	}
+	reconcileFocus()
+	return shared
+}
+
+/*
+IsEnabled is a method which allows you to check whether a file menu is enabled. If the file menu does not exist, false
+is returned.
+
+Example:
+
+	isEnabled := fileMenu.IsEnabled()
+*/
+func (shared *FileMenuInstanceType) IsEnabled() bool {
+	defer lockUIState()()
+	if fileMenuEntry, isFound := fileMenuRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound {
+		return fileMenuEntry.IsEnabled
+	}
+	return false
 }
 
 /*
@@ -133,17 +264,30 @@ Example:
     FileMenu.Delete("main", "fileMenu")
 */
 func (shared *fileMenuType) Delete(layerAlias string, menuAlias string) {
-	if fileMenuEntry, isFound := FileMenus.Lookup(layerAlias, menuAlias); isFound {
+	defer lockUIState()()
+	shared.delete(layerAlias, menuAlias)
+}
+
+/*
+delete is a method which allows you to do exactly what Delete does, for a caller that already holds uiStateMutex, such
+as another entry point of the package that has taken the lock itself.
+
+Example:
+
+	FileMenu.delete(layerAlias, menuAlias)
+*/
+func (shared *fileMenuType) delete(layerAlias string, menuAlias string) {
+	if fileMenuEntry, isFound := fileMenuRegistry.Lookup(layerAlias, menuAlias); isFound {
 		// Delete all associated selectors
 		for _, selectorAlias := range fileMenuEntry.SelectorAliases {
-			Selector.Delete(layerAlias, selectorAlias)
+			Selector.delete(layerAlias, selectorAlias)
 		}
 
 		// Delete the tooltip
-		Tooltip.Delete(layerAlias, fileMenuEntry.TooltipAlias)
+		Tooltip.delete(layerAlias, fileMenuEntry.TooltipAlias)
 
 		// Delete the file menu entry
-		FileMenus.Remove(layerAlias, menuAlias)
+		fileMenuRegistry.Remove(layerAlias, menuAlias)
 		clearStaleControlReferences(layerAlias, menuAlias, constants.CellTypeFileMenuHeading)
 	}
 }
@@ -160,9 +304,10 @@ Example:
     FileMenu.DeleteAll("main")
 */
 func (shared *fileMenuType) DeleteAll(layerAlias string) {
-	fileMenuEntries := FileMenus.GetAllEntries(layerAlias)
+	defer lockUIState()()
+	fileMenuEntries := fileMenuRegistry.GetAllEntries(layerAlias)
 	for _, fileMenuEntry := range fileMenuEntries {
-		shared.Delete(layerAlias, fileMenuEntry.Alias)
+		shared.delete(layerAlias, fileMenuEntry.Alias)
 	}
 }
 
@@ -179,7 +324,7 @@ Example:
 */
 func (shared *fileMenuType) drawOnLayer(layerEntry types.LayerEntryType) {
 	layerAlias := layerEntry.LayerAlias
-	fileMenuEntries := FileMenus.GetAllEntries(layerAlias)
+	fileMenuEntries := fileMenuRegistry.GetAllEntries(layerAlias)
 	for _, fileMenuEntry := range fileMenuEntries {
 		shared.draw(&layerEntry, fileMenuEntry)
 	}
@@ -237,7 +382,7 @@ func (shared *fileMenuType) draw(layerEntry *types.LayerEntryType, fileMenuEntry
 
 	// Manage selector visibility based on active heading
 	for i, selectorAlias := range fileMenuEntry.SelectorAliases {
-		selectorEntry := Selectors.Get(fileMenuEntry.LayerAlias, selectorAlias)
+		selectorEntry := selectorRegistry.Get(fileMenuEntry.LayerAlias, selectorAlias)
 		if i == fileMenuEntry.ActiveHeadingIndex && fileMenuEntry.IsSubmenuOpen {
 			// Show the selector for the active heading
 			selectorEntry.IsVisible = true
@@ -299,7 +444,7 @@ func (shared *fileMenuType) updateStateMouse() bool {
 	// Only process if a button is pressed and it's a new click (not a continued press)
 	if isNewClick {
 		// Check if the mouse clicked on a file menu heading
-		if fileMenuEntry, isFound := FileMenus.Lookup(layerAlias, cellControlAlias); cellType == constants.CellTypeFileMenuHeading && isFound {
+		if fileMenuEntry, isFound := fileMenuRegistry.Lookup(layerAlias, cellControlAlias); cellType == constants.CellTypeFileMenuHeading && isFound {
 			// If clicking on the active heading, close the submenu
 			if fileMenuEntry.ActiveHeadingIndex == cellControlId && fileMenuEntry.IsSubmenuOpen {
 				fileMenuEntry.IsSubmenuOpen = false
@@ -345,9 +490,9 @@ Example:
 func (shared *fileMenuType) closeAllOpenMenus() bool {
 	menuClosed := false
 	// Get all layer entries
-	for _, layerEntry := range Layers.GetAllEntries() {
+	for _, layerEntry := range layerRegistry.GetAllEntries() {
 		layerAlias := layerEntry.LayerAlias
-		fileMenuEntries := FileMenus.GetAllEntries(layerAlias)
+		fileMenuEntries := fileMenuRegistry.GetAllEntries(layerAlias)
 		for _, fileMenuEntry := range fileMenuEntries {
 			if fileMenuEntry.IsSubmenuOpen {
 				fileMenuEntry.IsSubmenuOpen = false
@@ -373,13 +518,14 @@ Example:
 	heading, item, alias, value := fileMenu.GetSelectedItem()
 */
 func (shared *FileMenuInstanceType) GetSelectedItem() (int, int, string, string) {
-	fileMenuEntry, isFound := FileMenus.Lookup(shared.layerAlias, shared.controlAlias)
+	defer lockUIState()()
+	fileMenuEntry, isFound := fileMenuRegistry.Lookup(shared.layerAlias, shared.controlAlias)
 	if !isFound {
 		return -1, -1, "", ""
 	}
 	// Iterate through selectors (one per heading)
 	for headingIndex, selectorAlias := range fileMenuEntry.SelectorAliases {
-		selectorEntry, isFound := Selectors.Lookup(shared.layerAlias, selectorAlias)
+		selectorEntry, isFound := selectorRegistry.Lookup(shared.layerAlias, selectorAlias)
 		if !isFound {
 			continue
 		}
@@ -388,7 +534,7 @@ func (shared *FileMenuInstanceType) GetSelectedItem() (int, int, string, string)
 			itemIndex := selectorEntry.ItemSelected
 			itemAlias := selectorEntry.SelectionEntry.SelectionAlias[itemIndex]
 			itemValue := selectorEntry.SelectionEntry.SelectionValue[itemIndex]
-			shared.Unselect()
+			shared.unselectLocked(fileMenuEntry)
 			return headingIndex, itemIndex, itemAlias, itemValue
 		}
 	}
@@ -410,7 +556,8 @@ Example:
     }
 */
 func (shared *FileMenuInstanceType) IsOpen() bool {
-	fileMenuEntry, isFound := FileMenus.Lookup(shared.layerAlias, shared.controlAlias)
+	defer lockUIState()()
+	fileMenuEntry, isFound := fileMenuRegistry.Lookup(shared.layerAlias, shared.controlAlias)
 	if !isFound {
 		return false
 	}
@@ -427,13 +574,25 @@ Example:
 	fileMenu.Unselect()
 */
 func (shared *FileMenuInstanceType) Unselect() {
-	fileMenuEntry, isFound := FileMenus.Lookup(shared.layerAlias, shared.controlAlias)
+	defer lockUIState()()
+	fileMenuEntry, isFound := fileMenuRegistry.Lookup(shared.layerAlias, shared.controlAlias)
 	if !isFound {
 		return
 	}
-	// Iterate through selectors (one per heading) and unselect them.
+	shared.unselectLocked(fileMenuEntry)
+}
+
+/*
+unselectLocked is a method which allows you to clear the selected item of every submenu of a file menu, as Unselect
+does, for a caller that already holds uiStateMutex. A submenu whose selector no longer exists is skipped.
+
+Example:
+
+	fileMenu.unselectLocked(fileMenuEntry)
+*/
+func (shared *FileMenuInstanceType) unselectLocked(fileMenuEntry *types.FileMenuEntryType) {
 	for _, selectorAlias := range fileMenuEntry.SelectorAliases {
-		if selectorEntry, isFound := Selectors.Lookup(shared.layerAlias, selectorAlias); isFound {
+		if selectorEntry, isFound := selectorRegistry.Lookup(shared.layerAlias, selectorAlias); isFound {
 			selectorEntry.ItemSelected = constants.SELECTED_NONE
 		}
 	}

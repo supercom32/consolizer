@@ -106,7 +106,7 @@ func TestCheckboxToggleState(test *testing.T) {
 	checkboxInstance := Checkbox.Add(layer1.layerAlias, "testCheckbox", "Test Checkbox", styleEntry, 2, 2, false, true)
 
 	// Simulate a checkbox click by directly setting the checkbox state
-	checkboxEntry := Checkboxes.Get(layer1.layerAlias, "testCheckbox")
+	checkboxEntry := checkboxRegistry.Get(layer1.layerAlias, "testCheckbox")
 	checkboxEntry.IsSelected = true
 
 	UpdateDisplay(false)
@@ -529,5 +529,37 @@ func TestCheckboxSetLabelFirstOnDeletedCheckboxIsIgnored(test *testing.T) {
 	Checkbox.Delete(layer1.layerAlias, "testCheckbox")
 
 	assert.NotPanics(test, func() { checkboxInstance.SetLabelFirst(true) })
-	assert.False(test, Checkboxes.IsExists(layer1.layerAlias, "testCheckbox"))
+	assert.False(test, checkboxRegistry.IsExists(layer1.layerAlias, "testCheckbox"))
+}
+
+/*
+TestCheckboxIsLabelFirst is a test which allows you to verify that IsLabelFirst reports what SetLabelFirst set, and
+false for a deleted checkbox.
+
+Example:
+
+	Expected Inputs:
+		A checkbox, then SetLabelFirst(true), then SetLabelFirst(false), then the checkbox deleted.
+
+	Expected Outputs:
+		IsLabelFirst reads false, true, false, and false after deletion.
+*/
+func TestCheckboxIsLabelFirst(test *testing.T) {
+	layerAlias, styleEntry := setupInputTest(test)
+	checkbox := Checkbox.Add(layerAlias, "checkbox", "Check", styleEntry, 2, 2, false, true)
+	for _, step := range []struct {
+		isLabelFirst bool
+		isSet        bool
+	}{{false, false}, {true, true}, {false, true}} {
+		if step.isSet {
+			checkbox.SetLabelFirst(step.isLabelFirst)
+		}
+		if isLabelFirst := checkbox.IsLabelFirst(); isLabelFirst != step.isLabelFirst {
+			test.Fatalf("expected IsLabelFirst %t, got %t", step.isLabelFirst, isLabelFirst)
+		}
+	}
+	checkbox.Delete()
+	if checkbox.IsLabelFirst() {
+		test.Fatalf("expected false for a deleted checkbox")
+	}
 }

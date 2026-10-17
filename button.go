@@ -107,7 +107,7 @@ Example:
 type buttonType struct{}
 
 var Button buttonType
-var Buttons = memory.NewControlMemoryManager[types.ButtonEntryType]()
+var buttonRegistry = memory.NewControlMemoryManager[types.ButtonEntryType]()
 
 // ============================================================================
 // REGULAR ENTRY
@@ -120,7 +120,8 @@ Example:
     button.Delete()
 */
 func (shared *ButtonInstanceType) Delete() *ButtonInstanceType {
-	shared.BaseControlInstanceType.Delete()
+	defer lockUIState()()
+	shared.BaseControlInstanceType.delete()
 	return nil
 }
 
@@ -134,10 +135,11 @@ Example:
     isPressed := button.IsPressed()
 */
 func (shared *ButtonInstanceType) IsPressed() bool {
+	defer lockUIState()()
 	layerAlias, buttonAlias := buttonHistory.get()
 	if layerAlias != "" && buttonAlias != "" {
 		if layerAlias == shared.layerAlias && buttonAlias == shared.controlAlias {
-			for shared.IsStatePressed() {
+			for shared.isStatePressed() {
 			}
 
 			buttonHistory.clear()
@@ -157,6 +159,7 @@ Example:
     layerAlias, buttonAlias := button.GetPressed()
 */
 func (shared *ButtonInstanceType) GetPressed() (string, string) {
+	defer lockUIState()()
 	layerAlias, buttonAlias := buttonHistory.getAndClear()
 	if layerAlias != "" && buttonAlias != "" {
 		return layerAlias, buttonAlias
@@ -171,7 +174,20 @@ Example:
     isStatePressed := button.IsStatePressed()
 */
 func (shared *ButtonInstanceType) IsStatePressed() bool {
-	buttonEntry := Buttons.Get(shared.layerAlias, shared.controlAlias)
+	defer lockUIState()()
+	return shared.isStatePressed()
+}
+
+/*
+isStatePressed is a method which allows you to do exactly what IsStatePressed does, for a caller that already holds
+uiStateMutex, such as another entry point of the package that has taken the lock itself.
+
+Example:
+
+	button.isStatePressed()
+*/
+func (shared *ButtonInstanceType) isStatePressed() bool {
+	buttonEntry := buttonRegistry.Get(shared.layerAlias, shared.controlAlias)
 	if buttonEntry.IsPressed == true {
 		return true
 	}
@@ -201,6 +217,19 @@ Example:
     buttonInstance := Button.Add("layer1", "btn1", "Submit", style, 10, 5, 20, 3, true)
 */
 func (shared *buttonType) Add(layerAlias string, buttonAlias string, buttonLabel string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, height int, isEnabled bool) ButtonInstanceType {
+	defer lockUIState()()
+	return shared.add(layerAlias, buttonAlias, buttonLabel, styleEntry, xLocation, yLocation, width, height, isEnabled)
+}
+
+/*
+add is a method which allows you to do exactly what Add does, for a caller that already holds uiStateMutex, such as
+another entry point of the package that has taken the lock itself.
+
+Example:
+
+	Button.add(layerAlias, buttonAlias, buttonLabel, styleEntry, xLocation, yLocation, width, height, isEnabled)
+*/
+func (shared *buttonType) add(layerAlias string, buttonAlias string, buttonLabel string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, height int, isEnabled bool) ButtonInstanceType {
 	buttonEntry := types.NewButtonEntry()
 	buttonEntry.StyleEntry = styleEntry
 	buttonEntry.Alias = buttonAlias
@@ -212,16 +241,16 @@ func (shared *buttonType) Add(layerAlias string, buttonAlias string, buttonLabel
 	buttonEntry.Height = height
 	buttonEntry.TooltipAlias = stringformat.GetLastSortedUUID()
 	// Use the ControlMemoryManager to handle button entries
-	Buttons.Add(layerAlias, buttonAlias, &buttonEntry)
+	buttonRegistry.Add(layerAlias, buttonAlias, &buttonEntry)
 
 	// Create associated tooltip (always created but disabled by default)
-	tooltipInstance := Tooltip.Add(layerAlias, buttonEntry.TooltipAlias, "", styleEntry,
+	tooltipInstance := Tooltip.add(layerAlias, buttonEntry.TooltipAlias, "", styleEntry,
 		buttonEntry.XLocation, buttonEntry.YLocation,
 		buttonEntry.Width, buttonEntry.Height,
 		buttonEntry.XLocation, buttonEntry.YLocation+buttonEntry.Height+1,
 		buttonEntry.Width, 3,
 		false, true, constants.DefaultTooltipHoverTime)
-	tooltipInstance.SetEnabled(false)
+	tooltipInstance.setEnabled(false)
 	tooltipInstance.setParentControlAlias(buttonAlias)
 	var buttonInstance ButtonInstanceType
 	buttonInstance.layerAlias = layerAlias
@@ -239,7 +268,8 @@ Example:
     Button.Delete("layer1", "btn1")
 */
 func (shared *buttonType) Delete(layerAlias string, buttonAlias string) {
-	Buttons.Remove(layerAlias, buttonAlias)
+	defer lockUIState()()
+	buttonRegistry.Remove(layerAlias, buttonAlias)
 	clearStaleControlReferences(layerAlias, buttonAlias, constants.CellTypeButton)
 }
 
@@ -250,7 +280,8 @@ Example:
     Button.DeleteAll("layer1")
 */
 func (shared *buttonType) DeleteAll(layerAlias string) {
-	removeAllControlsAndClearCells(Buttons, layerAlias, constants.CellTypeButton, func(entry *types.ButtonEntryType) string { return entry.Alias })
+	defer lockUIState()()
+	removeAllControlsAndClearCells(buttonRegistry, layerAlias, constants.CellTypeButton, func(entry *types.ButtonEntryType) string { return entry.Alias })
 }
 
 /*
@@ -261,7 +292,7 @@ Example:
 */
 func (shared *buttonType) drawOnLayer(layerEntry types.LayerEntryType) {
 	layerAlias := layerEntry.LayerAlias
-	buttons := Buttons.GetAllEntries(layerAlias)
+	buttons := buttonRegistry.GetAllEntries(layerAlias)
 	for _, buttonEntry := range buttons {
 		shared.draw(&layerEntry, buttonEntry.Alias, buttonEntry.Label, buttonEntry.StyleEntry, buttonEntry.IsPressed, buttonEntry.IsSelected, buttonEntry.IsEnabled, buttonEntry.XLocation, buttonEntry.YLocation, buttonEntry.Width, buttonEntry.Height)
 	}
@@ -407,7 +438,7 @@ the following should be noted:
     on no button at all) than the one currently under the cursor, and every stale pressed state must be cleared so
     that button does not get stuck ignoring its next click.
 
-  - Buttons removed by a concurrent delete are skipped rather than acted on, since Buttons.IsExists is checked
+  - Buttons removed by a concurrent delete are skipped rather than acted on, since buttonRegistry.IsExists is checked
     immediately before each entry is touched.
 
 Example:
@@ -415,13 +446,13 @@ Example:
 */
 func (shared *buttonType) clearAllPressedButtons() bool {
 	isUpdateRequired := false
-	Buttons.MemoryManager.Range(func(key, value interface{}) bool {
+	buttonRegistry.MemoryManager.Range(func(key, value interface{}) bool {
 		currentLayer := key.(string)
-		buttons := Buttons.GetAllEntries(currentLayer)
+		buttons := buttonRegistry.GetAllEntries(currentLayer)
 
 		for _, buttonEntry := range buttons {
 			// In case of delete race condition, we check if button exists
-			if !Buttons.IsExists(currentLayer, buttonEntry.Alias) {
+			if !buttonRegistry.IsExists(currentLayer, buttonEntry.Alias) {
 				continue
 			}
 
@@ -450,12 +481,12 @@ Example:
 */
 func (shared *buttonType) isAnyButtonPressed() bool {
 	isPressed := false
-	Buttons.MemoryManager.Range(func(key, value interface{}) bool {
+	buttonRegistry.MemoryManager.Range(func(key, value interface{}) bool {
 		currentLayer := key.(string)
-		buttons := Buttons.GetAllEntries(currentLayer)
+		buttons := buttonRegistry.GetAllEntries(currentLayer)
 
 		for _, buttonEntry := range buttons {
-			if !Buttons.IsExists(currentLayer, buttonEntry.Alias) {
+			if !buttonRegistry.IsExists(currentLayer, buttonEntry.Alias) {
 				continue
 			}
 			if buttonEntry.IsPressed {
@@ -501,7 +532,7 @@ func (shared *buttonType) updateStateMouse() bool {
 	}
 
 	isUpdateRequired := false
-	buttonEntry, isFound := Buttons.Lookup(layerAlias, buttonAlias)
+	buttonEntry, isFound := buttonRegistry.Lookup(layerAlias, buttonAlias)
 	if buttonAlias != "" && buttonPressed == 0 && isFound {
 		// A release only counts as a click on this button if this is the button that was pressed. Either way,
 		// every pressed button must be cleared, since the press that started it may have been on a different one.

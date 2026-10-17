@@ -50,47 +50,47 @@ Example:
 func (shared *BaseControlInstanceType) getBaseControl() *types.BaseControlType {
 	switch shared.controlType {
 	case constants.TYPE_BUTTON:
-		if entry, isFound := Buttons.Lookup(shared.layerAlias, shared.controlAlias); isFound {
+		if entry, isFound := buttonRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 			return &entry.BaseControlType
 		}
 	case constants.TYPE_CHECKBOX:
-		if entry, isFound := Checkboxes.Lookup(shared.layerAlias, shared.controlAlias); isFound {
+		if entry, isFound := checkboxRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 			return &entry.BaseControlType
 		}
 	case constants.TYPE_DROPDOWN:
-		if entry, isFound := Dropdowns.Lookup(shared.layerAlias, shared.controlAlias); isFound {
+		if entry, isFound := dropdownRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 			return &entry.BaseControlType
 		}
 	case constants.TYPE_LABEL:
-		if entry, isFound := Labels.Lookup(shared.layerAlias, shared.controlAlias); isFound {
+		if entry, isFound := labelRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 			return &entry.BaseControlType
 		}
 	case constants.TYPE_PROGRESSBAR:
-		if entry, isFound := ProgressBars.Lookup(shared.layerAlias, shared.controlAlias); isFound {
+		if entry, isFound := progressBarRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 			return &entry.BaseControlType
 		}
 	case constants.TYPE_SCROLLBAR:
-		if entry, isFound := ScrollBars.Lookup(shared.layerAlias, shared.controlAlias); isFound {
+		if entry, isFound := scrollbarRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 			return &entry.BaseControlType
 		}
 	case constants.TYPE_SELECTOR:
-		if entry, isFound := Selectors.Lookup(shared.layerAlias, shared.controlAlias); isFound {
+		if entry, isFound := selectorRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 			return &entry.BaseControlType
 		}
 	case constants.TYPE_TEXTBOX:
-		if entry, isFound := Textboxes.Lookup(shared.layerAlias, shared.controlAlias); isFound {
+		if entry, isFound := textboxRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 			return &entry.BaseControlType
 		}
 	case constants.TYPE_TEXTFIELD:
-		if entry, isFound := TextFields.Lookup(shared.layerAlias, shared.controlAlias); isFound {
+		if entry, isFound := textFieldRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 			return &entry.BaseControlType
 		}
 	case constants.TYPE_TOOLTIP:
-		if entry, isFound := Tooltips.Lookup(shared.layerAlias, shared.controlAlias); isFound {
+		if entry, isFound := tooltipRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 			return &entry.BaseControlType
 		}
 	case constants.TYPE_RADIOBUTTON:
-		if entry, isFound := RadioButtons.Lookup(shared.layerAlias, shared.controlAlias); isFound {
+		if entry, isFound := radioButtonRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 			return &entry.BaseControlType
 		}
 	}
@@ -104,6 +104,7 @@ Example:
     x, y, w, h := control.GetBounds()
 */
 func (shared *BaseControlInstanceType) GetBounds() (int, int, int, int) {
+	defer lockUIState()()
 	if control := shared.getBaseControl(); control != nil {
 		return control.XLocation, control.YLocation, control.Width, control.Height
 	}
@@ -122,6 +123,7 @@ Example:
 	control.SetPosition(10, 5)
 */
 func (shared *BaseControlInstanceType) SetPosition(x, y int) *BaseControlInstanceType {
+	defer lockUIState()()
 	if control := shared.getBaseControl(); control != nil {
 		control.XLocation = x
 		control.YLocation = y
@@ -137,6 +139,7 @@ Example:
     x, y := control.GetPosition()
 */
 func (shared *BaseControlInstanceType) GetPosition() (int, int) {
+	defer lockUIState()()
 	if control := shared.getBaseControl(); control != nil {
 		return control.XLocation, control.YLocation
 	}
@@ -150,6 +153,7 @@ Example:
     width, height := control.GetSize()
 */
 func (shared *BaseControlInstanceType) GetSize() (int, int) {
+	defer lockUIState()()
 	if control := shared.getBaseControl(); control != nil {
 		return control.Width, control.Height
 	}
@@ -177,6 +181,7 @@ Example:
 	control.SetSize(20, 10)
 */
 func (shared *BaseControlInstanceType) SetSize(width, height int) *BaseControlInstanceType {
+	defer lockUIState()()
 	switch shared.controlType {
 	case constants.TYPE_SELECTOR:
 		Selector.setSize(shared.layerAlias, shared.controlAlias, width, height)
@@ -206,6 +211,19 @@ Example:
     control.SetVisible(true)
 */
 func (shared *BaseControlInstanceType) SetVisible(visible bool) *BaseControlInstanceType {
+	defer lockUIState()()
+	return shared.setVisible(visible)
+}
+
+/*
+setVisible is a method which allows you to do exactly what SetVisible does, for a caller that already holds
+uiStateMutex, such as another entry point of the package that has taken the lock itself.
+
+Example:
+
+	control.setVisible(visible)
+*/
+func (shared *BaseControlInstanceType) setVisible(visible bool) *BaseControlInstanceType {
 	if control := shared.getBaseControl(); control != nil {
 		control.IsVisible = visible
 	}
@@ -220,6 +238,7 @@ Example:
     control.SetStyle(newStyle)
 */
 func (shared *BaseControlInstanceType) SetStyle(style types.TuiStyleEntryType) *BaseControlInstanceType {
+	defer lockUIState()()
 	if control := shared.getBaseControl(); control != nil {
 		control.StyleEntry = style
 	}
@@ -237,6 +256,7 @@ Example:
     control.SetEnabled(false)
 */
 func (shared *BaseControlInstanceType) SetEnabled(enabled bool) *BaseControlInstanceType {
+	defer lockUIState()()
 	if control := shared.getBaseControl(); control != nil {
 		control.IsEnabled = enabled
 	}
@@ -251,6 +271,7 @@ Example:
     control.SetLabel("Click Me")
 */
 func (shared *BaseControlInstanceType) SetLabel(label string) *BaseControlInstanceType {
+	defer lockUIState()()
 	if control := shared.getBaseControl(); control != nil {
 		control.Label = label
 	}
@@ -264,6 +285,7 @@ Example:
     labelText := control.GetLabel()
 */
 func (shared *BaseControlInstanceType) GetLabel() string {
+	defer lockUIState()()
 	if control := shared.getBaseControl(); control != nil {
 		return control.Label
 	}
@@ -282,6 +304,7 @@ Example:
 	control.SetBorderDrawn(true)
 */
 func (shared *BaseControlInstanceType) SetBorderDrawn(drawn bool) *BaseControlInstanceType {
+	defer lockUIState()()
 	if control := shared.getBaseControl(); control != nil {
 		control.IsBorderDrawn = drawn
 		shared.updateLayout()
@@ -301,15 +324,15 @@ Example:
 func (shared *BaseControlInstanceType) updateLayout() {
 	switch shared.controlType {
 	case constants.TYPE_SELECTOR:
-		if selectorEntry, isFound := Selectors.Lookup(shared.layerAlias, shared.controlAlias); isFound {
+		if selectorEntry, isFound := selectorRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 			Selector.updateLayout(shared.layerAlias, selectorEntry)
 		}
 	case constants.TYPE_TEXTBOX:
-		if textboxEntry, isFound := Textboxes.Lookup(shared.layerAlias, shared.controlAlias); isFound {
+		if textboxEntry, isFound := textboxRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 			textbox.updateLayout(shared.layerAlias, textboxEntry)
 		}
 	case constants.TYPE_DROPDOWN:
-		if dropdownEntry, isFound := Dropdowns.Lookup(shared.layerAlias, shared.controlAlias); isFound {
+		if dropdownEntry, isFound := dropdownRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 			Dropdown.updateLayout(shared.layerAlias, dropdownEntry)
 		}
 	}
@@ -322,6 +345,7 @@ Example:
     isDrawn := control.IsBorderDrawn()
 */
 func (shared *BaseControlInstanceType) IsBorderDrawn() bool {
+	defer lockUIState()()
 	if control := shared.getBaseControl(); control != nil {
 		return control.IsBorderDrawn
 	}
@@ -335,6 +359,7 @@ Example:
     control.SetTooltip("myTooltip")
 */
 func (shared *BaseControlInstanceType) SetTooltip(tooltipAlias string) *BaseControlInstanceType {
+	defer lockUIState()()
 	if control := shared.getBaseControl(); control != nil {
 		control.TooltipAlias = tooltipAlias
 	}
@@ -348,6 +373,7 @@ Example:
     tooltip := control.GetTooltip()
 */
 func (shared *BaseControlInstanceType) GetTooltip() string {
+	defer lockUIState()()
 	if control := shared.getBaseControl(); control != nil {
 		return control.TooltipAlias
 	}
@@ -361,6 +387,7 @@ Example:
     control.SetTooltipEnabled(true)
 */
 func (shared *BaseControlInstanceType) SetTooltipEnabled(enabled bool) *BaseControlInstanceType {
+	defer lockUIState()()
 	if control := shared.getBaseControl(); control != nil {
 		control.IsTooltipEnabled = enabled
 	}
@@ -374,6 +401,7 @@ Example:
     isEnabled := control.IsTooltipEnabled()
 */
 func (shared *BaseControlInstanceType) IsTooltipEnabled() bool {
+	defer lockUIState()()
 	if control := shared.getBaseControl(); control != nil {
 		return control.IsTooltipEnabled
 	}
@@ -387,6 +415,7 @@ Example:
     isVisible := control.IsVisible()
 */
 func (shared *BaseControlInstanceType) IsVisible() bool {
+	defer lockUIState()()
 	if control := shared.getBaseControl(); control != nil {
 		return control.IsVisible
 	}
@@ -400,6 +429,7 @@ Example:
     isEnabled := control.IsEnabled()
 */
 func (shared *BaseControlInstanceType) IsEnabled() bool {
+	defer lockUIState()()
 	if control := shared.getBaseControl(); control != nil {
 		return control.IsEnabled
 	}
@@ -413,6 +443,7 @@ Example:
     style := control.GetStyle()
 */
 func (shared *BaseControlInstanceType) GetStyle() types.TuiStyleEntryType {
+	defer lockUIState()()
 	if control := shared.getBaseControl(); control != nil {
 		return control.StyleEntry
 	}
@@ -431,65 +462,78 @@ Example:
     control.Delete()
 */
 func (shared *BaseControlInstanceType) Delete() *BaseControlInstanceType {
+	defer lockUIState()()
+	return shared.delete()
+}
+
+/*
+delete is a method which allows you to do exactly what Delete does, for a caller that already holds uiStateMutex, such
+as another entry point of the package that has taken the lock itself.
+
+Example:
+
+	control.delete()
+*/
+func (shared *BaseControlInstanceType) delete() *BaseControlInstanceType {
 	switch shared.controlType {
 	case constants.TYPE_BUTTON:
-		if Buttons.IsExists(shared.layerAlias, shared.controlAlias) {
-			Buttons.Remove(shared.layerAlias, shared.controlAlias)
+		if buttonRegistry.IsExists(shared.layerAlias, shared.controlAlias) {
+			buttonRegistry.Remove(shared.layerAlias, shared.controlAlias)
 			clearStaleControlReferences(shared.layerAlias, shared.controlAlias, constants.CellTypeButton)
 		}
 	case constants.TYPE_CHECKBOX:
-		if Checkboxes.IsExists(shared.layerAlias, shared.controlAlias) {
-			Checkboxes.Remove(shared.layerAlias, shared.controlAlias)
+		if checkboxRegistry.IsExists(shared.layerAlias, shared.controlAlias) {
+			checkboxRegistry.Remove(shared.layerAlias, shared.controlAlias)
 			clearStaleControlReferences(shared.layerAlias, shared.controlAlias, constants.CellTypeCheckbox)
 		}
 	case constants.TYPE_DROPDOWN:
-		if Dropdowns.IsExists(shared.layerAlias, shared.controlAlias) {
-			Dropdowns.Remove(shared.layerAlias, shared.controlAlias)
+		if dropdownRegistry.IsExists(shared.layerAlias, shared.controlAlias) {
+			dropdownRegistry.Remove(shared.layerAlias, shared.controlAlias)
 			clearStaleControlReferences(shared.layerAlias, shared.controlAlias, constants.CellTypeDropdown)
 		}
 	case constants.TYPE_LABEL:
-		if Labels.IsExists(shared.layerAlias, shared.controlAlias) {
-			Labels.Remove(shared.layerAlias, shared.controlAlias)
+		if labelRegistry.IsExists(shared.layerAlias, shared.controlAlias) {
+			labelRegistry.Remove(shared.layerAlias, shared.controlAlias)
 			clearStaleControlReferences(shared.layerAlias, shared.controlAlias, constants.CellTypeLabel)
 		}
 	case constants.TYPE_PROGRESSBAR:
-		if ProgressBars.IsExists(shared.layerAlias, shared.controlAlias) {
-			ProgressBars.Remove(shared.layerAlias, shared.controlAlias)
+		if progressBarRegistry.IsExists(shared.layerAlias, shared.controlAlias) {
+			progressBarRegistry.Remove(shared.layerAlias, shared.controlAlias)
 			clearStaleControlReferences(shared.layerAlias, shared.controlAlias, constants.CellTypeProgressBar)
 		}
 	case constants.TYPE_SCROLLBAR:
-		if ScrollBars.IsExists(shared.layerAlias, shared.controlAlias) {
-			ScrollBars.Remove(shared.layerAlias, shared.controlAlias)
+		if scrollbarRegistry.IsExists(shared.layerAlias, shared.controlAlias) {
+			scrollbarRegistry.Remove(shared.layerAlias, shared.controlAlias)
 			clearStaleControlReferences(shared.layerAlias, shared.controlAlias, constants.CellTypeScrollbar)
 		}
 	case constants.TYPE_SELECTOR:
-		if Selectors.IsExists(shared.layerAlias, shared.controlAlias) {
-			Selectors.Remove(shared.layerAlias, shared.controlAlias)
+		if selectorRegistry.IsExists(shared.layerAlias, shared.controlAlias) {
+			selectorRegistry.Remove(shared.layerAlias, shared.controlAlias)
 			clearStaleControlReferences(shared.layerAlias, shared.controlAlias, constants.CellTypeSelectorItem)
 		}
 	case constants.TYPE_TEXTBOX:
-		if Textboxes.IsExists(shared.layerAlias, shared.controlAlias) {
-			Textboxes.Remove(shared.layerAlias, shared.controlAlias)
+		if textboxRegistry.IsExists(shared.layerAlias, shared.controlAlias) {
+			textboxRegistry.Remove(shared.layerAlias, shared.controlAlias)
 			clearStaleControlReferences(shared.layerAlias, shared.controlAlias, constants.CellTypeTextbox)
 		}
 	case constants.TYPE_TEXTFIELD:
-		if TextFields.IsExists(shared.layerAlias, shared.controlAlias) {
-			TextFields.Remove(shared.layerAlias, shared.controlAlias)
+		if textFieldRegistry.IsExists(shared.layerAlias, shared.controlAlias) {
+			textFieldRegistry.Remove(shared.layerAlias, shared.controlAlias)
 			clearStaleControlReferences(shared.layerAlias, shared.controlAlias, constants.CellTypeTextField)
 		}
 	case constants.TYPE_TOOLTIP:
-		if Tooltips.IsExists(shared.layerAlias, shared.controlAlias) {
-			Tooltips.Remove(shared.layerAlias, shared.controlAlias)
+		if tooltipRegistry.IsExists(shared.layerAlias, shared.controlAlias) {
+			tooltipRegistry.Remove(shared.layerAlias, shared.controlAlias)
 			clearStaleControlReferences(shared.layerAlias, shared.controlAlias, constants.CellTypeTooltip)
 		}
 	case constants.TYPE_RADIOBUTTON:
-		if RadioButtons.IsExists(shared.layerAlias, shared.controlAlias) {
-			RadioButtons.Remove(shared.layerAlias, shared.controlAlias)
+		if radioButtonRegistry.IsExists(shared.layerAlias, shared.controlAlias) {
+			radioButtonRegistry.Remove(shared.layerAlias, shared.controlAlias)
 			clearStaleControlReferences(shared.layerAlias, shared.controlAlias, constants.CellTypeRadioButton)
 		}
 	case constants.TYPE_VIEWPORT:
-		if Viewports.IsExists(shared.layerAlias, shared.controlAlias) {
-			Viewports.Remove(shared.layerAlias, shared.controlAlias)
+		if viewportRegistry.IsExists(shared.layerAlias, shared.controlAlias) {
+			viewportRegistry.Remove(shared.layerAlias, shared.controlAlias)
 			clearStaleControlReferences(shared.layerAlias, shared.controlAlias, constants.CellTypeTextbox)
 		}
 	}
@@ -512,7 +556,7 @@ noted:
 
 Example:
 
-	removeAllControlsAndClearCells(Buttons, "layer1", constants.CellTypeButton,
+	removeAllControlsAndClearCells(buttonRegistry, "layer1", constants.CellTypeButton,
 		func(entry *types.ButtonEntryType) string { return entry.Alias })
 */
 func removeAllControlsAndClearCells[T any](manager *memory.ControlMemoryManager[T], layerAlias string, cellType int, getAlias func(*T) string) {
@@ -577,6 +621,7 @@ Example:
 	err := okButton.AddToTabIndex()
 */
 func (shared *BaseControlInstanceType) AddToTabIndex() error {
+	defer lockUIState()()
 	if err := shared.validateTabStop(); err != nil {
 		return err
 	}
@@ -596,6 +641,7 @@ Example:
 	err := cancelButton.SetTabIndex(2)
 */
 func (shared *BaseControlInstanceType) SetTabIndex(tabIndex int) error {
+	defer lockUIState()()
 	if tabIndex < 0 {
 		return fmt.Errorf("the tab index for control '%s' on layer '%s' must not be negative, but %d was given", shared.controlAlias, shared.layerAlias, tabIndex)
 	}
@@ -617,6 +663,7 @@ Example:
 	helpButton.RemoveFromTabIndex()
 */
 func (shared *BaseControlInstanceType) RemoveFromTabIndex() {
+	defer lockUIState()()
 	defer focusManager.beginChange()()
 	scope, isFound := focusManager.scopes[shared.layerAlias]
 	if !isFound {
@@ -640,6 +687,7 @@ Example:
 	if okButton.IsFocused() { ... }
 */
 func (shared *BaseControlInstanceType) IsFocused() bool {
+	defer lockUIState()()
 	control := shared.getControlIdentifier()
 	return isControlCurrentlyFocused(control.layerAlias, control.controlAlias, control.controlType)
 }
@@ -653,6 +701,7 @@ Example:
 	control.GetFocus()
 */
 func (shared *BaseControlInstanceType) GetFocus() *BaseControlInstanceType {
-	_ = SetFocus(shared)
+	defer lockUIState()()
+	_ = setFocus(shared)
 	return shared
 }

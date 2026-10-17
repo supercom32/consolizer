@@ -22,7 +22,7 @@ labelType is a structure which serves as a namespace for global label management
 type labelType struct{}
 
 var Label labelType
-var Labels = memory.NewControlMemoryManager[types.LabelEntryType]()
+var labelRegistry = memory.NewControlMemoryManager[types.LabelEntryType]()
 
 // ============================================================================
 // REGULAR ENTRY
@@ -35,9 +35,10 @@ Example:
     labelInstance.SetIsTooltipEnabled(true)
 */
 func (shared *LabelInstanceType) SetIsTooltipEnabled(isEnabled bool) {
-	labelEntry := Labels.Get(shared.layerAlias, shared.controlAlias)
+	defer lockUIState()()
+	labelEntry := labelRegistry.Get(shared.layerAlias, shared.controlAlias)
 	if labelEntry != nil && labelEntry.TooltipAlias != "" {
-		tooltipEntry := Tooltips.Get(shared.layerAlias, labelEntry.TooltipAlias)
+		tooltipEntry := tooltipRegistry.Get(shared.layerAlias, labelEntry.TooltipAlias)
 		tooltipEntry.IsEnabled = isEnabled
 	}
 }
@@ -49,8 +50,9 @@ Example:
     labelInstance.SetTooltipText("New tooltip text")
 */
 func (shared *LabelInstanceType) SetTooltipText(text string) {
-	labelEntry := Labels.Get(shared.layerAlias, shared.controlAlias)
-	tooltipEntry := Tooltips.Get(shared.layerAlias, labelEntry.TooltipAlias)
+	defer lockUIState()()
+	labelEntry := labelRegistry.Get(shared.layerAlias, shared.controlAlias)
+	tooltipEntry := tooltipRegistry.Get(shared.layerAlias, labelEntry.TooltipAlias)
 	tooltipEntry.Label = text
 }
 
@@ -61,7 +63,8 @@ Example:
     labelInstance = labelInstance.Delete()
 */
 func (shared *LabelInstanceType) Delete() *LabelInstanceType {
-	shared.BaseControlInstanceType.Delete()
+	defer lockUIState()()
+	shared.BaseControlInstanceType.delete()
 	return nil
 }
 
@@ -72,6 +75,19 @@ Example:
     labelInstance := Label.Add("mainLayer", "myLabel", "Hello World", style, 10, 5, 20)
 */
 func (shared *labelType) Add(layerAlias string, labelAlias string, labelValue string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int) LabelInstanceType {
+	defer lockUIState()()
+	return shared.add(layerAlias, labelAlias, labelValue, styleEntry, xLocation, yLocation, width)
+}
+
+/*
+add is a method which allows you to do exactly what Add does, for a caller that already holds uiStateMutex, such as
+another entry point of the package that has taken the lock itself.
+
+Example:
+
+	Label.add(layerAlias, labelAlias, labelValue, styleEntry, xLocation, yLocation, width)
+*/
+func (shared *labelType) add(layerAlias string, labelAlias string, labelValue string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int) LabelInstanceType {
 	labelEntry := types.NewLabelEntry()
 	labelEntry.StyleEntry = styleEntry
 	labelEntry.Alias = labelAlias
@@ -81,17 +97,17 @@ func (shared *labelType) Add(layerAlias string, labelAlias string, labelValue st
 	labelEntry.Width = width
 	labelEntry.TooltipAlias = stringformat.GetLastSortedUUID()
 	// Use the ControlMemoryManager to add the label entry
-	Labels.Add(layerAlias, labelAlias, &labelEntry)
+	labelRegistry.Add(layerAlias, labelAlias, &labelEntry)
 
 	tooltipWidth := len(stringformat.GetRunesFromString(labelValue)) + 13 // Add padding
 
-	tooltipInstance := Tooltip.Add(layerAlias, labelEntry.TooltipAlias, labelValue, styleEntry,
+	tooltipInstance := Tooltip.add(layerAlias, labelEntry.TooltipAlias, labelValue, styleEntry,
 		labelEntry.XLocation, labelEntry.YLocation,
 		labelEntry.Width+2, 1,
 		labelEntry.XLocation, labelEntry.YLocation+1,
 		tooltipWidth, 1,
 		false, true, constants.DefaultTooltipHoverTime)
-	tooltipInstance.SetEnabled(false)
+	tooltipInstance.setEnabled(false)
 	tooltipInstance.setParentControlAlias(labelAlias)
 	var labelInstance LabelInstanceType
 	labelInstance.layerAlias = layerAlias
@@ -107,7 +123,8 @@ Example:
     Label.Delete("mainLayer", "myLabel")
 */
 func (shared *labelType) Delete(layerAlias string, labelAlias string) {
-	Labels.Remove(layerAlias, labelAlias)
+	defer lockUIState()()
+	labelRegistry.Remove(layerAlias, labelAlias)
 	clearStaleControlReferences(layerAlias, labelAlias, constants.CellTypeLabel)
 }
 
@@ -118,7 +135,8 @@ Example:
     Label.DeleteAll("mainLayer")
 */
 func (shared *labelType) DeleteAll(layerAlias string) {
-	removeAllControlsAndClearCells(Labels, layerAlias, constants.CellTypeLabel, func(entry *types.LabelEntryType) string { return entry.Alias })
+	defer lockUIState()()
+	removeAllControlsAndClearCells(labelRegistry, layerAlias, constants.CellTypeLabel, func(entry *types.LabelEntryType) string { return entry.Alias })
 }
 
 /*
@@ -129,7 +147,7 @@ Example:
 */
 func (shared *labelType) drawOnLayer(layerEntry types.LayerEntryType) {
 	layerAlias := layerEntry.LayerAlias
-	for _, currentLabelEntry := range Labels.GetAllEntries(layerAlias) {
+	for _, currentLabelEntry := range labelRegistry.GetAllEntries(layerAlias) {
 		labelEntry := currentLabelEntry
 		drawLabel(&layerEntry, labelEntry.Alias, labelEntry.Label, labelEntry.StyleEntry, labelEntry.XLocation, labelEntry.YLocation, labelEntry.Width)
 	}

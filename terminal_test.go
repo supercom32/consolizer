@@ -34,11 +34,11 @@ func TestTerminalAddLayer(test *testing.T) {
 	layer1 := AddLayer(0, 0, 20, 20, 1, nil)
 	layer2 := AddLayer(0, 0, 20, 20, 2, layer1)
 	layer3 := AddLayer(0, 0, 20, 20, 3, nil)
-	layerEntry := Layers.Get(layer1.layerAlias)
+	layerEntry := layerRegistry.Get(layer1.layerAlias)
 	assert.Equalf(test, layer1.layerAlias, layerEntry.LayerAlias, "Failed to get layer entry!")
-	layerEntry = Layers.Get(layer2.layerAlias)
+	layerEntry = layerRegistry.Get(layer2.layerAlias)
 	assert.Equalf(test, layer2.layerAlias, layerEntry.LayerAlias, "Failed to get layer entry!")
-	layerEntry = Layers.Get(layer3.layerAlias)
+	layerEntry = layerRegistry.Get(layer3.layerAlias)
 	assert.Equalf(test, layer3.layerAlias, layerEntry.LayerAlias, "Failed to get layer entry!")
 }
 
@@ -58,7 +58,7 @@ func TestTerminalSetAlpha(test *testing.T) {
 	defer RestoreTerminalSettings()
 	layer1 := AddLayer(0, 0, 20, 20, 1, nil)
 	layer1.SetAlpha(50.0)
-	layerEntry := Layers.Get(layer1.layerAlias)
+	layerEntry := layerRegistry.Get(layer1.layerAlias)
 	alphaValue := layerEntry.DefaultAttribute.ForegroundAlphaValue
 	assert.Equalf(test, float32(50), alphaValue, "Setting the foreground alpha value for a layer failed.")
 	alphaValue = layerEntry.DefaultAttribute.BackgroundAlphaValue
@@ -135,7 +135,7 @@ func TestTerminalColor(test *testing.T) {
 	defer RestoreTerminalSettings()
 	layer1 := AddLayer(0, 0, 20, 20, 1, nil)
 	layer1.Color(3, 12)
-	layerEntry := Layers.Get(layer1.layerAlias)
+	layerEntry := layerRegistry.Get(layer1.layerAlias)
 	expectedValues := recast.GetArrayOfInterfaces(constants.AnsiColorByIndex[3], constants.AnsiColorByIndex[12])
 	obtainedValues := recast.GetArrayOfInterfaces(layerEntry.DefaultAttribute.ForegroundColor, layerEntry.DefaultAttribute.BackgroundColor)
 	assert.Equalf(test, expectedValues, obtainedValues, "The default specified layer color does not match what was set.")
@@ -163,7 +163,7 @@ func TestTerminalColorRGB(test *testing.T) {
 	backgroundBlueIndex := int32(192)
 	layer1 := AddLayer(0, 0, 20, 20, 1, nil)
 	layer1.ColorRGB(foregroundRedIndex, foregroundGreenIndex, foregroundBlueIndex, backgroundRedIndex, backgroundGreenIndex, backgroundBlueIndex)
-	layerEntry := Layers.Get(layer1.layerAlias)
+	layerEntry := layerRegistry.Get(layer1.layerAlias)
 	expectedValues := recast.GetArrayOfInterfaces(constants.ColorType(0x3004b65f9), constants.ColorType(0x3007b91c0))
 	obtainedValues := recast.GetArrayOfInterfaces(layerEntry.DefaultAttribute.ForegroundColor, layerEntry.DefaultAttribute.BackgroundColor)
 	assert.Equalf(test, expectedValues, obtainedValues, "The default specified layer color does not match what was set.")
@@ -187,7 +187,7 @@ func TestTerminalMoveLayerByAbsoluteValue(test *testing.T) {
 	xLocation := 9
 	yLocation := 8
 	layer1.MoveLayerByAbsoluteValue(xLocation, yLocation)
-	layerEntry := Layers.Get(layer1.layerAlias)
+	layerEntry := layerRegistry.Get(layer1.layerAlias)
 	expectedValues := recast.GetArrayOfInterfaces(xLocation, yLocation)
 	obtainedValues := recast.GetArrayOfInterfaces(layerEntry.ScreenXLocation, layerEntry.ScreenYLocation)
 	assert.Equalf(test, expectedValues, obtainedValues, "The layer did not move by the absolute value specified.")
@@ -217,7 +217,7 @@ func TestTerminalMoveLayerByRelativeValue(test *testing.T) {
 	xLocation := 9
 	yLocation := -8
 	layer1.MoveLayerByRelativeValue(xLocation, yLocation)
-	layerEntry := Layers.Get(layer1.layerAlias)
+	layerEntry := layerRegistry.Get(layer1.layerAlias)
 	expectedValues := recast.GetArrayOfInterfaces(xLocation, yLocation)
 	obtainedValues := recast.GetArrayOfInterfaces(layerEntry.ScreenXLocation, layerEntry.ScreenYLocation)
 	assert.Equalf(test, expectedValues, obtainedValues, "The layer did not move by the relative value specified.")
@@ -247,7 +247,7 @@ func TestTerminalLocate(test *testing.T) {
 	defer RestoreTerminalSettings()
 	layer1 := AddLayer(0, 0, 20, 20, 1, nil)
 	layer1.Locate(xLocation, yLocation)
-	layerEntry := Layers.Get(layer1.layerAlias)
+	layerEntry := layerRegistry.Get(layer1.layerAlias)
 	expectedValues := recast.GetArrayOfInterfaces(xLocation, yLocation)
 	obtainedValues := recast.GetArrayOfInterfaces(layerEntry.CursorXLocation, layerEntry.CursorYLocation)
 	assert.Equalf(test, expectedValues, obtainedValues, "The cursor position did not move to the location specified.")
@@ -285,7 +285,7 @@ func TestTerminalPrint(test *testing.T) {
 	layer1.Print("This is a test print on an arbitrary location!") // This line will be intentionally shifted.
 	layer1.Color(3, 15)
 	layer1.Print("This is a test print after printing on an arbitrary location!") // This line will force scroll by 1 line.
-	layerEntry := Layers.Get(layer1.layerAlias)
+	layerEntry := layerRegistry.Get(layer1.layerAlias)
 	obtainedValue := layerEntry.GetBasicAnsiStringAsBase64()
 	UpdateMasterImages(false, TERMINAL_TEST_SUITE_NAME, "TestTerminalPrint", obtainedValue)
 	expectedValue := LoadMasterImage(TERMINAL_TEST_SUITE_NAME, "TestTerminalPrint")
@@ -316,7 +316,7 @@ func TestTerminalClear(test *testing.T) {
 	layer1 := AddLayer(0, 0, layerWidth, layerHeight, 1, nil)
 	layer1.Color(13, 14)
 	layer1.FillLayer("0123456789")
-	layerEntry := Layers.Get(layer1.layerAlias)
+	layerEntry := layerRegistry.Get(layer1.layerAlias)
 	obtainedValue := layerEntry.GetBasicAnsiStringAsBase64()
 	UpdateMasterImages(false, TERMINAL_TEST_SUITE_NAME, "TestTerminalClear_Before", obtainedValue)
 	expectedValue := LoadMasterImage(TERMINAL_TEST_SUITE_NAME, "TestTerminalClear_Before")
@@ -360,7 +360,7 @@ func TestTerminalScrollCharacterMemory(test *testing.T) {
 	for lineIndex := 0; lineIndex < 13; lineIndex++ {
 		layer1.Print(fmt.Sprintf("This is the '%d' line of text printed!", lineIndex))
 	}
-	layerEntry := Layers.Get(layer1.layerAlias)
+	layerEntry := layerRegistry.Get(layer1.layerAlias)
 	obtainedValue := layerEntry.GetBasicAnsiStringAsBase64()
 	UpdateMasterImages(false, TERMINAL_TEST_SUITE_NAME, "TestTerminalScrollCharacterMemory", obtainedValue)
 	expectedValue := LoadMasterImage(TERMINAL_TEST_SUITE_NAME, "TestTerminalScrollCharacterMemory")
@@ -390,7 +390,7 @@ func TestTerminalGetRuneOnLayer(test *testing.T) {
 	defer RestoreTerminalSettings()
 	layer1 := AddLayer(0, 0, layerWidth, layerHeight, 1, nil)
 	layer1.Color(10, 7)
-	layerEntry := Layers.Get(layer1.layerAlias)
+	layerEntry := layerRegistry.Get(layer1.layerAlias)
 	attributeEntry := types.NewAttributeEntry()
 	attributeEntry.CellUserId = 999
 	arrayOfRunes := stringformat.GetRunesFromString("T")
@@ -771,7 +771,7 @@ func TestUpdateDisplayBlanksDeadZoneCells(test *testing.T) {
 		realWidth, realHeight)
 
 	wideRuneRow := 2
-	layerEntry := Layers.Get(layerInstance.GetAlias())
+	layerEntry := layerRegistry.Get(layerInstance.GetAlias())
 
 	poisonStyle := tcell.StyleDefault.Foreground(tcell.ColorRed).Background(tcell.ColorYellow)
 	type poisonedCell struct {

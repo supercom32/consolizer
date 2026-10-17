@@ -3,7 +3,6 @@ package consolizer
 import (
 	"github.com/supercom32/consolizer/memory"
 	"github.com/supercom32/consolizer/stringformat"
-	"sync"
 	"time"
 
 	"github.com/supercom32/consolizer/constants"
@@ -20,14 +19,7 @@ type TooltipInstanceType struct {
 type tooltipType struct{}
 
 var Tooltip tooltipType
-var Tooltips = memory.NewControlMemoryManager[types.TooltipEntryType]()
-
-// tooltipStateMutex guards every tooltip's hover state (HoverStartTime, HoverXLocation, HoverYLocation, and IsDrawn),
-// which the event goroutine and the periodic-event goroutine both update through updateMouseEvent, and which render
-// reads while UpdateDisplay runs on any goroutine. Lock order: commonResource.displayUpdate may be held when taking
-// this lock. While this lock is held, only leaf locks may be taken (mouse memory, the event state lock, and the
-// control memory managers), never commonResource.displayUpdate.
-var tooltipStateMutex sync.Mutex
+var tooltipRegistry = memory.NewControlMemoryManager[types.TooltipEntryType]()
 
 // ============================================================================
 // REGULAR ENTRY
@@ -40,7 +32,20 @@ Example:
     tooltip.SetEnabled(true)
 */
 func (shared *TooltipInstanceType) SetEnabled(enabled bool) *TooltipInstanceType {
-	tooltipEntry := Tooltips.Get(shared.layerAlias, shared.controlAlias)
+	defer lockUIState()()
+	return shared.setEnabled(enabled)
+}
+
+/*
+setEnabled is a method which allows you to do exactly what SetEnabled does, for a caller that already holds
+uiStateMutex, such as another entry point of the package that has taken the lock itself.
+
+Example:
+
+	tooltip.setEnabled(enabled)
+*/
+func (shared *TooltipInstanceType) setEnabled(enabled bool) *TooltipInstanceType {
+	tooltipEntry := tooltipRegistry.Get(shared.layerAlias, shared.controlAlias)
 	if tooltipEntry != nil {
 		tooltipEntry.IsEnabled = enabled
 	}
@@ -56,6 +61,19 @@ Example:
     tooltip.Add("layer1", "tooltip1", "Info", style, 10, 10, 5, 1, 10, 12, 10, 3, true, true, 500)
 */
 func (shared *tooltipType) Add(layerAlias string, tooltipAlias string, tooltipText string, styleEntry types.TuiStyleEntryType, hotspotXLocation int, hotspotYLocation int, hotspotWidth int, hotspotHeight int, tooltipXLocation int, tooltipYLocation int, tooltipWidth int, tooltipHeight int, isLocationAbsolute bool, isBorderDrawn bool, hoverTime int) TooltipInstanceType {
+	defer lockUIState()()
+	return shared.add(layerAlias, tooltipAlias, tooltipText, styleEntry, hotspotXLocation, hotspotYLocation, hotspotWidth, hotspotHeight, tooltipXLocation, tooltipYLocation, tooltipWidth, tooltipHeight, isLocationAbsolute, isBorderDrawn, hoverTime)
+}
+
+/*
+add is a method which allows you to do exactly what Add does, for a caller that already holds uiStateMutex, such as
+another entry point of the package that has taken the lock itself.
+
+Example:
+
+	Tooltip.add(layerAlias, tooltipAlias, tooltipText, styleEntry, hotspotXLocation, hotspotYLocation, hotspotWidth, hotspotHeight, tooltipXLocation, tooltipYLocation, tooltipWidth, tooltipHeight, isLocationAbsolute, isBorderDrawn, hoverTime)
+*/
+func (shared *tooltipType) add(layerAlias string, tooltipAlias string, tooltipText string, styleEntry types.TuiStyleEntryType, hotspotXLocation int, hotspotYLocation int, hotspotWidth int, hotspotHeight int, tooltipXLocation int, tooltipYLocation int, tooltipWidth int, tooltipHeight int, isLocationAbsolute bool, isBorderDrawn bool, hoverTime int) TooltipInstanceType {
 	tooltipEntry := types.NewTooltipEntry()
 	tooltipEntry.StyleEntry = styleEntry
 	tooltipEntry.Alias = tooltipAlias
@@ -71,7 +89,7 @@ func (shared *tooltipType) Add(layerAlias string, tooltipAlias string, tooltipTe
 	tooltipEntry.IsLocationAbsolute = isLocationAbsolute
 	tooltipEntry.IsBorderDrawn = isBorderDrawn
 	tooltipEntry.HoverDisplayDelay = hoverTime
-	Tooltips.Add(layerAlias, tooltipAlias, &tooltipEntry)
+	tooltipRegistry.Add(layerAlias, tooltipAlias, &tooltipEntry)
 	var tooltipInstance TooltipInstanceType
 	tooltipInstance.layerAlias = layerAlias
 	tooltipInstance.controlAlias = tooltipAlias
@@ -88,7 +106,20 @@ Example:
     tooltip.Delete("layer1", "tooltip1")
 */
 func (shared *tooltipType) Delete(layerAlias string, labelAlias string) {
-	Tooltips.Remove(layerAlias, labelAlias)
+	defer lockUIState()()
+	shared.delete(layerAlias, labelAlias)
+}
+
+/*
+delete is a method which allows you to do exactly what Delete does, for a caller that already holds uiStateMutex, such
+as another entry point of the package that has taken the lock itself.
+
+Example:
+
+	Tooltip.delete(layerAlias, labelAlias)
+*/
+func (shared *tooltipType) delete(layerAlias string, labelAlias string) {
+	tooltipRegistry.Remove(layerAlias, labelAlias)
 	clearStaleControlReferences(layerAlias, labelAlias, constants.CellTypeTooltip)
 }
 
@@ -99,7 +130,8 @@ Example:
     tooltip.DeleteAll("layer1")
 */
 func (shared *tooltipType) DeleteAll(layerAlias string) {
-	removeAllControlsAndClearCells(Tooltips, layerAlias, constants.CellTypeTooltip, func(entry *types.TooltipEntryType) string { return entry.Alias })
+	defer lockUIState()()
+	removeAllControlsAndClearCells(tooltipRegistry, layerAlias, constants.CellTypeTooltip, func(entry *types.TooltipEntryType) string { return entry.Alias })
 }
 
 /*
@@ -110,7 +142,7 @@ Example:
 */
 func (shared *tooltipType) drawHotspotZonesOnLayer(layerEntry types.LayerEntryType) {
 	layerAlias := layerEntry.LayerAlias
-	for _, currentTooltipEntry := range Tooltips.GetAllEntries(layerAlias) {
+	for _, currentTooltipEntry := range tooltipRegistry.GetAllEntries(layerAlias) {
 		tooltipEntry := currentTooltipEntry
 		shared.drawHotspot(&layerEntry, tooltipEntry)
 	}
@@ -145,7 +177,7 @@ Example:
     tooltip.renderAll(layerEntry)
 */
 func (shared *tooltipType) renderAll(layerEntry types.LayerEntryType) {
-	for _, currentTooltipEntry := range Tooltips.GetAllEntriesOverall() {
+	for _, currentTooltipEntry := range tooltipRegistry.GetAllEntriesOverall() {
 		tooltipEntry := currentTooltipEntry
 		shared.render(&layerEntry, tooltipEntry)
 	}
@@ -161,9 +193,6 @@ render is a method which renders a tooltip on a given text layer. In addition, t
 
 - If the tooltip is not enabled or not marked as drawn, then no rendering will occur.
 
-- IsDrawn is read under tooltipStateMutex, since updateMouseEvent may be changing it on another goroutine while
-  UpdateDisplay renders.
-
 - When absolute positioning is not used, the tooltip will be positioned relative to the current mouse cursor location.
 
 - If borders are enabled, they will be drawn around the text area, expanding the total rendered size by 2 characters.
@@ -172,10 +201,7 @@ Example:
     tooltip.render(layerEntry, entry)
 */
 func (shared *tooltipType) render(layerEntry *types.LayerEntryType, tooltipEntry *types.TooltipEntryType) {
-	tooltipStateMutex.Lock()
-	isDrawn := tooltipEntry.IsDrawn
-	tooltipStateMutex.Unlock()
-	if !tooltipEntry.IsEnabled || !isDrawn {
+	if !tooltipEntry.IsEnabled || !tooltipEntry.IsDrawn {
 		return
 	}
 	attributeEntry := types.NewAttributeEntry()
@@ -238,55 +264,55 @@ func (shared *tooltipType) getFromCharacterEntry(entry types.CharacterEntryType)
 
 	switch entry.AttributeEntry.CellType {
 	case constants.CellTypeButton:
-		if button, isFound := Buttons.Lookup(layer, alias); isFound && button.TooltipAlias != "" {
-			if tooltipEntry, isFound := Tooltips.Lookup(layer, button.TooltipAlias); isFound {
+		if button, isFound := buttonRegistry.Lookup(layer, alias); isFound && button.TooltipAlias != "" {
+			if tooltipEntry, isFound := tooltipRegistry.Lookup(layer, button.TooltipAlias); isFound {
 				return tooltipEntry
 			}
 		}
 	case constants.CellTypeLabel:
-		if label, isFound := Labels.Lookup(layer, alias); isFound && label.TooltipAlias != "" {
-			if tooltipEntry, isFound := Tooltips.Lookup(layer, label.TooltipAlias); isFound {
+		if label, isFound := labelRegistry.Lookup(layer, alias); isFound && label.TooltipAlias != "" {
+			if tooltipEntry, isFound := tooltipRegistry.Lookup(layer, label.TooltipAlias); isFound {
 				return tooltipEntry
 			}
 		}
 	case constants.CellTypeCheckbox:
-		if checkbox, isFound := Checkboxes.Lookup(layer, alias); isFound && checkbox.TooltipAlias != "" {
-			if tooltipEntry, isFound := Tooltips.Lookup(layer, checkbox.TooltipAlias); isFound {
+		if checkbox, isFound := checkboxRegistry.Lookup(layer, alias); isFound && checkbox.TooltipAlias != "" {
+			if tooltipEntry, isFound := tooltipRegistry.Lookup(layer, checkbox.TooltipAlias); isFound {
 				return tooltipEntry
 			}
 		}
 	case constants.CellTypeRadioButton:
-		if radio, isFound := RadioButtons.Lookup(layer, alias); isFound && radio.TooltipAlias != "" {
-			if tooltipEntry, isFound := Tooltips.Lookup(layer, radio.TooltipAlias); isFound {
+		if radio, isFound := radioButtonRegistry.Lookup(layer, alias); isFound && radio.TooltipAlias != "" {
+			if tooltipEntry, isFound := tooltipRegistry.Lookup(layer, radio.TooltipAlias); isFound {
 				return tooltipEntry
 			}
 		}
 	case constants.CellTypeTextField:
-		if textField, isFound := TextFields.Lookup(layer, alias); isFound && textField.TooltipAlias != "" {
-			if tooltipEntry, isFound := Tooltips.Lookup(layer, textField.TooltipAlias); isFound {
+		if textField, isFound := textFieldRegistry.Lookup(layer, alias); isFound && textField.TooltipAlias != "" {
+			if tooltipEntry, isFound := tooltipRegistry.Lookup(layer, textField.TooltipAlias); isFound {
 				return tooltipEntry
 			}
 		}
 	case constants.CellTypeTextbox:
-		if textbox, isFound := Textboxes.Lookup(layer, alias); isFound && textbox.TooltipAlias != "" {
-			if tooltipEntry, isFound := Tooltips.Lookup(layer, textbox.TooltipAlias); isFound {
+		if textbox, isFound := textboxRegistry.Lookup(layer, alias); isFound && textbox.TooltipAlias != "" {
+			if tooltipEntry, isFound := tooltipRegistry.Lookup(layer, textbox.TooltipAlias); isFound {
 				return tooltipEntry
 			}
 		}
 	case constants.CellTypeProgressBar:
-		if progressBar, isFound := ProgressBars.Lookup(layer, alias); isFound && progressBar.TooltipAlias != "" {
-			if tooltipEntry, isFound := Tooltips.Lookup(layer, progressBar.TooltipAlias); isFound {
+		if progressBar, isFound := progressBarRegistry.Lookup(layer, alias); isFound && progressBar.TooltipAlias != "" {
+			if tooltipEntry, isFound := tooltipRegistry.Lookup(layer, progressBar.TooltipAlias); isFound {
 				return tooltipEntry
 			}
 		}
 	case constants.CellTypeSelectorItem:
-		if selector, isFound := Selectors.Lookup(layer, alias); isFound && selector.TooltipAlias != "" {
-			if tooltipEntry, isFound := Tooltips.Lookup(layer, selector.TooltipAlias); isFound {
+		if selector, isFound := selectorRegistry.Lookup(layer, alias); isFound && selector.TooltipAlias != "" {
+			if tooltipEntry, isFound := tooltipRegistry.Lookup(layer, selector.TooltipAlias); isFound {
 				return tooltipEntry
 			}
 		}
 	case constants.CellTypeTooltip:
-		if tooltipEntry, isFound := Tooltips.Lookup(layer, alias); isFound {
+		if tooltipEntry, isFound := tooltipRegistry.Lookup(layer, alias); isFound {
 			return tooltipEntry
 		}
 	}
@@ -296,17 +322,16 @@ func (shared *tooltipType) getFromCharacterEntry(entry types.CharacterEntryType)
 /*
 updateMouseEvent is a method which processes mouse events for tooltips. In addition, the following should be noted:
 
-- Handles hover detection and timing.
+  - Handles hover detection and timing.
 
-- Manages showing and hiding of tooltips based on mouse movement and position.
+  - Manages showing and hiding of tooltips based on mouse movement and position.
 
-- The hover state machine runs entirely under tooltipStateMutex, since both the event goroutine and the
-  periodic-event goroutine call this method and would otherwise interleave their updates to the same tooltip. The
-  screen and event state lookups happen before the lock is taken, so it is never held while waiting on
-  commonResource.displayUpdate.
+  - Both the event goroutine and the periodic-event goroutine call this method, each holding uiStateMutex, so their
+    updates to the same tooltip never interleave.
 
 Example:
-    update := tooltip.updateMouseEvent()
+
+	update := tooltip.updateMouseEvent()
 */
 func (shared *tooltipType) updateMouseEvent() bool {
 	isScreenUpdateRequired := false
@@ -322,8 +347,6 @@ func (shared *tooltipType) updateMouseEvent() bool {
 		tooltipEntry = nil
 	}
 
-	tooltipStateMutex.Lock()
-	defer tooltipStateMutex.Unlock()
 	if tooltipEntry != nil {
 		mouseXLocation, mouseYLocation, _, _ = GetMouseStatus()
 		if tooltipEntry.HoverStartTime.IsZero() {
@@ -345,7 +368,7 @@ func (shared *tooltipType) updateMouseEvent() bool {
 			tooltipEntry.IsDrawn = true
 		}
 	} else {
-		for _, currentTooltipEntry := range Tooltips.GetAllEntriesOverall() {
+		for _, currentTooltipEntry := range tooltipRegistry.GetAllEntriesOverall() {
 			if currentTooltipEntry.IsDrawn == true {
 				// Only update if a change was detected.
 				isScreenUpdateRequired = true
@@ -367,7 +390,7 @@ Example:
     tooltip.setParentControlAlias("parent1")
 */
 func (shared *TooltipInstanceType) setParentControlAlias(parentControlAlias string) *TooltipInstanceType {
-	tooltipEntry := Tooltips.Get(shared.layerAlias, shared.controlAlias)
+	tooltipEntry := tooltipRegistry.Get(shared.layerAlias, shared.controlAlias)
 	if tooltipEntry != nil {
 		tooltipEntry.ParentControlAlias = parentControlAlias
 	}
@@ -384,7 +407,20 @@ Example:
     tooltip.SetValue("New value")
 */
 func (shared *TooltipInstanceType) SetValue(text string) *TooltipInstanceType {
-	tooltipEntry := Tooltips.Get(shared.layerAlias, shared.controlAlias)
+	defer lockUIState()()
+	return shared.setValue(text)
+}
+
+/*
+setValue is a method which allows you to do exactly what SetValue does, for a caller that already holds uiStateMutex,
+such as another entry point of the package that has taken the lock itself.
+
+Example:
+
+	tooltip.setValue(text)
+*/
+func (shared *TooltipInstanceType) setValue(text string) *TooltipInstanceType {
+	tooltipEntry := tooltipRegistry.Get(shared.layerAlias, shared.controlAlias)
 	tooltipEntry.Text = text
 	return shared
 }
@@ -398,5 +434,109 @@ Example:
     tooltip.SetText("New text")
 */
 func (shared *TooltipInstanceType) SetText(text string) *TooltipInstanceType {
-	return shared.SetValue(text)
+	defer lockUIState()()
+	return shared.setValue(text)
+}
+
+/*
+GetText is a method which allows you to obtain the text a tooltip shows. If the tooltip does not exist, an empty string
+is returned.
+
+Example:
+
+	text := tooltip.GetText()
+*/
+func (shared *TooltipInstanceType) GetText() string {
+	defer lockUIState()()
+	if tooltipEntry, isFound := tooltipRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound {
+		return tooltipEntry.Text
+	}
+	return ""
+}
+
+/*
+GetHoverDelay is a method which allows you to obtain how long, in milliseconds, the mouse must rest on a tooltip's
+hotspot before the tooltip is shown. If the tooltip does not exist, 0 is returned.
+
+Example:
+
+	delayInMilliseconds := tooltip.GetHoverDelay()
+*/
+func (shared *TooltipInstanceType) GetHoverDelay() int {
+	defer lockUIState()()
+	if tooltipEntry, isFound := tooltipRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound {
+		return tooltipEntry.HoverDisplayDelay
+	}
+	return 0
+}
+
+/*
+SetHoverDelay is a method which allows you to set how long, in milliseconds, the mouse must rest on a tooltip's hotspot
+before the tooltip is shown. A negative delay is treated as zero, which shows the tooltip as soon as the mouse rests on
+the hotspot. If the tooltip does not exist, no operation occurs.
+
+Example:
+
+	tooltip.SetHoverDelay(500)
+*/
+func (shared *TooltipInstanceType) SetHoverDelay(delayInMilliseconds int) {
+	defer lockUIState()()
+	if tooltipEntry, isFound := tooltipRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound {
+		tooltipEntry.HoverDisplayDelay = getClampedIndex(delayInMilliseconds, 0, delayInMilliseconds)
+	}
+}
+
+/*
+IsShowing is a method which allows you to check whether a tooltip is currently being shown, because it is enabled and
+the mouse has rested on its hotspot for its hover delay. If the tooltip does not exist, false is returned.
+
+Example:
+
+	isShowing := tooltip.IsShowing()
+*/
+func (shared *TooltipInstanceType) IsShowing() bool {
+	defer lockUIState()()
+	if tooltipEntry, isFound := tooltipRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound {
+		return tooltipEntry.IsEnabled && tooltipEntry.IsDrawn
+	}
+	return false
+}
+
+/*
+SetHotspot is a method which allows you to move and resize the area of the layer that the mouse must rest on for a
+tooltip to be shown, given as its column, row, width and height. A width or height below one, or a tooltip that does
+not exist, leaves the hotspot unchanged.
+
+Example:
+
+	tooltip.SetHotspot(2, 4, 10, 1)
+*/
+func (shared *TooltipInstanceType) SetHotspot(xLocation int, yLocation int, width int, height int) {
+	defer lockUIState()()
+	tooltipEntry, isFound := tooltipRegistry.Lookup(shared.layerAlias, shared.controlAlias)
+	if !isFound || width < 1 || height < 1 {
+		return
+	}
+	tooltipEntry.HotspotXLocation, tooltipEntry.HotspotYLocation = xLocation, yLocation
+	tooltipEntry.HotspotWidth, tooltipEntry.HotspotHeight = width, height
+}
+
+/*
+SetDisplayArea is a method which allows you to move and resize the box a tooltip is drawn in, given as its column, row,
+width and height. When the tooltip was added with absolute positioning, the column and row are a fixed place on the
+layer, and otherwise they are measured from the mouse cursor. A width or height below one, or a tooltip that does not
+exist, leaves the box unchanged.
+
+Example:
+
+	tooltip.SetDisplayArea(2, 5, 30, 3)
+*/
+func (shared *TooltipInstanceType) SetDisplayArea(xLocation int, yLocation int, width int, height int) {
+	defer lockUIState()()
+	tooltipEntry, isFound := tooltipRegistry.Lookup(shared.layerAlias, shared.controlAlias)
+	if !isFound || width < 1 || height < 1 {
+		return
+	}
+	tooltipEntry.TooltipXLocation, tooltipEntry.TooltipYLocation = xLocation, yLocation
+	tooltipEntry.TooltipWidth, tooltipEntry.TooltipHeight = width, height
 }

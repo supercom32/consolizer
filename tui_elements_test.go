@@ -155,7 +155,7 @@ func TestDrawButton(test *testing.T) {
 	layer2.FillLayer("b1b2b3b4b5")
 	layer2.AddButton("ButtonText", styleEntry, 2, 2, 20, 7, true)
 	button2 := layer2.AddButton("ButtonText", styleEntry, 2, 10, 20, 7, true)
-	Buttons.Get(layer2.layerAlias, button2.controlAlias).IsPressed = true
+	buttonRegistry.Get(layer2.layerAlias, button2.controlAlias).IsPressed = true
 	UpdateDisplay(false)
 	layerEntry := commonResource.screenLayer
 	obtainedValue := layerEntry.GetBasicAnsiStringAsBase64()

@@ -77,7 +77,7 @@ func TestButtonPressedState(test *testing.T) {
 	buttonObject := layer1.AddButton("Test", styleEntry, 2, 2, 10, 3, true)
 
 	// Simulate a button press by directly setting the button state
-	buttonEntry := Buttons.Get(layer1.layerAlias, buttonObject.controlAlias)
+	buttonEntry := buttonRegistry.Get(layer1.layerAlias, buttonObject.controlAlias)
 	buttonEntry.IsPressed = true
 
 	UpdateDisplay(false)
@@ -108,7 +108,7 @@ func TestButtonSelectedState(test *testing.T) {
 	buttonObject := layer1.AddButton("Test", styleEntry, 2, 2, 10, 3, true)
 
 	// Simulate a button selection by directly setting the button state
-	buttonEntry := Buttons.Get(layer1.layerAlias, buttonObject.controlAlias)
+	buttonEntry := buttonRegistry.Get(layer1.layerAlias, buttonObject.controlAlias)
 	buttonEntry.IsSelected = true
 
 	UpdateDisplay(false)
@@ -339,7 +339,7 @@ func TestButtonFlatPressedUsesPressedColors(test *testing.T) {
 	styleEntry.Button.StyleMode = constants.ButtonStyleFlat
 	styleEntry.Button.PressedBackgroundColor = pressedBackgroundColor
 	buttonInstance := layer1.AddButton("Test", styleEntry, 2, 2, 10, 3, true)
-	buttonEntry := Buttons.Get(buttonInstance.layerAlias, buttonInstance.controlAlias)
+	buttonEntry := buttonRegistry.Get(buttonInstance.layerAlias, buttonInstance.controlAlias)
 	buttonEntry.IsPressed = true
 	UpdateDisplay(false)
 	characterMemory := commonResource.screenLayer.CharacterMemory
@@ -420,7 +420,7 @@ func TestButtonBorderlessPressedUsesPressedColors(test *testing.T) {
 	styleEntry.Button.StyleMode = constants.ButtonStyleBorderless
 	styleEntry.Button.PressedBackgroundColor = pressedBackgroundColor
 	buttonInstance := layer1.AddButton("Test", styleEntry, 2, 2, 10, 3, true)
-	buttonEntry := Buttons.Get(buttonInstance.layerAlias, buttonInstance.controlAlias)
+	buttonEntry := buttonRegistry.Get(buttonInstance.layerAlias, buttonInstance.controlAlias)
 	buttonEntry.IsPressed = true
 	UpdateDisplay(false)
 	characterMemory := commonResource.screenLayer.CharacterMemory

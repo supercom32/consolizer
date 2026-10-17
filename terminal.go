@@ -41,6 +41,9 @@ type defaultValueType struct {
 	updateDisplayChannel    chan bool
 	eventGoroutines         sync.WaitGroup
 	eventGoroutinesStopOnce sync.Once
+	// eventGoroutinesSignalOnce guards the single close of updateDisplayChannel, which can come from
+	// stopEventGoroutines or from restoreTerminalAfterFatalError, so that a second signal never closes it twice.
+	eventGoroutinesSignalOnce sync.Once
 	// isTerminated is set once RestoreTerminalSettings has torn the screen down, and is only ever read or written
 	// while holding displayUpdate. Every function that touches the screen checks it first so that a caller who
 	// keeps drawing after shutdown (or from a goroutine RestoreTerminalSettings has no way to know about) gets a
@@ -98,6 +101,7 @@ func InitializeTerminal(width int, height int) {
 	// silently skip waiting for this session's own setupEventUpdater and setupPeriodicEventUpdater, leaving them
 	// to keep running against whatever screen and channel this call is about to install.
 	commonResource.eventGoroutinesStopOnce = sync.Once{}
+	commonResource.eventGoroutinesSignalOnce = sync.Once{}
 	// Set the mouse location off screen so it won't trigger events at 0,0 which the user never moved to.
 	SetMouseStatus(-1, -1, 0, "")
 	var detectedWidth int
@@ -219,20 +223,40 @@ Example:
 */
 func stopEventGoroutines() {
 	commonResource.eventGoroutinesStopOnce.Do(func() {
-		if commonResource.screen != nil {
-			commonResource.screen.PostEvent(tcell.NewEventInterrupt(nil))
-		}
-		// updateDisplayChannel is nil only when this runs without a prior InitializeTerminal call in this process,
-		// since InitializeTerminal is now the sole place that assigns it, unconditionally. Sending on a nil
-		// channel blocks forever, so this must be skipped rather than attempted unconditionally. Closing rather
-		// than sending a single value is what lets both goroutines stop reliably: a single send on an unbuffered
-		// channel only ever wakes whichever one of them happens to be selecting on it at that instant, leaving
-		// the other looping forever, while a close is observed by every current and future receiver.
+		signalEventGoroutinesToStop()
 		if commonResource.updateDisplayChannel == nil {
 			return
 		}
-		close(commonResource.updateDisplayChannel)
 		commonResource.eventGoroutines.Wait()
+	})
+}
+
+/*
+signalEventGoroutinesToStop is a method which allows you to tell the background goroutines started by
+InitializeTerminal to stop, without waiting for them to do so. It wakes the event goroutine if it is waiting for a
+terminal event and closes the channel both goroutines watch. Only the first call in a session has any effect, so it
+is safe to call from both stopEventGoroutines and restoreTerminalAfterFatalError. In addition, the following should be
+noted:
+
+  - updateDisplayChannel is nil only when this runs without a prior InitializeTerminal call in this process, since
+    InitializeTerminal is the sole place that assigns it. Closing a nil channel panics, so it is skipped then.
+
+  - Closing rather than sending a single value is what lets both goroutines stop reliably: a single send on an
+    unbuffered channel only wakes whichever of them happens to be selecting on it at that instant, while a close is
+    observed by every current and future receiver.
+
+Example:
+
+	signalEventGoroutinesToStop()
+*/
+func signalEventGoroutinesToStop() {
+	commonResource.eventGoroutinesSignalOnce.Do(func() {
+		if commonResource.screen != nil {
+			commonResource.screen.PostEvent(tcell.NewEventInterrupt(nil))
+		}
+		if commonResource.updateDisplayChannel != nil {
+			close(commonResource.updateDisplayChannel)
+		}
 	})
 }
 
@@ -325,7 +349,7 @@ Example:
     AddTextStyle("MyStyle", myStyleEntry)
 */
 func AddTextStyle(textStyleAlias string, textStyleEntry types.TextCellStyleEntryType) {
-	TextStyles.Add(textStyleAlias, &textStyleEntry)
+	textStyleRegistry.Add(textStyleAlias, &textStyleEntry)
 }
 
 /*
@@ -339,7 +363,7 @@ Example:
 */
 func DeleteTextStyle(textStyleAlias string) {
 	validateTextStyleExists(textStyleAlias)
-	TextStyles.Remove(textStyleAlias)
+	textStyleRegistry.Remove(textStyleAlias)
 }
 
 /*
@@ -424,7 +448,7 @@ Example:
     setLayerZOrderInstance(myLayer, 10)
 */
 func setLayerZOrderInstance(layerInstance *LayerInstanceType, zOrder int) {
-	layerEntry := Layers.Get(layerInstance.layerAlias)
+	layerEntry := layerRegistry.Get(layerInstance.layerAlias)
 	layerEntry.ZOrder = zOrder
 }
 
@@ -441,7 +465,7 @@ Example:
     setLayerAlphaInstance(myLayer, 0.5)
 */
 func setLayerAlphaInstance(layerInstance *LayerInstanceType, alphaValue float32) {
-	layerEntry := Layers.Get(layerInstance.layerAlias)
+	layerEntry := layerRegistry.Get(layerInstance.layerAlias)
 	layerEntry.DefaultAttribute.ForegroundAlphaValue = alphaValue
 	layerEntry.DefaultAttribute.BackgroundAlphaValue = alphaValue
 }
@@ -486,7 +510,7 @@ Example:
 func colorLayerInstance(layerInstance *LayerInstanceType, foregroundColorIndex int, backgroundColorIndex int) {
 	validateColorIndex(foregroundColorIndex)
 	validateColorIndex(backgroundColorIndex)
-	layerEntry := Layers.Get(layerInstance.layerAlias)
+	layerEntry := layerRegistry.Get(layerInstance.layerAlias)
 	layerEntry.DefaultAttribute.ForegroundColor = constants.AnsiColorByIndex[foregroundColorIndex]
 	layerEntry.DefaultAttribute.BackgroundColor = constants.AnsiColorByIndex[backgroundColorIndex]
 }
@@ -511,7 +535,7 @@ Example:
     colorLayer24BitInstance(myLayer, fgColor, bgColor)
 */
 func colorLayer24BitInstance(layerInstance *LayerInstanceType, foregroundColor constants.ColorType, backgroundColor constants.ColorType) {
-	layerEntry := Layers.Get(layerInstance.layerAlias)
+	layerEntry := layerRegistry.Get(layerInstance.layerAlias)
 	layerEntry.DefaultAttribute.ForegroundColor = foregroundColor
 	layerEntry.DefaultAttribute.BackgroundColor = backgroundColor
 }
@@ -528,7 +552,7 @@ Example:
 */
 func locateLayerInstance(layerInstance *LayerInstanceType, xLocation int, yLocation int) {
 	validateLayer(layerInstance.layerAlias)
-	layerEntry := Layers.Get(layerInstance.layerAlias)
+	layerEntry := layerRegistry.Get(layerInstance.layerAlias)
 	validateLayerLocationByLayerEntry(layerEntry, xLocation, yLocation)
 	layerEntry.CursorXLocation = xLocation
 	layerEntry.CursorYLocation = yLocation
@@ -547,7 +571,7 @@ Example:
     printLayerInstance(myLayer, "Hello World")
 */
 func printLayerInstance(layerInstance *LayerInstanceType, textToPrint string) {
-	layerEntry := Layers.Get(layerInstance.layerAlias)
+	layerEntry := layerRegistry.Get(layerInstance.layerAlias)
 	if layerEntry.CursorYLocation >= layerEntry.Height {
 		layerEntry.CursorYLocation = layerEntry.Height - 1
 		layerEntry.CharacterMemory = scrollCharacterMemory(layerEntry)
@@ -775,7 +799,7 @@ Example:
 */
 func getCellIdByLayerAlias(layerAlias string, mouseXLocation int, mouseYLocation int) int {
 	validateLayer(layerAlias)
-	layerEntry := Layers.Get(layerAlias)
+	layerEntry := layerRegistry.Get(layerAlias)
 	return getCellIdByLayerEntry(layerEntry, mouseXLocation, mouseYLocation)
 }
 
@@ -805,17 +829,34 @@ func getCellIdByLayerEntry(layerEntry *types.LayerEntryType, xLocation int, yLoc
 UpdateDisplay is a method which allows you to synchronize the terminal's visible display area with your current changes.
 In addition, the following should be noted:
 
-- All text layers are sorted from lowest to highest z-order priority level.
+  - All text layers are sorted from lowest to highest z-order priority level.
 
-- Layers with the same z-order priority will appear in random display order.
+  - Layers with the same z-order priority will appear in random display order.
 
-- Once RestoreTerminalSettings has torn the screen down, this becomes a silent no-op instead of touching the freed
-  screen, so it remains safe to call from a goroutine that outlives shutdown.
+  - Once RestoreTerminalSettings has torn the screen down, this becomes a silent no-op instead of touching the freed
+    screen, so it remains safe to call from a goroutine that outlives shutdown.
+
+  - It is safe to call from any goroutine. The whole redraw runs under the UI lock, so it never draws a layer or
+    control that another goroutine is half way through changing.
 
 Example:
-    UpdateDisplay(false)
+
+	UpdateDisplay(false)
 */
 func UpdateDisplay(isRefreshForced bool) {
+	defer lockUIState()()
+	updateDisplayLocked(isRefreshForced)
+}
+
+/*
+updateDisplayLocked is a method which allows you to redraw the terminal exactly as UpdateDisplay does, for a caller
+that already holds uiStateMutex, such as the event goroutine redrawing after it has handled an event.
+
+Example:
+
+	updateDisplayLocked(false)
+*/
+func updateDisplayLocked(isRefreshForced bool) {
 	// Taken before the display lock, since the focus manager lock must never be held while waiting on it.
 	reconcileFocus()
 	commonResource.displayUpdate.Lock()
@@ -923,7 +964,7 @@ func renderLayers(rootLayerEntry *types.LayerEntryType, sortedLayerAliasSlice La
 	baseLayerEntry := types.NewLayerEntry("", "", 0, 0, rootLayerEntry)
 	isOpaque := true
 	for currentListIndex := 0; currentListIndex < len(sortedLayerAliasSlice); currentListIndex++ {
-		layerEntry, isFound := Layers.Lookup(sortedLayerAliasSlice[currentListIndex].Key)
+		layerEntry, isFound := layerRegistry.Lookup(sortedLayerAliasSlice[currentListIndex].Key)
 		if !isFound {
 			continue
 		}
@@ -985,7 +1026,7 @@ Example:
 */
 func overlayLayersByLayerAlias(sourceLayerAlias string, targetLayerEntry *types.LayerEntryType) {
 	validateLayer(sourceLayerAlias)
-	layerEntry := Layers.Get(sourceLayerAlias)
+	layerEntry := layerRegistry.Get(sourceLayerAlias)
 	overlayLayers(layerEntry, targetLayerEntry, false, false)
 }
 
@@ -1412,6 +1453,8 @@ Example:
     DrawLayerToScreen(layerEntry, false)
 */
 func DrawLayerToScreen(layerEntry *types.LayerEntryType, isForcedRefreshRequired bool) {
+	// The layer may be one of the package's own, which other goroutines change under the UI lock.
+	defer lockUIState()()
 	commonResource.displayUpdate.Lock()
 	defer commonResource.displayUpdate.Unlock()
 	if commonResource.isTerminated {

@@ -445,7 +445,7 @@ func testWindowMovement() {
 	layer1.Locate(xLocation, yLocation)
 	layer1.Print("This is a test of the layer system")
 	layer1.Locate(1, 1)
-	layer1.Print(strconv.Itoa(Layers.Get(layer2.layerAlias).ZOrder))
+	layer1.Print(strconv.Itoa(layerRegistry.Get(layer2.layerAlias).ZOrder))
 	styleEntry := types.NewTuiStyleEntry()
 	layer3.DrawWindow(styleEntry, 0, 0, 18, 9, true)
 	layer4.DrawWindow(styleEntry, 0, 0, 18, 9, true)
@@ -474,7 +474,7 @@ func testButtonPressAction() {
 	styleEntry := types.NewTuiStyleEntry()
 	layer1.AddButton("CANCEL", styleEntry, 2, 2, 10, 10, true)
 	layer1.AddButton("OK", styleEntry, 15, 2, 10, 10, true)
-	layerInformation := Layers.Get(layer1.layerAlias)
+	layerInformation := layerRegistry.Get(layer1.layerAlias)
 	Button.drawOnLayer(*layerInformation)
 	for {
 		mouseXLocation, mouseYLocation, _, _ := GetMouseStatus()

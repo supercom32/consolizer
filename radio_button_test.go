@@ -355,3 +355,38 @@ func TestRadioButtonLongLabel(test *testing.T) {
 		fmt.Println("Obtained:\n", obtainedValueBase64)
 	}
 }
+
+/*
+TestRadioButtonSelect is a test which allows you to verify that Select selects a radio button and unselects the others
+in its group, leaving other groups alone, and that a deleted radio button is ignored.
+
+Example:
+
+	Expected Inputs:
+		Radio buttons a, b and c in group 1 with a selected, and d in group 2 selected. b.Select(), then d deleted and
+		d.Select().
+
+	Expected Outputs:
+		Only b is selected in group 1 and GetSelected on a returns b's alias, d is still selected, and selecting the
+		deleted d changes nothing.
+*/
+func TestRadioButtonSelect(test *testing.T) {
+	layerAlias, styleEntry := setupInputTest(test)
+	layerInstance := &LayerInstanceType{layerAlias: layerAlias}
+	radioA := layerInstance.AddRadioButton("A", styleEntry, 2, 2, 1, true)
+	radioB := layerInstance.AddRadioButton("B", styleEntry, 2, 3, 1, false)
+	radioC := layerInstance.AddRadioButton("C", styleEntry, 2, 4, 1, false)
+	radioD := layerInstance.AddRadioButton("D", styleEntry, 2, 6, 2, true)
+	radioB.Select()
+	if radioA.IsSelected() || !radioB.IsSelected() || radioC.IsSelected() || !radioD.IsSelected() {
+		test.Fatalf("expected only b selected in group 1 and d still selected, got %t %t %t %t", radioA.IsSelected(), radioB.IsSelected(), radioC.IsSelected(), radioD.IsSelected())
+	}
+	if selectedAlias := radioA.GetSelected(); selectedAlias != radioB.GetAlias() {
+		test.Fatalf("expected the group's selection to be b, got %q", selectedAlias)
+	}
+	radioD.Delete()
+	radioD.Select()
+	if !radioB.IsSelected() {
+		test.Fatalf("expected selecting a deleted radio button to change nothing")
+	}
+}

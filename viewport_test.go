@@ -1,6 +1,7 @@
 package consolizer
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -26,7 +27,7 @@ func TestViewportOutOfRangeSettings(test *testing.T) {
 	viewportInstance.SetContent("one\ntwo\nthree")
 	viewportInstance.SetViewport(-2, -1)
 	UpdateDisplay(false)
-	viewportEntry := GetViewport(layerAlias, "view")
+	viewportEntry := getViewport(layerAlias, "view")
 	if viewportEntry.ViewportXLocation != 0 || viewportEntry.ViewportYLocation != 0 {
 		test.Fatalf("expected scroll position 0, 0, got %d, %d", viewportEntry.ViewportXLocation, viewportEntry.ViewportYLocation)
 	}
@@ -38,10 +39,46 @@ func TestViewportOutOfRangeSettings(test *testing.T) {
 	}
 
 	viewport.Add(layerAlias, "tiny", styleEntry, 2, 12, 20, 1, false, true, 100)
-	tinyViewportEntry := GetViewport(layerAlias, "tiny")
+	tinyViewportEntry := getViewport(layerAlias, "tiny")
 	tinyViewportEntry.TextData = [][]rune{[]rune("one"), []rune("two")}
 	viewport.trimToVisible(tinyViewportEntry)
 	if lineCount := len(tinyViewportEntry.TextData); lineCount != 0 {
 		test.Fatalf("expected a viewport with no room for a line to keep none, got %d", lineCount)
+	}
+}
+
+/*
+TestViewportGetViewportAndLines is a test which allows you to verify that a viewport's scroll position and lines can
+be read through its methods, that the lines are a copy, and that a deleted viewport is ignored.
+
+Example:
+
+	Expected Inputs:
+		A bordered viewport 20 wide and 4 tall given SetContent("one\ntwo\nthree\nfour"), then SetViewport(0, 1),
+		then the returned line slice changed, then the viewport deleted.
+
+	Expected Outputs:
+		GetLines reads [one, two, three, four], GetViewport reads (0, 1), changing the returned slice does not change
+		the viewport, and a deleted viewport reads (0, 0) and no lines.
+*/
+func TestViewportGetViewportAndLines(test *testing.T) {
+	layerAlias, styleEntry := setupInputTest(test)
+	viewportInstance := viewport.Add(layerAlias, "view", styleEntry, 2, 2, 20, 4, false, true, 100)
+	viewportInstance.SetContent("one\ntwo\nthree\nfour")
+	lines := viewportInstance.GetLines()
+	if strings.Join(lines, ",") != "one,two,three,four" {
+		test.Fatalf("expected the lines [one two three four], got %q", lines)
+	}
+	viewportInstance.SetViewport(0, 1)
+	if columnOffset, lineIndex := viewportInstance.GetViewport(); columnOffset != 0 || lineIndex != 1 {
+		test.Fatalf("expected the viewport at (0, 1), got (%d, %d)", columnOffset, lineIndex)
+	}
+	lines[0] = "changed"
+	if viewportInstance.GetLines()[0] != "one" {
+		test.Fatalf("expected GetLines to return a copy")
+	}
+	viewportInstance.Delete()
+	if columnOffset, lineIndex := viewportInstance.GetViewport(); columnOffset != 0 || lineIndex != 0 || len(viewportInstance.GetLines()) != 0 {
+		test.Fatalf("expected a deleted viewport to read (0, 0) and no lines")
 	}
 }

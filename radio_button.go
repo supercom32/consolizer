@@ -19,7 +19,7 @@ type RadioButtonInstanceType struct {
 type radioButtonType struct{}
 
 var radioButton radioButtonType
-var RadioButtons = memory.NewControlMemoryManager[types.RadioButtonEntryType]()
+var radioButtonRegistry = memory.NewControlMemoryManager[types.RadioButtonEntryType]()
 
 // ============================================================================
 // REGULAR ENTRY
@@ -33,7 +33,7 @@ Example:
 */
 func IsRadioButtonExists(layerAlias string, radioButtonAlias string) bool {
 	// Use ControlMemoryManager to check if the radio button exists
-	return RadioButtons.IsExists(layerAlias, radioButtonAlias)
+	return radioButtonRegistry.IsExists(layerAlias, radioButtonAlias)
 }
 
 /*
@@ -43,8 +43,9 @@ Example:
     radioButton = radioButton.Delete()
 */
 func (shared *RadioButtonInstanceType) Delete() *RadioButtonInstanceType {
-	if RadioButtons.IsExists(shared.layerAlias, shared.controlAlias) {
-		RadioButtons.Remove(shared.layerAlias, shared.controlAlias)
+	defer lockUIState()()
+	if radioButtonRegistry.IsExists(shared.layerAlias, shared.controlAlias) {
+		radioButtonRegistry.Remove(shared.layerAlias, shared.controlAlias)
 		clearStaleControlReferences(shared.layerAlias, shared.controlAlias, constants.CellTypeRadioButton)
 	}
 	return nil
@@ -60,6 +61,7 @@ Example:
     selected := radioButton.IsSelected()
 */
 func (shared *RadioButtonInstanceType) IsSelected() bool {
+	defer lockUIState()()
 	selectedRadioButton := getSelectedRadioButton(shared.layerAlias, shared.controlAlias)
 	return selectedRadioButton != "" && selectedRadioButton == shared.controlAlias
 }
@@ -74,7 +76,21 @@ Example:
     alias := radioButton.GetSelected()
 */
 func (shared *RadioButtonInstanceType) GetSelected() string {
+	defer lockUIState()()
 	return getSelectedRadioButton(shared.layerAlias, shared.controlAlias)
+}
+
+/*
+Select is a method which allows you to select a radio button, as clicking it does. Every other radio button in its
+group on the same layer is unselected. If the radio button does not exist, no operation occurs.
+
+Example:
+
+	radioButton.Select()
+*/
+func (shared *RadioButtonInstanceType) Select() {
+	defer lockUIState()()
+	selectRadioButton(shared.layerAlias, shared.controlAlias)
 }
 
 /*
@@ -118,16 +134,16 @@ func (shared *radioButtonType) Add(layerAlias string, radioButtonAlias string, r
 	arrayOfRunes := stringformat.GetRunesFromString(radioButtonLabel)
 	labelWidth := stringformat.GetWidthOfRunesWhenPrinted(arrayOfRunes)
 	// Create associated tooltip (always created but disabled by default)
-	tooltipInstance := Tooltip.Add(layerAlias, radioButtonEntry.TooltipAlias, "", styleEntry,
+	tooltipInstance := Tooltip.add(layerAlias, radioButtonEntry.TooltipAlias, "", styleEntry,
 		radioButtonEntry.XLocation, radioButtonEntry.YLocation,
 		labelWidth+2, 1,
 		radioButtonEntry.XLocation, radioButtonEntry.YLocation+1,
 		labelWidth+2, 3,
 		false, true, constants.DefaultTooltipHoverTime)
-	tooltipInstance.SetEnabled(false)
+	tooltipInstance.setEnabled(false)
 	tooltipInstance.setParentControlAlias(radioButtonAlias)
 	// Use the ControlMemoryManager to add the radio button entry
-	RadioButtons.Add(layerAlias, radioButtonAlias, &radioButtonEntry)
+	radioButtonRegistry.Add(layerAlias, radioButtonAlias, &radioButtonEntry)
 	var radioButtonInstance RadioButtonInstanceType
 	radioButtonInstance.layerAlias = layerAlias
 	radioButtonInstance.controlAlias = radioButtonAlias
@@ -146,7 +162,7 @@ Example:
 */
 func (shared *radioButtonType) drawOnLayer(layerEntry types.LayerEntryType) {
 	layerAlias := layerEntry.LayerAlias
-	for _, currentRadioButtonEntry := range RadioButtons.GetAllEntries(layerAlias) {
+	for _, currentRadioButtonEntry := range radioButtonRegistry.GetAllEntries(layerAlias) {
 		radioButtonEntry := currentRadioButtonEntry
 		shared.draw(&layerEntry, radioButtonEntry.Alias, radioButtonEntry.Label, radioButtonEntry.StyleEntry, radioButtonEntry.XLocation, radioButtonEntry.YLocation, radioButtonEntry.IsSelected, radioButtonEntry.IsEnabled)
 	}
@@ -202,7 +218,7 @@ Example:
     radioButton.Delete("Layer1", "Radio1")
 */
 func (shared *radioButtonType) Delete(layerAlias string, radioButtonAlias string) {
-	RadioButtons.Remove(layerAlias, radioButtonAlias)
+	radioButtonRegistry.Remove(layerAlias, radioButtonAlias)
 	clearStaleControlReferences(layerAlias, radioButtonAlias, constants.CellTypeRadioButton)
 }
 
@@ -213,7 +229,7 @@ Example:
     radioButton.DeleteAll("Layer1")
 */
 func (shared *radioButtonType) DeleteAll(layerAlias string) {
-	removeAllControlsAndClearCells(RadioButtons, layerAlias, constants.CellTypeRadioButton, func(entry *types.RadioButtonEntryType) string { return entry.Alias })
+	removeAllControlsAndClearCells(radioButtonRegistry, layerAlias, constants.CellTypeRadioButton, func(entry *types.RadioButtonEntryType) string { return entry.Alias })
 }
 
 /*
@@ -233,7 +249,7 @@ func (shared *radioButtonType) updateMouseEvent() bool {
 	controlAlias := characterEntry.AttributeEntry.CellControlAlias
 	if characterEntry.AttributeEntry.CellType == constants.CellTypeRadioButton && characterEntry.AttributeEntry.CellControlId != constants.NullCellId {
 		_, _, previousButtonPressed, _ := GetPreviousMouseStatus()
-		if _, isFound := RadioButtons.Lookup(layerAlias, controlAlias); buttonPressed != 0 && previousButtonPressed == 0 && isFound {
+		if _, isFound := radioButtonRegistry.Lookup(layerAlias, controlAlias); buttonPressed != 0 && previousButtonPressed == 0 && isFound {
 			selectRadioButton(layerAlias, controlAlias)
 			isUpdateRequired = true
 			return isUpdateRequired
@@ -274,7 +290,7 @@ func (shared *radioButtonType) updateKeyboardEvent(keystroke []rune) (bool, bool
 	if focusedControl.controlType != constants.CellTypeRadioButton || !isControlFocusable(focusedControl) {
 		return false, false
 	}
-	focusedEntry, isFound := RadioButtons.Lookup(focusedControl.layerAlias, focusedControl.controlAlias)
+	focusedEntry, isFound := radioButtonRegistry.Lookup(focusedControl.layerAlias, focusedControl.controlAlias)
 	if !isFound {
 		return false, false
 	}
@@ -283,7 +299,7 @@ func (shared *radioButtonType) updateKeyboardEvent(keystroke []rune) (bool, bool
 		return true, true
 	}
 	var groupMembers []*types.RadioButtonEntryType
-	for _, radioButtonEntry := range RadioButtons.GetAllEntries(focusedControl.layerAlias) {
+	for _, radioButtonEntry := range radioButtonRegistry.GetAllEntries(focusedControl.layerAlias) {
 		if radioButtonEntry.GroupId == focusedEntry.GroupId {
 			groupMembers = append(groupMembers, radioButtonEntry)
 		}
@@ -328,11 +344,11 @@ Example:
     selectRadioButton("Layer1", "Radio1")
 */
 func selectRadioButton(layerAlias string, radioButtonAlias string) {
-	radioButtonSelectedEntry, isFound := RadioButtons.Lookup(layerAlias, radioButtonAlias)
+	radioButtonSelectedEntry, isFound := radioButtonRegistry.Lookup(layerAlias, radioButtonAlias)
 	if !isFound {
 		return
 	}
-	for _, currentRadioButtonEntry := range RadioButtons.GetAllEntries(layerAlias) {
+	for _, currentRadioButtonEntry := range radioButtonRegistry.GetAllEntries(layerAlias) {
 		if currentRadioButtonEntry.Alias == radioButtonAlias {
 			currentRadioButtonEntry.IsSelected = true
 		} else if currentRadioButtonEntry.GroupId == radioButtonSelectedEntry.GroupId {
@@ -354,11 +370,11 @@ Example:
 */
 func getSelectedRadioButton(layerAlias string, radioButtonAlias string) string {
 	selectedItem := ""
-	radioButtonEntry, isFound := RadioButtons.Lookup(layerAlias, radioButtonAlias)
+	radioButtonEntry, isFound := radioButtonRegistry.Lookup(layerAlias, radioButtonAlias)
 	if !isFound {
 		return selectedItem
 	}
-	for _, currentRadioButtonEntry := range RadioButtons.GetAllEntries(layerAlias) {
+	for _, currentRadioButtonEntry := range radioButtonRegistry.GetAllEntries(layerAlias) {
 		if currentRadioButtonEntry.GroupId == radioButtonEntry.GroupId {
 			if currentRadioButtonEntry.IsSelected {
 				return currentRadioButtonEntry.Alias

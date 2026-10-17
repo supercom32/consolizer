@@ -79,7 +79,7 @@ func TestTextFieldLongText(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup(test)
 	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 20, 10, false, "this is a long string of text which i know is long.", true)
 	setFocusedControl(layer1.layerAlias, textFieldInstance.controlAlias, constants.CellTypeTextField)
-	TextField.updateKeyboardEvent([]rune("end"))
+	lockedTextFieldKeyboardEvent([]rune("end"))
 	UpdateDisplay(false)
 	layerEntry := commonResource.screenLayer
 	obtainedValue := layerEntry.GetBasicAnsiStringAsBase64()
@@ -134,7 +134,7 @@ func TestTextFieldHomeKey(test *testing.T) {
 	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 20, 30, false, "", true)
 	setFocusedControl(layer1.layerAlias, textFieldInstance.controlAlias, constants.CellTypeTextField)
 	TextField.updateKeyboardEventTextboxWithString("abcdefghijklmnopqrstuvwxyz")
-	TextField.updateKeyboardEvent([]rune("home"))
+	lockedTextFieldKeyboardEvent([]rune("home"))
 	UpdateDisplay(false)
 	layerEntry := commonResource.screenLayer
 	obtainedValue := layerEntry.GetBasicAnsiStringAsBase64()
@@ -162,7 +162,7 @@ func TestTextFieldInsert(test *testing.T) {
 	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 20, 50, false, "", true)
 	setFocusedControl(layer1.layerAlias, textFieldInstance.controlAlias, constants.CellTypeTextField)
 	TextField.updateKeyboardEventTextboxWithString("abcdefghijklmnopqrstuvwxyz")
-	TextField.updateKeyboardEvent([]rune("home"))
+	lockedTextFieldKeyboardEvent([]rune("home"))
 	TextField.updateKeyboardEventTextboxWithCommands("right", "right", "right", "right", "right")
 	TextField.updateKeyboardEventTextboxWithString("_INSERTED_")
 	UpdateDisplay(false)
@@ -192,7 +192,7 @@ func TestTextFieldBackspace(test *testing.T) {
 	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 20, 90, false, "", true)
 	setFocusedControl(layer1.layerAlias, textFieldInstance.controlAlias, constants.CellTypeTextField)
 	TextField.updateKeyboardEventTextboxWithString("abcdefghijklmnopqrstuvwxyz")
-	TextField.updateKeyboardEvent([]rune("home"))
+	lockedTextFieldKeyboardEvent([]rune("home"))
 	TextField.updateKeyboardEventTextboxWithCommands("right", "right", "right", "right", "right", "backspace", "backspace", "backspace", "backspace")
 	UpdateDisplay(false)
 	layerEntry := commonResource.screenLayer
@@ -221,7 +221,7 @@ func TestTextFieldDelete(test *testing.T) {
 	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 20, 90, false, "", true)
 	setFocusedControl(layer1.layerAlias, textFieldInstance.controlAlias, constants.CellTypeTextField)
 	TextField.updateKeyboardEventTextboxWithString("abcdefghijklmnopqrstuvwxyz")
-	TextField.updateKeyboardEvent([]rune("home"))
+	lockedTextFieldKeyboardEvent([]rune("home"))
 	TextField.updateKeyboardEventTextboxWithCommands("right", "right", "right", "right", "right", "delete", "delete", "delete", "delete")
 	UpdateDisplay(false)
 	layerEntry := commonResource.screenLayer
@@ -250,7 +250,7 @@ func TestTextFieldDeleteAtEnd(test *testing.T) {
 	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 20, 90, false, "", true)
 	setFocusedControl(layer1.layerAlias, textFieldInstance.controlAlias, constants.CellTypeTextField)
 	TextField.updateKeyboardEventTextboxWithString("abcdefghijklmnopqrstuvwxyz")
-	TextField.updateKeyboardEvent([]rune("end"))
+	lockedTextFieldKeyboardEvent([]rune("end"))
 	TextField.updateKeyboardEventTextboxWithCommands("left", "left", "left", "left", "delete", "delete", "delete", "delete", "delete", "delete")
 	UpdateDisplay(false)
 	layerEntry := commonResource.screenLayer
@@ -306,7 +306,7 @@ func TestTextFieldBackspaceStop(test *testing.T) {
 	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 20, 70, false, "", true)
 	setFocusedControl(layer1.layerAlias, textFieldInstance.controlAlias, constants.CellTypeTextField)
 	TextField.updateKeyboardEventTextboxWithString("abcdefghijklmnopqrstuvwxyz")
-	TextField.updateKeyboardEvent([]rune("home"))
+	lockedTextFieldKeyboardEvent([]rune("home"))
 	TextField.updateKeyboardEventTextboxWithCommands("right", "right", "right", "right", "backspace", "backspace", "backspace", "backspace", "backspace", "backspace")
 	UpdateDisplay(false)
 	layerEntry := commonResource.screenLayer
@@ -342,14 +342,14 @@ func TestTextFieldAsciiCharacterization(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup(test)
 	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 6, 20, false, "", true)
 	setFocusedControl(layer1.layerAlias, textFieldInstance.controlAlias, constants.CellTypeTextField)
-	textFieldEntry := TextFields.Get(textFieldInstance.layerAlias, textFieldInstance.controlAlias)
+	textFieldEntry := textFieldRegistry.Get(textFieldInstance.layerAlias, textFieldInstance.controlAlias)
 
 	TextField.updateKeyboardEventTextboxWithString("abcdef")
 	assert.Equal(test, "abcdef ", string(textFieldEntry.CurrentValue))
 	assert.Equal(test, 6, textFieldEntry.CursorPosition)
 	assert.Equal(test, 1, textFieldEntry.ViewportPosition)
 
-	TextField.updateKeyboardEvent([]rune("home"))
+	lockedTextFieldKeyboardEvent([]rune("home"))
 	assert.Equal(test, 0, textFieldEntry.CursorPosition)
 	assert.Equal(test, 0, textFieldEntry.ViewportPosition)
 
@@ -357,11 +357,11 @@ func TestTextFieldAsciiCharacterization(test *testing.T) {
 	assert.Equal(test, 3, textFieldEntry.CursorPosition)
 	assert.Equal(test, 0, textFieldEntry.ViewportPosition)
 
-	TextField.updateKeyboardEvent([]rune("end"))
+	lockedTextFieldKeyboardEvent([]rune("end"))
 	assert.Equal(test, 6, textFieldEntry.CursorPosition)
 	assert.Equal(test, 1, textFieldEntry.ViewportPosition)
 
-	TextField.updateKeyboardEvent([]rune("backspace"))
+	lockedTextFieldKeyboardEvent([]rune("backspace"))
 	assert.Equal(test, "abcde ", string(textFieldEntry.CurrentValue))
 	assert.Equal(test, 5, textFieldEntry.CursorPosition)
 	assert.Equal(test, 1, textFieldEntry.ViewportPosition)
@@ -392,7 +392,7 @@ func TestTextFieldCjkInsert(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup(test)
 	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 6, 20, false, "", true)
 	setFocusedControl(layer1.layerAlias, textFieldInstance.controlAlias, constants.CellTypeTextField)
-	textFieldEntry := TextFields.Get(textFieldInstance.layerAlias, textFieldInstance.controlAlias)
+	textFieldEntry := textFieldRegistry.Get(textFieldInstance.layerAlias, textFieldInstance.controlAlias)
 
 	TextField.updateKeyboardEventTextboxWithString("中文")
 	assert.Equal(test, []rune("中文 "), textFieldEntry.CurrentValue)
@@ -424,10 +424,10 @@ func TestTextFieldCjkBackspace(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup(test)
 	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 6, 20, false, "", true)
 	setFocusedControl(layer1.layerAlias, textFieldInstance.controlAlias, constants.CellTypeTextField)
-	textFieldEntry := TextFields.Get(textFieldInstance.layerAlias, textFieldInstance.controlAlias)
+	textFieldEntry := textFieldRegistry.Get(textFieldInstance.layerAlias, textFieldInstance.controlAlias)
 
 	TextField.updateKeyboardEventTextboxWithString("中文")
-	TextField.updateKeyboardEvent([]rune("backspace"))
+	lockedTextFieldKeyboardEvent([]rune("backspace"))
 	assert.Equal(test, []rune("中 "), textFieldEntry.CurrentValue)
 	assert.Equal(test, 1, textFieldEntry.CursorPosition)
 	assert.Equal(test, 0, textFieldEntry.ViewportPosition)
@@ -448,12 +448,12 @@ func TestTextFieldCjkDeleteMidString(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup(test)
 	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 6, 20, false, "", true)
 	setFocusedControl(layer1.layerAlias, textFieldInstance.controlAlias, constants.CellTypeTextField)
-	textFieldEntry := TextFields.Get(textFieldInstance.layerAlias, textFieldInstance.controlAlias)
+	textFieldEntry := textFieldRegistry.Get(textFieldInstance.layerAlias, textFieldInstance.controlAlias)
 
 	TextField.updateKeyboardEventTextboxWithString("中A文")
-	TextField.updateKeyboardEvent([]rune("home"))
-	TextField.updateKeyboardEvent([]rune("right"))
-	TextField.updateKeyboardEvent([]rune("delete"))
+	lockedTextFieldKeyboardEvent([]rune("home"))
+	lockedTextFieldKeyboardEvent([]rune("right"))
+	lockedTextFieldKeyboardEvent([]rune("delete"))
 	assert.Equal(test, []rune("中文 "), textFieldEntry.CurrentValue)
 	assert.Equal(test, 1, textFieldEntry.CursorPosition)
 }
@@ -473,7 +473,7 @@ func TestTextFieldCjkViewportScrollRight(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup(test)
 	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 6, 20, false, "", true)
 	setFocusedControl(layer1.layerAlias, textFieldInstance.controlAlias, constants.CellTypeTextField)
-	textFieldEntry := TextFields.Get(textFieldInstance.layerAlias, textFieldInstance.controlAlias)
+	textFieldEntry := textFieldRegistry.Get(textFieldInstance.layerAlias, textFieldInstance.controlAlias)
 
 	TextField.updateKeyboardEventTextboxWithString("中文中文中")
 	assert.Equal(test, []rune("中文中文中 "), textFieldEntry.CurrentValue)
@@ -502,10 +502,10 @@ func TestTextFieldCjkViewportScrollLeftHome(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup(test)
 	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 6, 20, false, "", true)
 	setFocusedControl(layer1.layerAlias, textFieldInstance.controlAlias, constants.CellTypeTextField)
-	textFieldEntry := TextFields.Get(textFieldInstance.layerAlias, textFieldInstance.controlAlias)
+	textFieldEntry := textFieldRegistry.Get(textFieldInstance.layerAlias, textFieldInstance.controlAlias)
 
 	TextField.updateKeyboardEventTextboxWithString("中文中文中")
-	TextField.updateKeyboardEvent([]rune("home"))
+	lockedTextFieldKeyboardEvent([]rune("home"))
 	assert.Equal(test, 0, textFieldEntry.CursorPosition)
 	assert.Equal(test, 0, textFieldEntry.ViewportPosition)
 
@@ -532,7 +532,7 @@ func TestTextFieldCjkClickRightHalf(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup(test)
 	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 6, 20, false, "中文", true)
 	setFocusedControl(layer1.layerAlias, textFieldInstance.controlAlias, constants.CellTypeTextField)
-	textFieldEntry := TextFields.Get(textFieldInstance.layerAlias, textFieldInstance.controlAlias)
+	textFieldEntry := textFieldRegistry.Get(textFieldInstance.layerAlias, textFieldInstance.controlAlias)
 	UpdateDisplay(false)
 	layerEntry := commonResource.screenLayer
 
@@ -567,7 +567,7 @@ func TestTextFieldCjkHighlightDrag(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup(test)
 	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 6, 20, false, "中文", true)
 	setFocusedControl(layer1.layerAlias, textFieldInstance.controlAlias, constants.CellTypeTextField)
-	textFieldEntry := TextFields.Get(textFieldInstance.layerAlias, textFieldInstance.controlAlias)
+	textFieldEntry := textFieldRegistry.Get(textFieldInstance.layerAlias, textFieldInstance.controlAlias)
 	UpdateDisplay(false)
 
 	setEventStateId(0)
@@ -631,7 +631,7 @@ func TestTextFieldMaxLengthIsRunes(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup(test)
 	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 10, 3, false, "", true)
 	setFocusedControl(layer1.layerAlias, textFieldInstance.controlAlias, constants.CellTypeTextField)
-	textFieldEntry := TextFields.Get(textFieldInstance.layerAlias, textFieldInstance.controlAlias)
+	textFieldEntry := textFieldRegistry.Get(textFieldInstance.layerAlias, textFieldInstance.controlAlias)
 
 	TextField.updateKeyboardEventTextboxWithString("中文字字")
 	assert.Equal(test, []rune("中文字 "), textFieldEntry.CurrentValue)
@@ -652,18 +652,18 @@ func TestTextFieldSentinelPreserved(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup(test)
 	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 6, 20, false, "", true)
 	setFocusedControl(layer1.layerAlias, textFieldInstance.controlAlias, constants.CellTypeTextField)
-	textFieldEntry := TextFields.Get(textFieldInstance.layerAlias, textFieldInstance.controlAlias)
+	textFieldEntry := textFieldRegistry.Get(textFieldInstance.layerAlias, textFieldInstance.controlAlias)
 	lastRuneIsBlank := func() bool {
 		return textFieldEntry.CurrentValue[len(textFieldEntry.CurrentValue)-1] == ' '
 	}
 
 	TextField.updateKeyboardEventTextboxWithString("中a文b")
 	assert.True(test, lastRuneIsBlank())
-	TextField.updateKeyboardEvent([]rune("home"))
-	TextField.updateKeyboardEvent([]rune("delete"))
+	lockedTextFieldKeyboardEvent([]rune("home"))
+	lockedTextFieldKeyboardEvent([]rune("delete"))
 	assert.True(test, lastRuneIsBlank())
-	TextField.updateKeyboardEvent([]rune("end"))
-	TextField.updateKeyboardEvent([]rune("backspace"))
+	lockedTextFieldKeyboardEvent([]rune("end"))
+	lockedTextFieldKeyboardEvent([]rune("backspace"))
 	assert.True(test, lastRuneIsBlank())
 	TextField.updateKeyboardEventTextboxWithString("字")
 	assert.True(test, lastRuneIsBlank())
@@ -715,16 +715,16 @@ func TestTextFieldOnValueChangedClampsExcessDigit(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup(test)
 	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 10, 10, false, "", true)
 	setFocusedControl(layer1.layerAlias, textFieldInstance.controlAlias, constants.CellTypeTextField)
-	textFieldEntry := TextFields.Get(textFieldInstance.layerAlias, textFieldInstance.controlAlias)
+	textFieldEntry := textFieldRegistry.Get(textFieldInstance.layerAlias, textFieldInstance.controlAlias)
 	textFieldInstance.SetOnValueChanged(digitsOnlyClampedTo(100))
 
-	TextField.updateKeyboardEvent([]rune("9"))
+	lockedTextFieldKeyboardEvent([]rune("9"))
 	assert.Equal(test, "9 ", string(textFieldEntry.CurrentValue))
 
-	TextField.updateKeyboardEvent([]rune("9"))
+	lockedTextFieldKeyboardEvent([]rune("9"))
 	assert.Equal(test, "99 ", string(textFieldEntry.CurrentValue))
 
-	TextField.updateKeyboardEvent([]rune("9"))
+	lockedTextFieldKeyboardEvent([]rune("9"))
 	assert.Equal(test, "100 ", string(textFieldEntry.CurrentValue))
 	assert.Equal(test, 3, textFieldEntry.CursorPosition)
 }
@@ -746,16 +746,16 @@ func TestTextFieldOnValueChangedStripsNonDigit(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup(test)
 	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 10, 10, false, "", true)
 	setFocusedControl(layer1.layerAlias, textFieldInstance.controlAlias, constants.CellTypeTextField)
-	textFieldEntry := TextFields.Get(textFieldInstance.layerAlias, textFieldInstance.controlAlias)
+	textFieldEntry := textFieldRegistry.Get(textFieldInstance.layerAlias, textFieldInstance.controlAlias)
 	textFieldInstance.SetOnValueChanged(digitsOnlyClampedTo(1000))
 
-	TextField.updateKeyboardEvent([]rune("1"))
+	lockedTextFieldKeyboardEvent([]rune("1"))
 	assert.Equal(test, "1 ", string(textFieldEntry.CurrentValue))
 
-	TextField.updateKeyboardEvent([]rune("2"))
+	lockedTextFieldKeyboardEvent([]rune("2"))
 	assert.Equal(test, "12 ", string(textFieldEntry.CurrentValue))
 
-	TextField.updateKeyboardEvent([]rune("a"))
+	lockedTextFieldKeyboardEvent([]rune("a"))
 	assert.Equal(test, "12 ", string(textFieldEntry.CurrentValue))
 	assert.Equal(test, 2, textFieldEntry.CursorPosition)
 }
@@ -783,10 +783,10 @@ func TestTextFieldOnValueChangedPasteClamped(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup(test)
 	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 10, 10, false, "", true)
 	setFocusedControl(layer1.layerAlias, textFieldInstance.controlAlias, constants.CellTypeTextField)
-	textFieldEntry := TextFields.Get(textFieldInstance.layerAlias, textFieldInstance.controlAlias)
+	textFieldEntry := textFieldRegistry.Get(textFieldInstance.layerAlias, textFieldInstance.controlAlias)
 	textFieldInstance.SetOnValueChanged(digitsOnlyClampedTo(100))
 
-	TextField.updateKeyboardEvent([]rune("ctrl+v"))
+	lockedTextFieldKeyboardEvent([]rune("ctrl+v"))
 	assert.Equal(test, "100 ", string(textFieldEntry.CurrentValue))
 	assert.Equal(test, 3, textFieldEntry.CursorPosition)
 }
@@ -806,7 +806,7 @@ func TestTextFieldOnValueChangedUnsetPreservesPriorBehavior(test *testing.T) {
 	layer1, _, _, styleEntry := CommonTestSetup(test)
 	textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 10, 10, false, "", true)
 	setFocusedControl(layer1.layerAlias, textFieldInstance.controlAlias, constants.CellTypeTextField)
-	textFieldEntry := TextFields.Get(textFieldInstance.layerAlias, textFieldInstance.controlAlias)
+	textFieldEntry := textFieldRegistry.Get(textFieldInstance.layerAlias, textFieldInstance.controlAlias)
 
 	TextField.updateKeyboardEventTextboxWithString("999a")
 	assert.Equal(test, "999a ", string(textFieldEntry.CurrentValue))
@@ -862,7 +862,7 @@ func TestTextFieldSetValueWithWideRunes(test *testing.T) {
 	textField := TextField.Add(layerAlias, "field", styleEntry, 2, 2, 10, 20, false, "", true)
 	textField.SetValue("日本語")
 	UpdateDisplay(false)
-	if cursorPosition := TextFields.Get(layerAlias, "field").CursorPosition; cursorPosition != 3 {
+	if cursorPosition := textFieldRegistry.Get(layerAlias, "field").CursorPosition; cursorPosition != 3 {
 		test.Fatalf("expected the cursor at rune index 3, got %d", cursorPosition)
 	}
 	if value := textField.GetValue(); value != "日本語" {
@@ -933,12 +933,141 @@ func TestTextFieldStaleIndexesAreClamped(test *testing.T) {
 			if value := textField.GetValue(); value != testCase.expectedValue {
 				test.Fatalf("%s: expected value %q, got %q", testCase.name, testCase.expectedValue, value)
 			}
-			textFieldEntry := TextFields.Get(layerAlias, "field")
+			textFieldEntry := textFieldRegistry.Get(layerAlias, "field")
 			lastRuneIndex := len(textFieldEntry.CurrentValue) - 1
 			if textFieldEntry.CursorPosition < 0 || textFieldEntry.CursorPosition > lastRuneIndex ||
 				textFieldEntry.ViewportPosition < 0 || textFieldEntry.ViewportPosition > lastRuneIndex {
 				test.Fatalf("%s: cursor %d or viewport %d is outside 0 to %d", testCase.name, textFieldEntry.CursorPosition, textFieldEntry.ViewportPosition, lastRuneIndex)
 			}
 		})
+	}
+}
+
+/*
+TestTextFieldGettersAndSelection is a test which allows you to verify that a text field's cursor, scroll position,
+maximum length, default value, password setting and selection can be read and set through its methods, with
+positions clamped to the value, and that a deleted text field is ignored.
+
+Example:
+
+	Expected Inputs:
+		A text field 10 wide with a maximum length of 20 and the default value "hello". SetCursorPosition(3),
+		SetPasswordProtected(true). SetSelection with (1, 3), (3, 1) and (0, 99), then ClearSelection. Then Delete and
+		every getter again.
+
+	Expected Outputs:
+		The default value is "hello", the maximum length 20, the viewport 0, and the cursor 3 once set. Password
+		protection reads false, then true. The selected text is "ell" with the cursor at 3, "ell" with the cursor at
+		1, and "hello", then "" after ClearSelection. A deleted text field reads 0, 0, 0, "", false and "".
+*/
+func TestTextFieldGettersAndSelection(test *testing.T) {
+	layerAlias, styleEntry := setupInputTest(test)
+	textField := TextField.Add(layerAlias, "field", styleEntry, 2, 2, 10, 20, false, "hello", true)
+	if defaultValue, maxLength := textField.GetDefaultValue(), textField.GetMaxLength(); defaultValue != "hello" || maxLength != 20 {
+		test.Fatalf("expected the default value %q and maximum length 20, got %q and %d", "hello", defaultValue, maxLength)
+	}
+	textField.SetCursorPosition(3)
+	if cursorPosition, viewportPosition := textField.GetCursorPosition(), textField.GetViewportPosition(); cursorPosition != 3 || viewportPosition != 0 {
+		test.Fatalf("expected the cursor at 3 and the viewport at 0, got %d and %d", cursorPosition, viewportPosition)
+	}
+	if textField.IsPasswordProtected() {
+		test.Fatalf("expected password protection to start off")
+	}
+	textField.SetPasswordProtected(true)
+	if !textField.IsPasswordProtected() {
+		test.Fatalf("expected password protection to read true once set")
+	}
+	for _, step := range []struct {
+		startPosition, endPosition int
+		expectedText               string
+		expectedCursorPosition     int
+	}{
+		{1, 3, "ell", 3}, {3, 1, "ell", 1}, {0, 99, "hello", 5},
+	} {
+		textField.SetSelection(step.startPosition, step.endPosition)
+		if selectedText := textField.GetSelectedText(); selectedText != step.expectedText {
+			test.Fatalf("SetSelection(%d, %d): expected %q, got %q", step.startPosition, step.endPosition, step.expectedText, selectedText)
+		}
+		if cursorPosition := textField.GetCursorPosition(); cursorPosition != step.expectedCursorPosition {
+			test.Fatalf("SetSelection(%d, %d): expected the cursor at %d, got %d", step.startPosition, step.endPosition, step.expectedCursorPosition, cursorPosition)
+		}
+	}
+	textField.ClearSelection()
+	if selectedText := textField.GetSelectedText(); selectedText != "" {
+		test.Fatalf("expected no selected text after ClearSelection, got %q", selectedText)
+	}
+
+	TextField.Delete(layerAlias, "field")
+	textField.SetSelection(0, 1)
+	textField.ClearSelection()
+	if textField.GetCursorPosition() != 0 || textField.GetViewportPosition() != 0 || textField.GetMaxLength() != 0 ||
+		textField.GetDefaultValue() != "" || textField.IsPasswordProtected() || textField.GetSelectedText() != "" {
+		test.Fatalf("expected a deleted text field to read zeros, false and empty strings")
+	}
+}
+
+/*
+TestTextFieldCopiedTextHasNoSentinel is a test which allows you to verify that the text copy and cut take from a text
+field, the same text GetSelectedText returns, never includes the blank sentinel its value is stored with, which Ctrl+A
+selects along with the value.
+
+Example:
+
+	Expected Inputs:
+		A focused text field holding "hello". Ctrl+A, then SetSelection(1, 3).
+
+	Expected Outputs:
+		The text taken is "hello" after Ctrl+A, with no trailing space, and "ell" after SetSelection.
+*/
+func TestTextFieldCopiedTextHasNoSentinel(test *testing.T) {
+	layerAlias, styleEntry := setupInputTest(test)
+	textField := TextField.Add(layerAlias, "field", styleEntry, 2, 2, 10, 20, false, "hello", true)
+	setFocusedControl(layerAlias, "field", constants.CellTypeTextField)
+	getCopiedText := func() string {
+		defer lockUIState()()
+		return TextField.getSelectedText(textFieldRegistry.Get(layerAlias, "field"))
+	}
+	lockedTextFieldKeyboardEvent([]rune("ctrl+a"))
+	if copiedText := getCopiedText(); copiedText != "hello" {
+		test.Fatalf("after Ctrl+A: expected the copied text %q, got %q", "hello", copiedText)
+	}
+	textField.SetSelection(1, 3)
+	if copiedText := getCopiedText(); copiedText != "ell" {
+		test.Fatalf("after SetSelection(1, 3): expected the copied text %q, got %q", "ell", copiedText)
+	}
+}
+
+/*
+TestTextFieldCopyAndCutPutCleanTextOnClipboard is a test which allows you to verify that Ctrl+C and Ctrl+X after
+Ctrl+A put a text field's value on the system clipboard without its trailing blank sentinel, and that cut also
+removes the value. In addition, the following should be noted:
+
+  - The test skips itself when no system clipboard utility is available, since the clipboard cannot be written or
+    read back then.
+
+Example:
+
+	Expected Inputs:
+		A focused text field holding "hello". Ctrl+A and Ctrl+C, then Ctrl+A and Ctrl+X.
+
+	Expected Outputs:
+		The clipboard holds "hello" after each, and after the cut the field's value is empty.
+*/
+func TestTextFieldCopyAndCutPutCleanTextOnClipboard(test *testing.T) {
+	if err := clipboard.WriteAll(""); err != nil {
+		test.Skipf("skipping clipboard test: no system clipboard utility is available in this environment: %v", err)
+	}
+	layerAlias, styleEntry := setupInputTest(test)
+	textField := TextField.Add(layerAlias, "field", styleEntry, 2, 2, 10, 20, false, "hello", true)
+	setFocusedControl(layerAlias, "field", constants.CellTypeTextField)
+	for _, key := range []string{"ctrl+c", "ctrl+x"} {
+		lockedTextFieldKeyboardEvent([]rune("ctrl+a"))
+		lockedTextFieldKeyboardEvent([]rune(key))
+		if clipboardText, err := clipboard.ReadAll(); err != nil || clipboardText != "hello" {
+			test.Fatalf("%s: expected the clipboard to hold %q, got %q (%v)", key, "hello", clipboardText, err)
+		}
+	}
+	if value := textField.GetValue(); value != "" {
+		test.Fatalf("expected the cut to leave the field empty, got %q", value)
 	}
 }

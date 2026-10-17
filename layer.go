@@ -23,9 +23,10 @@ layer is a variable which is the global instance for managing layer operations.
 var layer layerType
 
 /*
-Layers is a variable which is the global instance for managing the memory of all layer entries.
+layerRegistry is a variable which holds the entry of every layer, keyed by layer alias. Its entries must only be read
+or changed while holding uiStateMutex.
 */
-var Layers *memory.MemoryManager[types.LayerEntryType]
+var layerRegistry *memory.MemoryManager[types.LayerEntryType]
 
 /*
 LayerInstanceType is a structure which represents a handle to a layer instance.
@@ -65,7 +66,7 @@ Example:
     clearLayerInstance(instance)
 */
 func clearLayerInstance(layerInstance *LayerInstanceType) {
-	layerEntry := Layers.Get(layerInstance.layerAlias)
+	layerEntry := layerRegistry.Get(layerInstance.layerAlias)
 	layer.clear(layerEntry)
 }
 
@@ -443,7 +444,7 @@ Example:
     layer.ReInitializeScreenMemory()
 */
 func (shared *layerType) ReInitializeScreenMemory() {
-	Layers = memory.NewMemoryManager[types.LayerEntryType]() // Initialize MemoryManager
+	layerRegistry = memory.NewMemoryManager[types.LayerEntryType]() // Initialize MemoryManager
 }
 
 /*
@@ -472,12 +473,12 @@ func (shared *layerType) Add(layerAlias string, xLocation int, yLocation int, wi
 	layerEntry.ParentAlias = parentAlias
 
 	if parentAlias != "" {
-		if !Layers.IsExists(parentAlias) {
+		if !layerRegistry.IsExists(parentAlias) {
 			panic(fmt.Sprintf("The layer '%s' could not be created since the parent alias '%s' does not exist!", layerAlias, parentAlias))
 		}
-		Layers.Get(parentAlias).IsParent = true
+		layerRegistry.Get(parentAlias).IsParent = true
 	}
-	Layers.Add(layerAlias, &layerEntry)
+	layerRegistry.Add(layerAlias, &layerEntry)
 }
 
 /*
@@ -489,7 +490,7 @@ Example:
     nextAlias := layer.GetNextAlias()
 */
 func (shared *layerType) GetNextAlias() string {
-	for _, currentEntry := range Layers.GetAllEntries() {
+	for _, currentEntry := range layerRegistry.GetAllEntries() {
 		return currentEntry.LayerAlias
 	}
 	return ""
@@ -502,10 +503,10 @@ Example:
     layer.Delete("myLayer")
 */
 func (shared *layerType) Delete(layerAlias string) {
-	if !Layers.IsExists(layerAlias) {
+	if !layerRegistry.IsExists(layerAlias) {
 		panic(fmt.Sprintf("The layer '%s' could not be deleted since it does not exist!", layerAlias))
 	}
-	layerEntry := Layers.Get(layerAlias)
+	layerEntry := layerRegistry.Get(layerAlias)
 	parentAlias := layerEntry.ParentAlias
 	isParent := layerEntry.IsParent
 
@@ -515,26 +516,26 @@ func (shared *layerType) Delete(layerAlias string) {
 	}
 
 	// Delete all controls on this layer
-	removeAllControlsAndClearCells(Labels, layerAlias, constants.CellTypeLabel, func(entry *types.LabelEntryType) string { return entry.Alias })
-	removeAllControlsAndClearCells(Buttons, layerAlias, constants.CellTypeButton, func(entry *types.ButtonEntryType) string { return entry.Alias })
-	removeAllControlsAndClearCells(Checkboxes, layerAlias, constants.CellTypeCheckbox, func(entry *types.CheckboxEntryType) string { return entry.Alias })
-	removeAllControlsAndClearCells(Dropdowns, layerAlias, constants.CellTypeDropdown, func(entry *types.DropdownEntryType) string { return entry.Alias })
-	removeAllControlsAndClearCells(ProgressBars, layerAlias, constants.CellTypeProgressBar, func(entry *types.ProgressBarEntryType) string { return entry.Alias })
-	removeAllControlsAndClearCells(RadioButtons, layerAlias, constants.CellTypeRadioButton, func(entry *types.RadioButtonEntryType) string { return entry.Alias })
-	removeAllControlsAndClearCells(ScrollBars, layerAlias, constants.CellTypeScrollbar, func(entry *types.ScrollbarEntryType) string { return entry.Alias })
-	removeAllControlsAndClearCells(Selectors, layerAlias, constants.CellTypeSelectorItem, func(entry *types.SelectorEntryType) string { return entry.Alias })
-	removeAllControlsAndClearCells(Textboxes, layerAlias, constants.CellTypeTextbox, func(entry *types.TextboxEntryType) string { return entry.Alias })
-	removeAllControlsAndClearCells(TextFields, layerAlias, constants.CellTypeTextField, func(entry *types.TextFieldEntryType) string { return entry.Alias })
-	removeAllControlsAndClearCells(Tooltips, layerAlias, constants.CellTypeTooltip, func(entry *types.TooltipEntryType) string { return entry.Alias })
-	removeAllControlsAndClearCells(Viewports, layerAlias, constants.CellTypeTextbox, func(entry *types.ViewportEntryType) string { return entry.Alias })
+	removeAllControlsAndClearCells(labelRegistry, layerAlias, constants.CellTypeLabel, func(entry *types.LabelEntryType) string { return entry.Alias })
+	removeAllControlsAndClearCells(buttonRegistry, layerAlias, constants.CellTypeButton, func(entry *types.ButtonEntryType) string { return entry.Alias })
+	removeAllControlsAndClearCells(checkboxRegistry, layerAlias, constants.CellTypeCheckbox, func(entry *types.CheckboxEntryType) string { return entry.Alias })
+	removeAllControlsAndClearCells(dropdownRegistry, layerAlias, constants.CellTypeDropdown, func(entry *types.DropdownEntryType) string { return entry.Alias })
+	removeAllControlsAndClearCells(progressBarRegistry, layerAlias, constants.CellTypeProgressBar, func(entry *types.ProgressBarEntryType) string { return entry.Alias })
+	removeAllControlsAndClearCells(radioButtonRegistry, layerAlias, constants.CellTypeRadioButton, func(entry *types.RadioButtonEntryType) string { return entry.Alias })
+	removeAllControlsAndClearCells(scrollbarRegistry, layerAlias, constants.CellTypeScrollbar, func(entry *types.ScrollbarEntryType) string { return entry.Alias })
+	removeAllControlsAndClearCells(selectorRegistry, layerAlias, constants.CellTypeSelectorItem, func(entry *types.SelectorEntryType) string { return entry.Alias })
+	removeAllControlsAndClearCells(textboxRegistry, layerAlias, constants.CellTypeTextbox, func(entry *types.TextboxEntryType) string { return entry.Alias })
+	removeAllControlsAndClearCells(textFieldRegistry, layerAlias, constants.CellTypeTextField, func(entry *types.TextFieldEntryType) string { return entry.Alias })
+	removeAllControlsAndClearCells(tooltipRegistry, layerAlias, constants.CellTypeTooltip, func(entry *types.TooltipEntryType) string { return entry.Alias })
+	removeAllControlsAndClearCells(viewportRegistry, layerAlias, constants.CellTypeTextbox, func(entry *types.ViewportEntryType) string { return entry.Alias })
 	// Remove the layer itself
-	Layers.Remove(layerAlias)
+	layerRegistry.Remove(layerAlias)
 	// Closes the layer's modal state if it had one, returning focus to where it was before, and drops its tab order.
 	reconcileFocus()
 
 	// Update parent's IsParent status if needed
 	if parentAlias != "" {
-		if parentEntry, isFound := Layers.Lookup(parentAlias); isFound {
+		if parentEntry, isFound := layerRegistry.Lookup(parentAlias); isFound {
 			if !shared.IsAParent(parentAlias) {
 				parentEntry.IsParent = false
 			}
@@ -552,7 +553,7 @@ Example:
 func (shared *layerType) deleteAllChildrenOfParent(parentAlias string) {
 	// Get all entries first to avoid modification during iteration
 	entries := make([]string, 0)
-	for _, currentValue := range Layers.GetAllEntries() {
+	for _, currentValue := range layerRegistry.GetAllEntries() {
 		if currentValue.ParentAlias == parentAlias {
 			entries = append(entries, currentValue.LayerAlias)
 		}
@@ -572,7 +573,7 @@ Example:
 */
 func (shared *layerType) IsAParent(parentAlias string) bool {
 	isParent := false
-	for _, currentValue := range Layers.GetAllEntries() {
+	for _, currentValue := range layerRegistry.GetAllEntries() {
 		if currentValue.ParentAlias == parentAlias {
 			isParent = true
 		}
@@ -590,11 +591,11 @@ Example:
     sortedLayers := layer.GetSortedLayerMemoryAliasSlice()
 */
 func (shared *layerType) GetSortedLayerMemoryAliasSlice() LayerAliasZOrderPairList {
-	// Both the slice's size and its contents must come from this single snapshot. Layers' underlying map can be
+	// Both the slice's size and its contents must come from this single snapshot. layerRegistry's underlying map can be
 	// mutated by another goroutine at any time, so sizing pairList from one call and iterating a second,
 	// separately-taken snapshot would risk the map growing in between, causing an out-of-range panic once the
 	// loop below writes past pairList's original length.
-	allLayerEntries := Layers.GetAllEntriesWithKeys()
+	allLayerEntries := layerRegistry.GetAllEntriesWithKeys()
 	pairList := make(LayerAliasZOrderPairList, len(allLayerEntries))
 	currentEntry := 0
 	for currentKey, currentValue := range allLayerEntries {
@@ -616,9 +617,9 @@ Example:
     layer.SetHighestZOrderNumber("topLayer", "parentLayer")
 */
 func (shared *layerType) SetHighestZOrderNumber(layerAlias string, parentAlias string) {
-	if targetLayer, isFound := Layers.Lookup(layerAlias); isFound {
+	if targetLayer, isFound := layerRegistry.Lookup(layerAlias); isFound {
 		highestZOrderNumber := shared.getHighestZOrderNumber(parentAlias)
-		for _, currentValue := range Layers.GetAllEntries() {
+		for _, currentValue := range layerRegistry.GetAllEntries() {
 			if currentValue.ParentAlias == parentAlias && currentValue.ZOrder == highestZOrderNumber {
 				currentValue.ZOrder = highestZOrderNumber - 1
 				currentValue.IsTopmost = false
@@ -638,7 +639,7 @@ Example:
 */
 func (shared *layerType) getHighestZOrderNumber(parentAlias string) int {
 	highestZOrderNumber := 0
-	for _, currentValue := range Layers.GetAllEntries() {
+	for _, currentValue := range layerRegistry.GetAllEntries() {
 		if currentValue.ParentAlias == parentAlias && currentValue.ZOrder > highestZOrderNumber {
 			highestZOrderNumber = currentValue.ZOrder
 		}
@@ -653,13 +654,13 @@ Example:
     layer.SetTopmostLayer("myLayer")
 */
 func (shared *layerType) SetTopmostLayer(layerAlias string) {
-	targetLayer, isFound := Layers.Lookup(layerAlias)
+	targetLayer, isFound := layerRegistry.Lookup(layerAlias)
 	if !isFound {
 		return
 	}
 
 	// Reset the current topmost layer's flag.
-	for _, layerEntry := range Layers.GetAllEntries() {
+	for _, layerEntry := range layerRegistry.GetAllEntries() {
 		if layerEntry.ParentAlias == targetLayer.ParentAlias && layerEntry.IsTopmost {
 			layerEntry.IsTopmost = false
 		}
@@ -667,7 +668,7 @@ func (shared *layerType) SetTopmostLayer(layerAlias string) {
 
 	// Find the highest Z-order and set the target layer's Z-order higher.
 	highestZOrder := 0
-	for _, layerEntry := range Layers.GetAllEntries() {
+	for _, layerEntry := range layerRegistry.GetAllEntries() {
 		if layerEntry.ParentAlias == targetLayer.ParentAlias && layerEntry.ZOrder > highestZOrder {
 			highestZOrder = layerEntry.ZOrder
 		}
@@ -686,7 +687,7 @@ Example:
     root, child := layer.GetRootParentAlias("grandchild", "")
 */
 func (shared *layerType) GetRootParentAlias(layerAlias string, previousChildAlias string) (string, string) {
-	layerEntry := Layers.Get(layerAlias)
+	layerEntry := layerRegistry.Get(layerAlias)
 	if layerEntry.ParentAlias != "" {
 		childToTrack := previousChildAlias
 		if childToTrack == "" {
@@ -713,7 +714,7 @@ Example:
     x, y := layer.GetAbsoluteLocation("grandchild")
 */
 func (shared *layerType) GetAbsoluteLocation(layerAlias string) (int, int) {
-	layerEntry := Layers.Get(layerAlias)
+	layerEntry := layerRegistry.Get(layerAlias)
 	if layerEntry.ParentAlias == "" {
 		return layerEntry.ScreenXLocation, layerEntry.ScreenYLocation
 	}
@@ -743,7 +744,8 @@ Example:
     layerInstance.Clear()
 */
 func (shared *LayerInstanceType) Clear() {
-	layerEntry := Layers.Get(shared.layerAlias)
+	defer lockUIState()()
+	layerEntry := layerRegistry.Get(shared.layerAlias)
 	localAttributeEntry := types.NewAttributeEntry()
 	fillArea(layerEntry, localAttributeEntry, "", 0, 0, layerEntry.Width, layerEntry.Height, 0)
 }
@@ -772,6 +774,7 @@ Example:
     err := layerInstance.DrawImage("photo.png", style, 0, 0, 40, 20, 0.5)
 */
 func (shared *LayerInstanceType) DrawImage(fileName string, drawingStyle types.ImageStyleEntryType, xLocation int, yLocation int, widthInCharacters int, heightInCharacters int, blurSigma float64) error {
+	defer lockUIState()()
 	var err error
 	if !IsImageExists(fileName) {
 		err = LoadImage(fileName)
@@ -785,7 +788,7 @@ func (shared *LayerInstanceType) DrawImage(fileName string, drawingStyle types.I
 	imageEntryType := getImage(fileName)
 	imageLayer := imageEntryType.LayerEntry
 	var currentLayer *types.LayerEntryType
-	currentLayer = Layers.Get(shared.layerAlias)
+	currentLayer = layerRegistry.Get(shared.layerAlias)
 	if imageEntryType.ImageData != nil {
 		imageData := imageEntryType.ImageData
 		// Get the current layer to pass for transparency handling
@@ -806,12 +809,13 @@ Example:
     err := layerInstance.DrawComposedImage(composedImage, style, 10, 5, 20, 10)
 */
 func (shared *LayerInstanceType) DrawComposedImage(imageComposeEntry ImageComposerEntryType, drawingStyle types.ImageStyleEntryType, xLocation int, yLocation int, widthInCharacters int, heightInCharacters int) error {
+	defer lockUIState()()
 	var err error
 	baseImage := imageComposeEntry.RenderImage()
 
 	// Get the current layer to pass for transparency handling
 	var currentLayer *types.LayerEntryType
-	currentLayer = Layers.Get(shared.layerAlias)
+	currentLayer = layerRegistry.Get(shared.layerAlias)
 
 	imageLayer := getImageLayer("", baseImage, drawingStyle, widthInCharacters, heightInCharacters, drawingStyle.BlurSigmaIntensity)
 	drawImageToLayer(currentLayer, imageLayer, xLocation, yLocation)
@@ -825,8 +829,9 @@ Example:
     btn := layerInstance.AddButton("Click Me", style, 10, 5, 12, 1, true)
 */
 func (shared *LayerInstanceType) AddButton(buttonLabel string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, height int, isEnabled bool) ButtonInstanceType {
+	defer lockUIState()()
 	buttonAlias := getUUID()
-	buttonInstance := Button.Add(shared.layerAlias, buttonAlias, buttonLabel, styleEntry, xLocation, yLocation, width, height, isEnabled)
+	buttonInstance := Button.add(shared.layerAlias, buttonAlias, buttonLabel, styleEntry, xLocation, yLocation, width, height, isEnabled)
 	return buttonInstance
 }
 
@@ -837,8 +842,9 @@ Example:
     cb := layerInstance.AddCheckbox("Option A", style, 10, 5, false, true)
 */
 func (shared *LayerInstanceType) AddCheckbox(checkboxLabel string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, isSelected bool, isEnabled bool) CheckboxInstanceType {
+	defer lockUIState()()
 	checkboxAlias := getUUID()
-	checkboxInstance := Checkbox.Add(shared.layerAlias, checkboxAlias, checkboxLabel, styleEntry, xLocation, yLocation, isSelected, isEnabled)
+	checkboxInstance := Checkbox.add(shared.layerAlias, checkboxAlias, checkboxLabel, styleEntry, xLocation, yLocation, isSelected, isEnabled)
 	return checkboxInstance
 }
 
@@ -849,8 +855,9 @@ Example:
     dd := layerInstance.AddDropdown(style, selections, 10, 5, 5, 15, 0)
 */
 func (shared *LayerInstanceType) AddDropdown(styleEntry types.TuiStyleEntryType, selectionEntry types.SelectionEntryType, xLocation int, yLocation int, selectorHeight int, itemWidth int, defaultItemSelected int) DropdownInstanceType {
+	defer lockUIState()()
 	dropdownAlias := getUUID()
-	dropdownInstance := Dropdown.Add(shared.layerAlias, dropdownAlias, styleEntry, selectionEntry, xLocation, yLocation, selectorHeight, itemWidth, defaultItemSelected)
+	dropdownInstance := Dropdown.add(shared.layerAlias, dropdownAlias, styleEntry, selectionEntry, xLocation, yLocation, selectorHeight, itemWidth, defaultItemSelected)
 	return dropdownInstance
 }
 
@@ -861,8 +868,9 @@ Example:
     lbl := layerInstance.AddLabel("Username:", style, 5, 5, 10)
 */
 func (shared *LayerInstanceType) AddLabel(labelValue string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int) LabelInstanceType {
+	defer lockUIState()()
 	labelAlias := getUUID()
-	labelInstance := Label.Add(shared.layerAlias, labelAlias, labelValue, styleEntry, xLocation, yLocation, width)
+	labelInstance := Label.add(shared.layerAlias, labelAlias, labelValue, styleEntry, xLocation, yLocation, width)
 	return labelInstance
 }
 
@@ -873,8 +881,9 @@ Example:
     pb := layerInstance.AddProgressBar("Loading", style, 10, 5, 20, 1, false, 50, 100, false)
 */
 func (shared *LayerInstanceType) AddProgressBar(progressBarLabel string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, height int, isVertical bool, value int, maxValue int, isBackgroundTransparent bool) ProgressBarInstanceType {
+	defer lockUIState()()
 	progressBarAlias := getUUID()
-	progressBarInstance := ProgressBar.Add(shared.layerAlias, progressBarAlias, progressBarLabel, styleEntry, xLocation, yLocation, width, height, isVertical, value, maxValue, isBackgroundTransparent)
+	progressBarInstance := ProgressBar.add(shared.layerAlias, progressBarAlias, progressBarLabel, styleEntry, xLocation, yLocation, width, height, isVertical, value, maxValue, isBackgroundTransparent)
 	return progressBarInstance
 }
 
@@ -885,6 +894,7 @@ Example:
     rb := layerInstance.AddRadioButton("Option 1", style, 10, 5, 1, false)
 */
 func (shared *LayerInstanceType) AddRadioButton(radioButtonLabel string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, groupId int, isSelected bool) RadioButtonInstanceType {
+	defer lockUIState()()
 	radioButtonAlias := getUUID()
 	radioButtonInstance := radioButton.Add(shared.layerAlias, radioButtonAlias, radioButtonLabel, styleEntry, xLocation, yLocation, groupId, isSelected)
 	return radioButtonInstance
@@ -897,6 +907,7 @@ Example:
     sb := layerInstance.AddScrollbar(style, 10, 5, 20, 100, 0, 1, false)
 */
 func (shared *LayerInstanceType) AddScrollbar(styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, length int, maxScrollValue int, scrollValue int, scrollIncrement int, isHorizontal bool) ScrollbarInstanceType {
+	defer lockUIState()()
 	scrollbarAlias := getUUID()
 	scrollbarInstance := scrollbar.Add(shared.layerAlias, scrollbarAlias, styleEntry, xLocation, yLocation, length, maxScrollValue, scrollValue, scrollIncrement, isHorizontal)
 	return scrollbarInstance
@@ -909,8 +920,9 @@ Example:
     sel := layerInstance.AddSelector(style, selections, 10, 5, 10, 20, 1, 0, 0, false, true)
 */
 func (shared *LayerInstanceType) AddSelector(styleEntry types.TuiStyleEntryType, selectionEntry types.SelectionEntryType, xLocation int, yLocation int, selectorHeight int, itemWidth int, numberOfColumns int, viewportPosition int, selectedItem int, highlightOnClickOnly bool, isBorderDrawn bool) SelectorInstanceType {
+	defer lockUIState()()
 	selectorAlias := getUUID()
-	selectorInstance := Selector.Add(shared.layerAlias, selectorAlias, styleEntry, selectionEntry, xLocation, yLocation, selectorHeight, itemWidth, numberOfColumns, viewportPosition, selectedItem, highlightOnClickOnly, isBorderDrawn)
+	selectorInstance := Selector.add(shared.layerAlias, selectorAlias, styleEntry, selectionEntry, xLocation, yLocation, selectorHeight, itemWidth, numberOfColumns, viewportPosition, selectedItem, highlightOnClickOnly, isBorderDrawn)
 	return selectorInstance
 }
 
@@ -921,8 +933,9 @@ Example:
     tf := layerInstance.AddTextField(style, 10, 5, 20, 50, false, "", true)
 */
 func (shared *LayerInstanceType) AddTextField(styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, maxLengthAllowed int, isPasswordProtected bool, defaultValue string, isEnabled bool) TextFieldInstanceType {
+	defer lockUIState()()
 	textFieldAlias := getUUID()
-	textFieldInstance := TextField.Add(shared.layerAlias, textFieldAlias, styleEntry, xLocation, yLocation, width, maxLengthAllowed, isPasswordProtected, defaultValue, isEnabled)
+	textFieldInstance := TextField.add(shared.layerAlias, textFieldAlias, styleEntry, xLocation, yLocation, width, maxLengthAllowed, isPasswordProtected, defaultValue, isEnabled)
 	return textFieldInstance
 }
 
@@ -933,6 +946,7 @@ Example:
     tb := layerInstance.AddTextbox(style, 10, 5, 30, 10, true)
 */
 func (shared *LayerInstanceType) AddTextbox(styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, height int, isBorderDrawn bool) TextboxInstanceType {
+	defer lockUIState()()
 	textBoxAlias := getUUID()
 	textBoxInstance := textbox.Add(shared.layerAlias, textBoxAlias, styleEntry, xLocation, yLocation, width, height, isBorderDrawn)
 	return textBoxInstance
@@ -945,8 +959,9 @@ Example:
     tt := layerInstance.AddTooltip("Help text", style, 10, 5, 5, 1, 10, 6, 20, 3, false, true, 500)
 */
 func (shared *LayerInstanceType) AddTooltip(tooltipValue string, styleEntry types.TuiStyleEntryType, hotspotXLocation int, hotspotYLocation int, hotspotWidth int, hotspotHeight int, tooltipXLocation int, tooltipYLocation int, tooltipWidth int, tooltipHeight int, isLocationAbsolute bool, isBorderDrawn bool, hoverTime int) TooltipInstanceType {
+	defer lockUIState()()
 	tooltipAlias := getUUID()
-	tooltipInstance := Tooltip.Add(shared.layerAlias, tooltipAlias, tooltipValue, styleEntry, hotspotXLocation, hotspotYLocation, hotspotWidth, hotspotHeight, tooltipXLocation, tooltipYLocation, tooltipWidth, tooltipHeight, isLocationAbsolute, isBorderDrawn, hoverTime)
+	tooltipInstance := Tooltip.add(shared.layerAlias, tooltipAlias, tooltipValue, styleEntry, hotspotXLocation, hotspotYLocation, hotspotWidth, hotspotHeight, tooltipXLocation, tooltipYLocation, tooltipWidth, tooltipHeight, isLocationAbsolute, isBorderDrawn, hoverTime)
 	return tooltipInstance
 }
 
@@ -972,6 +987,7 @@ Example:
     vp := layerInstance.AddViewport(style, 0, 0, 40, 10, true, true, 100)
 */
 func (shared *LayerInstanceType) AddViewport(styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, height int, isLinesWrapped bool, isBorderDrawn bool, maxHistoryLines int) ViewportInstanceType {
+	defer lockUIState()()
 	viewportAlias := getUUID()
 	viewportInstance := viewport.Add(shared.layerAlias, viewportAlias, styleEntry, xLocation, yLocation, width, height, isLinesWrapped, isBorderDrawn, maxHistoryLines)
 	return viewportInstance
@@ -992,8 +1008,9 @@ Example:
     fm := layerInstance.AddFileMenu(style, string{"File", "Edit"}, selections, 0, 0, true)
 */
 func (shared *LayerInstanceType) AddFileMenu(styleEntry types.TuiStyleEntryType, menuHeadings []string, menuSelections []types.SelectionEntryType, xLocation int, yLocation int, isEnabled bool) FileMenuInstanceType {
+	defer lockUIState()()
 	menuAlias := getUUID()
-	fileMenuInstance := FileMenu.Add(shared.layerAlias, menuAlias, styleEntry, menuHeadings, menuSelections, xLocation, yLocation, isEnabled)
+	fileMenuInstance := FileMenu.add(shared.layerAlias, menuAlias, styleEntry, menuHeadings, menuSelections, xLocation, yLocation, isEnabled)
 	return fileMenuInstance
 }
 
@@ -1004,7 +1021,8 @@ Example:
     layerInstance.DeleteAllButtons()
 */
 func (shared *LayerInstanceType) DeleteAllButtons() {
-	removeAllControlsAndClearCells(Buttons, shared.layerAlias, constants.CellTypeButton, func(entry *types.ButtonEntryType) string { return entry.Alias })
+	defer lockUIState()()
+	removeAllControlsAndClearCells(buttonRegistry, shared.layerAlias, constants.CellTypeButton, func(entry *types.ButtonEntryType) string { return entry.Alias })
 }
 
 /*
@@ -1014,7 +1032,8 @@ Example:
     layerInstance.DeleteAllCheckboxes()
 */
 func (shared *LayerInstanceType) DeleteAllCheckboxes() {
-	removeAllControlsAndClearCells(Checkboxes, shared.layerAlias, constants.CellTypeCheckbox, func(entry *types.CheckboxEntryType) string { return entry.Alias })
+	defer lockUIState()()
+	removeAllControlsAndClearCells(checkboxRegistry, shared.layerAlias, constants.CellTypeCheckbox, func(entry *types.CheckboxEntryType) string { return entry.Alias })
 }
 
 /*
@@ -1024,7 +1043,8 @@ Example:
     layerInstance.DeleteAllDropdowns()
 */
 func (shared *LayerInstanceType) DeleteAllDropdowns() {
-	removeAllControlsAndClearCells(Dropdowns, shared.layerAlias, constants.CellTypeDropdown, func(entry *types.DropdownEntryType) string { return entry.Alias })
+	defer lockUIState()()
+	removeAllControlsAndClearCells(dropdownRegistry, shared.layerAlias, constants.CellTypeDropdown, func(entry *types.DropdownEntryType) string { return entry.Alias })
 }
 
 /*
@@ -1034,7 +1054,8 @@ Example:
     layerInstance.DeleteAllLabels()
 */
 func (shared *LayerInstanceType) DeleteAllLabels() {
-	removeAllControlsAndClearCells(Labels, shared.layerAlias, constants.CellTypeLabel, func(entry *types.LabelEntryType) string { return entry.Alias })
+	defer lockUIState()()
+	removeAllControlsAndClearCells(labelRegistry, shared.layerAlias, constants.CellTypeLabel, func(entry *types.LabelEntryType) string { return entry.Alias })
 }
 
 /*
@@ -1044,7 +1065,8 @@ Example:
     layerInstance.DeleteAllProgressBars()
 */
 func (shared *LayerInstanceType) DeleteAllProgressBars() {
-	removeAllControlsAndClearCells(ProgressBars, shared.layerAlias, constants.CellTypeProgressBar, func(entry *types.ProgressBarEntryType) string { return entry.Alias })
+	defer lockUIState()()
+	removeAllControlsAndClearCells(progressBarRegistry, shared.layerAlias, constants.CellTypeProgressBar, func(entry *types.ProgressBarEntryType) string { return entry.Alias })
 }
 
 /*
@@ -1054,7 +1076,8 @@ Example:
     layerInstance.DeleteAllRadioButtons()
 */
 func (shared *LayerInstanceType) DeleteAllRadioButtons() {
-	removeAllControlsAndClearCells(RadioButtons, shared.layerAlias, constants.CellTypeRadioButton, func(entry *types.RadioButtonEntryType) string { return entry.Alias })
+	defer lockUIState()()
+	removeAllControlsAndClearCells(radioButtonRegistry, shared.layerAlias, constants.CellTypeRadioButton, func(entry *types.RadioButtonEntryType) string { return entry.Alias })
 }
 
 /*
@@ -1064,7 +1087,8 @@ Example:
     layerInstance.DeleteAllScrollbars()
 */
 func (shared *LayerInstanceType) DeleteAllScrollbars() {
-	removeAllControlsAndClearCells(ScrollBars, shared.layerAlias, constants.CellTypeScrollbar, func(entry *types.ScrollbarEntryType) string { return entry.Alias })
+	defer lockUIState()()
+	removeAllControlsAndClearCells(scrollbarRegistry, shared.layerAlias, constants.CellTypeScrollbar, func(entry *types.ScrollbarEntryType) string { return entry.Alias })
 }
 
 /*
@@ -1074,7 +1098,8 @@ Example:
     layerInstance.DeleteAllSelectors()
 */
 func (shared *LayerInstanceType) DeleteAllSelectors() {
-	removeAllControlsAndClearCells(Selectors, shared.layerAlias, constants.CellTypeSelectorItem, func(entry *types.SelectorEntryType) string { return entry.Alias })
+	defer lockUIState()()
+	removeAllControlsAndClearCells(selectorRegistry, shared.layerAlias, constants.CellTypeSelectorItem, func(entry *types.SelectorEntryType) string { return entry.Alias })
 }
 
 /*
@@ -1084,7 +1109,8 @@ Example:
     layerInstance.DeleteAllTextFields()
 */
 func (shared *LayerInstanceType) DeleteAllTextFields() {
-	removeAllControlsAndClearCells(TextFields, shared.layerAlias, constants.CellTypeTextField, func(entry *types.TextFieldEntryType) string { return entry.Alias })
+	defer lockUIState()()
+	removeAllControlsAndClearCells(textFieldRegistry, shared.layerAlias, constants.CellTypeTextField, func(entry *types.TextFieldEntryType) string { return entry.Alias })
 }
 
 /*
@@ -1094,7 +1120,8 @@ Example:
     layerInstance.DeleteAllTextboxes()
 */
 func (shared *LayerInstanceType) DeleteAllTextboxes() {
-	removeAllControlsAndClearCells(Textboxes, shared.layerAlias, constants.CellTypeTextbox, func(entry *types.TextboxEntryType) string { return entry.Alias })
+	defer lockUIState()()
+	removeAllControlsAndClearCells(textboxRegistry, shared.layerAlias, constants.CellTypeTextbox, func(entry *types.TextboxEntryType) string { return entry.Alias })
 }
 
 /*
@@ -1104,7 +1131,8 @@ Example:
     layerInstance.DeleteAllTooltips()
 */
 func (shared *LayerInstanceType) DeleteAllTooltips() {
-	removeAllControlsAndClearCells(Tooltips, shared.layerAlias, constants.CellTypeTooltip, func(entry *types.TooltipEntryType) string { return entry.Alias })
+	defer lockUIState()()
+	removeAllControlsAndClearCells(tooltipRegistry, shared.layerAlias, constants.CellTypeTooltip, func(entry *types.TooltipEntryType) string { return entry.Alias })
 }
 
 /*
@@ -1114,7 +1142,8 @@ Example:
     layerInstance.DeleteAllViewports()
 */
 func (shared *LayerInstanceType) DeleteAllViewports() {
-	removeAllControlsAndClearCells(Viewports, shared.layerAlias, constants.CellTypeTextbox, func(entry *types.ViewportEntryType) string { return entry.Alias })
+	defer lockUIState()()
+	removeAllControlsAndClearCells(viewportRegistry, shared.layerAlias, constants.CellTypeTextbox, func(entry *types.ViewportEntryType) string { return entry.Alias })
 }
 
 /*
@@ -1124,7 +1153,8 @@ Example:
     layerInstance.DeleteAllFileMenus()
 */
 func (shared *LayerInstanceType) DeleteAllFileMenus() {
-	removeAllControlsAndClearCells(FileMenus, shared.layerAlias, constants.CellTypeFileMenuHeading, func(entry *types.FileMenuEntryType) string { return entry.Alias })
+	defer lockUIState()()
+	removeAllControlsAndClearCells(fileMenuRegistry, shared.layerAlias, constants.CellTypeFileMenuHeading, func(entry *types.FileMenuEntryType) string { return entry.Alias })
 }
 
 /*
@@ -1139,6 +1169,7 @@ Example:
     layerInstance.Print("Hello World")
 */
 func (shared *LayerInstanceType) Print(textToPrint string) {
+	defer lockUIState()()
 	printLayerInstance(shared, textToPrint)
 }
 
@@ -1154,6 +1185,7 @@ Example:
     layerInstance.Locate(10, 5)
 */
 func (shared *LayerInstanceType) Locate(xLocation int, yLocation int) {
+	defer lockUIState()()
 	locateLayerInstance(shared, xLocation, yLocation)
 }
 
@@ -1166,6 +1198,7 @@ Example:
     layerInstance.Color(15, 0)
 */
 func (shared *LayerInstanceType) Color(foregroundColorIndex int, backgroundColorIndex int) {
+	defer lockUIState()()
 	colorLayerInstance(shared, foregroundColorIndex, backgroundColorIndex)
 }
 
@@ -1178,6 +1211,7 @@ Example:
     layerInstance.ColorRGB(255, 255, 255, 0, 0, 0)
 */
 func (shared *LayerInstanceType) ColorRGB(foregroundRedIndex int32, foregroundGreenIndex int32, foregroundBlueIndex int32, backgroundRedIndex int32, backgroundGreenIndex int32, backgroundBlueIndex int32) {
+	defer lockUIState()()
 	colorLayerRGBInstance(shared, foregroundRedIndex, foregroundGreenIndex, foregroundBlueIndex, backgroundRedIndex, backgroundGreenIndex, backgroundBlueIndex)
 }
 
@@ -1188,6 +1222,7 @@ Example:
     layerInstance.Color24Bit(fgColor, bgColor)
 */
 func (shared *LayerInstanceType) Color24Bit(foregroundColor constants.ColorType, backgroundColor constants.ColorType) {
+	defer lockUIState()()
 	colorLayer24BitInstance(shared, foregroundColor, backgroundColor)
 }
 
@@ -1204,6 +1239,7 @@ Example:
     layerInstance.SetAlpha(0.5)
 */
 func (shared *LayerInstanceType) SetAlpha(alphaValue float32) {
+	defer lockUIState()()
 	setLayerAlphaInstance(shared, alphaValue)
 }
 
@@ -1214,6 +1250,7 @@ Example:
     layerInstance.SetZOrder(10)
 */
 func (shared *LayerInstanceType) SetZOrder(zOrder int) {
+	defer lockUIState()()
 	setLayerZOrderInstance(shared, zOrder)
 }
 
@@ -1230,7 +1267,8 @@ Example:
     layerInstance.DrawVerticalLine(style, 10, 5, 10, true)
 */
 func (shared *LayerInstanceType) DrawVerticalLine(styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, height int, isConnectorsDrawn bool) {
-	layerEntry := Layers.Get(shared.layerAlias)
+	defer lockUIState()()
+	layerEntry := layerRegistry.Get(shared.layerAlias)
 	localAttributeEntry := types.NewAttributeEntry()
 	drawVerticalLine(layerEntry, styleEntry, localAttributeEntry, xLocation, yLocation, height, isConnectorsDrawn)
 }
@@ -1248,7 +1286,8 @@ Example:
     layerInstance.DrawHorizontalLine(style, 10, 5, 20, true)
 */
 func (shared *LayerInstanceType) DrawHorizontalLine(styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, isConnectorsDrawn bool) {
-	layerEntry := Layers.Get(shared.layerAlias)
+	defer lockUIState()()
+	layerEntry := layerRegistry.Get(shared.layerAlias)
 	localAttributeEntry := types.NewAttributeEntry()
 	drawHorizontalLine(layerEntry, styleEntry, localAttributeEntry, xLocation, yLocation, width, isConnectorsDrawn)
 }
@@ -1267,7 +1306,8 @@ Example:
     layerInstance.DrawBorder(style, 5, 5, 40, 10, true)
 */
 func (shared *LayerInstanceType) DrawBorder(styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, height int, isInteractive bool) {
-	layerEntry := Layers.Get(shared.layerAlias)
+	defer lockUIState()()
+	layerEntry := layerRegistry.Get(shared.layerAlias)
 	localAttributeEntry := types.NewAttributeEntry()
 	drawBorder(layerEntry, styleEntry, localAttributeEntry, xLocation, yLocation, width, height, isInteractive)
 }
@@ -1284,7 +1324,8 @@ Example:
     layerInstance.DrawFrameLabel(style, "Settings", 7, 5)
 */
 func (shared *LayerInstanceType) DrawFrameLabel(styleEntry types.TuiStyleEntryType, label string, xLocation int, yLocation int) {
-	layerEntry := Layers.Get(shared.layerAlias)
+	defer lockUIState()()
+	layerEntry := layerRegistry.Get(shared.layerAlias)
 	drawFrameLabel(layerEntry, styleEntry, label, xLocation, yLocation)
 }
 
@@ -1302,7 +1343,8 @@ Example:
     layerInstance.DrawFrame(style, true, 5, 5, 40, 10, true)
 */
 func (shared *LayerInstanceType) DrawFrame(styleEntry types.TuiStyleEntryType, isRaised bool, xLocation int, yLocation int, width int, height int, isInteractive bool) {
-	layerEntry := Layers.Get(shared.layerAlias)
+	defer lockUIState()()
+	layerEntry := layerRegistry.Get(shared.layerAlias)
 	localAttributeEntry := types.NewAttributeEntry()
 	if isRaised {
 		drawFrame(layerEntry, styleEntry, localAttributeEntry, constants.FrameStyleRaised, xLocation, yLocation, width, height, isInteractive)
@@ -1326,7 +1368,8 @@ Example:
     layerInstance.DrawWindow(style, 5, 5, 40, 10, true)
 */
 func (shared *LayerInstanceType) DrawWindow(styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, height int, isInteractive bool) {
-	layerEntry := Layers.Get(shared.layerAlias)
+	defer lockUIState()()
+	layerEntry := layerRegistry.Get(shared.layerAlias)
 	localAttributeEntry := types.NewAttributeEntry()
 	drawWindow(layerEntry, styleEntry, localAttributeEntry, xLocation, yLocation, width, height, isInteractive)
 }
@@ -1342,7 +1385,8 @@ Example:
     layerInstance.DrawShadow(7, 7, 40, 10, 0.5)
 */
 func (shared *LayerInstanceType) DrawShadow(xLocation int, yLocation int, width int, height int, alphaValue float32) {
-	layerEntry := Layers.Get(shared.layerAlias)
+	defer lockUIState()()
+	layerEntry := layerRegistry.Get(shared.layerAlias)
 	localAttributeEntry := types.NewAttributeEntry()
 	drawShadow(layerEntry, localAttributeEntry, xLocation, yLocation, width, height, alphaValue)
 }
@@ -1359,7 +1403,8 @@ Example:
     layerInstance.FillArea("*", 0, 0, 80, 25)
 */
 func (shared *LayerInstanceType) FillArea(fillCharacters string, xLocation int, yLocation int, width int, height int) {
-	layerEntry := Layers.Get(shared.layerAlias)
+	defer lockUIState()()
+	layerEntry := layerRegistry.Get(shared.layerAlias)
 	attributeEntry := layerEntry.DefaultAttribute
 	fillArea(layerEntry, attributeEntry, fillCharacters, xLocation, yLocation, width, height, constants.NullCellControlLocation)
 }
@@ -1373,7 +1418,8 @@ Example:
     layerInstance.FillLayer(".")
 */
 func (shared *LayerInstanceType) FillLayer(fillCharacters string) {
-	layerEntry := Layers.Get(shared.layerAlias)
+	defer lockUIState()()
+	layerEntry := layerRegistry.Get(shared.layerAlias)
 	attributeEntry := layerEntry.DefaultAttribute
 	fillLayer(layerEntry, attributeEntry, fillCharacters)
 }
@@ -1387,7 +1433,8 @@ Example:
     layerInstance.DrawBar(style, 0, 0, 80, "=")
 */
 func (shared *LayerInstanceType) DrawBar(styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, barLength int, fillCharacters string) {
-	layerEntry := Layers.Get(shared.layerAlias)
+	defer lockUIState()()
+	layerEntry := layerRegistry.Get(shared.layerAlias)
 	attributeEntry := types.NewAttributeEntry()
 	attributeEntry.ForegroundColor = styleEntry.Bar.ForegroundColor
 	attributeEntry.BackgroundColor = styleEntry.Bar.BackgroundColor
@@ -1405,6 +1452,7 @@ Example:
     layerInstance.MoveLayerByAbsoluteValue(10, 5)
 */
 func (shared *LayerInstanceType) MoveLayerByAbsoluteValue(xLocation int, yLocation int) {
+	defer lockUIState()()
 	moveLayerByAbsoluteValue(shared.layerAlias, xLocation, yLocation)
 }
 
@@ -1423,6 +1471,7 @@ Example:
     layerInstance.MoveLayerByRelativeValue(-1, 2)
 */
 func (shared *LayerInstanceType) MoveLayerByRelativeValue(xLocation int, yLocation int) {
+	defer lockUIState()()
 	moveLayerByRelativeValue(shared.layerAlias, xLocation, yLocation)
 }
 
@@ -1445,6 +1494,7 @@ Example:
     layerInstance.Delete()
 */
 func (shared *LayerInstanceType) Delete() {
+	defer lockUIState()()
 	deleteLayer(shared.layerAlias)
 	shared.layerAlias = ""
 }
@@ -1470,6 +1520,7 @@ Example:
 	dialogLayer.SetModal(true)
 */
 func (shared *LayerInstanceType) SetModal(isModal bool) {
+	defer lockUIState()()
 	validateLayer(shared.layerAlias)
 	setLayerModal(shared.layerAlias, isModal)
 }
@@ -1482,6 +1533,7 @@ Example:
 	isModal := dialogLayer.IsModal()
 */
 func (shared *LayerInstanceType) IsModal() bool {
+	defer lockUIState()()
 	return isLayerModal(shared.layerAlias)
 }
 
@@ -1497,6 +1549,7 @@ Example:
 	err := dialogLayer.SetDefaultButton(&okButton)
 */
 func (shared *LayerInstanceType) SetDefaultButton(button *ButtonInstanceType) error {
+	defer lockUIState()()
 	validateLayer(shared.layerAlias)
 	return setScopeButton(shared.layerAlias, button, true)
 }
@@ -1512,6 +1565,7 @@ Example:
 	err := dialogLayer.SetCancelButton(&cancelButton)
 */
 func (shared *LayerInstanceType) SetCancelButton(button *ButtonInstanceType) error {
+	defer lockUIState()()
 	validateLayer(shared.layerAlias)
 	return setScopeButton(shared.layerAlias, button, false)
 }
@@ -1525,6 +1579,7 @@ Example:
 	layerInstance.ClearTabIndex()
 */
 func (shared *LayerInstanceType) ClearTabIndex() {
+	defer lockUIState()()
 	clearLayerTabIndex(shared.layerAlias)
 }
 
@@ -1536,6 +1591,7 @@ Example:
     exists := layerInstance.IsExists()
 */
 func (shared *LayerInstanceType) IsExists() bool {
+	defer lockUIState()()
 	if shared.layerAlias != "" {
 		return true
 	}
@@ -1553,6 +1609,7 @@ Example:
     layerInstance.SetIsVisible(false)
 */
 func (shared *LayerInstanceType) SetIsVisible(isVisible bool) {
+	defer lockUIState()()
 	validateLayer(shared.layerAlias)
 	setLayerIsVisible(shared.layerAlias, isVisible)
 }
@@ -1566,6 +1623,7 @@ Example:
     instance.SetAlphaValue(0.5)
 */
 func (shared *LayerInstanceType) SetAlphaValue(alphaValue float32) {
+	defer lockUIState()()
 	validateLayer(shared.layerAlias)
 	setLayerAlphaValue(shared.layerAlias, alphaValue)
 }
@@ -1578,6 +1636,7 @@ Example:
     alpha := instance.GetAlphaValue()
 */
 func (shared *LayerInstanceType) GetAlphaValue() float32 {
+	defer lockUIState()()
 	validateLayer(shared.layerAlias)
 	return getLayerAlphaValue(shared.layerAlias)
 }
@@ -1589,6 +1648,7 @@ Example:
     instance.SetTransitionStyle(style)
 */
 func (shared *LayerInstanceType) SetTransitionStyle(style types.TransitionStyleEntryType) {
+	defer lockUIState()()
 	validateLayer(shared.layerAlias)
 	setLayerTransitionStyle(shared.layerAlias, style)
 }
@@ -1600,6 +1660,7 @@ Example:
     style := instance.GetTransitionStyle()
 */
 func (shared *LayerInstanceType) GetTransitionStyle() types.TransitionStyleEntryType {
+	defer lockUIState()()
 	validateLayer(shared.layerAlias)
 	return getLayerTransitionStyle(shared.layerAlias)
 }
@@ -1612,6 +1673,7 @@ Example:
     instance.SetTransitionProgress(0.5)
 */
 func (shared *LayerInstanceType) SetTransitionProgress(progress float32) {
+	defer lockUIState()()
 	validateLayer(shared.layerAlias)
 	setLayerTransitionProgress(shared.layerAlias, progress)
 }
@@ -1623,6 +1685,7 @@ Example:
     progress := instance.GetTransitionProgress()
 */
 func (shared *LayerInstanceType) GetTransitionProgress() float32 {
+	defer lockUIState()()
 	validateLayer(shared.layerAlias)
 	return getLayerTransitionProgress(shared.layerAlias)
 }
@@ -1636,6 +1699,7 @@ Example:
     instance.SetTransparencyStrategy(constants.TransparencyStrategyBayer8x8)
 */
 func (shared *LayerInstanceType) SetTransparencyStrategy(strategy constants.TransparencyStrategy) {
+	defer lockUIState()()
 	validateLayer(shared.layerAlias)
 	setLayerTransparencyStrategy(shared.layerAlias, strategy)
 }
@@ -1648,6 +1712,7 @@ Example:
     strategy := instance.GetTransparencyStrategy()
 */
 func (shared *LayerInstanceType) GetTransparencyStrategy() constants.TransparencyStrategy {
+	defer lockUIState()()
 	validateLayer(shared.layerAlias)
 	return getLayerTransparencyStrategy(shared.layerAlias)
 }
@@ -1659,6 +1724,7 @@ Example:
     layerInstance.SetTopmost()
 */
 func (shared *LayerInstanceType) SetTopmost() {
+	defer lockUIState()()
 	validateLayer(shared.layerAlias)
 	layer.SetTopmostLayer(shared.layerAlias)
 }
@@ -1676,7 +1742,8 @@ Example:
     x, y := layerInstance.GetLocation()
 */
 func (shared *LayerInstanceType) GetLocation() (int, int) {
-	return shared.GetRelativeLocation()
+	defer lockUIState()()
+	return shared.getRelativeLocation()
 }
 
 /*
@@ -1690,8 +1757,21 @@ Example:
     x, y := layerInstance.GetRelativeLocation()
 */
 func (shared *LayerInstanceType) GetRelativeLocation() (int, int) {
+	defer lockUIState()()
+	return shared.getRelativeLocation()
+}
+
+/*
+getRelativeLocation is a method which allows you to do exactly what GetRelativeLocation does, for a caller that already
+holds uiStateMutex, such as another entry point of the package that has taken the lock itself.
+
+Example:
+
+	layer.getRelativeLocation()
+*/
+func (shared *LayerInstanceType) getRelativeLocation() (int, int) {
 	validateLayer(shared.layerAlias)
-	layerEntry := Layers.Get(shared.layerAlias)
+	layerEntry := layerRegistry.Get(shared.layerAlias)
 	return layerEntry.ScreenXLocation, layerEntry.ScreenYLocation
 }
 
@@ -1708,6 +1788,7 @@ Example:
     x, y := layerInstance.GetAbsoluteLocation()
 */
 func (shared *LayerInstanceType) GetAbsoluteLocation() (int, int) {
+	defer lockUIState()()
 	validateLayer(shared.layerAlias)
 	return layer.GetAbsoluteLocation(shared.layerAlias)
 }
@@ -1719,8 +1800,9 @@ Example:
     w, h := layerInstance.GetSize()
 */
 func (shared *LayerInstanceType) GetSize() (int, int) {
+	defer lockUIState()()
 	validateLayer(shared.layerAlias)
-	layerEntry := Layers.Get(shared.layerAlias)
+	layerEntry := layerRegistry.Get(shared.layerAlias)
 	return layerEntry.Width, layerEntry.Height
 }
 
@@ -1731,8 +1813,9 @@ Example:
     alpha := layerInstance.GetAlpha()
 */
 func (shared *LayerInstanceType) GetAlpha() float32 {
+	defer lockUIState()()
 	validateLayer(shared.layerAlias)
-	layerEntry := Layers.Get(shared.layerAlias)
+	layerEntry := layerRegistry.Get(shared.layerAlias)
 	return layerEntry.DefaultAttribute.ForegroundAlphaValue
 }
 
@@ -1771,8 +1854,9 @@ Example:
 	err := layerInstance.CaptureScreen()
 */
 func (shared *LayerInstanceType) CaptureScreen() error {
+	defer lockUIState()()
 	validateLayer(shared.layerAlias)
-	layerEntry := Layers.Get(shared.layerAlias)
+	layerEntry := layerRegistry.Get(shared.layerAlias)
 	absoluteXLocation, absoluteYLocation := layer.GetAbsoluteLocation(shared.layerAlias)
 
 	commonResource.displayUpdate.Lock()
@@ -1861,12 +1945,13 @@ Example:
     err := layerInstance.LoadLayer(0, 0, 1, "image.clayer")
 */
 func (shared *LayerInstanceType) LoadLayer(xLocation int, yLocation int, zOrderPriority int, filePath string) error {
+	defer lockUIState()()
 	// Get the file data using the virtual file system
 	fileData, err := getFileDataFromFileSystem(filePath)
 	if err != nil {
 		return err
 	}
-	layerEntry := Layers.Get(shared.layerAlias)
+	layerEntry := layerRegistry.Get(shared.layerAlias)
 	layerEntry.LoadLayerFromBytes(fileData)
 	return nil
 }
@@ -1887,6 +1972,7 @@ Example:
     err := layerInstance.LoadPreRenderedLayerImage("pre.clayer", "myImage")
 */
 func (shared *LayerInstanceType) LoadPreRenderedLayerImage(filePath string, imageAlias string) error {
+	defer lockUIState()()
 	// Load the pre-rendered layer image using the image.go function
 	return LoadPreRenderedLayerImage(filePath, imageAlias)
 }
@@ -1906,8 +1992,9 @@ Example:
     err := layerInstance.SaveLayer("saved.clayer")
 */
 func (shared *LayerInstanceType) SaveLayer(filePath string) error {
+	defer lockUIState()()
 	validateLayer(shared.layerAlias)
-	layerEntry := Layers.Get(shared.layerAlias)
+	layerEntry := layerRegistry.Get(shared.layerAlias)
 	return layerEntry.SaveLayer(filePath)
 }
 
@@ -1919,6 +2006,7 @@ Example:
     layerInstance.ColorStyle(myStyle)
 */
 func (shared *LayerInstanceType) ColorStyle(styleEntry types.TuiStyleEntryType) {
+	defer lockUIState()()
 	colorLayerInstance(shared, int(styleEntry.Text.ForegroundColor), int(styleEntry.Text.BackgroundColor))
 }
 
@@ -1932,9 +2020,10 @@ Example:
     layerInstance.Resize(100, 50)
 */
 func (shared *LayerInstanceType) Resize(width int, height int) {
+	defer lockUIState()()
 	validateLayer(shared.layerAlias)
 	validateLayerSize(shared.layerAlias, width, height)
-	layerEntry := Layers.Get(shared.layerAlias)
+	layerEntry := layerRegistry.Get(shared.layerAlias)
 
 	// Create a new character memory with the new dimensions
 	newCharacterMemory := make([][]types.CharacterEntryType, height)
@@ -1985,10 +2074,16 @@ Example:
 */
 func (shared *LayerInstanceType) PrintDialog(xLocation int, yLocation int, widthOfLineInCharacters int, printDelayInMilliseconds int, isSkipable bool, stringToPrint string) {
 	formattedTextToPrint := fmt.Sprint(stringToPrint)
-	layerEntry := Layers.Get(shared.layerAlias)
-	if xLocation < 0 || xLocation > layerEntry.Width || yLocation < 0 || yLocation > layerEntry.Height {
-		panic(fmt.Sprintf("The specified location (%d, %d) is out of bounds for layer '%s' with a size of (%d, %d).", xLocation, yLocation, layerEntry.LayerAlias, layerEntry.Width, layerEntry.Height))
-	}
+	// The layer is looked up and checked under the UI lock, but the dialog is printed without it held, since it waits
+	// between characters and takes the lock itself for each one.
+	layerEntry := func() *types.LayerEntryType {
+		defer lockUIState()()
+		layerEntry := layerRegistry.Get(shared.layerAlias)
+		if xLocation < 0 || xLocation > layerEntry.Width || yLocation < 0 || yLocation > layerEntry.Height {
+			panic(fmt.Sprintf("The specified location (%d, %d) is out of bounds for layer '%s' with a size of (%d, %d).", xLocation, yLocation, layerEntry.LayerAlias, layerEntry.Width, layerEntry.Height))
+		}
+		return layerEntry
+	}()
 	printDialog(layerEntry, layerEntry.DefaultAttribute, xLocation, yLocation, widthOfLineInCharacters, printDelayInMilliseconds, isSkipable, formattedTextToPrint)
 }
 
@@ -2016,8 +2111,9 @@ Example:
     layerInstance.PrintMarkup(0, 0, 30, "This is {red}red{} text.")
 */
 func (shared *LayerInstanceType) PrintMarkup(xLocation int, yLocation int, widthOfLineInCharacters int, stringToPrint string) {
+	defer lockUIState()()
 	formattedTextToPrint := fmt.Sprint(stringToPrint)
-	layerEntry := Layers.Get(shared.layerAlias)
+	layerEntry := layerRegistry.Get(shared.layerAlias)
 	if xLocation < 0 || xLocation > layerEntry.Width || yLocation < 0 || yLocation > layerEntry.Height {
 		panic(fmt.Sprintf("The specified location (%d, %d) is out of bounds for layer '%s' with a size of (%d, %d).", xLocation, yLocation, layerEntry.LayerAlias, layerEntry.Width, layerEntry.Height))
 	}
@@ -2031,11 +2127,12 @@ Example:
     layerInstance.PrintFont(myFont, 10, 5, "Big Text")
 */
 func (shared *LayerInstanceType) PrintFont(fontInstance fontInstanceType, xLocation int, yLocation int, stringToPrint string) {
-	if !Layers.IsExists(shared.layerAlias) {
+	defer lockUIState()()
+	if !layerRegistry.IsExists(shared.layerAlias) {
 		panic(fmt.Sprintf("Layer with alias '%s' not found.", shared.layerAlias))
 	}
-	layerEntry := Layers.Get(shared.layerAlias)
-	Font.PrintText(layerEntry, fontInstance, xLocation, yLocation, stringToPrint)
+	layerEntry := layerRegistry.Get(shared.layerAlias)
+	Font.printText(layerEntry, fontInstance, xLocation, yLocation, stringToPrint)
 }
 
 /*
@@ -2058,10 +2155,16 @@ Example:
 */
 func (shared *LayerInstanceType) PrintFontDialog(fontInstance fontInstanceType, xLocation int, yLocation int, widthOfLineInCharacters int, printDelayInMilliseconds int, isSkipable bool, stringToPrint string) {
 	formattedTextToPrint := fmt.Sprint(stringToPrint)
-	layerEntry := Layers.Get(shared.layerAlias)
-	if xLocation < 0 || xLocation > layerEntry.Width || yLocation < 0 || yLocation > layerEntry.Height {
-		panic(fmt.Sprintf("The specified location (%d, %d) is out of bounds for layer '%s' with a size of (%d, %d).", xLocation, yLocation, layerEntry.LayerAlias, layerEntry.Width, layerEntry.Height))
-	}
+	// The layer is looked up and checked under the UI lock, but the dialog is printed without it held, since it waits
+	// between characters and takes the lock itself for each one.
+	layerEntry := func() *types.LayerEntryType {
+		defer lockUIState()()
+		layerEntry := layerRegistry.Get(shared.layerAlias)
+		if xLocation < 0 || xLocation > layerEntry.Width || yLocation < 0 || yLocation > layerEntry.Height {
+			panic(fmt.Sprintf("The specified location (%d, %d) is out of bounds for layer '%s' with a size of (%d, %d).", xLocation, yLocation, layerEntry.LayerAlias, layerEntry.Width, layerEntry.Height))
+		}
+		return layerEntry
+	}()
 	Font.PrintTextDialog(layerEntry, fontInstance, xLocation, yLocation, widthOfLineInCharacters, printDelayInMilliseconds, isSkipable, formattedTextToPrint)
 }
 
@@ -2090,6 +2193,7 @@ Example:
     layerInstance := AddLayer(0, 0, 80, 25, 1, nil)
 */
 func AddLayer(xLocation int, yLocation int, width int, height int, zOrderPriority int, parentLayerInstance *LayerInstanceType) *LayerInstanceType {
+	defer lockUIState()()
 	layerAlias := getUUID()
 	validateTerminalWidthAndHeight(width, height)
 	var parentAlias string
@@ -2128,7 +2232,7 @@ Example:
 */
 func moveLayerByAbsoluteValue(layerAlias string, xLocation int, yLocation int) {
 	validateLayer(layerAlias)
-	layerEntry := Layers.Get(layerAlias)
+	layerEntry := layerRegistry.Get(layerAlias)
 	layerEntry.ScreenXLocation = xLocation
 	layerEntry.ScreenYLocation = yLocation
 }
@@ -2142,7 +2246,7 @@ Example:
 func moveLayerByRelativeValue(layerAlias string, xLocation int, yLocation int) {
 	// A concurrent delete between the drag event firing and this call landing is a normal event on the mouse drag
 	// path, not a programmer error, so Lookup is used here to tolerate a miss instead of panicking.
-	layerEntry, isFound := Layers.Lookup(layerAlias)
+	layerEntry, isFound := layerRegistry.Lookup(layerAlias)
 	if !isFound {
 		return
 	}
@@ -2157,8 +2261,9 @@ Example:
     DeleteAllLayers()
 */
 func DeleteAllLayers() {
-	for _, entryToRemove := range Layers.GetAllEntries() {
-		if !Layers.IsExists(entryToRemove.LayerAlias) {
+	defer lockUIState()()
+	for _, entryToRemove := range layerRegistry.GetAllEntries() {
+		if !layerRegistry.IsExists(entryToRemove.LayerAlias) {
 			continue
 		}
 		layer.Delete(entryToRemove.LayerAlias)
@@ -2173,6 +2278,7 @@ Example:
     SetTopmostLayer(layerInstance)
 */
 func SetTopmostLayer(layerInstance *LayerInstanceType) {
+	defer lockUIState()()
 	layer.SetTopmostLayer(layerInstance.layerAlias)
 }
 
@@ -2183,7 +2289,7 @@ Example:
     exists := isLayerExists("myLayer")
 */
 func isLayerExists(layerAlias string) bool {
-	if Layers.IsExists(layerAlias) {
+	if layerRegistry.IsExists(layerAlias) {
 		return true
 	}
 	return false
@@ -2197,7 +2303,7 @@ Example:
 */
 func setLayerIsVisible(layerAlias string, isVisible bool) {
 	validateLayer(layerAlias)
-	layerEntry := Layers.Get(layerAlias)
+	layerEntry := layerRegistry.Get(layerAlias)
 	layerEntry.IsVisible = isVisible
 	// Hiding a layer moves focus off its controls, and hiding or showing a modal layer closes or reopens it.
 	reconcileFocus()
@@ -2215,7 +2321,7 @@ Example:
 */
 func setLayerAlphaValue(layerAlias string, alphaValue float32) {
 	validateLayer(layerAlias)
-	layerEntry := Layers.Get(layerAlias)
+	layerEntry := layerRegistry.Get(layerAlias)
 	layerEntry.AlphaValue = alphaValue
 }
 
@@ -2231,7 +2337,7 @@ Example:
 */
 func getLayerAlphaValue(layerAlias string) float32 {
 	validateLayer(layerAlias)
-	layerEntry := Layers.Get(layerAlias)
+	layerEntry := layerRegistry.Get(layerAlias)
 	return layerEntry.AlphaValue
 }
 
@@ -2247,7 +2353,7 @@ Example:
 */
 func setLayerTransparencyStrategy(layerAlias string, strategy constants.TransparencyStrategy) {
 	validateLayer(layerAlias)
-	layerEntry := Layers.Get(layerAlias)
+	layerEntry := layerRegistry.Get(layerAlias)
 	layerEntry.TransparencyStrategy = strategy
 }
 
@@ -2263,7 +2369,7 @@ Example:
 */
 func getLayerTransparencyStrategy(layerAlias string) constants.TransparencyStrategy {
 	validateLayer(layerAlias)
-	layerEntry := Layers.Get(layerAlias)
+	layerEntry := layerRegistry.Get(layerAlias)
 	return layerEntry.TransparencyStrategy
 }
 
@@ -2275,7 +2381,7 @@ Example:
 */
 func setLayerTransitionStyle(layerAlias string, style types.TransitionStyleEntryType) {
 	validateLayer(layerAlias)
-	layerEntry := Layers.Get(layerAlias)
+	layerEntry := layerRegistry.Get(layerAlias)
 	layerEntry.TransitionStyle = style
 }
 
@@ -2287,7 +2393,7 @@ Example:
 */
 func getLayerTransitionStyle(layerAlias string) types.TransitionStyleEntryType {
 	validateLayer(layerAlias)
-	layerEntry := Layers.Get(layerAlias)
+	layerEntry := layerRegistry.Get(layerAlias)
 	return layerEntry.TransitionStyle
 }
 
@@ -2299,7 +2405,7 @@ Example:
 */
 func setLayerTransitionProgress(layerAlias string, progress float32) {
 	validateLayer(layerAlias)
-	layerEntry := Layers.Get(layerAlias)
+	layerEntry := layerRegistry.Get(layerAlias)
 	layerEntry.TransitionProgress = progress
 }
 
@@ -2311,7 +2417,7 @@ Example:
 */
 func getLayerTransitionProgress(layerAlias string) float32 {
 	validateLayer(layerAlias)
-	layerEntry := Layers.Get(layerAlias)
+	layerEntry := layerRegistry.Get(layerAlias)
 	return layerEntry.TransitionProgress
 }
 

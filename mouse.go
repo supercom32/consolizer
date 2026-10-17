@@ -183,6 +183,7 @@ Example:
 	layer := GetLayerUnderMouseCursor()
 */
 func GetLayerUnderMouseCursor() *LayerInstanceType {
+	defer lockUIState()()
 	mouseX, mouseY, _, _ := GetMouseStatus()
 	if mouseX < 0 || mouseX >= commonResource.terminalWidth || mouseY < 0 || mouseY >= commonResource.terminalHeight {
 		return nil
@@ -194,7 +195,7 @@ func GetLayerUnderMouseCursor() *LayerInstanceType {
 	if layerAlias == "" {
 		return nil
 	}
-	layerEntry, isFound := Layers.Lookup(layerAlias)
+	layerEntry, isFound := layerRegistry.Lookup(layerAlias)
 	if !isFound {
 		return nil
 	}

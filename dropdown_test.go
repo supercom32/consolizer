@@ -104,11 +104,11 @@ func TestDropdownOpenState(test *testing.T) {
 	setFocusedControl(layer1.layerAlias, dropdownInstance.GetAlias(), constants.CellTypeDropdown)
 
 	// Simulate opening the dropdown
-	dropdownEntry := Dropdown.Get(layer1.layerAlias, dropdownInstance.controlAlias)
+	dropdownEntry := Dropdown.get(layer1.layerAlias, dropdownInstance.controlAlias)
 	dropdownEntry.IsTrayOpen = true
 
 	// Make selector visible
-	selectorEntry := Selectors.Get(layer1.layerAlias, dropdownEntry.SelectorAlias)
+	selectorEntry := selectorRegistry.Get(layer1.layerAlias, dropdownEntry.SelectorAlias)
 	selectorEntry.IsVisible = true
 
 	UpdateDisplay(false)
@@ -145,11 +145,11 @@ func TestDropdownChangeSelection(test *testing.T) {
 	setFocusedControl(layer1.layerAlias, dropdownInstance.GetAlias(), constants.CellTypeDropdown)
 
 	// Simulate opening the dropdown
-	dropdownEntry := Dropdown.Get(layer1.layerAlias, dropdownInstance.controlAlias)
+	dropdownEntry := Dropdown.get(layer1.layerAlias, dropdownInstance.controlAlias)
 	dropdownEntry.IsTrayOpen = true
 
 	// Make selector visible
-	selectorEntry := Selectors.Get(layer1.layerAlias, dropdownEntry.SelectorAlias)
+	selectorEntry := selectorRegistry.Get(layer1.layerAlias, dropdownEntry.SelectorAlias)
 	selectorEntry.IsVisible = true
 
 	// Change selection
@@ -199,15 +199,15 @@ func TestDropdownWithManyItems(test *testing.T) {
 	setFocusedControl(layer1.layerAlias, dropdownInstance.GetAlias(), constants.CellTypeDropdown)
 
 	// Simulate opening the dropdown
-	dropdownEntry := Dropdown.Get(layer1.layerAlias, dropdownInstance.controlAlias)
+	dropdownEntry := Dropdown.get(layer1.layerAlias, dropdownInstance.controlAlias)
 	dropdownEntry.IsTrayOpen = true
 
 	// Make selector visible
-	selectorEntry := Selectors.Get(layer1.layerAlias, dropdownEntry.SelectorAlias)
+	selectorEntry := selectorRegistry.Get(layer1.layerAlias, dropdownEntry.SelectorAlias)
 	selectorEntry.IsVisible = true
 
 	// Make scrollbar visible
-	scrollBarEntry := ScrollBars.Get(layer1.layerAlias, dropdownEntry.ScrollbarAlias)
+	scrollBarEntry := scrollbarRegistry.Get(layer1.layerAlias, dropdownEntry.ScrollbarAlias)
 	scrollBarEntry.IsVisible = true
 
 	UpdateDisplay(false)
@@ -244,15 +244,15 @@ func TestDropdownScrolling(test *testing.T) {
 	setFocusedControl(layer1.layerAlias, dropdownInstance.GetAlias(), constants.CellTypeDropdown)
 
 	// Simulate opening the dropdown
-	dropdownEntry := Dropdown.Get(layer1.layerAlias, dropdownInstance.controlAlias)
+	dropdownEntry := Dropdown.get(layer1.layerAlias, dropdownInstance.controlAlias)
 	dropdownEntry.IsTrayOpen = true
 
 	// Make selector visible
-	selectorEntry := Selectors.Get(layer1.layerAlias, dropdownEntry.SelectorAlias)
+	selectorEntry := selectorRegistry.Get(layer1.layerAlias, dropdownEntry.SelectorAlias)
 	selectorEntry.IsVisible = true
 
 	// Make scrollbar visible
-	scrollBarEntry := ScrollBars.Get(layer1.layerAlias, dropdownEntry.ScrollbarAlias)
+	scrollBarEntry := scrollbarRegistry.Get(layer1.layerAlias, dropdownEntry.ScrollbarAlias)
 	scrollBarEntry.IsVisible = true
 
 	// Scroll down
@@ -405,7 +405,7 @@ func TestDropdownEscClosesOpenTrayWithoutChangingSelection(test *testing.T) {
 	pressKey(simScreen, tcell.KeyDown, 0, tcell.ModNone)
 	pressKey(simScreen, tcell.KeyEscape, 0, tcell.ModNone)
 
-	selectorEntry := Selectors.Get(layerAlias, dropdownEntry.SelectorAlias)
+	selectorEntry := selectorRegistry.Get(layerAlias, dropdownEntry.SelectorAlias)
 	if dropdownEntry.IsTrayOpen {
 		test.Fatalf("expected Esc to close the tray")
 	}
@@ -548,9 +548,9 @@ func TestDropdownSetSelectionEntryResetsTray(test *testing.T) {
 	test.Run("shorter list", func(test *testing.T) {
 		layerAlias, styleEntry := setupInputTest(test)
 		dropdown := Dropdown.Add(layerAlias, "long", styleEntry, getTestSelectionEntry(10), 2, 2, 3, 10, 0)
-		dropdownEntry := Dropdowns.Get(layerAlias, "long")
+		dropdownEntry := dropdownRegistry.Get(layerAlias, "long")
 		dropdown.SetSelectionEntry(getTestSelectionEntry(2))
-		scrollBarEntry := ScrollBars.Get(layerAlias, dropdownEntry.ScrollbarAlias)
+		scrollBarEntry := scrollbarRegistry.Get(layerAlias, dropdownEntry.ScrollbarAlias)
 		if scrollBarEntry.MaxScrollValue != 0 || scrollBarEntry.IsEnabled {
 			test.Fatalf("expected maximum 0 and disabled, got %d and %t", scrollBarEntry.MaxScrollValue, scrollBarEntry.IsEnabled)
 		}
@@ -581,7 +581,7 @@ func TestDropdownSetSelectionEntryResetsTray(test *testing.T) {
 		if value := dropdown.GetValue(); value != "" {
 			test.Fatalf("expected an empty value, got %q", value)
 		}
-		if scrollValue := ScrollBars.Get(layerAlias, dropdownEntry.ScrollbarAlias).ScrollValue; scrollValue < 0 {
+		if scrollValue := scrollbarRegistry.Get(layerAlias, dropdownEntry.ScrollbarAlias).ScrollValue; scrollValue < 0 {
 			test.Fatalf("expected a scroll value of at least 0, got %d", scrollValue)
 		}
 	})
@@ -661,8 +661,8 @@ func TestDropdownWheelScrollsOpenTray(test *testing.T) {
 	if !dropdownEntry.IsTrayOpen {
 		test.Fatalf("expected the click to open the tray")
 	}
-	selectorEntry := Selectors.Get(layerAlias, dropdownEntry.SelectorAlias)
-	scrollBarEntry := ScrollBars.Get(layerAlias, dropdownEntry.ScrollbarAlias)
+	selectorEntry := selectorRegistry.Get(layerAlias, dropdownEntry.SelectorAlias)
+	scrollBarEntry := scrollbarRegistry.Get(layerAlias, dropdownEntry.ScrollbarAlias)
 	assertTray := func(context string, expectedViewportPosition int, expectedHighlighted int) {
 		test.Helper()
 		if !dropdownEntry.IsTrayOpen {
@@ -803,14 +803,14 @@ Example:
 func assertDropdownTray(test *testing.T, context string, layerAlias string, dropdownEntry *types.DropdownEntryType, expectedXLocation int,
 	expectedYLocation int, expectedItemWidth int, expectedHeight int, expectedScrollbarEnabled bool, expectedScrollbarXLocation int) {
 	test.Helper()
-	selectorEntry := Selectors.Get(layerAlias, dropdownEntry.SelectorAlias)
+	selectorEntry := selectorRegistry.Get(layerAlias, dropdownEntry.SelectorAlias)
 	if selectorEntry.XLocation != expectedXLocation || selectorEntry.YLocation != expectedYLocation ||
 		selectorEntry.ItemWidth != expectedItemWidth || selectorEntry.Height != expectedHeight {
 		test.Fatalf("%s: expected the tray at (%d, %d) with item width %d and %d rows, got (%d, %d) with item width %d and %d rows",
 			context, expectedXLocation, expectedYLocation, expectedItemWidth, expectedHeight,
 			selectorEntry.XLocation, selectorEntry.YLocation, selectorEntry.ItemWidth, selectorEntry.Height)
 	}
-	scrollBarEntry := ScrollBars.Get(layerAlias, dropdownEntry.ScrollbarAlias)
+	scrollBarEntry := scrollbarRegistry.Get(layerAlias, dropdownEntry.ScrollbarAlias)
 	if scrollBarEntry.IsEnabled != expectedScrollbarEnabled || scrollBarEntry.XLocation != expectedScrollbarXLocation {
 		test.Fatalf("%s: expected the tray scroll bar enabled %t at column %d, got enabled %t at column %d", context,
 			expectedScrollbarEnabled, expectedScrollbarXLocation, scrollBarEntry.IsEnabled, scrollBarEntry.XLocation)
@@ -862,7 +862,7 @@ func TestDropdownSetSizeResizesBoxAndTray(test *testing.T) {
 		test.Fatalf("expected the closed box on columns 2 to 21, got %d to %d", boxFirstColumn, boxLastColumn)
 	}
 	dropdownEntry.IsTrayOpen = true
-	Selectors.Get(layerAlias, dropdownEntry.SelectorAlias).IsVisible = true
+	selectorRegistry.Get(layerAlias, dropdownEntry.SelectorAlias).IsVisible = true
 	UpdateDisplay(false)
 	assertSelectorBorderSpan(test, dropdownEntry.SelectorAlias, 3, 9, 2, 21)
 
@@ -897,7 +897,7 @@ func TestDropdownSetPositionMovesTray(test *testing.T) {
 	dropdown := DropdownInstanceType{BaseControlInstanceType{layerAlias: layerAlias, controlAlias: "dropdown", controlType: constants.TYPE_DROPDOWN}}
 	dropdown.SetPosition(5, 4)
 	assertDropdownTray(test, "after SetPosition", layerAlias, dropdownEntry, 6, 5, 10, 3, true, 17)
-	tooltipEntry := Tooltips.Get(layerAlias, dropdownEntry.TooltipAlias)
+	tooltipEntry := tooltipRegistry.Get(layerAlias, dropdownEntry.TooltipAlias)
 	if tooltipEntry.HotspotXLocation != 5 || tooltipEntry.HotspotYLocation != 4 {
 		test.Fatalf("expected the tooltip hotspot at (5, 4), got (%d, %d)", tooltipEntry.HotspotXLocation, tooltipEntry.HotspotYLocation)
 	}
@@ -938,4 +938,64 @@ func TestDropdownSetSelectionEntryRefitsTrayWidth(test *testing.T) {
 	assertDropdownTray(test, "with two items", layerAlias, dropdownEntry, 3, 3, 11, 3, false, 15)
 	dropdown.SetSelectionEntry(getTestSelectionEntry(5))
 	assertDropdownTray(test, "with five items", layerAlias, dropdownEntry, 3, 3, 10, 3, true, 14)
+}
+
+/*
+TestDropdownItemsOpenAndClose is a test which allows you to verify that a dropdown's items can be read as copies,
+that it can be opened and closed from code, that opening one dropdown closes another, and that closing does not
+commit an item picked in the tray.
+
+Example:
+
+	Expected Inputs:
+		Dropdown "dropdown" with items [zero, one, two, three] and item 0 selected, and dropdown "other" at (20, 2).
+		GetAllItems, then the returned alias slice changed. Open, then item 2 picked in the tray, then Close. Open
+		again, then Open on "other".
+
+	Expected Outputs:
+		The items read back as [zero, one, two, three] and [Zero, One, Two, Three], and changing the returned slice
+		does not change them. IsOpen reads false, true after Open with the tray visible, and false after Close with the
+		selection still ("zero", 0). Opening "other" leaves "dropdown" closed and "other" open.
+*/
+func TestDropdownItemsOpenAndClose(test *testing.T) {
+	layerAlias, styleEntry := setupInputTest(test)
+	dropdownEntry := addTestDropdown(layerAlias, styleEntry)
+	dropdown := DropdownInstanceType{BaseControlInstanceType{layerAlias: layerAlias, controlAlias: "dropdown", controlType: constants.TYPE_DROPDOWN}}
+	otherDropdown := Dropdown.Add(layerAlias, "other", styleEntry, getTestSelectionEntry(3), 20, 2, 3, 8, 0)
+
+	aliases, values := dropdown.GetAllItems()
+	assert.Equal(test, []string{"zero", "one", "two", "three"}, aliases)
+	assert.Equal(test, []string{"Zero", "One", "Two", "Three"}, values)
+	aliases[0] = "changed"
+	if aliasesAgain, _ := dropdown.GetAllItems(); aliasesAgain[0] != "zero" {
+		test.Fatalf("expected GetAllItems to return copies, but the dropdown now holds %q", aliasesAgain[0])
+	}
+
+	if dropdown.IsOpen() {
+		test.Fatalf("expected the dropdown to start closed")
+	}
+	dropdown.Open()
+	if !dropdown.IsOpen() {
+		test.Fatalf("expected the dropdown to be open after Open")
+	}
+	func() {
+		defer lockUIState()()
+		if !selectorRegistry.Get(layerAlias, dropdownEntry.SelectorAlias).IsVisible {
+			test.Fatalf("expected the tray to be visible after Open")
+		}
+		selectorRegistry.Get(layerAlias, dropdownEntry.SelectorAlias).ItemSelected = 2
+	}()
+	dropdown.Close()
+	if dropdown.IsOpen() {
+		test.Fatalf("expected the dropdown to be closed after Close")
+	}
+	if alias, index := dropdown.GetSelected(); alias != "zero" || index != 0 {
+		test.Fatalf("expected Close to keep the selection (%q, %d), got (%q, %d)", "zero", 0, alias, index)
+	}
+
+	dropdown.Open()
+	otherDropdown.Open()
+	if dropdown.IsOpen() || !otherDropdown.IsOpen() {
+		test.Fatalf("expected opening the other dropdown to close the first, got %t and %t", dropdown.IsOpen(), otherDropdown.IsOpen())
+	}
 }

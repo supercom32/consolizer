@@ -22,7 +22,7 @@ type SelectorInstanceType struct {
 type selectorType struct{}
 
 var Selector selectorType
-var Selectors = memory.NewControlMemoryManager[types.SelectorEntryType]()
+var selectorRegistry = memory.NewControlMemoryManager[types.SelectorEntryType]()
 
 /*
 selectorClickType is a structure which records the most recent mouse click on a selector item, so that a following
@@ -119,24 +119,20 @@ Example:
 */
 func IsSelectorExists(layerAlias string, selectorAlias string) bool {
 	// Use the generic memory manager to check existence
-	return Selectors.IsExists(layerAlias, selectorAlias)
+	return selectorRegistry.IsExists(layerAlias, selectorAlias)
 }
 
 /*
-GetSelector is a method which retrieves a selector entry from a given text layer. In addition, the following should be noted:
-
-- If the selector does not exist, a panic will be generated to fail as fast as possible.
-
-- The returned selector entry can be used to directly modify the selector's properties.
-
-- Changes made to the returned entry will be reflected when the selector is next drawn.
+getSelector is a method which allows you to retrieve the entry holding a selector's state from a given text layer. If
+the selector does not exist, a panic is generated to fail as fast as possible. The caller must hold uiStateMutex.
 
 Example:
-    selectorEntry := GetSelector("Layer1", "Selector1")
+
+	selectorEntry := getSelector("Layer1", "Selector1")
 */
-func GetSelector(layerAlias string, selectorAlias string) *types.SelectorEntryType {
+func getSelector(layerAlias string, selectorAlias string) *types.SelectorEntryType {
 	// Use the generic memory manager to retrieve the selector entry
-	selectorEntry := Selectors.Get(layerAlias, selectorAlias)
+	selectorEntry := selectorRegistry.Get(layerAlias, selectorAlias)
 	if selectorEntry == nil {
 		panic(fmt.Sprintf("The selector '%s' under layer '%s' could not be obtained since it does not exist!", selectorAlias, layerAlias))
 	}
@@ -158,7 +154,8 @@ Example:
     selector = selector.Delete()
 */
 func (shared *SelectorInstanceType) Delete() *SelectorInstanceType {
-	shared.BaseControlInstanceType.Delete()
+	defer lockUIState()()
+	shared.BaseControlInstanceType.delete()
 	return nil
 }
 
@@ -170,8 +167,8 @@ Example:
     if selector.IsNewItemSelected() { ... }
 */
 func (shared *SelectorInstanceType) IsNewItemSelected() bool {
-	if Selectors.IsExists(shared.layerAlias, shared.controlAlias) {
-		selectorEntry := Selectors.Get(shared.layerAlias, shared.controlAlias)
+	defer lockUIState()()
+	if selectorEntry, isFound := selectorRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 		return selectorEntry.IsNewItemSelected
 	}
 	return false
@@ -198,7 +195,8 @@ Example:
 	}
 */
 func (shared *SelectorInstanceType) GetSelectionSource() int {
-	if selectorEntry, isFound := Selectors.Lookup(shared.layerAlias, shared.controlAlias); isFound {
+	defer lockUIState()()
+	if selectorEntry, isFound := selectorRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 		return selectorEntry.SelectionSource
 	}
 	return constants.SelectionSourceNone
@@ -215,9 +213,8 @@ Example:
 	alias, index := selector.GetSelected()
 */
 func (shared *SelectorInstanceType) GetSelected() (string, int) {
-	if Selectors.IsExists(shared.layerAlias, shared.controlAlias) {
-		validatorMenu(shared.layerAlias, shared.controlAlias)
-		menuEntry := Selectors.Get(shared.layerAlias, shared.controlAlias)
+	defer lockUIState()()
+	if menuEntry, isFound := selectorRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 		menuEntry.IsNewItemSelected = false
 		value := menuEntry.ItemSelected
 		if value >= 0 && value < Selector.getItemCount(menuEntry) {
@@ -240,9 +237,8 @@ Example:
 	aliases, values := selector.GetAllItems()
 */
 func (shared *SelectorInstanceType) GetAllItems() ([]string, []string) {
-	if Selectors.IsExists(shared.layerAlias, shared.controlAlias) {
-		validatorMenu(shared.layerAlias, shared.controlAlias)
-		menuEntry := Selectors.Get(shared.layerAlias, shared.controlAlias)
+	defer lockUIState()()
+	if menuEntry, isFound := selectorRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 		selectionEntryCopy := Selector.getSelectionEntryCopy(menuEntry.SelectionEntry)
 		return selectionEntryCopy.SelectionAlias, selectionEntryCopy.SelectionValue
 	}
@@ -260,9 +256,20 @@ Example:
     selector.Unselect()
 */
 func (shared *SelectorInstanceType) Unselect() {
-	if Selectors.IsExists(shared.layerAlias, shared.controlAlias) {
-		validatorMenu(shared.layerAlias, shared.controlAlias)
-		selectorEntry := Selectors.Get(shared.layerAlias, shared.controlAlias)
+	defer lockUIState()()
+	shared.unselect()
+}
+
+/*
+unselect is a method which allows you to do exactly what Unselect does, for a caller that already holds uiStateMutex,
+such as another entry point of the package that has taken the lock itself.
+
+Example:
+
+	selector.unselect()
+*/
+func (shared *SelectorInstanceType) unselect() {
+	if selectorEntry, isFound := selectorRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 		selectorEntry.ItemSelected = constants.SELECTED_NONE
 	}
 }
@@ -278,9 +285,8 @@ Example:
     selector.Select("Option1")
 */
 func (shared *SelectorInstanceType) Select(selectionAlias string) {
-	if Selectors.IsExists(shared.layerAlias, shared.controlAlias) {
-		validatorMenu(shared.layerAlias, shared.controlAlias)
-		selectorEntry := Selectors.Get(shared.layerAlias, shared.controlAlias)
+	defer lockUIState()()
+	if selectorEntry, isFound := selectorRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 
 		// Find the index of the item with the matching alias
 		itemIndex := -1
@@ -314,9 +320,8 @@ Example:
 	selector.FocusSelection("Option5")
 */
 func (shared *SelectorInstanceType) FocusSelection(selectionAlias string) {
-	if Selectors.IsExists(shared.layerAlias, shared.controlAlias) {
-		validatorMenu(shared.layerAlias, shared.controlAlias)
-		selectorEntry := Selectors.Get(shared.layerAlias, shared.controlAlias)
+	defer lockUIState()()
+	if selectorEntry, isFound := selectorRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 
 		// Find the index of the item with the matching alias
 		itemIndex := -1
@@ -344,24 +349,94 @@ func (shared *SelectorInstanceType) FocusSelection(selectionAlias string) {
 }
 
 /*
-setViewport is a method which allows you to specify the current viewport index for a given selector. If the selector
-does not exist, no operation occurs. In addition, the following should be noted:
+GetViewport is a method which allows you to obtain a selector's viewport position, which is the zero based index of
+the item shown in the selector's top left corner. On a selector with more than one column this is always the first
+item of a row. If the selector does not exist, 0 is returned.
+
+Example:
+
+	viewportPosition := selector.GetViewport()
+*/
+func (shared *SelectorInstanceType) GetViewport() int {
+	defer lockUIState()()
+	if selectorEntry, isFound := selectorRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound {
+		return selectorEntry.ViewportPosition
+	}
+	return 0
+}
+
+/*
+SetViewport is a method which allows you to scroll a selector so that the item at a given zero based index is shown in
+its top left corner. If the selector does not exist, no operation occurs. In addition, the following should be noted:
 
   - The position is clamped to the range the selector can scroll to and moved back to the start of its row, and the
     selector's scroll bar is moved to match.
 
+  - The highlighted item is not moved, so it may be scrolled out of view.
+
 Example:
 
-	selector.setViewport(10)
+	selector.SetViewport(10)
 */
-func (shared *SelectorInstanceType) setViewport(viewportPosition int) {
-	if Selectors.IsExists(shared.layerAlias, shared.controlAlias) {
-		validatorMenu(shared.layerAlias, shared.controlAlias)
-		menuEntry := Selectors.Get(shared.layerAlias, shared.controlAlias)
+func (shared *SelectorInstanceType) SetViewport(viewportPosition int) {
+	defer lockUIState()()
+	if menuEntry, isFound := selectorRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 		menuEntry.ViewportPosition = viewportPosition
 		Selector.normalizeIndexes(menuEntry)
 		Selector.updateScrollbar(shared.layerAlias, menuEntry)
 	}
+}
+
+/*
+GetHighlighted is a method which allows you to obtain the zero based index of a selector's highlighted item, which is
+the item the arrow keys move and Enter selects. If no item is highlighted, the recorded highlight is out of range for
+the selector's items, or the selector does not exist, constants.SELECTED_NONE is returned. Reading the highlight does
+not change any state of the selector.
+
+Example:
+
+	highlightedIndex := selector.GetHighlighted()
+*/
+func (shared *SelectorInstanceType) GetHighlighted() int {
+	defer lockUIState()()
+	if selectorEntry, isFound := selectorRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound {
+		itemHighlighted := selectorEntry.ItemHighlighted
+		if itemHighlighted >= 0 && itemHighlighted < Selector.getItemCount(selectorEntry) {
+			return itemHighlighted
+		}
+	}
+	return constants.SELECTED_NONE
+}
+
+/*
+SetHighlighted is a method which allows you to highlight the item at a given zero based index, as if the user had moved
+to it with the arrow keys. The viewport scrolls by the fewest rows needed to show the item, and the scroll bar follows
+it. A negative index clears the highlight, an index past the last item highlights the last item, and on a selector with
+no items the highlight is cleared. If the selector does not exist, no operation occurs. In addition, the following
+should be noted:
+
+  - The selected item is not changed and no new selection is reported, so IsNewItemSelected is unaffected. Use
+    Select to change the selection.
+
+Example:
+
+	selector.SetHighlighted(4)
+*/
+func (shared *SelectorInstanceType) SetHighlighted(itemIndex int) {
+	defer lockUIState()()
+	selectorEntry, isFound := selectorRegistry.Lookup(shared.layerAlias, shared.controlAlias)
+	if !isFound {
+		return
+	}
+	itemCount := Selector.getItemCount(selectorEntry)
+	if itemIndex < 0 || itemCount == 0 {
+		selectorEntry.ItemHighlighted = constants.NullItemSelection
+	} else {
+		selectorEntry.ItemHighlighted = getClampedIndex(itemIndex, 0, itemCount-1)
+	}
+	Selector.scrollHighlightIntoView(selectorEntry)
+	Selector.normalizeIndexes(selectorEntry)
+	Selector.updateScrollbar(shared.layerAlias, selectorEntry)
 }
 
 /*
@@ -381,17 +456,84 @@ Example:
 	selector.SetSelectionEntry(newSelection)
 */
 func (shared *SelectorInstanceType) SetSelectionEntry(selectionEntry types.SelectionEntryType) {
-	if Selectors.IsExists(shared.layerAlias, shared.controlAlias) {
-		selectorEntry := Selectors.Get(shared.layerAlias, shared.controlAlias)
+	defer lockUIState()()
+	isFocused := isControlCurrentlyFocused(shared.layerAlias, shared.controlAlias, constants.CellTypeSelectorItem)
+	if selectorEntry, isFound := selectorRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 		selectorEntry.SelectionEntry = Selector.getSelectionEntryCopy(selectionEntry)
 		selectorEntry.ItemSelected = constants.SELECTED_NONE
 		selectorEntry.ItemHighlighted = constants.NullItemSelection
 		selectorEntry.ViewportPosition = 0
-		if isControlCurrentlyFocused(shared.layerAlias, shared.controlAlias, constants.CellTypeSelectorItem) {
+		if isFocused {
 			Selector.highlightStartingItem(selectorEntry)
 		}
 		Selector.updateScrollbar(shared.layerAlias, selectorEntry)
 	}
+}
+
+/*
+SetHighlightOnClickOnly is a method which allows you to choose whether a selector highlights an item only when it is
+clicked, or also when the mouse moves over it. If the selector does not exist, no operation occurs.
+
+Example:
+
+	selector.SetHighlightOnClickOnly(true)
+*/
+func (shared *SelectorInstanceType) SetHighlightOnClickOnly(isHighlightOnClickOnly bool) {
+	defer lockUIState()()
+	if selectorEntry, isFound := selectorRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound {
+		selectorEntry.HighlightOnClickOnly = isHighlightOnClickOnly
+	}
+}
+
+/*
+IsHighlightOnClickOnly is a method which allows you to check whether a selector highlights an item only when it is
+clicked, rather than also when the mouse moves over it. If the selector does not exist, false is returned.
+
+Example:
+
+	isClickOnly := selector.IsHighlightOnClickOnly()
+*/
+func (shared *SelectorInstanceType) IsHighlightOnClickOnly() bool {
+	defer lockUIState()()
+	if selectorEntry, isFound := selectorRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound {
+		return selectorEntry.HighlightOnClickOnly
+	}
+	return false
+}
+
+/*
+GetColumnCount is a method which allows you to obtain the number of columns a selector lays its items out in. If the
+selector does not exist, 0 is returned.
+
+Example:
+
+	columnCount := selector.GetColumnCount()
+*/
+func (shared *SelectorInstanceType) GetColumnCount() int {
+	defer lockUIState()()
+	if selectorEntry, isFound := selectorRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound {
+		return Selector.getColumnCount(selectorEntry)
+	}
+	return 0
+}
+
+/*
+SetColumnCount is a method which allows you to change the number of columns a selector lays its items out in. Each
+column keeps its item width, so the selector becomes wider or narrower, and its border, scroll bar, tooltip and
+viewport are updated to match. A count below one, or a selector that does not exist, leaves everything unchanged.
+
+Example:
+
+	selector.SetColumnCount(3)
+*/
+func (shared *SelectorInstanceType) SetColumnCount(columnCount int) {
+	defer lockUIState()()
+	selectorEntry, isFound := selectorRegistry.Lookup(shared.layerAlias, shared.controlAlias)
+	if !isFound || columnCount < 1 {
+		return
+	}
+	selectorEntry.NumberOfColumns = columnCount
+	Selector.updateLayout(shared.layerAlias, selectorEntry)
 }
 
 /*
@@ -407,9 +549,8 @@ Example:
 	selector.AddItem("NewOpt", "New Option")
 */
 func (shared *SelectorInstanceType) AddItem(selectionAlias string, selectionValue string) {
-	if Selectors.IsExists(shared.layerAlias, shared.controlAlias) {
-		validatorMenu(shared.layerAlias, shared.controlAlias)
-		menuEntry := Selectors.Get(shared.layerAlias, shared.controlAlias)
+	defer lockUIState()()
+	if menuEntry, isFound := selectorRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 		menuEntry.SelectionEntry.Add(selectionAlias, selectionValue)
 		Selector.normalizeIndexes(menuEntry)
 		Selector.updateScrollbar(shared.layerAlias, menuEntry)
@@ -433,9 +574,8 @@ Example:
 	selector.DeleteItem(2)
 */
 func (shared *SelectorInstanceType) DeleteItem(index int) {
-	if Selectors.IsExists(shared.layerAlias, shared.controlAlias) {
-		validatorMenu(shared.layerAlias, shared.controlAlias)
-		menuEntry := Selectors.Get(shared.layerAlias, shared.controlAlias)
+	defer lockUIState()()
+	if menuEntry, isFound := selectorRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 
 		if index < 0 || index >= Selector.getItemCount(menuEntry) {
 			return
@@ -479,6 +619,19 @@ Example:
 	selectorInstance := Selector.Add("Layer1", "Selector1", style, selection, 0, 0, 10, 20, 1, 0, 0, false, true)
 */
 func (shared *selectorType) Add(layerAlias string, selectorAlias string, styleEntry types.TuiStyleEntryType, selectionEntry types.SelectionEntryType, xLocation int, yLocation int, selectorHeight int, itemWidth int, numberOfColumns int, viewportPosition int, selectedItem int, highlightOnClickOnly bool, isBorderDrawn bool) SelectorInstanceType {
+	defer lockUIState()()
+	return shared.add(layerAlias, selectorAlias, styleEntry, selectionEntry, xLocation, yLocation, selectorHeight, itemWidth, numberOfColumns, viewportPosition, selectedItem, highlightOnClickOnly, isBorderDrawn)
+}
+
+/*
+add is a method which allows you to do exactly what Add does, for a caller that already holds uiStateMutex, such as
+another entry point of the package that has taken the lock itself.
+
+Example:
+
+	Selector.add(layerAlias, selectorAlias, styleEntry, selectionEntry, xLocation, yLocation, selectorHeight, itemWidth, numberOfColumns, viewportPosition, selectedItem, highlightOnClickOnly, isBorderDrawn)
+*/
+func (shared *selectorType) add(layerAlias string, selectorAlias string, styleEntry types.TuiStyleEntryType, selectionEntry types.SelectionEntryType, xLocation int, yLocation int, selectorHeight int, itemWidth int, numberOfColumns int, viewportPosition int, selectedItem int, highlightOnClickOnly bool, isBorderDrawn bool) SelectorInstanceType {
 	newSelectorEntry := types.NewSelectorEntry()
 	newSelectorEntry.Alias = selectorAlias
 	newSelectorEntry.StyleEntry = styleEntry
@@ -494,34 +647,29 @@ func (shared *selectorType) Add(layerAlias string, selectorAlias string, styleEn
 	newSelectorEntry.IsBorderDrawn = isBorderDrawn
 	newSelectorEntry.IsVisible = true
 	shared.normalizeIndexes(&newSelectorEntry)
-
-	// Use the generic memory manager to add the selector entry
-	Selectors.Add(layerAlias, selectorAlias, &newSelectorEntry)
-
-	selectorEntry := Selectors.Get(layerAlias, selectorAlias)
+	selectorEntry := &newSelectorEntry
 	selectorEntry.Width = shared.getSelectorWidth(selectorEntry)
 
 	hotspotXLocation, hotspotYLocation, hotspotWidth, tooltipYLocation := shared.getTooltipGeometry(selectorEntry)
-	tooltipInstance := Tooltip.Add(layerAlias, selectorEntry.TooltipAlias, "", styleEntry,
+	tooltipInstance := Tooltip.add(layerAlias, selectorEntry.TooltipAlias, "", styleEntry,
 		hotspotXLocation, hotspotYLocation, hotspotWidth, 1,
 		hotspotXLocation, tooltipYLocation, hotspotWidth, 3,
 		false, true, constants.DefaultTooltipHoverTime)
-	tooltipInstance.SetEnabled(false)
+	tooltipInstance.setEnabled(false)
 	tooltipInstance.setParentControlAlias(selectorAlias)
 	selectorEntry.ScrollbarAlias = stringformat.GetLastSortedUUID()
 
+	// The selector entry is complete before it is added to selectorRegistry, so nothing can find it half set up.
 	// scrollbar.Add stores one less than the maximum value it is given, so one is added to the largest viewport position.
 	scrollBarXLocation, scrollBarYLocation, scrollBarLength := shared.getScrollbarGeometry(selectorEntry)
 	scrollbar.Add(layerAlias, selectorEntry.ScrollbarAlias, styleEntry, scrollBarXLocation, scrollBarYLocation, scrollBarLength,
 		shared.getMaxViewportPosition(selectorEntry)+1, 0, shared.getColumnCount(selectorEntry), false)
-	scrollBarEntry := ScrollBars.Get(layerAlias, selectorEntry.ScrollbarAlias)
-
-	// Set parent control information for scrollbar
-	if scrollBarEntry != nil {
+	if scrollBarEntry, isFound := scrollbarRegistry.Lookup(layerAlias, selectorEntry.ScrollbarAlias); isFound {
 		scrollBarEntry.ParentControlAlias = selectorAlias
 		scrollBarEntry.ParentControlType = constants.CellTypeSelectorItem
 	}
 	shared.updateScrollbar(layerAlias, selectorEntry)
+	selectorRegistry.Add(layerAlias, selectorAlias, selectorEntry)
 	var selectorInstance SelectorInstanceType
 	selectorInstance.layerAlias = layerAlias
 	selectorInstance.controlAlias = selectorAlias
@@ -540,7 +688,20 @@ Example:
     Selector.Delete("Layer1", "Selector1")
 */
 func (shared *selectorType) Delete(layerAlias string, selectorAlias string) {
-	Selectors.Remove(layerAlias, selectorAlias)
+	defer lockUIState()()
+	shared.delete(layerAlias, selectorAlias)
+}
+
+/*
+delete is a method which allows you to do exactly what Delete does, for a caller that already holds uiStateMutex, such
+as another entry point of the package that has taken the lock itself.
+
+Example:
+
+	Selector.delete(layerAlias, selectorAlias)
+*/
+func (shared *selectorType) delete(layerAlias string, selectorAlias string) {
+	selectorRegistry.Remove(layerAlias, selectorAlias)
 	clearStaleControlReferences(layerAlias, selectorAlias, constants.CellTypeSelectorItem)
 }
 
@@ -556,7 +717,8 @@ Example:
     Selector.DeleteAll("Layer1")
 */
 func (shared *selectorType) DeleteAll(layerAlias string) {
-	removeAllControlsAndClearCells(Selectors, layerAlias, constants.CellTypeSelectorItem, func(entry *types.SelectorEntryType) string { return entry.Alias })
+	defer lockUIState()()
+	removeAllControlsAndClearCells(selectorRegistry, layerAlias, constants.CellTypeSelectorItem, func(entry *types.SelectorEntryType) string { return entry.Alias })
 }
 
 /*
@@ -694,31 +856,42 @@ func (shared *selectorType) drawSelectorItem(layerEntry *types.LayerEntryType, a
 }
 
 /*
-drawSelector is a method which allows you to draw a selector on a given text layer. The style of the selector will be
-determined by the style entry passed in. Selectors are not drawn physically to the text layer provided. Instead, they
-are rendered to the terminal at the same time when the text layer is rendered, and if the selector falls outside the
-range of the layer, only its visible portion is drawn. In addition, the following should be noted:
+drawSelector is a method which allows you to draw a selector on a given text layer, from the state held in its entry.
+The style of the selector is taken from its entry. Selectors are not drawn physically to the text layer provided.
+Instead, they are rendered to the terminal at the same time when the text layer is rendered, and if the selector falls
+outside the range of the layer, only its visible portion is drawn. A focused selector shows its focus on its border,
+drawn in the focused colours, when isFocusShown is true. In addition, the following should be noted:
 
   - Drawing never indexes outside the item list, whatever state it is given: a negative viewport position is drawn
     from the first item, and a highlighted item that is out of range is drawn as no highlight. Since rendering runs
     on the event goroutine, a panic here could not be recovered by the application.
 
+  - The caller must hold uiStateMutex.
+
 Example:
 
-	Selector.drawSelector("Sel1", &layerEntry, style, selection, 0, 0, 10, 20, 1, 0, 0)
+	Selector.drawSelector(&layerEntry, selectorEntry, false)
 */
-func (shared *selectorType) drawSelector(selectorAlias string, layerEntry *types.LayerEntryType, styleEntry types.TuiStyleEntryType, selectionEntry types.SelectionEntryType, xLocation int, yLocation int, selectorHeight int, itemWidth int, numberOfColumns int, viewportPosition int, itemHighlighted int) {
-	selectorEntry := Selectors.Get(layerEntry.LayerAlias, selectorAlias)
-	if selectorEntry.IsVisible == false {
+func (shared *selectorType) drawSelector(layerEntry *types.LayerEntryType, selectorEntry *types.SelectorEntryType, isFocusShown bool) {
+	if !selectorEntry.IsVisible {
 		return
 	}
+	selectorAlias := selectorEntry.Alias
+	styleEntry := selectorEntry.StyleEntry
+	selectionEntry := selectorEntry.SelectionEntry
+	xLocation := selectorEntry.XLocation
+	yLocation := selectorEntry.YLocation
+	selectorHeight := selectorEntry.Height
+	itemWidth := selectorEntry.ItemWidth
+	columnCount := shared.getColumnCount(selectorEntry)
+	itemHighlighted := selectorEntry.ItemHighlighted
 
 	menuAttributeEntry, highlightAttributeEntry := shared.setupSelectorAttributes(styleEntry)
 
 	if selectorEntry.IsBorderDrawn {
 		borderStyleEntry := styleEntry
 		// A focused selector shows its focus on its border, drawn in the focused colours while keyboard focus is shown.
-		if isFocusIndicatorShown(layerEntry.LayerAlias, selectorAlias, constants.CellTypeSelectorItem) {
+		if isFocusShown {
 			borderStyleEntry.Window.LineDrawingTextForegroundColor, borderStyleEntry.Window.LineDrawingTextBackgroundColor = getFocusedColors(
 				styleEntry.Window.LineDrawingTextForegroundColor, styleEntry.Window.LineDrawingTextBackgroundColor,
 				styleEntry.Selector.FocusedForegroundColor, styleEntry.Selector.FocusedBackgroundColor)
@@ -727,12 +900,11 @@ func (shared *selectorType) drawSelector(selectorAlias string, layerEntry *types
 		borderAttributeEntry := menuAttributeEntry
 		borderAttributeEntry.CellType = constants.CellTypeSelectorBorder
 		borderAttributeEntry.CellControlAlias = selectorAlias
-		selectorWidth := itemWidth * shared.getColumnCount(selectorEntry)
-		shared.drawSelectorBorder(layerEntry, borderStyleEntry, borderAttributeEntry, xLocation, yLocation, selectorWidth, selectorHeight)
+		shared.drawSelectorBorder(layerEntry, borderStyleEntry, borderAttributeEntry, xLocation, yLocation, shared.getSelectorWidth(selectorEntry), selectorHeight)
 	}
 
 	currentYLocation := yLocation
-	currentMenuItemIndex := getClampedIndex(viewportPosition, 0, viewportPosition)
+	currentMenuItemIndex := getClampedIndex(selectorEntry.ViewportPosition, 0, selectorEntry.ViewportPosition)
 	currentXOffset := 0
 	currentColumn := 0
 	currentRow := 0
@@ -746,11 +918,11 @@ func (shared *selectorType) drawSelector(selectorAlias string, layerEntry *types
 		attributeEntry.CellControlId = currentMenuItemIndex
 		attributeEntry.CellControlAlias = selectorAlias
 		attributeEntry.CellType = constants.CellTypeSelectorItem
-		itemWidth := shared.drawSelectorItem(layerEntry, attributeEntry, menuItemName, xLocation, currentXOffset, currentYLocation, isHighlighted)
+		printedItemWidth := shared.drawSelectorItem(layerEntry, attributeEntry, menuItemName, xLocation, currentXOffset, currentYLocation, isHighlighted)
 		currentMenuItemIndex++
-		currentXOffset = currentXOffset + itemWidth
+		currentXOffset = currentXOffset + printedItemWidth
 		currentColumn++
-		if currentColumn >= numberOfColumns {
+		if currentColumn >= columnCount {
 			currentXOffset = 0
 			currentColumn = 0
 			currentYLocation++
@@ -764,14 +936,14 @@ func (shared *selectorType) drawSelector(selectorAlias string, layerEntry *types
 drawSelectorsOnLayer is a method which allows you to draw all selectors on a given text layer. In addition, the
 following should be noted:
 
-- Selectors are drawn in alphabetical order by their alias.
+  - Selectors are drawn in alphabetical order by their alias, which keeps the order the same across frames, and
+    internally generated selectors, such as dropdown trays, are drawn last.
 
-- This ensures consistent rendering order across multiple frames.
-
-- Internally generated selectors (like those used by dropdowns) are drawn last.
+  - The caller must hold uiStateMutex, as UpdateDisplay does for the whole redraw.
 
 Example:
-    Selector.drawSelectorsOnLayer(layerEntry)
+
+	Selector.drawSelectorsOnLayer(layerEntry)
 */
 func (shared *selectorType) drawSelectorsOnLayer(layerEntry types.LayerEntryType) {
 	layerAlias := layerEntry.LayerAlias
@@ -781,9 +953,10 @@ func (shared *selectorType) drawSelectorsOnLayer(layerEntry types.LayerEntryType
 	// Sort array so internally generated selectors appear last (Since sorted by name, and
 	// UUID generates "zzz" prefixes). This prevents Dropdown selectors from appearing under
 	// user created selectors, when they should always be on top.
-	for _, currentSelectorEntry := range Selectors.SortEntries(layerAlias, true, compareByAlias) {
+	for _, currentSelectorEntry := range selectorRegistry.SortEntries(layerAlias, true, compareByAlias) {
 		selectorEntry := currentSelectorEntry
-		shared.drawSelector(selectorEntry.Alias, &layerEntry, selectorEntry.StyleEntry, selectorEntry.SelectionEntry, selectorEntry.XLocation, selectorEntry.YLocation, selectorEntry.Height, selectorEntry.ItemWidth, selectorEntry.NumberOfColumns, selectorEntry.ViewportPosition, selectorEntry.ItemHighlighted)
+		isFocusShown := isFocusIndicatorShown(layerAlias, selectorEntry.Alias, constants.CellTypeSelectorItem)
+		shared.drawSelector(&layerEntry, selectorEntry, isFocusShown)
 	}
 }
 
@@ -877,6 +1050,7 @@ updateLayout is a method which allows you to bring everything derived from a sel
 and border back in line with them, and is called whenever any of those change after the selector is added. The
 selector's width is recomputed, its scroll bar and tooltip are moved and resized to match, its viewport and item
 indexes are brought back into range for the number of rows now visible, and its scroll bar is updated to match.
+The caller must hold uiStateMutex.
 
 Example:
 
@@ -884,10 +1058,10 @@ Example:
 */
 func (shared *selectorType) updateLayout(layerAlias string, selectorEntry *types.SelectorEntryType) {
 	selectorEntry.Width = shared.getSelectorWidth(selectorEntry)
-	if scrollBarEntry, isFound := ScrollBars.Lookup(layerAlias, selectorEntry.ScrollbarAlias); isFound {
+	if scrollBarEntry, isFound := scrollbarRegistry.Lookup(layerAlias, selectorEntry.ScrollbarAlias); isFound {
 		scrollBarEntry.XLocation, scrollBarEntry.YLocation, scrollBarEntry.Length = shared.getScrollbarGeometry(selectorEntry)
 	}
-	if tooltipEntry, isFound := Tooltips.Lookup(layerAlias, selectorEntry.TooltipAlias); isFound {
+	if tooltipEntry, isFound := tooltipRegistry.Lookup(layerAlias, selectorEntry.TooltipAlias); isFound {
 		hotspotXLocation, hotspotYLocation, width, tooltipYLocation := shared.getTooltipGeometry(selectorEntry)
 		tooltipEntry.HotspotXLocation, tooltipEntry.HotspotYLocation, tooltipEntry.HotspotWidth = hotspotXLocation, hotspotYLocation, width
 		tooltipEntry.TooltipXLocation, tooltipEntry.TooltipYLocation, tooltipEntry.TooltipWidth = hotspotXLocation, tooltipYLocation, width
@@ -902,14 +1076,14 @@ the number of item rows and the width is shared equally between its columns. The
 by the number of columns, rounded down, so the selector's width is the largest multiple of its column count that does
 not exceed the width given. The scroll bar, tooltip and viewport are then updated to match. A height below one, a
 width too narrow to give every column at least one cell, or a selector that does not exist leaves everything
-unchanged.
+unchanged. The caller must hold uiStateMutex.
 
 Example:
 
 	Selector.setSize("Layer1", "Selector1", 30, 5)
 */
 func (shared *selectorType) setSize(layerAlias string, selectorAlias string, width int, height int) {
-	selectorEntry, isFound := Selectors.Lookup(layerAlias, selectorAlias)
+	selectorEntry, isFound := selectorRegistry.Lookup(layerAlias, selectorAlias)
 	if !isFound {
 		return
 	}
@@ -945,7 +1119,7 @@ normalizeIndexes is a method which allows you to bring a selector's highlighted 
 position back in line with its current list of items, so that none of them can be used to index outside the list. It
 is called by everything that changes the list or those indexes. A highlighted or selected item that is out of range is
 cleared, and the viewport position is clamped between zero and getMaxViewportPosition and moved back to the start of
-its row.
+its row. The caller must hold uiStateMutex.
 
 Example:
 
@@ -968,7 +1142,7 @@ func (shared *selectorType) normalizeIndexes(selectorEntry *types.SelectorEntryT
 highlightStartingItem is a method which allows you to make sure a selector with items has one of them highlighted, as
 happens when the selector gains keyboard focus. If the highlighted item is missing or out of range, the selected item
 is highlighted when it is valid, and otherwise the first item is. An empty selector is left with no highlight, since
-there is nothing to highlight.
+there is nothing to highlight. The caller must hold uiStateMutex.
 
 Example:
 
@@ -987,7 +1161,7 @@ func (shared *selectorType) highlightStartingItem(selectorEntry *types.SelectorE
 
 /*
 scrollHighlightIntoView is a method which allows you to move a selector's viewport by the fewest rows needed for its
-highlighted item to be visible. Nothing is moved when no item is highlighted.
+highlighted item to be visible. Nothing is moved when no item is highlighted. The caller must hold uiStateMutex.
 
 Example:
 
@@ -1011,14 +1185,14 @@ func (shared *selectorType) scrollHighlightIntoView(selectorEntry *types.Selecto
 updateScrollbar is a method which allows you to bring a selector's scroll bar in line with its items and viewport. The
 scroll bar is enabled only while the items overflow the selector, is shown only while it is enabled and the selector
 itself is visible, ranges from zero to getMaxViewportPosition, and has its value and handle moved to the selector's
-viewport position. Nothing happens if the selector has no scroll bar.
+viewport position. Nothing happens if the selector has no scroll bar. The caller must hold uiStateMutex.
 
 Example:
 
 	Selector.updateScrollbar("Layer1", selectorEntry)
 */
 func (shared *selectorType) updateScrollbar(layerAlias string, selectorEntry *types.SelectorEntryType) {
-	scrollBarEntry, isFound := ScrollBars.Lookup(layerAlias, selectorEntry.ScrollbarAlias)
+	scrollBarEntry, isFound := scrollbarRegistry.Lookup(layerAlias, selectorEntry.ScrollbarAlias)
 	if !isFound {
 		return
 	}
@@ -1059,7 +1233,7 @@ func (shared *selectorType) updateKeyboardEventForSelector(layerAlias string, se
 	if !isArrowKey && keystrokeAsString != "enter" {
 		return false, false
 	}
-	selectorEntry, isFound := Selectors.Lookup(layerAlias, selectorAlias)
+	selectorEntry, isFound := selectorRegistry.Lookup(layerAlias, selectorAlias)
 	if !isFound {
 		return false, false
 	}
@@ -1122,7 +1296,7 @@ func (shared *selectorType) updateKeyboardEvent(keystroke []rune) (bool, bool) {
 	isScreenUpdateRequired := false
 	isKeystrokeConsumed := false
 	focusedControl := getFocusedControl()
-	if focusedControl.controlType != constants.CellTypeSelectorItem || !Selectors.IsExists(focusedControl.layerAlias, focusedControl.controlAlias) {
+	if focusedControl.controlType != constants.CellTypeSelectorItem || !selectorRegistry.IsExists(focusedControl.layerAlias, focusedControl.controlAlias) {
 		return isScreenUpdateRequired, isKeystrokeConsumed
 	}
 	return shared.updateKeyboardEventForSelector(focusedControl.layerAlias, focusedControl.controlAlias, keystroke)
@@ -1154,7 +1328,7 @@ func (shared *selectorType) updateWheelEvent(characterEntry types.CharacterEntry
 	switch characterEntry.AttributeEntry.CellType {
 	case constants.CellTypeSelectorItem, constants.CellTypeSelectorBorder:
 	case constants.CellTypeScrollbar:
-		scrollBarEntry, isFound := ScrollBars.Lookup(layerAlias, selectorAlias)
+		scrollBarEntry, isFound := scrollbarRegistry.Lookup(layerAlias, selectorAlias)
 		if !isFound || scrollBarEntry.ParentControlType != constants.CellTypeSelectorItem {
 			return false
 		}
@@ -1162,7 +1336,7 @@ func (shared *selectorType) updateWheelEvent(characterEntry types.CharacterEntry
 	default:
 		return false
 	}
-	selectorEntry, isFound := Selectors.Lookup(layerAlias, selectorAlias)
+	selectorEntry, isFound := selectorRegistry.Lookup(layerAlias, selectorAlias)
 	if !isFound || !selectorEntry.IsVisible {
 		return false
 	}
@@ -1212,7 +1386,7 @@ func (shared *selectorType) updateMouseEvent() bool {
 	if shared.updateWheelEvent(characterEntry, wheelState) {
 		return true
 	}
-	if selectorEntry, isFound := Selectors.Lookup(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias); characterEntry.AttributeEntry.CellType == constants.CellTypeSelectorItem &&
+	if selectorEntry, isFound := selectorRegistry.Lookup(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias); characterEntry.AttributeEntry.CellType == constants.CellTypeSelectorItem &&
 		getEventStateId() == constants.EventStateNone && isFound {
 		itemIndex := characterEntry.AttributeEntry.CellControlId
 		// The cell may predate a change to the item list that has not been redrawn yet, so its item may be gone.
@@ -1233,7 +1407,7 @@ func (shared *selectorType) updateMouseEvent() bool {
 			selectorEntry.ItemHighlighted = itemIndex
 		}
 		// Check if this selector belongs to a dropdown
-		for _, currentDropdownEntry := range Dropdowns.GetAllEntries(characterEntry.LayerAlias) {
+		for _, currentDropdownEntry := range dropdownRegistry.GetAllEntries(characterEntry.LayerAlias) {
 			dropdownEntry := currentDropdownEntry
 			if dropdownEntry.SelectorAlias == characterEntry.AttributeEntry.CellControlAlias {
 				// Focus itself is given by the press, through focusControlFromClick, which maps a tray item to its
@@ -1248,9 +1422,9 @@ func (shared *selectorType) updateMouseEvent() bool {
 		isScreenUpdateRequired = true
 	} else {
 		previouslyHighlightedControl := getPreviouslyHighlightedControl()
-		if selectorEntry, isFound := Selectors.Lookup(previouslyHighlightedControl.layerAlias, previouslyHighlightedControl.controlAlias); previouslyHighlightedControl.controlType == constants.CellTypeSelectorItem &&
+		if selectorEntry, isFound := selectorRegistry.Lookup(previouslyHighlightedControl.layerAlias, previouslyHighlightedControl.controlAlias); previouslyHighlightedControl.controlType == constants.CellTypeSelectorItem &&
 			isFound && characterEntry.AttributeEntry.CellType == constants.CellTypeSelectorItem &&
-			Selectors.IsExists(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias) {
+			selectorRegistry.IsExists(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias) {
 			// Only clear highlighting if HighlightOnClickOnly is false
 			if !selectorEntry.HighlightOnClickOnly {
 				selectorEntry.ItemHighlighted = constants.NullItemSelection
@@ -1268,9 +1442,9 @@ func (shared *selectorType) updateMouseEvent() bool {
 	// matches a control that belongs to a Dropdown list, then stop processing (Do not attempt to close Dropdown).
 	if buttonPressed != 0 && (getEventStateId() == constants.EventStateDragAndDropScrollbar ||
 		characterEntry.AttributeEntry.CellType == constants.CellTypeScrollbar) {
-		for _, currentSelectorEntry := range Selectors.GetAllEntries(focusedLayerAlias) {
+		for _, currentSelectorEntry := range selectorRegistry.GetAllEntries(focusedLayerAlias) {
 			selectorEntry := currentSelectorEntry
-			scrollBarEntry, isFound := ScrollBars.Lookup(focusedLayerAlias, selectorEntry.ScrollbarAlias)
+			scrollBarEntry, isFound := scrollbarRegistry.Lookup(focusedLayerAlias, selectorEntry.ScrollbarAlias)
 			if !isFound {
 				continue
 			}
@@ -1282,9 +1456,9 @@ func (shared *selectorType) updateMouseEvent() bool {
 		}
 	}
 	// If a Selector is no longer visible, then make the scroll bars associated with it invisible as well.
-	for _, currentSelectorEntry := range Selectors.GetAllEntries(layerAlias) {
+	for _, currentSelectorEntry := range selectorRegistry.GetAllEntries(layerAlias) {
 		selectorEntry := currentSelectorEntry
-		scrollBarEntry, isFound := ScrollBars.Lookup(layerAlias, selectorEntry.ScrollbarAlias)
+		scrollBarEntry, isFound := scrollbarRegistry.Lookup(layerAlias, selectorEntry.ScrollbarAlias)
 		if !isFound {
 			continue
 		}

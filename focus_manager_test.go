@@ -1174,7 +1174,7 @@ func TestFocusIndicatorIgnoresMovementAndProgrammaticFocus(test *testing.T) {
 			test.Fatalf("expected AddToTabIndex to succeed, got %v", err)
 		}
 	}
-	styleEntry := Buttons.Get(layerAlias, "a").StyleEntry
+	styleEntry := buttonRegistry.Get(layerAlias, "a").StyleEntry
 	focusedForeground, focusedBackground := getFocusedColors(styleEntry.Button.ForegroundColor, styleEntry.Button.BackgroundColor,
 		styleEntry.Button.FocusedForegroundColor, styleEntry.Button.FocusedBackgroundColor)
 	assertLabelColors := func(context string, yLocation int, isFocusShown bool) {

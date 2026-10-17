@@ -7,24 +7,28 @@ import (
 	"strings"
 )
 
-var TextStyles *memory.MemoryManager[types.TextCellStyleEntryType]
+var textStyleRegistry *memory.MemoryManager[types.TextCellStyleEntryType]
 
 func init() {
-	TextStyles = memory.NewMemoryManager[types.TextCellStyleEntryType]()
+	textStyleRegistry = memory.NewMemoryManager[types.TextCellStyleEntryType]()
 }
 
 /*
-GetTextStyle is a method which retrieves a text style entry by its alias.
+GetTextStyle is a method which allows you to retrieve a copy of the text style added under the given alias. If no text
+style has that alias, a panic is generated to fail as fast as possible. In addition, the following should be noted:
+
+  - The style returned is a copy, so changing it does not change the style used when text is printed. To change a
+    style, add it again with AddTextStyle under the same alias.
 
 Example:
-    style := GetTextStyle("myStyle")
+
+	style := GetTextStyle("myStyle")
 */
-func GetTextStyle(textStyleAlias string) *types.TextCellStyleEntryType {
-	// Use the generic memory manager to retrieve the text style entry
-	if !TextStyles.IsExists(textStyleAlias) {
+func GetTextStyle(textStyleAlias string) types.TextCellStyleEntryType {
+	if !textStyleRegistry.IsExists(textStyleAlias) {
 		safeSttyPanic(fmt.Sprintf("The requested text style with alias '%s' could not be returned since it does not exist.", textStyleAlias))
 	}
-	return TextStyles.Get(textStyleAlias)
+	return *textStyleRegistry.Get(textStyleAlias)
 }
 
 /*
@@ -35,10 +39,10 @@ Example:
 */
 func GetTextStyleAsAttributeEntry(textStyleAlias string) types.AttributeEntryType {
 	// Use the generic memory manager to retrieve the text style entry
-	if !TextStyles.IsExists(textStyleAlias) {
+	if !textStyleRegistry.IsExists(textStyleAlias) {
 		safeSttyPanic(fmt.Sprintf("The requested text style with alias '%s' could not be returned since it does not exist.", textStyleAlias))
 	}
-	textStyleEntry := TextStyles.Get(textStyleAlias)
+	textStyleEntry := textStyleRegistry.Get(textStyleAlias)
 
 	// Convert to AttributeEntryType
 	attributeEntry := types.NewAttributeEntry()
@@ -60,7 +64,7 @@ Example:
 */
 func IsTextStyleExists(textStyleAlias string) bool {
 	// Use the generic memory manager to check if the text style exists
-	return TextStyles.IsExists(textStyleAlias)
+	return textStyleRegistry.IsExists(textStyleAlias)
 }
 
 /*

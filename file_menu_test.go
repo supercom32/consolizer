@@ -39,7 +39,7 @@ Example:
 func TestFileMenuEscClosesOpenMenu(test *testing.T) {
 	layerAlias, styleEntry := setupInputTest(test)
 	fileMenu := addTestFileMenu(layerAlias, styleEntry)
-	fileMenuEntry := FileMenus.Get(layerAlias, "menu")
+	fileMenuEntry := fileMenuRegistry.Get(layerAlias, "menu")
 	fileMenuEntry.ActiveHeadingIndex = 0
 	fileMenuEntry.IsSubmenuOpen = true
 	simScreen := startInputSimulation(test)
@@ -96,9 +96,74 @@ func TestFileMenuGetSelectedItemIgnoresStaleSelection(test *testing.T) {
 	menuSelection.Add("open", "Open")
 	menuSelection.Add("exit", "Exit")
 	fileMenu := FileMenu.Add(layerAlias, "menu", styleEntry, []string{"File"}, []types.SelectionEntryType{menuSelection}, 0, 0, true)
-	GetSelector(layerAlias, FileMenus.Get(layerAlias, "menu").SelectorAliases[0]).ItemSelected = 5
+	getSelector(layerAlias, fileMenuRegistry.Get(layerAlias, "menu").SelectorAliases[0]).ItemSelected = 5
 	headingIndex, itemIndex, itemAlias, itemValue := fileMenu.GetSelectedItem()
 	if headingIndex != -1 || itemIndex != -1 || itemAlias != "" || itemValue != "" {
 		test.Fatalf("expected nothing selected, got (%d, %d, %q, %q)", headingIndex, itemIndex, itemAlias, itemValue)
+	}
+}
+
+/*
+TestFileMenuOpenCloseEnableAndSetMenus is a test which allows you to verify that a file menu can be opened, closed,
+enabled, disabled and given new headings through its methods, that invalid requests are ignored or refused, and that
+replacing the headings replaces their submenus.
+
+Example:
+
+	Expected Inputs:
+		The test file menu with the heading "File". Open(0), Open(5), Close, SetEnabled(false), Open(0),
+		SetEnabled(true), SetMenus with two headings and one selection, then SetMenus with "File" and "Edit" and a
+		selection for each, then Open(1).
+
+	Expected Outputs:
+		IsOpen reads true after Open(0), true after the ignored Open(5), false after Close, and false after Open(0) on
+		the disabled menu, which reads IsEnabled false. The mismatched SetMenus returns an error and keeps one
+		submenu. The second SetMenus returns no error, removes the old submenu's selector, creates two new ones, and
+		Open(1) opens the second heading.
+*/
+func TestFileMenuOpenCloseEnableAndSetMenus(test *testing.T) {
+	layerAlias, styleEntry := setupInputTest(test)
+	fileMenu := addTestFileMenu(layerAlias, styleEntry)
+	if !fileMenu.IsEnabled() {
+		test.Fatalf("expected the file menu to start enabled")
+	}
+	fileMenu.Open(0)
+	fileMenu.Open(5)
+	if !fileMenu.IsOpen() {
+		test.Fatalf("expected the file menu to be open after Open(0), and an invalid heading to be ignored")
+	}
+	fileMenu.Close()
+	if fileMenu.IsOpen() {
+		test.Fatalf("expected the file menu to be closed after Close")
+	}
+	fileMenu.SetEnabled(false)
+	fileMenu.Open(0)
+	if fileMenu.IsEnabled() || fileMenu.IsOpen() {
+		test.Fatalf("expected a disabled file menu to stay closed, got enabled %t and open %t", fileMenu.IsEnabled(), fileMenu.IsOpen())
+	}
+	fileMenu.SetEnabled(true)
+
+	getSelectorAliases := func() []string {
+		defer lockUIState()()
+		return append([]string(nil), fileMenuRegistry.Get(layerAlias, "menu").SelectorAliases...)
+	}
+	oldSelectorAliases := getSelectorAliases()
+	if err := fileMenu.SetMenus([]string{"File", "Edit"}, []types.SelectionEntryType{getTestSelectionEntry(2)}); err == nil {
+		test.Fatalf("expected an error for two headings and one selection")
+	}
+	if selectorAliases := getSelectorAliases(); len(selectorAliases) != 1 {
+		test.Fatalf("expected the refused SetMenus to keep one submenu, got %d", len(selectorAliases))
+	}
+	if err := fileMenu.SetMenus([]string{"File", "Edit"}, []types.SelectionEntryType{getTestSelectionEntry(2), getTestSelectionEntry(3)}); err != nil {
+		test.Fatalf("expected no error, got %v", err)
+	}
+	newSelectorAliases := getSelectorAliases()
+	if len(newSelectorAliases) != 2 || IsSelectorExists(layerAlias, oldSelectorAliases[0]) {
+		test.Fatalf("expected two new submenus and the old one removed, got %d submenus and old one existing %t",
+			len(newSelectorAliases), IsSelectorExists(layerAlias, oldSelectorAliases[0]))
+	}
+	fileMenu.Open(1)
+	if !fileMenu.IsOpen() {
+		test.Fatalf("expected Open(1) to open the second heading")
 	}
 }

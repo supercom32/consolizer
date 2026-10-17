@@ -38,17 +38,18 @@ func (shared *dropdownType) updateKeyboardEvent(keystroke []rune) (bool, bool) {
 	focusedControl := getFocusedControl()
 	focusedLayerAlias := focusedControl.layerAlias
 	focusedControlAlias := focusedControl.controlAlias
-	focusedControlType := focusedControl.controlType
 
 	// Only process if a dropdown is focused
-	dropdownEntry, isFound := Dropdowns.Lookup(focusedLayerAlias, focusedControlAlias)
-	if focusedControlType != constants.CellTypeDropdown || !isFound {
+	if focusedControl.controlType != constants.CellTypeDropdown {
+		return isScreenUpdateRequired, isKeystrokeConsumed
+	}
+	dropdownEntry, isFound := dropdownRegistry.Lookup(focusedLayerAlias, focusedControlAlias)
+	if !isFound {
 		return isScreenUpdateRequired, isKeystrokeConsumed
 	}
 
-	// If dropdown is open but focus is on the dropdown itself (not the selector),
-	// move focus to the selector for keyboard navigation
-	if dropdownEntry.IsTrayOpen && focusedControlType == constants.CellTypeDropdown {
+	// While the tray is open, focus stays on the dropdown and the keys are passed on to the tray.
+	if dropdownEntry.IsTrayOpen {
 		isScreenUpdateRequired, isKeystrokeConsumed = Selector.updateKeyboardEventForSelector(focusedLayerAlias, dropdownEntry.SelectorAlias, keystroke)
 	}
 
@@ -56,8 +57,8 @@ func (shared *dropdownType) updateKeyboardEvent(keystroke []rune) (bool, bool) {
 	if keystrokeAsString == "enter" {
 		if dropdownEntry.IsTrayOpen {
 			// Close dropdown and apply selection
-			selectorEntry := Selectors.Get(focusedLayerAlias, dropdownEntry.SelectorAlias)
-			scrollBarEntry := ScrollBars.Get(focusedLayerAlias, dropdownEntry.ScrollbarAlias)
+			selectorEntry := selectorRegistry.Get(focusedLayerAlias, dropdownEntry.SelectorAlias)
+			scrollBarEntry := scrollbarRegistry.Get(focusedLayerAlias, dropdownEntry.ScrollbarAlias)
 			scrollBarEntry.ScrollValue = selectorEntry.ItemSelected
 			scrollbar.computeHandlePositionByScrollValue(focusedLayerAlias, dropdownEntry.ScrollbarAlias)
 			// Update selected item if changed
@@ -74,24 +75,7 @@ func (shared *dropdownType) updateKeyboardEvent(keystroke []rune) (bool, bool) {
 			setFocusedControl(focusedLayerAlias, focusedControlAlias, constants.CellTypeDropdown)
 			setEventStateId(constants.EventStateNone)
 		} else {
-			// Open dropdown
-			shared.closeAllOpen() // Close any other open dropdowns first
-			dropdownEntry.IsTrayOpen = true
-
-			// Show dropdown components
-			selectorEntry := Selectors.Get(focusedLayerAlias, dropdownEntry.SelectorAlias)
-			selectorEntry.IsVisible = true
-			selectorEntry.ItemHighlighted = dropdownEntry.ItemSelected // Highlight current selection
-			Selector.normalizeIndexes(selectorEntry)
-
-			// Set focus to the selector for keyboard navigation
-			//setFocusedControl(focusedLayerAlias, dropdownEntry.SelectorAlias, constants.CellTypeSelectorItem)
-
-			// Show scrollbar if needed
-			scrollBarEntry := ScrollBars.Get(focusedLayerAlias, dropdownEntry.ScrollbarAlias)
-			if scrollBarEntry.IsEnabled {
-				scrollBarEntry.IsVisible = true
-			}
+			shared.openTray(focusedLayerAlias, dropdownEntry)
 		}
 		isScreenUpdateRequired = true
 		isKeystrokeConsumed = true
@@ -99,19 +83,7 @@ func (shared *dropdownType) updateKeyboardEvent(keystroke []rune) (bool, bool) {
 
 	// Handle Esc key to close dropdown without changing selection. tcell reports the Escape key as "Esc".
 	if keystrokeAsString == "esc" && dropdownEntry.IsTrayOpen {
-		selectorEntry := Selectors.Get(focusedLayerAlias, dropdownEntry.SelectorAlias)
-		scrollBarEntry := ScrollBars.Get(focusedLayerAlias, dropdownEntry.ScrollbarAlias)
-
-		// Revert the tray to the committed selection, so a later close that applies the tray's selection (such as
-		// closeAllOpen) cannot commit anything picked before Esc was pressed.
-		selectorEntry.ItemSelected = dropdownEntry.ItemSelected
-		selectorEntry.ItemHighlighted = dropdownEntry.ItemSelected
-		Selector.normalizeIndexes(selectorEntry)
-
-		// Hide dropdown components
-		selectorEntry.IsVisible = false
-		scrollBarEntry.IsVisible = false
-		dropdownEntry.IsTrayOpen = false
+		shared.closeTrayWithoutCommitting(focusedLayerAlias, dropdownEntry)
 
 		// Reset focus to the dropdown itself
 		setFocusedControl(focusedLayerAlias, focusedControlAlias, constants.CellTypeDropdown)
@@ -123,8 +95,53 @@ func (shared *dropdownType) updateKeyboardEvent(keystroke []rune) (bool, bool) {
 	return isScreenUpdateRequired, isKeystrokeConsumed
 }
 
+/*
+openTray is a method which allows you to open a dropdown's tray, closing any other open tray first. The tray's
+highlight is placed on the dropdown's selected item, and its scroll bar is shown if the items overflow the tray. The
+caller must hold uiStateMutex.
+
+Example:
+
+	Dropdown.openTray("layer1", dropdownEntry)
+*/
+func (shared *dropdownType) openTray(layerAlias string, dropdownEntry *types.DropdownEntryType) {
+	shared.closeAllOpen()
+	dropdownEntry.IsTrayOpen = true
+	if selectorEntry, isFound := selectorRegistry.Lookup(layerAlias, dropdownEntry.SelectorAlias); isFound {
+		selectorEntry.IsVisible = true
+		selectorEntry.ItemHighlighted = dropdownEntry.ItemSelected
+		Selector.normalizeIndexes(selectorEntry)
+	}
+	if scrollBarEntry, isFound := scrollbarRegistry.Lookup(layerAlias, dropdownEntry.ScrollbarAlias); isFound && scrollBarEntry.IsEnabled {
+		scrollBarEntry.IsVisible = true
+	}
+}
+
+/*
+closeTrayWithoutCommitting is a method which allows you to close a dropdown's tray without changing the dropdown's
+selection, as Esc does. The tray is reverted to the dropdown's selected item, so a later close that commits the tray's
+selection, such as closeAllOpen, cannot commit anything picked while the tray was open. The caller must hold
+uiStateMutex.
+
+Example:
+
+	Dropdown.closeTrayWithoutCommitting("layer1", dropdownEntry)
+*/
+func (shared *dropdownType) closeTrayWithoutCommitting(layerAlias string, dropdownEntry *types.DropdownEntryType) {
+	if selectorEntry, isFound := selectorRegistry.Lookup(layerAlias, dropdownEntry.SelectorAlias); isFound {
+		selectorEntry.ItemSelected = dropdownEntry.ItemSelected
+		selectorEntry.ItemHighlighted = dropdownEntry.ItemSelected
+		Selector.normalizeIndexes(selectorEntry)
+		selectorEntry.IsVisible = false
+	}
+	if scrollBarEntry, isFound := scrollbarRegistry.Lookup(layerAlias, dropdownEntry.ScrollbarAlias); isFound {
+		scrollBarEntry.IsVisible = false
+	}
+	dropdownEntry.IsTrayOpen = false
+}
+
 var Dropdown dropdownType
-var Dropdowns = memory.NewControlMemoryManager[types.DropdownEntryType]()
+var dropdownRegistry = memory.NewControlMemoryManager[types.DropdownEntryType]()
 
 // ============================================================================
 // REGULAR ENTRY
@@ -141,7 +158,8 @@ Example:
     dropdown.Delete()
 */
 func (shared *DropdownInstanceType) Delete() *DropdownInstanceType {
-	shared.BaseControlInstanceType.Delete()
+	defer lockUIState()()
+	shared.BaseControlInstanceType.delete()
 	return nil
 }
 
@@ -157,7 +175,8 @@ Example:
     val := dropdown.GetValue()
 */
 func (shared *DropdownInstanceType) GetValue() string {
-	dropdownEntry := Dropdowns.Get(shared.layerAlias, shared.controlAlias)
+	defer lockUIState()()
+	dropdownEntry := dropdownRegistry.Get(shared.layerAlias, shared.controlAlias)
 	if len(dropdownEntry.SelectionEntry.SelectionValue) != 0 &&
 		dropdownEntry.ItemSelected >= 0 && dropdownEntry.ItemSelected < len(dropdownEntry.SelectionEntry.SelectionValue) {
 		return dropdownEntry.SelectionEntry.SelectionValue[dropdownEntry.ItemSelected]
@@ -175,7 +194,8 @@ Example:
 	alias, index := dropdown.GetSelected()
 */
 func (shared *DropdownInstanceType) GetSelected() (string, int) {
-	if dropdownEntry, isFound := Dropdowns.Lookup(shared.layerAlias, shared.controlAlias); isFound {
+	defer lockUIState()()
+	if dropdownEntry, isFound := dropdownRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound {
 		itemSelected := dropdownEntry.ItemSelected
 		if itemSelected >= 0 && itemSelected < Dropdown.getItemCount(dropdownEntry) {
 			return dropdownEntry.SelectionEntry.SelectionAlias[itemSelected], itemSelected
@@ -185,13 +205,88 @@ func (shared *DropdownInstanceType) GetSelected() (string, int) {
 }
 
 /*
+GetAllItems is a method which allows you to retrieve every item a dropdown offers, as one slice of aliases and one slice
+of display values, in the order the items appear. If the dropdown does not exist, two empty slices are returned. In
+addition, the following should be noted:
+
+  - The slices returned are copies, so changing them does not change the dropdown. Use SetSelectionEntry to change
+    its items.
+
+Example:
+
+	aliases, values := dropdown.GetAllItems()
+*/
+func (shared *DropdownInstanceType) GetAllItems() ([]string, []string) {
+	defer lockUIState()()
+	if dropdownEntry, isFound := dropdownRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound {
+		selectionEntryCopy := Selector.getSelectionEntryCopy(dropdownEntry.SelectionEntry)
+		return selectionEntryCopy.SelectionAlias, selectionEntryCopy.SelectionValue
+	}
+	return []string{}, []string{}
+}
+
+/*
+IsOpen is a method which allows you to check whether a dropdown's tray is open, whether the user opened it or it was
+opened with Open. If the dropdown does not exist, false is returned.
+
+Example:
+
+	isOpen := dropdown.IsOpen()
+*/
+func (shared *DropdownInstanceType) IsOpen() bool {
+	defer lockUIState()()
+	if dropdownEntry, isFound := dropdownRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound {
+		return dropdownEntry.IsTrayOpen
+	}
+	return false
+}
+
+/*
+Open is a method which allows you to open a dropdown's tray, as clicking it or pressing Enter on it does. Any other
+open tray is closed first, the tray's highlight is placed on the selected item, and its scroll bar is shown if the
+items overflow it. Nothing happens if the tray is already open or the dropdown does not exist. In addition, the
+following should be noted:
+
+  - Focus is not moved. The arrow keys and Enter only reach the tray while the dropdown has focus, so give it focus
+    with SetFocus as well if the user should be able to pick from the tray with the keyboard.
+
+Example:
+
+	dropdown.Open()
+*/
+func (shared *DropdownInstanceType) Open() {
+	defer lockUIState()()
+	if dropdownEntry, isFound := dropdownRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound && !dropdownEntry.IsTrayOpen {
+		Dropdown.openTray(shared.layerAlias, dropdownEntry)
+	}
+}
+
+/*
+Close is a method which allows you to close a dropdown's tray without changing its selection, as Esc does, so any
+item highlighted in the tray is discarded. Nothing happens if the tray is already closed or the dropdown does not
+exist.
+
+Example:
+
+	dropdown.Close()
+*/
+func (shared *DropdownInstanceType) Close() {
+	defer lockUIState()()
+	if dropdownEntry, isFound := dropdownRegistry.Lookup(shared.layerAlias, shared.controlAlias); isFound && dropdownEntry.IsTrayOpen {
+		Dropdown.closeTrayWithoutCommitting(shared.layerAlias, dropdownEntry)
+		setEventStateId(constants.EventStateNone)
+	}
+}
+
+/*
 GetSelectedItemIndex is a method which retrieves the index of the currently selected item in the dropdown.
 
 Example:
     index := dropdown.GetSelectedItemIndex()
 */
 func (shared *DropdownInstanceType) GetSelectedItemIndex() int {
-	dropdownEntry := Dropdowns.Get(shared.layerAlias, shared.controlAlias)
+	defer lockUIState()()
+	dropdownEntry := dropdownRegistry.Get(shared.layerAlias, shared.controlAlias)
 	return dropdownEntry.ItemSelected
 }
 
@@ -205,12 +300,13 @@ Example:
 	dropdown.SetSelectedItemIndex(2)
 */
 func (shared *DropdownInstanceType) SetSelectedItemIndex(itemIndex int) {
-	dropdownEntry := Dropdowns.Get(shared.layerAlias, shared.controlAlias)
+	defer lockUIState()()
+	dropdownEntry := dropdownRegistry.Get(shared.layerAlias, shared.controlAlias)
 	if itemIndex < constants.SELECTED_NONE || itemIndex >= Dropdown.getItemCount(dropdownEntry) {
 		return
 	}
 	dropdownEntry.ItemSelected = itemIndex
-	if selectorEntry, isFound := Selectors.Lookup(shared.layerAlias, dropdownEntry.SelectorAlias); isFound {
+	if selectorEntry, isFound := selectorRegistry.Lookup(shared.layerAlias, dropdownEntry.SelectorAlias); isFound {
 		selectorEntry.ItemSelected = itemIndex
 		Selector.normalizeIndexes(selectorEntry)
 	}
@@ -244,11 +340,12 @@ Example:
 	dropdown.SetSelectionEntry(newSelection)
 */
 func (shared *DropdownInstanceType) SetSelectionEntry(selectionEntry types.SelectionEntryType) {
-	dropdownEntry := Dropdowns.Get(shared.layerAlias, shared.controlAlias)
+	defer lockUIState()()
+	dropdownEntry := dropdownRegistry.Get(shared.layerAlias, shared.controlAlias)
 	dropdownEntry.SelectionEntry = Selector.getSelectionEntryCopy(selectionEntry)
 	dropdownEntry.ItemSelected = constants.SELECTED_NONE
 
-	selectorEntry, isFound := Selectors.Lookup(shared.layerAlias, dropdownEntry.SelectorAlias)
+	selectorEntry, isFound := selectorRegistry.Lookup(shared.layerAlias, dropdownEntry.SelectorAlias)
 	if !isFound {
 		return
 	}
@@ -292,17 +389,19 @@ noted:
   - This is safe whether the tray is open or closed. An open tray is redrawn in its new place on the next screen
     update, and a closed tray keeps its scroll bar hidden.
 
+  - The caller must hold uiStateMutex.
+
 Example:
 
 	Dropdown.updateLayout("layer1", dropdownEntry)
 */
 func (shared *dropdownType) updateLayout(layerAlias string, dropdownEntry *types.DropdownEntryType) {
-	if selectorEntry, isFound := Selectors.Lookup(layerAlias, dropdownEntry.SelectorAlias); isFound {
+	if selectorEntry, isFound := selectorRegistry.Lookup(layerAlias, dropdownEntry.SelectorAlias); isFound {
 		selectorEntry.XLocation, selectorEntry.YLocation, selectorEntry.ItemWidth = shared.getTrayGeometry(dropdownEntry)
 		selectorEntry.Height = dropdownEntry.Height
 		Selector.updateLayout(layerAlias, selectorEntry)
 	}
-	if tooltipEntry, isFound := Tooltips.Lookup(layerAlias, dropdownEntry.TooltipAlias); isFound {
+	if tooltipEntry, isFound := tooltipRegistry.Lookup(layerAlias, dropdownEntry.TooltipAlias); isFound {
 		tooltipEntry.HotspotXLocation, tooltipEntry.HotspotYLocation, tooltipEntry.HotspotWidth = dropdownEntry.XLocation, dropdownEntry.YLocation, dropdownEntry.ItemWidth
 		tooltipEntry.TooltipXLocation, tooltipEntry.TooltipYLocation, tooltipEntry.TooltipWidth = dropdownEntry.XLocation, dropdownEntry.YLocation+2, dropdownEntry.ItemWidth
 	}
@@ -313,14 +412,14 @@ setSize is a method which allows you to resize a dropdown. The width is that of 
 is closed, including its arrow, and the tray opens at the same width. The height is the number of item rows the tray
 shows when it opens, since the closed box is always one row tall. The tray, its scroll bar and both tooltips are then
 updated to match. A width too narrow to leave at least one column for the selected item, a height below one, or a
-dropdown that does not exist leaves everything unchanged.
+dropdown that does not exist leaves everything unchanged. The caller must hold uiStateMutex.
 
 Example:
 
 	Dropdown.setSize("layer1", "myDropdown", 20, 6)
 */
 func (shared *dropdownType) setSize(layerAlias string, dropdownAlias string, width int, height int) {
-	dropdownEntry, isFound := Dropdowns.Lookup(layerAlias, dropdownAlias)
+	dropdownEntry, isFound := dropdownRegistry.Lookup(layerAlias, dropdownAlias)
 	if !isFound || width <= dropdownBoxExtraWidth || height < 1 {
 		return
 	}
@@ -349,6 +448,19 @@ Example:
 	dropdown := Dropdown.Add("layer1", "myDropdown", style, items, 10, 10, 5, 15, 0)
 */
 func (shared *dropdownType) Add(layerAlias string, dropdownAlias string, styleEntry types.TuiStyleEntryType, selectionEntry types.SelectionEntryType, xLocation int, yLocation int, selectorHeight int, itemWidth int, defaultItemSelected int) DropdownInstanceType {
+	defer lockUIState()()
+	return shared.add(layerAlias, dropdownAlias, styleEntry, selectionEntry, xLocation, yLocation, selectorHeight, itemWidth, defaultItemSelected)
+}
+
+/*
+add is a method which allows you to do exactly what Add does, for a caller that already holds uiStateMutex, such as
+another entry point of the package that has taken the lock itself.
+
+Example:
+
+	Dropdown.add(layerAlias, dropdownAlias, styleEntry, selectionEntry, xLocation, yLocation, selectorHeight, itemWidth, defaultItemSelected)
+*/
+func (shared *dropdownType) add(layerAlias string, dropdownAlias string, styleEntry types.TuiStyleEntryType, selectionEntry types.SelectionEntryType, xLocation int, yLocation int, selectorHeight int, itemWidth int, defaultItemSelected int) DropdownInstanceType {
 	newDropdownEntry := types.NewDropdownEntry()
 	newDropdownEntry.Alias = dropdownAlias
 	newDropdownEntry.StyleEntry = styleEntry
@@ -361,36 +473,35 @@ func (shared *dropdownType) Add(layerAlias string, dropdownAlias string, styleEn
 		newDropdownEntry.ItemSelected = constants.SELECTED_NONE
 	}
 	newDropdownEntry.TooltipAlias = stringformat.GetLastSortedUUID()
-
-	// Use the ControlMemoryManager to add the dropdown entry
-	Dropdowns.Add(layerAlias, dropdownAlias, &newDropdownEntry)
-
-	dropdownEntry := Dropdowns.Get(layerAlias, dropdownAlias)
+	dropdownEntry := &newDropdownEntry
 	dropdownEntry.Width = itemWidth + dropdownBoxExtraWidth
 	dropdownEntry.Height = selectorHeight
 	dropdownEntry.SelectorAlias = stringformat.GetLastSortedUUID()
-	trayXLocation, trayYLocation, trayItemWidth := shared.getTrayGeometry(dropdownEntry)
-	Selector.Add(layerAlias, dropdownEntry.SelectorAlias, styleEntry, selectionEntry, trayXLocation, trayYLocation, selectorHeight, trayItemWidth, 1, 0, 0, false, true)
-	selectorEntry := Selectors.Get(layerAlias, dropdownEntry.SelectorAlias)
-	selectorEntry.IsVisible = false
-	// The tray starts out agreeing with the dropdown, so closing it without a pick cannot change the selection.
-	selectorEntry.ItemSelected = dropdownEntry.ItemSelected
-	dropdownEntry.ScrollbarAlias = selectorEntry.ScrollbarAlias
-	scrollBarEntry := ScrollBars.Get(layerAlias, dropdownEntry.ScrollbarAlias)
-	scrollBarEntry.IsVisible = false
-	if shared.getItemCount(dropdownEntry) <= selectorHeight {
-		scrollBarEntry.IsEnabled = false
-	}
 
+	trayXLocation, trayYLocation, trayItemWidth := shared.getTrayGeometry(dropdownEntry)
+	Selector.add(layerAlias, dropdownEntry.SelectorAlias, styleEntry, selectionEntry, trayXLocation, trayYLocation, selectorHeight, trayItemWidth, 1, 0, 0, false, true)
 	// Create associated tooltip (always created but disabled by default)
-	tooltipInstance := Tooltip.Add(layerAlias, dropdownEntry.TooltipAlias, "", styleEntry,
+	tooltipInstance := Tooltip.add(layerAlias, dropdownEntry.TooltipAlias, "", styleEntry,
 		dropdownEntry.XLocation, dropdownEntry.YLocation,
 		dropdownEntry.ItemWidth, 1,
 		dropdownEntry.XLocation, dropdownEntry.YLocation+2,
 		dropdownEntry.ItemWidth, 3,
 		false, true, constants.DefaultTooltipHoverTime)
-	tooltipInstance.SetEnabled(false)
+	tooltipInstance.setEnabled(false)
 	tooltipInstance.setParentControlAlias(dropdownAlias)
+
+	// The dropdown entry is complete before it is added to dropdownRegistry, so nothing can find it half set up.
+	selectorEntry := selectorRegistry.Get(layerAlias, dropdownEntry.SelectorAlias)
+	selectorEntry.IsVisible = false
+	// The tray starts out agreeing with the dropdown, so closing it without a pick cannot change the selection.
+	selectorEntry.ItemSelected = dropdownEntry.ItemSelected
+	dropdownEntry.ScrollbarAlias = selectorEntry.ScrollbarAlias
+	scrollBarEntry := scrollbarRegistry.Get(layerAlias, dropdownEntry.ScrollbarAlias)
+	scrollBarEntry.IsVisible = false
+	if shared.getItemCount(dropdownEntry) <= selectorHeight {
+		scrollBarEntry.IsEnabled = false
+	}
+	dropdownRegistry.Add(layerAlias, dropdownAlias, dropdownEntry)
 	var dropdownInstance DropdownInstanceType
 	dropdownInstance.layerAlias = layerAlias
 	dropdownInstance.controlAlias = dropdownAlias
@@ -410,7 +521,8 @@ Example:
     Dropdown.Delete("layer1", "myDropdown")
 */
 func (shared *dropdownType) Delete(layerAlias string, dropdownAlias string) {
-	Dropdowns.Remove(layerAlias, dropdownAlias)
+	defer lockUIState()()
+	dropdownRegistry.Remove(layerAlias, dropdownAlias)
 	clearStaleControlReferences(layerAlias, dropdownAlias, constants.CellTypeDropdown)
 }
 
@@ -426,7 +538,8 @@ Example:
     Dropdown.DeleteAll("layer1")
 */
 func (shared *dropdownType) DeleteAll(layerAlias string) {
-	removeAllControlsAndClearCells(Dropdowns, layerAlias, constants.CellTypeDropdown, func(entry *types.DropdownEntryType) string { return entry.Alias })
+	defer lockUIState()()
+	removeAllControlsAndClearCells(dropdownRegistry, layerAlias, constants.CellTypeDropdown, func(entry *types.DropdownEntryType) string { return entry.Alias })
 }
 
 /*
@@ -444,8 +557,9 @@ Example:
 */
 func (shared *dropdownType) drawOnLayer(layerEntry types.LayerEntryType) {
 	layerAlias := layerEntry.LayerAlias
-	for _, currentDropdownEntry := range Dropdowns.GetAllEntries(layerAlias) {
-		shared.draw(&layerEntry, currentDropdownEntry.Alias)
+	for _, currentDropdownEntry := range dropdownRegistry.GetAllEntries(layerAlias) {
+		dropdownAlias := currentDropdownEntry.Alias
+		shared.draw(&layerEntry, dropdownAlias, isFocusIndicatorShown(layerAlias, dropdownAlias, constants.CellTypeDropdown))
 	}
 }
 
@@ -454,22 +568,28 @@ draw is a method which allows you to draw a single dropdown on a given text laye
 to the dropdown's width and alignment, in the style's colours, followed by a down arrow drawn in inverted colours. In
 addition, the following should be noted:
 
-  - While the dropdown has focus, it is drawn with the style's focused colours, resolved by getFocusedColors so that
-    focus stays visible even when the style does not set them, and the arrow inverts those instead. As described for
-    setFocusIndicatorVisible, these colours are only shown while the user's last input came from the keyboard.
+  - When isFocusShown is true, the dropdown is drawn with the style's focused colours, resolved by getFocusedColors
+    so that focus stays visible even when the style does not set them, and the arrow inverts those instead. The
+    caller passes isFocusIndicatorShown for the dropdown, which as described for setFocusIndicatorVisible is only
+    true while the user's last input came from the keyboard.
+
+  - The caller must hold uiStateMutex.
 
 Example:
 
-	Dropdown.draw(layer, "myDropdown")
+	Dropdown.draw(layer, "myDropdown", false)
 */
-func (shared *dropdownType) draw(layerEntry *types.LayerEntryType, dropdownAlias string) {
+func (shared *dropdownType) draw(layerEntry *types.LayerEntryType, dropdownAlias string, isFocusShown bool) {
 	layerAlias := layerEntry.LayerAlias
-	dropdownEntry := Dropdowns.Get(layerAlias, dropdownAlias)
+	dropdownEntry, isFound := dropdownRegistry.Lookup(layerAlias, dropdownAlias)
+	if !isFound {
+		return
+	}
 	localStyleEntry := types.NewTuiStyleEntry(&dropdownEntry.StyleEntry)
 	attributeEntry := types.NewAttributeEntry()
 	attributeEntry.ForegroundColor = localStyleEntry.Dropdown.ForegroundColor
 	attributeEntry.BackgroundColor = localStyleEntry.Dropdown.BackgroundColor
-	if isFocusIndicatorShown(layerAlias, dropdownAlias, constants.CellTypeDropdown) {
+	if isFocusShown {
 		attributeEntry.ForegroundColor, attributeEntry.BackgroundColor = getFocusedColors(localStyleEntry.Dropdown.ForegroundColor,
 			localStyleEntry.Dropdown.BackgroundColor, localStyleEntry.Dropdown.FocusedForegroundColor, localStyleEntry.Dropdown.FocusedBackgroundColor)
 	}
@@ -517,10 +637,10 @@ func (shared *dropdownType) updateStateMouse() bool {
 	if buttonPressed != 0 && (getEventStateId() == constants.EventStateDragAndDropScrollbar ||
 		characterEntry.AttributeEntry.CellType == constants.CellTypeScrollbar) {
 		isMatchFound := false
-		for _, currentDropdownEntry := range Dropdowns.GetAllEntries(layerAlias) {
+		for _, currentDropdownEntry := range dropdownRegistry.GetAllEntries(layerAlias) {
 			dropdownEntry := currentDropdownEntry
-			selectorEntry := Selectors.Get(layerAlias, dropdownEntry.SelectorAlias)
-			scrollBarEntry := ScrollBars.Get(layerAlias, dropdownEntry.ScrollbarAlias)
+			selectorEntry := selectorRegistry.Get(layerAlias, dropdownEntry.SelectorAlias)
+			scrollBarEntry := scrollbarRegistry.Get(layerAlias, dropdownEntry.ScrollbarAlias)
 			if selectorEntry.ViewportPosition != scrollBarEntry.ScrollValue {
 				selectorEntry.ViewportPosition = scrollBarEntry.ScrollValue
 				Selector.normalizeIndexes(selectorEntry)
@@ -537,13 +657,13 @@ func (shared *dropdownType) updateStateMouse() bool {
 	}
 
 	// If our Dropdown alias is not empty, then open our Dropdown.
-	if dropdownEntry, isFound := Dropdowns.Lookup(layerAlias, cellControlAlias); buttonPressed != 0 && cellControlAlias != "" &&
+	if dropdownEntry, isFound := dropdownRegistry.Lookup(layerAlias, cellControlAlias); buttonPressed != 0 && cellControlAlias != "" &&
 		characterEntry.AttributeEntry.CellType == constants.CellTypeDropdown && isFound {
 		shared.closeAllOpen()
 		dropdownEntry.IsTrayOpen = true
-		selectorEntry := Selectors.Get(layerAlias, dropdownEntry.SelectorAlias)
+		selectorEntry := selectorRegistry.Get(layerAlias, dropdownEntry.SelectorAlias)
 		selectorEntry.IsVisible = true
-		scrollBarEntry := ScrollBars.Get(layerAlias, dropdownEntry.ScrollbarAlias)
+		scrollBarEntry := scrollbarRegistry.Get(layerAlias, dropdownEntry.ScrollbarAlias)
 		if scrollBarEntry.IsEnabled {
 			scrollBarEntry.IsVisible = true
 		}
@@ -557,7 +677,7 @@ func (shared *dropdownType) updateStateMouse() bool {
 		// Check if we're clicking on a scrollbar that belongs to an open dropdown
 		isScrollbarOfOpenDropdown := false
 		if characterEntry.AttributeEntry.CellType == constants.CellTypeScrollbar {
-			for _, currentDropdownEntry := range Dropdowns.GetAllEntries(layerAlias) {
+			for _, currentDropdownEntry := range dropdownRegistry.GetAllEntries(layerAlias) {
 				dropdownEntry := currentDropdownEntry
 				if dropdownEntry.IsTrayOpen && dropdownEntry.ScrollbarAlias == cellControlAlias {
 					isScrollbarOfOpenDropdown = true
@@ -575,26 +695,24 @@ func (shared *dropdownType) updateStateMouse() bool {
 }
 
 /*
-closeAllOpenOnLayer is a method which closes all dropdowns for a given layer alias. In addition,
-the following should be noted:
+closeAllOpenOnLayer is a method which closes every open dropdown on a given text layer. Each open tray and its scroll
+bar are hidden, and the tray's selected item is committed to the dropdown if it changed while the tray was open. It
+returns true if any dropdown was closed. In addition, the following should be noted:
 
-- This method is called when clicking outside of any dropdown.
-
-- All open dropdown trays are closed and their scrollbars are hidden.
-
-- The selected item is updated if it was changed while the dropdown was open.
+  - The caller must hold uiStateMutex.
 
 Example:
-    isClosed := Dropdown.closeAllOpenOnLayer("layer1")
+
+	isClosed := Dropdown.closeAllOpenOnLayer("layer1")
 */
 func (shared *dropdownType) closeAllOpenOnLayer(layerAlias string) bool {
 	isAnyDropdownClosed := false
-	for _, currentDropdownEntry := range Dropdowns.GetAllEntries(layerAlias) {
+	for _, currentDropdownEntry := range dropdownRegistry.GetAllEntries(layerAlias) {
 		dropdownEntry := currentDropdownEntry
 		if dropdownEntry.IsTrayOpen == true {
-			selectorEntry := Selectors.Get(layerAlias, dropdownEntry.SelectorAlias)
+			selectorEntry := selectorRegistry.Get(layerAlias, dropdownEntry.SelectorAlias)
 			selectorEntry.IsVisible = false
-			scrollBarEntry := ScrollBars.Get(layerAlias, dropdownEntry.ScrollbarAlias)
+			scrollBarEntry := scrollbarRegistry.Get(layerAlias, dropdownEntry.ScrollbarAlias)
 			scrollBarEntry.IsVisible = false
 			dropdownEntry.IsTrayOpen = false
 			if dropdownEntry.ItemSelected != selectorEntry.ItemSelected {
@@ -611,21 +729,16 @@ func (shared *dropdownType) closeAllOpenOnLayer(layerAlias string) bool {
 }
 
 /*
-closeAllOpen is a method which closes all dropdowns on all layers. In addition, the following
-should be noted:
-
-- This method is useful for ensuring no dropdowns remain open when changing application state.
-
-- All open dropdown trays are closed and their scrollbars are hidden.
-
-- The selected item is updated if it was changed while the dropdown was open.
+closeAllOpen is a method which allows you to close every open dropdown on every layer, as described for
+closeAllOpenOnLayer, such as before focus moves to another control. It returns true if any dropdown was closed.
 
 Example:
-    isClosed := Dropdown.closeAllOpen()
+
+	isClosed := Dropdown.closeAllOpen()
 */
 func (shared *dropdownType) closeAllOpen() bool {
 	var wasAnyDropdownClosed bool
-	Dropdowns.MemoryManager.Range(func(key, value interface{}) bool {
+	dropdownRegistry.MemoryManager.Range(func(key, value interface{}) bool {
 		layerAlias := key.(string)
 		isDropdownClosed := shared.closeAllOpenOnLayer(layerAlias)
 		if isDropdownClosed == true {
@@ -637,20 +750,15 @@ func (shared *dropdownType) closeAllOpen() bool {
 }
 
 /*
-Get is a method which retrieves a dropdown entry from the control memory manager. In addition, the
-following should be noted:
-
-- Returns a pointer to the dropdown entry if it exists, nil otherwise.
-
-- The dropdown entry contains all properties and state information for the control.
-
-- This method is used internally by other dropdown methods to access control data.
+get is a method which allows you to retrieve the entry holding a dropdown's state from the control memory manager. If
+the dropdown does not exist, a panic is generated to fail as fast as possible. The caller must hold uiStateMutex.
 
 Example:
-    entry := Dropdown.Get("layer1", "myDropdown")
+
+	entry := Dropdown.get("layer1", "myDropdown")
 */
-func (shared *dropdownType) Get(layerAlias string, dropdownAlias string) *types.DropdownEntryType {
-	return Dropdowns.Get(layerAlias, dropdownAlias)
+func (shared *dropdownType) get(layerAlias string, dropdownAlias string) *types.DropdownEntryType {
+	return dropdownRegistry.Get(layerAlias, dropdownAlias)
 }
 
 /*
@@ -667,22 +775,6 @@ Example:
     exists := Dropdown.IsExists("layer1", "myDropdown")
 */
 func (shared *dropdownType) IsExists(layerAlias string, dropdownAlias string) bool {
-	return Dropdowns.IsExists(layerAlias, dropdownAlias)
-}
-
-/*
-GetAllEntries is a method which retrieves all dropdown entries for a given layer. In addition, the
-following should be noted:
-
-- Returns a slice of all dropdown entries for the specified layer.
-
-- The entries are returned in alphabetical order by their alias.
-
-- This method is useful for iterating over all dropdowns on a layer.
-
-Example:
-    entries := Dropdown.GetAllEntries("layer1")
-*/
-func (shared *dropdownType) GetAllEntries(layerAlias string) []*types.DropdownEntryType {
-	return Dropdowns.GetAllEntries(layerAlias)
+	defer lockUIState()()
+	return dropdownRegistry.IsExists(layerAlias, dropdownAlias)
 }

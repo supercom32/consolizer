@@ -22,7 +22,7 @@ progressBarType is a structure which provides methods for managing progress bar 
 type progressBarType struct{}
 
 var ProgressBar progressBarType
-var ProgressBars = memory.NewControlMemoryManager[types.ProgressBarEntryType]()
+var progressBarRegistry = memory.NewControlMemoryManager[types.ProgressBarEntryType]()
 
 // ============================================================================
 // REGULAR ENTRY
@@ -35,7 +35,8 @@ Example:
     progressBar = progressBar.Delete()
 */
 func (shared *ProgressBarInstanceType) Delete() *ProgressBarInstanceType {
-	shared.BaseControlInstanceType.Delete()
+	defer lockUIState()()
+	shared.BaseControlInstanceType.delete()
 	return nil
 }
 
@@ -48,7 +49,8 @@ Example:
     progressBar.SetValue(50)
 */
 func (shared *ProgressBarInstanceType) SetValue(value int) {
-	progressBarEntry := ProgressBars.Get(shared.layerAlias, shared.controlAlias)
+	defer lockUIState()()
+	progressBarEntry := progressBarRegistry.Get(shared.layerAlias, shared.controlAlias)
 	if value <= progressBarEntry.MaxValue {
 		progressBarEntry.Value = value
 	} else {
@@ -65,7 +67,8 @@ Example:
     progressBar.SetMaxValue(100)
 */
 func (shared *ProgressBarInstanceType) SetMaxValue(value int) {
-	progressBarEntry := ProgressBars.Get(shared.layerAlias, shared.controlAlias)
+	defer lockUIState()()
+	progressBarEntry := progressBarRegistry.Get(shared.layerAlias, shared.controlAlias)
 	if value > 0 {
 		progressBarEntry.MaxValue = value
 	}
@@ -78,7 +81,8 @@ Example:
     progressBar.SetLabel("Loading...")
 */
 func (shared *ProgressBarInstanceType) SetLabel(label string) {
-	progressBarEntry := ProgressBars.Get(shared.layerAlias, shared.controlAlias)
+	defer lockUIState()()
+	progressBarEntry := progressBarRegistry.Get(shared.layerAlias, shared.controlAlias)
 	progressBarEntry.Label = label
 }
 
@@ -92,7 +96,8 @@ Example:
     progressBar.IncrementValue()
 */
 func (shared *ProgressBarInstanceType) IncrementValue() {
-	progressBarEntry := ProgressBars.Get(shared.layerAlias, shared.controlAlias)
+	defer lockUIState()()
+	progressBarEntry := progressBarRegistry.Get(shared.layerAlias, shared.controlAlias)
 	progressBarEntry.Value = progressBarEntry.Value + 1
 	if progressBarEntry.Value > progressBarEntry.MaxValue {
 		progressBarEntry.Value = progressBarEntry.MaxValue
@@ -107,7 +112,8 @@ Example:
     ratio := progressBar.GetValueAsRatio()
 */
 func (shared *ProgressBarInstanceType) GetValueAsRatio() string {
-	progressBarEntry := ProgressBars.Get(shared.layerAlias, shared.controlAlias)
+	defer lockUIState()()
+	progressBarEntry := progressBarRegistry.Get(shared.layerAlias, shared.controlAlias)
 	valueAsString := fmt.Sprintf("%d/%d", progressBarEntry.Value, progressBarEntry.MaxValue)
 	return valueAsString
 }
@@ -119,7 +125,8 @@ Example:
     currentValue := progressBar.GetValue()
 */
 func (shared *ProgressBarInstanceType) GetValue() int {
-	progressBarEntry := ProgressBars.Get(shared.layerAlias, shared.controlAlias)
+	defer lockUIState()()
+	progressBarEntry := progressBarRegistry.Get(shared.layerAlias, shared.controlAlias)
 	return progressBarEntry.Value
 }
 
@@ -130,8 +137,9 @@ Example:
     percent := progressBar.GetValueAsPercent()
 */
 func (shared *ProgressBarInstanceType) GetValueAsPercent() string {
+	defer lockUIState()()
 	var returnValue int
-	progressBarEntry := ProgressBars.Get(shared.layerAlias, shared.controlAlias)
+	progressBarEntry := progressBarRegistry.Get(shared.layerAlias, shared.controlAlias)
 	if progressBarEntry.MaxValue > 0 {
 		returnValue = (progressBarEntry.Value * 100) / progressBarEntry.MaxValue
 	}
@@ -147,6 +155,19 @@ Example:
     progressBarInstance := ProgressBar.Add("Layer1", "Progress1", "Loading", style, 0, 0, 20, 1, false, 0, 100, false)
 */
 func (shared *progressBarType) Add(layerAlias string, progressBarAlias string, progressBarLabel string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, height int, isVertical bool, value int, maxValue int, isBackgroundTransparent bool) ProgressBarInstanceType {
+	defer lockUIState()()
+	return shared.add(layerAlias, progressBarAlias, progressBarLabel, styleEntry, xLocation, yLocation, width, height, isVertical, value, maxValue, isBackgroundTransparent)
+}
+
+/*
+add is a method which allows you to do exactly what Add does, for a caller that already holds uiStateMutex, such as
+another entry point of the package that has taken the lock itself.
+
+Example:
+
+	ProgressBar.add(layerAlias, progressBarAlias, progressBarLabel, styleEntry, xLocation, yLocation, width, height, isVertical, value, maxValue, isBackgroundTransparent)
+*/
+func (shared *progressBarType) add(layerAlias string, progressBarAlias string, progressBarLabel string, styleEntry types.TuiStyleEntryType, xLocation int, yLocation int, width int, height int, isVertical bool, value int, maxValue int, isBackgroundTransparent bool) ProgressBarInstanceType {
 	progressBarEntry := types.NewProgressBarEntry()
 	progressBarEntry.StyleEntry = styleEntry
 	progressBarEntry.Alias = progressBarAlias
@@ -162,16 +183,16 @@ func (shared *progressBarType) Add(layerAlias string, progressBarAlias string, p
 	progressBarEntry.TooltipAlias = stringformat.GetLastSortedUUID()
 
 	// Create associated tooltip (always created but disabled by default)
-	tooltipInstance := Tooltip.Add(layerAlias, progressBarEntry.TooltipAlias, "", styleEntry,
+	tooltipInstance := Tooltip.add(layerAlias, progressBarEntry.TooltipAlias, "", styleEntry,
 		progressBarEntry.XLocation, progressBarEntry.YLocation,
 		progressBarEntry.Width, progressBarEntry.Height,
 		progressBarEntry.XLocation, progressBarEntry.YLocation+progressBarEntry.Height+1,
 		progressBarEntry.Width, 3,
 		false, true, constants.DefaultTooltipHoverTime)
-	tooltipInstance.SetEnabled(false)
+	tooltipInstance.setEnabled(false)
 	tooltipInstance.setParentControlAlias(progressBarAlias)
 	// Use the ControlMemoryManager to add the progress bar entry
-	ProgressBars.Add(layerAlias, progressBarAlias, &progressBarEntry)
+	progressBarRegistry.Add(layerAlias, progressBarAlias, &progressBarEntry)
 	var progressBarInstance ProgressBarInstanceType
 	progressBarInstance.layerAlias = layerAlias
 	progressBarInstance.controlAlias = progressBarAlias
@@ -188,7 +209,8 @@ Example:
     ProgressBar.Delete("Layer1", "Progress1")
 */
 func (shared *progressBarType) Delete(layerAlias string, progressBarAlias string) {
-	ProgressBars.Remove(layerAlias, progressBarAlias)
+	defer lockUIState()()
+	progressBarRegistry.Remove(layerAlias, progressBarAlias)
 	clearStaleControlReferences(layerAlias, progressBarAlias, constants.CellTypeProgressBar)
 }
 
@@ -199,7 +221,8 @@ Example:
     ProgressBar.DeleteAll("Layer1")
 */
 func (shared *progressBarType) DeleteAll(layerAlias string) {
-	removeAllControlsAndClearCells(ProgressBars, layerAlias, constants.CellTypeProgressBar, func(entry *types.ProgressBarEntryType) string { return entry.Alias })
+	defer lockUIState()()
+	removeAllControlsAndClearCells(progressBarRegistry, layerAlias, constants.CellTypeProgressBar, func(entry *types.ProgressBarEntryType) string { return entry.Alias })
 }
 
 /*
@@ -210,7 +233,7 @@ Example:
 */
 func (shared *progressBarType) drawOnLayer(layerEntry types.LayerEntryType) {
 	layerAlias := layerEntry.LayerAlias
-	for _, currentProgressBarEntry := range ProgressBars.GetAllEntries(layerAlias) {
+	for _, currentProgressBarEntry := range progressBarRegistry.GetAllEntries(layerAlias) {
 		progressBarEntry := currentProgressBarEntry
 		drawProgressBar(&layerEntry, progressBarEntry.Alias, progressBarEntry.Label, progressBarEntry.StyleEntry, progressBarEntry.XLocation, progressBarEntry.YLocation, progressBarEntry.Width, progressBarEntry.Height, progressBarEntry.Value, progressBarEntry.MaxValue, progressBarEntry.IsBackgroundTransparent, progressBarEntry.IsVertical)
 	}
