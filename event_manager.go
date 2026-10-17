@@ -240,6 +240,7 @@ func UpdateEventQueues() {
 		}
 
 		SetMouseStatus(mouseXLocation, mouseYLocation, mouseButtonNumber, wheelState)
+		Selector.updatePressOrigin(getCellInformationUnderMouseCursor(mouseXLocation, mouseYLocation), mouseButtonNumber, lastRecordedButtonNumber)
 		reconcileFocus()
 		// While a modal layer is active, mouse input outside it is ignored, unless a drag that started inside it is
 		// still in progress. A release outside still un-presses any armed button, so it cannot get stuck pressed.

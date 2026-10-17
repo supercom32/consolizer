@@ -42,6 +42,23 @@ type selectorClickType struct {
 // selectorLastClick is only read and written by the event goroutine, so it needs no synchronization of its own.
 var selectorLastClick selectorClickType
 
+/*
+selectorPressType is a structure which records the selector a held mouse button was first pressed on, and the item that
+press last reported as selected, so that a press is only ever applied to the selector it began on.
+
+Example:
+
+	var press selectorPressType
+*/
+type selectorPressType struct {
+	selectorEntry *types.SelectorEntryType
+	itemIndex     int
+}
+
+// selectorPress is only read and written while the UI state lock is held, so it needs no synchronization of its own.
+// A zero value means the held press, if any, did not begin on a selector item.
+var selectorPress selectorPressType
+
 // selectorDoubleClickInterval holds the double click interval in nanoseconds. It is atomic since the application
 // goroutine may change it while the event goroutine reads it.
 var selectorDoubleClickInterval atomic.Int64
@@ -104,6 +121,40 @@ func (shared *selectorType) getMouseSelectionSource(layerAlias string, selectorA
 	}
 	selectorLastClick = selectorClickType{layerAlias: layerAlias, selectorAlias: selectorAlias, itemIndex: itemIndex, clickTime: clickTime}
 	return constants.SelectionSourceSingleClick
+}
+
+/*
+updatePressOrigin is a method which allows you to record which selector the current mouse press began on. A fresh
+press over a selector item records that selector, a fresh press anywhere else records that no selector owns the press,
+and a release clears the record. Movement with the button still held leaves the record unchanged. In addition, the
+following should be noted:
+
+  - It must run for every mouse event, before anything that can stop the event from reaching the controls, such as a
+    modal layer rejecting it, so that a press which was never delivered to a selector cannot be mistaken for one that
+    was.
+
+  - The selector is recorded by its entry rather than its alias, so a selector deleted during the press, and one
+    added later under the same alias, never inherit the press.
+
+Example:
+
+	Selector.updatePressOrigin(characterEntry, buttonPressed, previousButtonPressed)
+*/
+func (shared *selectorType) updatePressOrigin(characterEntry types.CharacterEntryType, buttonPressed uint, previousButtonPressed uint) {
+	if buttonPressed == 0 {
+		selectorPress = selectorPressType{}
+		return
+	}
+	if previousButtonPressed != 0 {
+		return
+	}
+	selectorPress = selectorPressType{}
+	if characterEntry.AttributeEntry.CellType != constants.CellTypeSelectorItem {
+		return
+	}
+	if selectorEntry, isFound := selectorRegistry.Lookup(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias); isFound {
+		selectorPress = selectorPressType{selectorEntry: selectorEntry, itemIndex: constants.NullItemSelection}
+	}
 }
 
 /*
@@ -1368,6 +1419,12 @@ state. Pressing on an item selects and highlights it, hovering highlights it unl
 click, the mouse wheel scrolls the selector under the cursor, and dragging a scroll bar moves the viewport of the
 selector it belongs to. It returns true if the screen needs to be updated. In addition, the following should be noted:
 
+  - A press only selects items in the selector it began on, as recorded by updatePressOrigin. A held button dragged
+    onto a selector from anywhere else changes neither its selection nor its highlight.
+
+  - While the button is held, a new selection is only reported for the press itself and for each move onto a
+    different item, so further events over the same item never report the same single or double click again.
+
   - The item under the cursor is taken from the last drawn screen, so a click or hover on an item that no longer
     exists, because the list was shortened and not yet redrawn, is ignored rather than stored.
 
@@ -1386,23 +1443,34 @@ func (shared *selectorType) updateMouseEvent() bool {
 	if shared.updateWheelEvent(characterEntry, wheelState) {
 		return true
 	}
-	if selectorEntry, isFound := selectorRegistry.Lookup(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias); characterEntry.AttributeEntry.CellType == constants.CellTypeSelectorItem &&
-		getEventStateId() == constants.EventStateNone && isFound {
+	selectorEntry, isFound := selectorRegistry.Lookup(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias)
+	isOverSelectorItem := isFound && characterEntry.AttributeEntry.CellType == constants.CellTypeSelectorItem &&
+		getEventStateId() == constants.EventStateNone
+	// A press belongs to the control it began on, so dragging it over this selector neither selects nor highlights.
+	isPressFromElsewhere := buttonPressed != 0 && selectorPress.selectorEntry != selectorEntry
+	if isOverSelectorItem && !isPressFromElsewhere {
 		itemIndex := characterEntry.AttributeEntry.CellControlId
 		// The cell may predate a change to the item list that has not been redrawn yet, so its item may be gone.
 		isItemIndexValid := itemIndex >= 0 && itemIndex < shared.getItemCount(selectorEntry)
 		if buttonPressed != 0 && isItemIndexValid {
 			_, _, previousButtonPressed, _ := GetPreviousMouseStatus()
+			isNewSelection := true
 			if previousButtonPressed == 0 {
 				selectorEntry.SelectionSource = shared.getMouseSelectionSource(characterEntry.LayerAlias, selectorEntry.Alias, itemIndex, time.Now())
-			} else if selectorEntry.ItemSelected != itemIndex {
+			} else if selectorPress.itemIndex != itemIndex {
 				// Dragging with the button held onto another item selects it, but only as a single click.
 				selectorLastClick = selectorClickType{}
 				selectorEntry.SelectionSource = constants.SelectionSourceSingleClick
+			} else {
+				// The held press already reported this item, so reporting it again would repeat the same selection.
+				isNewSelection = false
 			}
-			selectorEntry.ItemHighlighted = itemIndex
-			selectorEntry.ItemSelected = itemIndex
-			selectorEntry.IsNewItemSelected = true
+			if isNewSelection {
+				selectorPress.itemIndex = itemIndex
+				selectorEntry.ItemHighlighted = itemIndex
+				selectorEntry.ItemSelected = itemIndex
+				selectorEntry.IsNewItemSelected = true
+			}
 		} else if buttonPressed == 0 && isItemIndexValid && !selectorEntry.HighlightOnClickOnly {
 			selectorEntry.ItemHighlighted = itemIndex
 		}
@@ -1420,7 +1488,7 @@ func (shared *selectorType) updateMouseEvent() bool {
 		// Focus itself is given by the press, through focusControlFromClick. Hovering only tracks the highlight.
 		setPreviouslyHighlightedControl(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias, constants.CellTypeSelectorItem)
 		isScreenUpdateRequired = true
-	} else {
+	} else if !isOverSelectorItem {
 		previouslyHighlightedControl := getPreviouslyHighlightedControl()
 		if selectorEntry, isFound := selectorRegistry.Lookup(previouslyHighlightedControl.layerAlias, previouslyHighlightedControl.controlAlias); previouslyHighlightedControl.controlType == constants.CellTypeSelectorItem &&
 			isFound && characterEntry.AttributeEntry.CellType == constants.CellTypeSelectorItem &&

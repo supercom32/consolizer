@@ -171,6 +171,7 @@ func resetInputState() {
 	readKeyboardBuffer()
 	buttonHistory.clear()
 	selectorLastClick = selectorClickType{}
+	selectorPress = selectorPressType{}
 	selectorDoubleClickInterval.Store(int64(constants.DefaultDoubleClickInterval * time.Millisecond))
 }
 

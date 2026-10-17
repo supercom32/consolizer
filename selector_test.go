@@ -510,6 +510,270 @@ func TestSelectorDragToAnotherItemIsSingleClick(test *testing.T) {
 }
 
 /*
+moveMouseTo is a method which allows you to inject a single mouse event at a location, with the given buttons held,
+into the simulation screen and process it through the event queue.
+
+Example:
+
+	moveMouseTo(simScreen, 4, 3, tcell.Button1)
+*/
+func moveMouseTo(simScreen tcell.SimulationScreen, xLocation int, yLocation int, buttons tcell.ButtonMask) {
+	simScreen.InjectMouse(xLocation, yLocation, buttons, tcell.ModNone)
+	UpdateEventQueues()
+}
+
+/*
+assertNoNewSelection is a method which allows you to fail the test if the selector reports a new selection.
+
+Example:
+
+	assertNoNewSelection(test, selector, "after a held move")
+*/
+func assertNoNewSelection(test *testing.T, selector SelectorInstanceType, context string) {
+	test.Helper()
+	if selector.IsNewItemSelected() {
+		_, index := selector.GetSelected()
+		test.Fatalf("%s: expected no new selection, got item %d with source %d", context, index, selector.GetSelectionSource())
+	}
+}
+
+/*
+TestSelectorHeldDoubleClickIsReportedOnce is a test which allows you to verify that holding the button after a double
+click and moving within the same item does not report the double click again, and that the double click still uses up
+the pair so a fresh click afterward is a single click.
+
+Example:
+
+	Expected Inputs:
+		Selector with items [a, b, c, d]. Click item 1, press item 1 again and read the selection, move with the button
+		held to another column of item 1, release there, then click item 1 again.
+
+	Expected Outputs:
+		Item 1 with SingleClick, then item 1 with DoubleClick on the second press, no new selection after the held move
+		or the release, then item 1 with SingleClick for the fresh click.
+*/
+func TestSelectorHeldDoubleClickIsReportedOnce(test *testing.T) {
+	layerAlias, styleEntry := setupInputTest(test)
+	selector := addTestSelector(layerAlias, styleEntry)
+	simScreen := startInputSimulation(test)
+
+	clickAt(simScreen, 4, 3)
+	assertSelection(test, selector, "first click", 1, constants.SelectionSourceSingleClick)
+
+	moveMouseTo(simScreen, 4, 3, tcell.Button1)
+	assertSelection(test, selector, "second press", 1, constants.SelectionSourceDoubleClick)
+
+	moveMouseTo(simScreen, 6, 3, tcell.Button1)
+	assertNoNewSelection(test, selector, "held move within the item")
+
+	moveMouseTo(simScreen, 6, 3, tcell.ButtonNone)
+	assertNoNewSelection(test, selector, "release")
+
+	clickAt(simScreen, 4, 3)
+	assertSelection(test, selector, "fresh click", 1, constants.SelectionSourceSingleClick)
+}
+
+/*
+TestSelectorHeldSingleClickIsReportedOnce is a test which allows you to verify that a single click is reported once
+on the press, and that further moves within the same item while the button is held, and the release, report nothing.
+
+Example:
+
+	Expected Inputs:
+		Selector with items [a, b, c, d]. Press item 2, move with the button held to two other columns of item 2,
+		release, then click item 3.
+
+	Expected Outputs:
+		Item 2 with SingleClick on the press, no new selection after either held move or the release, then item 3 with
+		SingleClick for the fresh click.
+*/
+func TestSelectorHeldSingleClickIsReportedOnce(test *testing.T) {
+	layerAlias, styleEntry := setupInputTest(test)
+	selector := addTestSelector(layerAlias, styleEntry)
+	simScreen := startInputSimulation(test)
+
+	moveMouseTo(simScreen, 4, 4, tcell.Button1)
+	assertSelection(test, selector, "press", 2, constants.SelectionSourceSingleClick)
+
+	moveMouseTo(simScreen, 5, 4, tcell.Button1)
+	assertNoNewSelection(test, selector, "first held move within the item")
+
+	moveMouseTo(simScreen, 7, 4, tcell.Button1)
+	assertNoNewSelection(test, selector, "second held move within the item")
+
+	moveMouseTo(simScreen, 7, 4, tcell.ButtonNone)
+	assertNoNewSelection(test, selector, "release")
+
+	clickAt(simScreen, 4, 5)
+	assertSelection(test, selector, "fresh click", 3, constants.SelectionSourceSingleClick)
+}
+
+/*
+TestSelectorHeldDragReportsEachNewItemOnce is a test which allows you to verify that a held drag inside the selector
+it began on reports each item it moves onto exactly once, as a single click, and that a drag back onto the item first
+pressed is reported again since it is a different item from the one last reported.
+
+Example:
+
+	Expected Inputs:
+		Selector with items [a, b, c, d]. Press item 1, drag with the button held to item 2, move within item 2, drag
+		back to item 1, release, then click item 1.
+
+	Expected Outputs:
+		Item 1 with SingleClick on the press, item 2 with SingleClick after the drag, no new selection after the move
+		within item 2, item 1 with SingleClick after the drag back, no new selection after the release, and item 1 with
+		SingleClick for the fresh click, since a drag never sets up a double click.
+*/
+func TestSelectorHeldDragReportsEachNewItemOnce(test *testing.T) {
+	layerAlias, styleEntry := setupInputTest(test)
+	selector := addTestSelector(layerAlias, styleEntry)
+	simScreen := startInputSimulation(test)
+
+	moveMouseTo(simScreen, 4, 3, tcell.Button1)
+	assertSelection(test, selector, "press", 1, constants.SelectionSourceSingleClick)
+
+	moveMouseTo(simScreen, 4, 4, tcell.Button1)
+	assertSelection(test, selector, "drag to item 2", 2, constants.SelectionSourceSingleClick)
+
+	moveMouseTo(simScreen, 6, 4, tcell.Button1)
+	assertNoNewSelection(test, selector, "held move within item 2")
+
+	moveMouseTo(simScreen, 4, 3, tcell.Button1)
+	assertSelection(test, selector, "drag back to item 1", 1, constants.SelectionSourceSingleClick)
+
+	moveMouseTo(simScreen, 4, 3, tcell.ButtonNone)
+	assertNoNewSelection(test, selector, "release")
+
+	clickAt(simScreen, 4, 3)
+	assertSelection(test, selector, "fresh click", 1, constants.SelectionSourceSingleClick)
+}
+
+/*
+TestSelectorPressOutsideDoesNotSelect is a test which allows you to verify that a press which began outside the
+selector, on an empty cell or on a button, never selects or highlights a selector item when it is dragged onto the
+selector with the button held, and that a fresh click after the release still selects normally.
+
+Example:
+
+	Expected Inputs:
+		Selector with items [a, b, c, d] highlighting item 0, and a button at (20, 2). For each case, a press on the
+		empty cell (30, 5) or on the button at (22, 3), held moves onto item 1 and then item 2, a release over item 2,
+		then a click on item 2.
+
+	Expected Outputs:
+		After the held moves, no new selection, item 0 still highlighted and item 0 still selected. After the release,
+		no new selection and item 0 still selected, since the button is up and only hover highlighting applies. Item 2
+		with SingleClick for the fresh click.
+*/
+func TestSelectorPressOutsideDoesNotSelect(test *testing.T) {
+	testCases := []struct {
+		name      string
+		xLocation int
+		yLocation int
+	}{
+		{name: "empty cell", xLocation: 30, yLocation: 5},
+		{name: "button", xLocation: 22, yLocation: 3},
+	}
+	for _, testCase := range testCases {
+		test.Run(testCase.name, func(test *testing.T) {
+			layerAlias, styleEntry := setupInputTest(test)
+			selector := addTestSelector(layerAlias, styleEntry)
+			Button.Add(layerAlias, "button", "OK", styleEntry, 20, 2, 8, 3, true)
+			simScreen := startInputSimulation(test)
+			selectorEntry := selectorRegistry.Get(layerAlias, "selector")
+			highlightedBefore := selectorEntry.ItemHighlighted
+			selectedBefore := selectorEntry.ItemSelected
+
+			moveMouseTo(simScreen, testCase.xLocation, testCase.yLocation, tcell.Button1)
+			moveMouseTo(simScreen, 4, 3, tcell.Button1)
+			assertNoNewSelection(test, selector, "held move onto item 1")
+			moveMouseTo(simScreen, 4, 4, tcell.Button1)
+			assertNoNewSelection(test, selector, "held move onto item 2")
+			if selectorEntry.ItemHighlighted != highlightedBefore || selectorEntry.ItemSelected != selectedBefore {
+				test.Fatalf("expected highlighted %d and selected %d to be unchanged, got highlighted %d and selected %d",
+					highlightedBefore, selectedBefore, selectorEntry.ItemHighlighted, selectorEntry.ItemSelected)
+			}
+			moveMouseTo(simScreen, 4, 4, tcell.ButtonNone)
+			assertNoNewSelection(test, selector, "release over item 2")
+			if selectorEntry.ItemSelected != selectedBefore {
+				test.Fatalf("expected selected %d to be unchanged by the release, got %d", selectedBefore, selectorEntry.ItemSelected)
+			}
+
+			clickAt(simScreen, 4, 4)
+			assertSelection(test, selector, "fresh click", 2, constants.SelectionSourceSingleClick)
+		})
+	}
+}
+
+/*
+TestSelectorAddedUnderHeldPressDoesNotSelect is a test which allows you to verify that a press held while a selector is
+added under the cursor does not select an item when the mouse moves over it, and that a fresh click afterward does.
+
+Example:
+
+	Expected Inputs:
+		A press held over the empty cell (4, 3). Selector with items [a, b, c, d] then added and drawn so item 1 lies
+		under the cursor, followed by held moves to (5, 3) and onto item 2, a release, then a click on item 1.
+
+	Expected Outputs:
+		No new selection after the held moves or the release. Item 1 with SingleClick for the fresh click.
+*/
+func TestSelectorAddedUnderHeldPressDoesNotSelect(test *testing.T) {
+	layerAlias, styleEntry := setupInputTest(test)
+	simScreen := startInputSimulation(test)
+
+	moveMouseTo(simScreen, 4, 3, tcell.Button1)
+	selector := addTestSelector(layerAlias, styleEntry)
+	UpdateDisplay(false)
+
+	moveMouseTo(simScreen, 5, 3, tcell.Button1)
+	assertNoNewSelection(test, selector, "held move over item 1")
+	moveMouseTo(simScreen, 4, 4, tcell.Button1)
+	assertNoNewSelection(test, selector, "held move onto item 2")
+	moveMouseTo(simScreen, 4, 4, tcell.ButtonNone)
+	assertNoNewSelection(test, selector, "release")
+
+	clickAt(simScreen, 4, 3)
+	assertSelection(test, selector, "fresh click", 1, constants.SelectionSourceSingleClick)
+}
+
+/*
+TestSelectorReplacedDuringHeldPressDoesNotSelect is a test which allows you to verify that a press which began on a
+selector does not carry over to a new selector added under the same alias after the first was deleted, so a held drag
+over the new selector selects nothing, and that a fresh click afterward does.
+
+Example:
+
+	Expected Inputs:
+		Selector "selector" with items [a, b, c, d]. Press item 1, delete the selector, add a new one with the same
+		alias and items and draw it, move with the button held onto item 2, release, then click item 2.
+
+	Expected Outputs:
+		Item 1 with SingleClick on the press. No new selection on the new selector after the held move or the release.
+		Item 2 with SingleClick for the fresh click.
+*/
+func TestSelectorReplacedDuringHeldPressDoesNotSelect(test *testing.T) {
+	layerAlias, styleEntry := setupInputTest(test)
+	originalSelector := addTestSelector(layerAlias, styleEntry)
+	simScreen := startInputSimulation(test)
+
+	moveMouseTo(simScreen, 4, 3, tcell.Button1)
+	assertSelection(test, originalSelector, "press", 1, constants.SelectionSourceSingleClick)
+
+	originalSelector.Delete()
+	replacementSelector := addTestSelector(layerAlias, styleEntry)
+	UpdateDisplay(false)
+
+	moveMouseTo(simScreen, 4, 4, tcell.Button1)
+	assertNoNewSelection(test, replacementSelector, "held move onto item 2")
+	moveMouseTo(simScreen, 4, 4, tcell.ButtonNone)
+	assertNoNewSelection(test, replacementSelector, "release")
+
+	clickAt(simScreen, 4, 4)
+	assertSelection(test, replacementSelector, "fresh click", 2, constants.SelectionSourceSingleClick)
+}
+
+/*
 TestSelectorDoubleClickInterval is a test which allows you to verify that two clicks on the same item only count as a
 double click when the second lands within the configured interval, that the interval can be changed, and that an
 interval which is not greater than zero is rejected without changing the current one.
