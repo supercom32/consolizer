@@ -88,6 +88,11 @@ Example:
 */
 var buttonHistory buttonHistoryType
 
+// buttonPressOrigin is the button the held mouse press began on, or nil when the press began anywhere else or no
+// button is held. It is only read and written while the UI state lock is held, so it needs no synchronization of its
+// own.
+var buttonPressOrigin *types.ButtonEntryType
+
 /*
 ButtonInstanceType is a structure which represents an instance of a button control.
 
@@ -470,50 +475,56 @@ func (shared *buttonType) clearAllPressedButtons() bool {
 }
 
 /*
-isAnyButtonPressed is a method which reports whether any button, on any layer, currently has its pressed state set.
-In addition, the following should be noted:
+updatePressOrigin is a method which allows you to record which button the current mouse press began on. A fresh press
+over a button records that button, a fresh press anywhere else records that no button owns the press, and a release
+clears the record. Movement with the button still held leaves the record unchanged. In addition, the following should
+be noted:
 
-  - This is used to stop a second button from being armed while the mouse is still held down from an earlier
-    press, since that would otherwise let a release over the second button be mistaken for a fresh click on it.
+  - It must run for every mouse event, before anything that can stop the event from reaching the controls, such as a
+    modal layer rejecting it, so that a press which was never delivered to a button cannot be mistaken for one that
+    was.
+
+  - The button is recorded by its entry rather than its alias, so a button deleted during the press, and one added
+    later under the same alias, never inherit the press.
 
 Example:
-    isPressed := Button.isAnyButtonPressed()
-*/
-func (shared *buttonType) isAnyButtonPressed() bool {
-	isPressed := false
-	buttonRegistry.MemoryManager.Range(func(key, value interface{}) bool {
-		currentLayer := key.(string)
-		buttons := buttonRegistry.GetAllEntries(currentLayer)
 
-		for _, buttonEntry := range buttons {
-			if !buttonRegistry.IsExists(currentLayer, buttonEntry.Alias) {
-				continue
-			}
-			if buttonEntry.IsPressed {
-				isPressed = true
-				return false // found one, stop iterating
-			}
-		}
-		return true // continue iteration
-	})
-	return isPressed
+	Button.updatePressOrigin(characterEntry, buttonPressed, previousButtonPressed)
+*/
+func (shared *buttonType) updatePressOrigin(characterEntry types.CharacterEntryType, buttonPressed uint, previousButtonPressed uint) {
+	if buttonPressed == 0 {
+		buttonPressOrigin = nil
+		return
+	}
+	if previousButtonPressed != 0 {
+		return
+	}
+	buttonPressOrigin = nil
+	if characterEntry.AttributeEntry.CellType != constants.CellTypeButton {
+		return
+	}
+	if buttonEntry, isFound := buttonRegistry.Lookup(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias); isFound {
+		buttonPressOrigin = buttonEntry
+	}
 }
 
 /*
-updateStateMouse is a method which updates button states that are triggered by mouse events. In addition, the
-following should be noted:
+updateStateMouse is a method which allows you to update button states according to the current mouse event. It returns
+true if the screen needs to be updated. In addition, the following should be noted:
 
-  - The visual pressed state (IsPressed, the sunken frame) is set the instant a mouse-down lands on an enabled
-    button, so feedback stays immediate. The click itself, recorded into buttonHistory for GetPressed/IsPressed to
-    report, only fires on the matching mouse-up: a release over the same button that was pressed. A release over a
-    different button, or off any button entirely, cancels the press without recording a click.
+  - Only the button a press began on, as recorded by updatePressOrigin, can be armed by it. A press that began
+    elsewhere, or that was already held when the button was added, never arms a button it is dragged onto.
 
-  - Only one button may be armed (IsPressed) at a time. Without this, dragging from a pressed button straight onto
-    a second one, without ever crossing a non-button cell in between, would arm the second button too, and its
-    next release would be mistaken for a fresh click on it rather than a cancel of the first.
+  - The visual pressed state (IsPressed, the sunken frame) is set the instant the press lands on an enabled button,
+    so feedback stays immediate. Dragging off the button, onto any other cell or another button, disarms it, and
+    dragging back onto it while still held re-arms it.
+
+  - The click itself, recorded into buttonHistory for GetPressed and IsPressed to report, only fires on a release
+    over the armed button. Any release clears every armed button, so none can get stuck pressed.
 
 Example:
-    isUpdateNeeded := Button.updateStateMouse()
+
+	isUpdateNeeded := Button.updateStateMouse()
 */
 func (shared *buttonType) updateStateMouse() bool {
 	// If we're currently in a scrollbar drag operation, don't process button clicks
@@ -525,33 +536,27 @@ func (shared *buttonType) updateStateMouse() bool {
 	characterEntry := getCellInformationUnderMouseCursor(mouseXLocation, mouseYLocation)
 	layerAlias := characterEntry.LayerAlias
 	buttonAlias := characterEntry.AttributeEntry.CellControlAlias
-
-	// If not a button, reset all buttons if needed.
-	if characterEntry.AttributeEntry.CellType != constants.CellTypeButton {
-		return shared.clearAllPressedButtons()
+	var buttonEntry *types.ButtonEntryType
+	isFound := false
+	if characterEntry.AttributeEntry.CellType == constants.CellTypeButton {
+		buttonEntry, isFound = buttonRegistry.Lookup(layerAlias, buttonAlias)
 	}
 
-	isUpdateRequired := false
-	buttonEntry, isFound := buttonRegistry.Lookup(layerAlias, buttonAlias)
-	if buttonAlias != "" && buttonPressed == 0 && isFound {
-		// A release only counts as a click on this button if this is the button that was pressed. Either way,
-		// every pressed button must be cleared, since the press that started it may have been on a different one.
-		if buttonEntry.IsPressed {
+	if buttonPressed == 0 {
+		if isFound && buttonEntry.IsPressed {
 			buttonHistory.set(layerAlias, buttonAlias)
 		}
-		if shared.clearAllPressedButtons() {
-			isUpdateRequired = true
-		}
-	} else if buttonAlias != "" && buttonPressed != 0 && isFound {
-		// If button was found and mouse is being pressed, update button only if required, and only if no other
-		// button is already armed from an earlier press in this same mouse-down.
-		if buttonEntry.IsEnabled && buttonEntry.IsPressed == false && !shared.isAnyButtonPressed() {
-			buttonEntry.Mutex.Lock()
-			buttonEntry.IsPressed = true
-			buttonEntry.Mutex.Unlock()
-			setFocusedControl(layerAlias, buttonAlias, constants.CellTypeButton)
-			isUpdateRequired = true
-		}
+		return shared.clearAllPressedButtons()
 	}
-	return isUpdateRequired
+	if !isFound || buttonEntry != buttonPressOrigin {
+		return shared.clearAllPressedButtons()
+	}
+	if !buttonEntry.IsEnabled || buttonEntry.IsPressed {
+		return false
+	}
+	buttonEntry.Mutex.Lock()
+	buttonEntry.IsPressed = true
+	buttonEntry.Mutex.Unlock()
+	setFocusedControl(layerAlias, buttonAlias, constants.CellTypeButton)
+	return true
 }

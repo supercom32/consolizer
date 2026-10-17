@@ -143,6 +143,11 @@ func (shared *dropdownType) closeTrayWithoutCommitting(layerAlias string, dropdo
 var Dropdown dropdownType
 var dropdownRegistry = memory.NewControlMemoryManager[types.DropdownEntryType]()
 
+// dropdownPressOrigin is the dropdown the held mouse press began on, or nil when the press began anywhere else or no
+// button is held. It is only read and written while the UI state lock is held, so it needs no synchronization of its
+// own.
+var dropdownPressOrigin *types.DropdownEntryType
+
 // ============================================================================
 // REGULAR ENTRY
 // ============================================================================
@@ -613,10 +618,48 @@ func (shared *dropdownType) draw(layerEntry *types.LayerEntryType, dropdownAlias
 }
 
 /*
+updatePressOrigin is a method which allows you to record which dropdown the current mouse press began on. A fresh press
+over a dropdown records that dropdown, a fresh press anywhere else records that no dropdown owns the press, and a
+release clears the record. Movement with the button still held leaves the record unchanged. In addition, the following
+should be noted:
+
+  - It must run for every mouse event, before anything that can stop the event from reaching the controls, such as a
+    modal layer rejecting it, so that a press which was never delivered to a dropdown cannot be mistaken for one that
+    was.
+
+  - The dropdown is recorded by its entry rather than its alias, so a dropdown deleted during the press, and one added
+    later under the same alias, never inherit the press.
+
+Example:
+
+	Dropdown.updatePressOrigin(characterEntry, buttonPressed, previousButtonPressed)
+*/
+func (shared *dropdownType) updatePressOrigin(characterEntry types.CharacterEntryType, buttonPressed uint, previousButtonPressed uint) {
+	if buttonPressed == 0 {
+		dropdownPressOrigin = nil
+		return
+	}
+	if previousButtonPressed != 0 {
+		return
+	}
+	dropdownPressOrigin = nil
+	if characterEntry.AttributeEntry.CellType != constants.CellTypeDropdown {
+		return
+	}
+	if dropdownEntry, isFound := dropdownRegistry.Lookup(characterEntry.LayerAlias, characterEntry.AttributeEntry.CellControlAlias); isFound {
+		dropdownPressOrigin = dropdownEntry
+	}
+}
+
+/*
 updateStateMouse is a method which allows you to update the state of all dropdowns according to the current mouse
 event state. Clicking a dropdown opens its tray, clicking elsewhere closes every open tray, and dragging a tray's
 scroll bar moves the tray's viewport. It returns true if the screen needs to be updated. In addition, the following
 should be noted:
+
+  - Only a fresh press that began on a dropdown, as recorded by updatePressOrigin, opens its tray. A held button
+    dragged onto a dropdown, whether the press began elsewhere or was already held when the dropdown was added, never
+    opens it.
 
   - A viewport position copied from a scroll bar is clamped into the range the tray can scroll to.
 
@@ -627,6 +670,8 @@ Example:
 func (shared *dropdownType) updateStateMouse() bool {
 	isUpdateRequired := false
 	mouseXLocation, mouseYLocation, buttonPressed, _ := GetMouseStatus()
+	_, _, previousButtonPress, _ := GetPreviousMouseStatus()
+	isFreshPress := buttonPressed != 0 && previousButtonPress == 0
 	characterEntry := getCellInformationUnderMouseCursor(mouseXLocation, mouseYLocation)
 	layerAlias := characterEntry.LayerAlias
 	cellControlAlias := characterEntry.AttributeEntry.CellControlAlias
@@ -656,9 +701,9 @@ func (shared *dropdownType) updateStateMouse() bool {
 		}
 	}
 
-	// If our Dropdown alias is not empty, then open our Dropdown.
-	if dropdownEntry, isFound := dropdownRegistry.Lookup(layerAlias, cellControlAlias); buttonPressed != 0 && cellControlAlias != "" &&
-		characterEntry.AttributeEntry.CellType == constants.CellTypeDropdown && isFound {
+	// A fresh press that began on this dropdown opens its tray.
+	if dropdownEntry, isFound := dropdownRegistry.Lookup(layerAlias, cellControlAlias); isFreshPress && cellControlAlias != "" &&
+		characterEntry.AttributeEntry.CellType == constants.CellTypeDropdown && isFound && dropdownEntry == dropdownPressOrigin {
 		shared.closeAllOpen()
 		dropdownEntry.IsTrayOpen = true
 		selectorEntry := selectorRegistry.Get(layerAlias, dropdownEntry.SelectorAlias)
@@ -672,8 +717,7 @@ func (shared *dropdownType) updateStateMouse() bool {
 	}
 
 	// Only close dropdowns if clicking outside both the dropdown and its scrollbar
-	_, _, previousButtonPress, _ := GetPreviousMouseStatus()
-	if buttonPressed != 0 && previousButtonPress == 0 {
+	if isFreshPress {
 		// Check if we're clicking on a scrollbar that belongs to an open dropdown
 		isScrollbarOfOpenDropdown := false
 		if characterEntry.AttributeEntry.CellType == constants.CellTypeScrollbar {

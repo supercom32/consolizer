@@ -9,12 +9,12 @@ import (
 )
 
 /*
-resetMouseEventState is a method which resets the package-level mouse throttle timer and interaction state back to
-their zero values. In addition, the following should be noted:
+resetMouseEventState is a method which resets the package-level mouse throttle timer, interaction state, recorded
+mouse status and press origins back to their zero values. In addition, the following should be noted:
 
-  - eventStateMemory and lastMouseMoveTime are not reset by CommonTestSetup, so without this, state left behind by
-    an earlier test in the same process could make a later test's first event throttled or its scrollbar-drag guard
-    tripped unexpectedly.
+  - eventStateMemory, lastMouseMoveTime and the press origins are not reset by CommonTestSetup, so without this,
+    state left behind by an earlier test in the same process could make a later test's first event throttled, its
+    scrollbar-drag guard tripped unexpectedly, or its first press look like held movement.
 
 Example:
     resetMouseEventState()
@@ -22,6 +22,25 @@ Example:
 func resetMouseEventState() {
 	setEventStateId(constants.EventStateNone)
 	lastMouseMoveTime = time.Time{}
+	ClearMouseMemory()
+	selectorPress = selectorPressType{}
+	buttonPressOrigin = nil
+	dropdownPressOrigin = nil
+}
+
+/*
+setMouseStatusAndPressOrigins is a method which allows you to record a mouse status and update every press origin
+from it, exactly as UpdateEventQueues does for a real mouse event, so a test can drive a control's mouse handler
+directly without going through the event queue.
+
+Example:
+
+	setMouseStatusAndPressOrigins(3, 3, 1)
+*/
+func setMouseStatusAndPressOrigins(xLocation int, yLocation int, buttonPressed uint) {
+	_, _, previousButtonPressed, _ := GetMouseStatus()
+	SetMouseStatus(xLocation, yLocation, buttonPressed, "")
+	updatePressOrigins(getCellInformationUnderMouseCursor(xLocation, yLocation), buttonPressed, previousButtonPressed)
 }
 
 /*
@@ -168,7 +187,7 @@ func TestButtonHeldMoveWithinSameButtonStillClicksOnRelease(test *testing.T) {
 	buttonInstance := Button.Add(layerAlias, "ok", "OK", styleEntry, 2, 2, 10, 3, true)
 	UpdateDisplay(false)
 
-	SetMouseStatus(3, 3, 1, "")
+	setMouseStatusAndPressOrigins(3, 3, 1)
 	bringLayerToFrontIfRequired()
 	Button.updateStates(true)
 	if !buttonInstance.IsStatePressed() {
@@ -176,7 +195,7 @@ func TestButtonHeldMoveWithinSameButtonStillClicksOnRelease(test *testing.T) {
 	}
 
 	// Held move to a different cell of the same button, before release.
-	SetMouseStatus(7, 3, 1, "")
+	setMouseStatusAndPressOrigins(7, 3, 1)
 	bringLayerToFrontIfRequired()
 	Button.updateStates(true)
 	if !buttonInstance.IsStatePressed() {
@@ -186,7 +205,7 @@ func TestButtonHeldMoveWithinSameButtonStillClicksOnRelease(test *testing.T) {
 		test.Fatalf("expected no click to be reported before release, got layer %q button %q", layerAlias, buttonAlias)
 	}
 
-	SetMouseStatus(7, 3, 0, "")
+	setMouseStatusAndPressOrigins(7, 3, 0)
 	bringLayerToFrontIfRequired()
 	Button.updateStates(true)
 
@@ -220,7 +239,7 @@ func TestButtonDragOffAndBackOnStillClicksOnRelease(test *testing.T) {
 	buttonInstance := Button.Add(layerAlias, "ok", "OK", styleEntry, 2, 2, 10, 3, true)
 	UpdateDisplay(false)
 
-	SetMouseStatus(3, 3, 1, "")
+	setMouseStatusAndPressOrigins(3, 3, 1)
 	bringLayerToFrontIfRequired()
 	Button.updateStates(true)
 	if !buttonInstance.IsStatePressed() {
@@ -228,7 +247,7 @@ func TestButtonDragOffAndBackOnStillClicksOnRelease(test *testing.T) {
 	}
 
 	// Held move onto a plain, non-button cell cancels the press.
-	SetMouseStatus(25, 15, 1, "")
+	setMouseStatusAndPressOrigins(25, 15, 1)
 	bringLayerToFrontIfRequired()
 	Button.updateStates(true)
 	if buttonInstance.IsStatePressed() {
@@ -236,7 +255,7 @@ func TestButtonDragOffAndBackOnStillClicksOnRelease(test *testing.T) {
 	}
 
 	// Releasing off the button must not report a click.
-	SetMouseStatus(25, 15, 0, "")
+	setMouseStatusAndPressOrigins(25, 15, 0)
 	bringLayerToFrontIfRequired()
 	Button.updateStates(true)
 	if layerAlias, buttonAlias := buttonInstance.GetPressed(); layerAlias != "" || buttonAlias != "" {
@@ -244,21 +263,21 @@ func TestButtonDragOffAndBackOnStillClicksOnRelease(test *testing.T) {
 	}
 
 	// A fresh press, dragged back onto the same button before release, must still click.
-	SetMouseStatus(3, 3, 1, "")
+	setMouseStatusAndPressOrigins(3, 3, 1)
 	bringLayerToFrontIfRequired()
 	Button.updateStates(true)
 	if !buttonInstance.IsStatePressed() {
 		test.Fatalf("expected button to be pressed again after a fresh mouse down")
 	}
 
-	SetMouseStatus(7, 3, 1, "")
+	setMouseStatusAndPressOrigins(7, 3, 1)
 	bringLayerToFrontIfRequired()
 	Button.updateStates(true)
 	if !buttonInstance.IsStatePressed() {
 		test.Fatalf("expected button to remain pressed after moving back onto it")
 	}
 
-	SetMouseStatus(7, 3, 0, "")
+	setMouseStatusAndPressOrigins(7, 3, 0)
 	bringLayerToFrontIfRequired()
 	Button.updateStates(true)
 
@@ -293,7 +312,7 @@ func TestButtonReleaseOverDifferentButtonClearsOriginalPress(test *testing.T) {
 	buttonB := Button.Add(layerAlias, "b", "B", styleEntry, 15, 2, 8, 3, true)
 	UpdateDisplay(false)
 
-	SetMouseStatus(3, 3, 1, "")
+	setMouseStatusAndPressOrigins(3, 3, 1)
 	bringLayerToFrontIfRequired()
 	Button.updateStates(true)
 	if !buttonA.IsStatePressed() {
@@ -301,7 +320,7 @@ func TestButtonReleaseOverDifferentButtonClearsOriginalPress(test *testing.T) {
 	}
 
 	// Release over button B instead of A, as would happen if a dialog closed and reopened between down and up.
-	SetMouseStatus(16, 3, 0, "")
+	setMouseStatusAndPressOrigins(16, 3, 0)
 	bringLayerToFrontIfRequired()
 	Button.updateStates(true)
 
@@ -316,10 +335,10 @@ func TestButtonReleaseOverDifferentButtonClearsOriginalPress(test *testing.T) {
 	}
 
 	// Button A must respond to its next, matched click.
-	SetMouseStatus(3, 3, 1, "")
+	setMouseStatusAndPressOrigins(3, 3, 1)
 	bringLayerToFrontIfRequired()
 	Button.updateStates(true)
-	SetMouseStatus(3, 3, 0, "")
+	setMouseStatusAndPressOrigins(3, 3, 0)
 	bringLayerToFrontIfRequired()
 	Button.updateStates(true)
 
@@ -439,9 +458,9 @@ func TestButtonHistoryConcurrentAccess(test *testing.T) {
 		for time.Now().Before(deadline) {
 			isPressed = !isPressed
 			if isPressed {
-				SetMouseStatus(3, 3, 1, "")
+				setMouseStatusAndPressOrigins(3, 3, 1)
 			} else {
-				SetMouseStatus(3, 3, 0, "")
+				setMouseStatusAndPressOrigins(3, 3, 0)
 			}
 			bringLayerToFrontIfRequired()
 			Button.updateStates(true)

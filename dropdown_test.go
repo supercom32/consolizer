@@ -999,3 +999,161 @@ func TestDropdownItemsOpenAndClose(test *testing.T) {
 		test.Fatalf("expected opening the other dropdown to close the first, got %t and %t", dropdown.IsOpen(), otherDropdown.IsOpen())
 	}
 }
+
+/*
+assertTrayOpen is a method which allows you to fail the test unless a dropdown's tray is open or closed as expected.
+
+Example:
+
+	assertTrayOpen(test, "after the click", dropdownEntry, true)
+*/
+func assertTrayOpen(test *testing.T, context string, dropdownEntry *types.DropdownEntryType, isExpectedOpen bool) {
+	test.Helper()
+	if dropdownEntry.IsTrayOpen != isExpectedOpen {
+		test.Fatalf("%s: expected the tray open to be %t, got %t", context, isExpectedOpen, dropdownEntry.IsTrayOpen)
+	}
+}
+
+/*
+TestDropdownClickOpensTrayAndSelectsItem is a test which allows you to verify that a click on a dropdown opens its tray
+on the press, that a held move within the dropdown and the release leave it open, and that a click on an item in the
+open tray still selects that item.
+
+Example:
+
+	Expected Inputs:
+		Dropdown at (2, 2) with items [Zero, One, Two, Three], a three row tray at (3, 3), and item 0 selected. A press
+		at (4, 2), a held move to (6, 2), a release there, then a click on the tray's second row at (5, 4).
+
+	Expected Outputs:
+		The tray open after the press, the held move and the release. GetSelected returns ("one", 1) after the click
+		on the tray.
+*/
+func TestDropdownClickOpensTrayAndSelectsItem(test *testing.T) {
+	layerAlias, styleEntry := setupInputTest(test)
+	dropdownEntry := addTestDropdown(layerAlias, styleEntry)
+	dropdown := DropdownInstanceType{BaseControlInstanceType{layerAlias: layerAlias, controlAlias: "dropdown", controlType: constants.TYPE_DROPDOWN}}
+	simScreen := startInputSimulation(test)
+
+	moveMouseTo(simScreen, 4, 2, tcell.Button1)
+	assertTrayOpen(test, "press", dropdownEntry, true)
+	moveMouseTo(simScreen, 6, 2, tcell.Button1)
+	assertTrayOpen(test, "held move", dropdownEntry, true)
+	moveMouseTo(simScreen, 6, 2, tcell.ButtonNone)
+	assertTrayOpen(test, "release", dropdownEntry, true)
+
+	clickAt(simScreen, 5, 4)
+	UpdateDisplay(false)
+	if alias, index := dropdown.GetSelected(); alias != "one" || index != 1 {
+		test.Fatalf("expected (%q, %d), got (%q, %d)", "one", 1, alias, index)
+	}
+}
+
+/*
+TestDropdownPressFromElsewhereDoesNotOpenTray is a test which allows you to verify that a press which began anywhere
+other than the dropdown never opens its tray when it is dragged onto the dropdown and released there, and that a fresh
+click on the dropdown afterward still opens it.
+
+Example:
+
+	Expected Inputs:
+		Dropdown at (2, 2) with items [Zero, One, Two, Three] and a button at (20, 2) with size 8x3. For each case, a
+		press on the empty cell (30, 8) or on the button at (22, 3), held moves onto the dropdown at (4, 2) and (6, 2),
+		a release at (6, 2), then a click at (4, 2).
+
+	Expected Outputs:
+		The tray closed after the held moves and the release, and open after the fresh click.
+*/
+func TestDropdownPressFromElsewhereDoesNotOpenTray(test *testing.T) {
+	testCases := []struct {
+		name      string
+		xLocation int
+		yLocation int
+	}{
+		{name: "empty cell", xLocation: 30, yLocation: 8},
+		{name: "button", xLocation: 22, yLocation: 3},
+	}
+	for _, testCase := range testCases {
+		test.Run(testCase.name, func(test *testing.T) {
+			layerAlias, styleEntry := setupInputTest(test)
+			dropdownEntry := addTestDropdown(layerAlias, styleEntry)
+			Button.Add(layerAlias, "button", "OK", styleEntry, 20, 2, 8, 3, true)
+			simScreen := startInputSimulation(test)
+
+			moveMouseTo(simScreen, testCase.xLocation, testCase.yLocation, tcell.Button1)
+			moveMouseTo(simScreen, 4, 2, tcell.Button1)
+			assertTrayOpen(test, "held move onto the dropdown", dropdownEntry, false)
+			moveMouseTo(simScreen, 6, 2, tcell.Button1)
+			assertTrayOpen(test, "held move within the dropdown", dropdownEntry, false)
+			moveMouseTo(simScreen, 6, 2, tcell.ButtonNone)
+			assertTrayOpen(test, "release", dropdownEntry, false)
+
+			clickAt(simScreen, 4, 2)
+			assertTrayOpen(test, "fresh click", dropdownEntry, true)
+		})
+	}
+}
+
+/*
+TestDropdownAddedUnderHeldPressDoesNotOpenTray is a test which allows you to verify that a press already held when a
+dropdown is added under the cursor never opens its tray, and that a fresh click on it afterward does.
+
+Example:
+
+	Expected Inputs:
+		A press held over the empty cell (4, 2). Dropdown with items [Zero, One, Two, Three] then added at (2, 2) and
+		drawn, followed by a held move to (6, 2), a release there, then a click at (4, 2).
+
+	Expected Outputs:
+		The tray closed after the held move and the release, and open after the fresh click.
+*/
+func TestDropdownAddedUnderHeldPressDoesNotOpenTray(test *testing.T) {
+	layerAlias, styleEntry := setupInputTest(test)
+	simScreen := startInputSimulation(test)
+
+	moveMouseTo(simScreen, 4, 2, tcell.Button1)
+	dropdownEntry := addTestDropdown(layerAlias, styleEntry)
+	UpdateDisplay(false)
+
+	moveMouseTo(simScreen, 6, 2, tcell.Button1)
+	assertTrayOpen(test, "held move", dropdownEntry, false)
+	moveMouseTo(simScreen, 6, 2, tcell.ButtonNone)
+	assertTrayOpen(test, "release", dropdownEntry, false)
+
+	clickAt(simScreen, 4, 2)
+	assertTrayOpen(test, "fresh click", dropdownEntry, true)
+}
+
+/*
+TestDropdownPressRejectedByModalLayerDoesNotOpenTray is a test which allows you to verify that a press on a dropdown
+outside an active modal layer does not open its tray, even when the modal layer stops being modal while the press is
+still held, and that a fresh click afterward does.
+
+Example:
+
+	Expected Inputs:
+		Dropdown at (2, 2) with items [Zero, One, Two, Three] on the main layer, and a modal layer at (30, 12). A press
+		on the dropdown at (4, 2), the modal layer then made non-modal, a held move to (6, 2), a release there, then a
+		click at (4, 2).
+
+	Expected Outputs:
+		The tray closed after the press, the held move and the release, and open after the fresh click.
+*/
+func TestDropdownPressRejectedByModalLayerDoesNotOpenTray(test *testing.T) {
+	layerAlias, styleEntry := setupInputTest(test)
+	dropdownEntry := addTestDropdown(layerAlias, styleEntry)
+	modalLayer := AddLayer(30, 12, 6, 3, 10, nil)
+	modalLayer.SetModal(true)
+	simScreen := startInputSimulation(test)
+
+	moveMouseTo(simScreen, 4, 2, tcell.Button1)
+	assertTrayOpen(test, "press", dropdownEntry, false)
+	modalLayer.SetModal(false)
+	moveMouseTo(simScreen, 6, 2, tcell.Button1)
+	assertTrayOpen(test, "held move", dropdownEntry, false)
+	moveMouseTo(simScreen, 6, 2, tcell.ButtonNone)
+	assertTrayOpen(test, "release", dropdownEntry, false)
+
+	clickAt(simScreen, 4, 2)
+	assertTrayOpen(test, "fresh click", dropdownEntry, true)
+}

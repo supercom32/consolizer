@@ -514,3 +514,288 @@ func TestDisabledOrUnfocusedButtonIgnoresEnter(test *testing.T) {
 	}
 	assertKeyboardBuffer(test, "nothing focused", "enter")
 }
+
+/*
+assertButtonArmed is a method which allows you to fail the test unless a button's visual pressed state, the armed state
+a release over it turns into a click, is the one expected.
+
+Example:
+
+	assertButtonArmed(test, "after the press", buttonInstance, true)
+*/
+func assertButtonArmed(test *testing.T, context string, buttonInstance ButtonInstanceType, isExpectedArmed bool) {
+	test.Helper()
+	if isArmed := buttonInstance.IsStatePressed(); isArmed != isExpectedArmed {
+		test.Fatalf("%s: expected button %q armed to be %t, got %t", context, buttonInstance.GetAlias(), isExpectedArmed, isArmed)
+	}
+}
+
+/*
+TestButtonClickFiresOnReleaseOverPressedButton is a test which allows you to verify that a press and release over the
+same button reports exactly one click, and that the button is armed only while the press is held.
+
+Example:
+
+	Expected Inputs:
+		Button "a" at (12, 2) with size 8x3. A press at (14, 3), then a release at (14, 3).
+
+	Expected Outputs:
+		Armed after the press with no click reported yet. Disarmed after the release, GetPressed reports ("layer",
+		"a") once and then ("", "").
+*/
+func TestButtonClickFiresOnReleaseOverPressedButton(test *testing.T) {
+	layerAlias, styleEntry := setupInputTest(test)
+	buttonA := Button.Add(layerAlias, "a", "A", styleEntry, 12, 2, 8, 3, true)
+	simScreen := startInputSimulation(test)
+
+	moveMouseTo(simScreen, 14, 3, tcell.Button1)
+	assertButtonArmed(test, "press", buttonA, true)
+	assertPressed(test, "press", buttonA, "", "")
+	moveMouseTo(simScreen, 14, 3, tcell.ButtonNone)
+	assertButtonArmed(test, "release", buttonA, false)
+	assertPressed(test, "release", buttonA, layerAlias, "a")
+	assertPressed(test, "second read", buttonA, "", "")
+}
+
+/*
+TestButtonPressDraggedOffAndReleasedDoesNotClick is a test which allows you to verify that dragging a held press off the
+button it began on disarms that button, and that releasing while off it reports no click for any button.
+
+Example:
+
+	Expected Inputs:
+		Button "a" at (12, 2) and button "b" at (20, 2), both 8x3. For each case, a press on "a" at (14, 3), a held
+		move off it onto the empty cell (5, 7) or onto "b" at (22, 3), then a release there.
+
+	Expected Outputs:
+		"a" armed after the press, and neither button armed after the held move or the release. GetPressed reports
+		("", "") for both buttons.
+*/
+func TestButtonPressDraggedOffAndReleasedDoesNotClick(test *testing.T) {
+	testCases := []struct {
+		name      string
+		xLocation int
+		yLocation int
+	}{
+		{name: "empty cell", xLocation: 5, yLocation: 7},
+		{name: "other button", xLocation: 22, yLocation: 3},
+	}
+	for _, testCase := range testCases {
+		test.Run(testCase.name, func(test *testing.T) {
+			layerAlias, styleEntry := setupInputTest(test)
+			buttonA := Button.Add(layerAlias, "a", "A", styleEntry, 12, 2, 8, 3, true)
+			buttonB := Button.Add(layerAlias, "b", "B", styleEntry, 20, 2, 8, 3, true)
+			simScreen := startInputSimulation(test)
+
+			moveMouseTo(simScreen, 14, 3, tcell.Button1)
+			assertButtonArmed(test, "press", buttonA, true)
+			moveMouseTo(simScreen, testCase.xLocation, testCase.yLocation, tcell.Button1)
+			assertButtonArmed(test, "held move off", buttonA, false)
+			assertButtonArmed(test, "held move off", buttonB, false)
+			moveMouseTo(simScreen, testCase.xLocation, testCase.yLocation, tcell.ButtonNone)
+			assertButtonArmed(test, "release", buttonA, false)
+			assertButtonArmed(test, "release", buttonB, false)
+			assertPressed(test, "release", buttonA, "", "")
+			assertPressed(test, "release", buttonB, "", "")
+		})
+	}
+}
+
+/*
+TestButtonPressDraggedOffAndBackClicksOnce is a test which allows you to verify that a held press dragged off the button
+it began on and back onto it re-arms that button, and that the release then reports exactly one click.
+
+Example:
+
+	Expected Inputs:
+		Button "a" at (12, 2) and button "b" at (20, 2), both 8x3. For each case, a press on "a" at (14, 3), a held
+		move off it onto the empty cell (5, 7) or onto "b" at (22, 3), a held move back onto "a" at (16, 3), then a
+		release at (16, 3).
+
+	Expected Outputs:
+		"a" armed after the press, disarmed while off it, and armed again once back on it, with "b" never armed.
+		GetPressed reports ("layer", "a") once after the release and then ("", ""), and ("", "") for "b".
+*/
+func TestButtonPressDraggedOffAndBackClicksOnce(test *testing.T) {
+	testCases := []struct {
+		name      string
+		xLocation int
+		yLocation int
+	}{
+		{name: "empty cell", xLocation: 5, yLocation: 7},
+		{name: "other button", xLocation: 22, yLocation: 3},
+	}
+	for _, testCase := range testCases {
+		test.Run(testCase.name, func(test *testing.T) {
+			layerAlias, styleEntry := setupInputTest(test)
+			buttonA := Button.Add(layerAlias, "a", "A", styleEntry, 12, 2, 8, 3, true)
+			buttonB := Button.Add(layerAlias, "b", "B", styleEntry, 20, 2, 8, 3, true)
+			simScreen := startInputSimulation(test)
+
+			moveMouseTo(simScreen, 14, 3, tcell.Button1)
+			assertButtonArmed(test, "press", buttonA, true)
+			moveMouseTo(simScreen, testCase.xLocation, testCase.yLocation, tcell.Button1)
+			assertButtonArmed(test, "held move off", buttonA, false)
+			assertButtonArmed(test, "held move off", buttonB, false)
+			moveMouseTo(simScreen, 16, 3, tcell.Button1)
+			assertButtonArmed(test, "held move back", buttonA, true)
+			assertButtonArmed(test, "held move back", buttonB, false)
+			assertPressed(test, "held move back", buttonA, "", "")
+			moveMouseTo(simScreen, 16, 3, tcell.ButtonNone)
+			assertButtonArmed(test, "release", buttonA, false)
+			assertPressed(test, "release", buttonA, layerAlias, "a")
+			assertPressed(test, "second read", buttonA, "", "")
+			assertPressed(test, "release", buttonB, "", "")
+		})
+	}
+}
+
+/*
+TestButtonPressFromElsewhereNeverArms is a test which allows you to verify that a press which began anywhere other than
+a button, or on a different button, never arms a button it is dragged onto, that releasing over that button reports no
+click, and that a fresh click on it afterward still does.
+
+Example:
+
+	Expected Inputs:
+		Button "a" at (12, 2) and button "b" at (20, 2), both 8x3. For each case, a press on the empty cell (5, 7) or
+		on "b" at (22, 3), held moves onto "a" at (14, 3) and (16, 3), a release at (16, 3), then a click at (14, 3).
+
+	Expected Outputs:
+		"a" never armed during the held moves or the release, and GetPressed reports ("", "") for both buttons after
+		the release. GetPressed reports ("layer", "a") after the fresh click.
+*/
+func TestButtonPressFromElsewhereNeverArms(test *testing.T) {
+	testCases := []struct {
+		name      string
+		xLocation int
+		yLocation int
+	}{
+		{name: "empty cell", xLocation: 5, yLocation: 7},
+		{name: "other button", xLocation: 22, yLocation: 3},
+	}
+	for _, testCase := range testCases {
+		test.Run(testCase.name, func(test *testing.T) {
+			layerAlias, styleEntry := setupInputTest(test)
+			buttonA := Button.Add(layerAlias, "a", "A", styleEntry, 12, 2, 8, 3, true)
+			buttonB := Button.Add(layerAlias, "b", "B", styleEntry, 20, 2, 8, 3, true)
+			simScreen := startInputSimulation(test)
+
+			moveMouseTo(simScreen, testCase.xLocation, testCase.yLocation, tcell.Button1)
+			moveMouseTo(simScreen, 14, 3, tcell.Button1)
+			assertButtonArmed(test, "held move onto the button", buttonA, false)
+			moveMouseTo(simScreen, 16, 3, tcell.Button1)
+			assertButtonArmed(test, "held move within the button", buttonA, false)
+			moveMouseTo(simScreen, 16, 3, tcell.ButtonNone)
+			assertButtonArmed(test, "release", buttonA, false)
+			assertPressed(test, "release", buttonA, "", "")
+			assertPressed(test, "release", buttonB, "", "")
+
+			clickAt(simScreen, 14, 3)
+			assertPressed(test, "fresh click", buttonA, layerAlias, "a")
+		})
+	}
+}
+
+/*
+TestButtonAddedUnderHeldPressNeverArms is a test which allows you to verify that a press already held when a button is
+added under the cursor never arms that button, and that a fresh click on it afterward reports a click.
+
+Example:
+
+	Expected Inputs:
+		A press held over the empty cell (14, 3). Button "a" then added at (12, 2) with size 8x3 and drawn, followed by
+		a held move to (16, 3), a release there, then a click at (14, 3).
+
+	Expected Outputs:
+		"a" never armed during the held move or the release, and GetPressed reports ("", "") after the release.
+		GetPressed reports ("layer", "a") after the fresh click.
+*/
+func TestButtonAddedUnderHeldPressNeverArms(test *testing.T) {
+	layerAlias, styleEntry := setupInputTest(test)
+	simScreen := startInputSimulation(test)
+
+	moveMouseTo(simScreen, 14, 3, tcell.Button1)
+	buttonA := Button.Add(layerAlias, "a", "A", styleEntry, 12, 2, 8, 3, true)
+	UpdateDisplay(false)
+
+	moveMouseTo(simScreen, 16, 3, tcell.Button1)
+	assertButtonArmed(test, "held move", buttonA, false)
+	moveMouseTo(simScreen, 16, 3, tcell.ButtonNone)
+	assertButtonArmed(test, "release", buttonA, false)
+	assertPressed(test, "release", buttonA, "", "")
+
+	clickAt(simScreen, 14, 3)
+	assertPressed(test, "fresh click", buttonA, layerAlias, "a")
+}
+
+/*
+TestButtonReplacedDuringHeldPressNeverArms is a test which allows you to verify that a press which began on a button
+does not carry over to a new button added under the same alias after the first was deleted, so the new button is never
+armed by it and releasing over it reports no click.
+
+Example:
+
+	Expected Inputs:
+		Button "a" at (12, 2) with size 8x3. A press at (14, 3), then "a" deleted, added again at the same place and
+		drawn, followed by a held move to (16, 3), a release there, then a click at (14, 3).
+
+	Expected Outputs:
+		The original "a" armed after the press. The replacement never armed during the held move or the release, and
+		GetPressed reports ("", "") after the release. GetPressed reports ("layer", "a") after the fresh click.
+*/
+func TestButtonReplacedDuringHeldPressNeverArms(test *testing.T) {
+	layerAlias, styleEntry := setupInputTest(test)
+	originalButton := Button.Add(layerAlias, "a", "A", styleEntry, 12, 2, 8, 3, true)
+	simScreen := startInputSimulation(test)
+
+	moveMouseTo(simScreen, 14, 3, tcell.Button1)
+	assertButtonArmed(test, "press", originalButton, true)
+	Button.Delete(layerAlias, "a")
+	replacementButton := Button.Add(layerAlias, "a", "A", styleEntry, 12, 2, 8, 3, true)
+	UpdateDisplay(false)
+
+	moveMouseTo(simScreen, 16, 3, tcell.Button1)
+	assertButtonArmed(test, "held move", replacementButton, false)
+	moveMouseTo(simScreen, 16, 3, tcell.ButtonNone)
+	assertButtonArmed(test, "release", replacementButton, false)
+	assertPressed(test, "release", replacementButton, "", "")
+
+	clickAt(simScreen, 14, 3)
+	assertPressed(test, "fresh click", replacementButton, layerAlias, "a")
+}
+
+/*
+TestButtonPressRejectedByModalLayerNeverArms is a test which allows you to verify that a press on a button outside an
+active modal layer is not recorded as beginning on that button, so the button is never armed by it, even when the
+modal layer stops being modal while the press is still held.
+
+Example:
+
+	Expected Inputs:
+		Button "a" at (12, 2) with size 8x3 on the main layer, and a modal layer at (30, 12). A press on "a" at
+		(14, 3), the modal layer then made non-modal, a held move to (16, 3), a release there, then a click at (14, 3).
+
+	Expected Outputs:
+		"a" never armed after the press, the held move or the release, and GetPressed reports ("", "") after the
+		release. GetPressed reports ("layer", "a") after the fresh click.
+*/
+func TestButtonPressRejectedByModalLayerNeverArms(test *testing.T) {
+	layerAlias, styleEntry := setupInputTest(test)
+	buttonA := Button.Add(layerAlias, "a", "A", styleEntry, 12, 2, 8, 3, true)
+	modalLayer := AddLayer(30, 12, 6, 3, 10, nil)
+	modalLayer.SetModal(true)
+	simScreen := startInputSimulation(test)
+
+	moveMouseTo(simScreen, 14, 3, tcell.Button1)
+	assertButtonArmed(test, "press", buttonA, false)
+	modalLayer.SetModal(false)
+	moveMouseTo(simScreen, 16, 3, tcell.Button1)
+	assertButtonArmed(test, "held move", buttonA, false)
+	moveMouseTo(simScreen, 16, 3, tcell.ButtonNone)
+	assertButtonArmed(test, "release", buttonA, false)
+	assertPressed(test, "release", buttonA, "", "")
+
+	clickAt(simScreen, 14, 3)
+	assertPressed(test, "fresh click", buttonA, layerAlias, "a")
+}

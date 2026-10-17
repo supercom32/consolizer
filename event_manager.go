@@ -240,7 +240,7 @@ func UpdateEventQueues() {
 		}
 
 		SetMouseStatus(mouseXLocation, mouseYLocation, mouseButtonNumber, wheelState)
-		Selector.updatePressOrigin(getCellInformationUnderMouseCursor(mouseXLocation, mouseYLocation), mouseButtonNumber, lastRecordedButtonNumber)
+		updatePressOrigins(getCellInformationUnderMouseCursor(mouseXLocation, mouseYLocation), mouseButtonNumber, lastRecordedButtonNumber)
 		reconcileFocus()
 		// While a modal layer is active, mouse input outside it is ignored, unless a drag that started inside it is
 		// still in progress. A release outside still un-presses any armed button, so it cannot get stuck pressed.
@@ -382,6 +382,31 @@ func runKeyboardEventHandlers(keystroke []rune, handlers []keyboardEventHandlerT
 		isKeystrokeConsumed = isKeystrokeConsumed || consumed
 	}
 	return isScreenUpdateRequired, isKeystrokeConsumed
+}
+
+/*
+updatePressOrigins is a method which allows you to record which control the current mouse press began on, for every
+control type that only reacts to a press that began on it. Selectors, buttons and dropdowns each keep their own record,
+which a fresh press sets, held movement leaves unchanged, and a release clears. In addition, the following should be
+noted:
+
+  - It must run for every mouse event, right after the mouse status is recorded and before a modal layer can reject
+    the event, so that no record is left describing a press that has already ended.
+
+  - A press over a layer that is not accepting input, because a modal layer is active, is recorded as owned by no
+    control, so the control under it cannot be armed by that press even if the modal layer closes while it is held.
+
+Example:
+
+	updatePressOrigins(characterEntry, buttonPressed, previousButtonPressed)
+*/
+func updatePressOrigins(characterEntry types.CharacterEntryType, buttonPressed uint, previousButtonPressed uint) {
+	if getEventStateId() == constants.EventStateNone && !isLayerAcceptingInput(characterEntry.LayerAlias) {
+		characterEntry = types.CharacterEntryType{}
+	}
+	Selector.updatePressOrigin(characterEntry, buttonPressed, previousButtonPressed)
+	Button.updatePressOrigin(characterEntry, buttonPressed, previousButtonPressed)
+	Dropdown.updatePressOrigin(characterEntry, buttonPressed, previousButtonPressed)
 }
 
 /*
