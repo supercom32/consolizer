@@ -5,6 +5,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/supercom32/consolizer/constants"
 	"github.com/supercom32/consolizer/types"
+	"path/filepath"
 	"testing"
 )
 
@@ -535,4 +536,71 @@ func TestComplexGeometryImage(test *testing.T) {
 		fmt.Println("Expected:\n", expectedValueBase64)
 		fmt.Println("Obtained:\n", obtainedValueBase64)
 	}
+}
+
+/*
+TestPreRenderedLayerImageRoundTrip is a test which allows you to verify that a rendered image saved with SaveLayer and
+reloaded with LoadPreRenderedLayerImage draws exactly the same cells as the original rendering. In addition, the
+following should be noted:
+
+  - Cells built by the loader must carry an alpha of 1, otherwise overlayLayers treats every loaded cell as fully
+    transparent and the drawn layer stays blank.
+
+Example:
+
+	Expected Inputs:
+	    IMAGE_TRANSPARENCY rendered at 40x20 with block element style onto a fresh layer, saved to a temporary
+	    .clayer file, loaded under the alias "preRenderedRoundTrip", and drawn at 0,0 onto a second fresh layer.
+	Expected Outputs:
+	    Every cell of the second layer has the same Character, ForegroundColor and BackgroundColor as the
+	    corresponding cell of the first layer, and at least one cell differs from an untouched blank layer.
+*/
+func TestPreRenderedLayerImageRoundTrip(test *testing.T) {
+	originalLayer, reloadedLayer, blankLayer, _ := CommonTestSetupImages(test)
+	ClearAllImages()
+	test.Cleanup(ClearAllImages)
+	imageStyle := NewImageStyle()
+	imageStyle.DrawingStyle = constants.ImageStyleBlockElementsAccurate
+	err := originalLayer.DrawImage(IMAGE_TRANSPARENCY, imageStyle, 0, 0, 40, 20, 0)
+	assert.Nil(test, err, "Drawing the source image should not produce an error")
+	layerFilePath := filepath.Join(test.TempDir(), "round_trip.clayer")
+	err = originalLayer.SaveLayer(layerFilePath)
+	assert.Nil(test, err, "Saving the rendered layer should not produce an error")
+	imageAlias := "preRenderedRoundTrip"
+	err = LoadPreRenderedLayerImage(layerFilePath, imageAlias)
+	assert.Nil(test, err, "Loading the pre-rendered layer should not produce an error")
+	err = reloadedLayer.DrawImage(imageAlias, imageStyle, 0, 0, 40, 20, 0)
+	assert.Nil(test, err, "Drawing the pre-rendered layer should not produce an error")
+
+	originalMemory := layerRegistry.Get(originalLayer.layerAlias).CharacterMemory
+	reloadedMemory := layerRegistry.Get(reloadedLayer.layerAlias).CharacterMemory
+	blankMemory := layerRegistry.Get(blankLayer.layerAlias).CharacterMemory
+	if !assert.Equal(test, len(originalMemory), len(reloadedMemory), "Layer heights should match") {
+		return
+	}
+	differsFromBlank := false
+	for y := range originalMemory {
+		if !assert.Equalf(test, len(originalMemory[y]), len(reloadedMemory[y]), "Layer widths should match at row %d", y) {
+			return
+		}
+		for x := range originalMemory[y] {
+			original := originalMemory[y][x]
+			reloaded := reloadedMemory[y][x]
+			isMatch := assert.Equalf(test, original.Character, reloaded.Character, "Character mismatch at (%d,%d)", x, y)
+			isMatch = assert.Equalf(test, original.AttributeEntry.ForegroundColor, reloaded.AttributeEntry.ForegroundColor,
+				"Foreground colour mismatch at (%d,%d)", x, y) && isMatch
+			isMatch = assert.Equalf(test, original.AttributeEntry.BackgroundColor, reloaded.AttributeEntry.BackgroundColor,
+				"Background colour mismatch at (%d,%d)", x, y) && isMatch
+			if !isMatch {
+				return
+			}
+			blank := blankMemory[y][x]
+			if reloaded.Character != blank.Character ||
+				reloaded.AttributeEntry.ForegroundColor != blank.AttributeEntry.ForegroundColor ||
+				reloaded.AttributeEntry.BackgroundColor != blank.AttributeEntry.BackgroundColor {
+				differsFromBlank = true
+			}
+		}
+	}
+	assert.True(test, differsFromBlank, "The reloaded layer should contain drawn image cells, not just blank cells")
 }

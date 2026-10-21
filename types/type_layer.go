@@ -554,14 +554,14 @@ func (shared *LayerEntryType) LoadLayerFromBytes(data []byte) error {
 				return fmt.Errorf("failed to read flags at (%d,%d): %w", x, y, err)
 			}
 
+			attributeEntry := NewAttributeEntry()
+			attributeEntry.ForegroundColor = constants.ColorType(fgColor)
+			attributeEntry.BackgroundColor = constants.ColorType(bgColor)
+			attributeEntry.IsForegroundTransparent = flags&flagFgTransparent != 0
+			attributeEntry.IsBackgroundTransparent = flags&flagBgTransparent != 0
 			characterMemory[y][x] = CharacterEntryType{
-				Character: char,
-				AttributeEntry: AttributeEntryType{
-					ForegroundColor:         constants.ColorType(fgColor),
-					BackgroundColor:         constants.ColorType(bgColor),
-					IsForegroundTransparent: flags&flagFgTransparent != 0,
-					IsBackgroundTransparent: flags&flagBgTransparent != 0,
-				},
+				Character:      char,
+				AttributeEntry: attributeEntry,
 			}
 		}
 	}
