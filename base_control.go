@@ -252,13 +252,22 @@ following should be noted:
   - Disabling the focused control moves focus to the next stop in its layer's tab order, or clears focus if no other
     stop can take it.
 
+  - A disabled control keeps its place in the tab order, which Tab skips while it is disabled, so enabling it again
+    returns it to the same place.
+
+  - Disabling a dropdown whose tray is open closes the tray without changing the dropdown's selection, as Esc does.
+
 Example:
-    control.SetEnabled(false)
+
+	control.SetEnabled(false)
 */
 func (shared *BaseControlInstanceType) SetEnabled(enabled bool) *BaseControlInstanceType {
 	defer lockUIState()()
 	if control := shared.getBaseControl(); control != nil {
 		control.IsEnabled = enabled
+		if shared.controlType == constants.TYPE_DROPDOWN {
+			Dropdown.closeTrayIfDisabled(shared.layerAlias, shared.controlAlias)
+		}
 	}
 	reconcileFocus()
 	return shared

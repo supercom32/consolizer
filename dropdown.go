@@ -22,6 +22,10 @@ Enter opens the tray, or closes it and commits the tray's selection, the arrow k
 tray is open, and Esc closes an open tray without changing the selection. It returns whether the screen needs
 updating and whether the keystroke was consumed. In addition, the following should be noted:
 
+  - A disabled or hidden dropdown, or one on a hidden layer, ignores every keystroke and leaves it unconsumed, as a
+    disabled button does, so it still reaches the keyboard buffer. Such a dropdown cannot normally have focus, so
+    this only guards the moment between it being disabled and focus moving on.
+
   - Esc on a closed dropdown is left unconsumed so the application can treat it as a Back or Cancel action.
 
   - Every index copied between the dropdown and its tray is brought back into range for the tray's items, so a
@@ -39,8 +43,8 @@ func (shared *dropdownType) updateKeyboardEvent(keystroke []rune) (bool, bool) {
 	focusedLayerAlias := focusedControl.layerAlias
 	focusedControlAlias := focusedControl.controlAlias
 
-	// Only process if a dropdown is focused
-	if focusedControl.controlType != constants.CellTypeDropdown {
+	// Only process if an enabled, visible dropdown is focused
+	if focusedControl.controlType != constants.CellTypeDropdown || !isControlFocusable(focusedControl) {
 		return isScreenUpdateRequired, isKeystrokeConsumed
 	}
 	dropdownEntry, isFound := dropdownRegistry.Lookup(focusedLayerAlias, focusedControlAlias)
@@ -97,14 +101,18 @@ func (shared *dropdownType) updateKeyboardEvent(keystroke []rune) (bool, bool) {
 
 /*
 openTray is a method which allows you to open a dropdown's tray, closing any other open tray first. The tray's
-highlight is placed on the dropdown's selected item, and its scroll bar is shown if the items overflow the tray. The
-caller must hold uiStateMutex.
+highlight is placed on the dropdown's selected item, and its scroll bar is shown if the items overflow the tray. A
+disabled dropdown is left closed, and no other tray is closed for it, since an open tray would let the user change its
+selection. The caller must hold uiStateMutex.
 
 Example:
 
 	Dropdown.openTray("layer1", dropdownEntry)
 */
 func (shared *dropdownType) openTray(layerAlias string, dropdownEntry *types.DropdownEntryType) {
+	if !dropdownEntry.IsEnabled {
+		return
+	}
 	shared.closeAllOpen()
 	dropdownEntry.IsTrayOpen = true
 	if selectorEntry, isFound := selectorRegistry.Lookup(layerAlias, dropdownEntry.SelectorAlias); isFound {
@@ -138,6 +146,24 @@ func (shared *dropdownType) closeTrayWithoutCommitting(layerAlias string, dropdo
 		scrollBarEntry.IsVisible = false
 	}
 	dropdownEntry.IsTrayOpen = false
+}
+
+/*
+closeTrayIfDisabled is a method which allows you to close a disabled dropdown's tray without changing its selection, as
+Esc does, so that nothing picked in the tray before the dropdown was disabled can be committed. Nothing happens if the
+dropdown is enabled, its tray is already closed, or it does not exist. The caller must hold uiStateMutex.
+
+Example:
+
+	Dropdown.closeTrayIfDisabled("layer1", "myDropdown")
+*/
+func (shared *dropdownType) closeTrayIfDisabled(layerAlias string, dropdownAlias string) {
+	dropdownEntry, isFound := dropdownRegistry.Lookup(layerAlias, dropdownAlias)
+	if !isFound || dropdownEntry.IsEnabled || !dropdownEntry.IsTrayOpen {
+		return
+	}
+	shared.closeTrayWithoutCommitting(layerAlias, dropdownEntry)
+	setEventStateId(constants.EventStateNone)
 }
 
 var Dropdown dropdownType
@@ -249,8 +275,8 @@ func (shared *DropdownInstanceType) IsOpen() bool {
 /*
 Open is a method which allows you to open a dropdown's tray, as clicking it or pressing Enter on it does. Any other
 open tray is closed first, the tray's highlight is placed on the selected item, and its scroll bar is shown if the
-items overflow it. Nothing happens if the tray is already open or the dropdown does not exist. In addition, the
-following should be noted:
+items overflow it. Nothing happens if the tray is already open, the dropdown is disabled, or the dropdown does not
+exist. In addition, the following should be noted:
 
   - Focus is not moved. The arrow keys and Enter only reach the tray while the dropdown has focus, so give it focus
     with SetFocus as well if the user should be able to pick from the tray with the keyboard.
@@ -573,6 +599,9 @@ draw is a method which allows you to draw a single dropdown on a given text laye
 to the dropdown's width and alignment, in the style's colours, followed by a down arrow drawn in inverted colours. In
 addition, the following should be noted:
 
+  - A disabled dropdown still shows its selected item, but its text and arrow are drawn in the disabled colour
+    given by getDisabledForegroundColor, and never with the focused colours.
+
   - When isFocusShown is true, the dropdown is drawn with the style's focused colours, resolved by getFocusedColors
     so that focus stays visible even when the style does not set them, and the arrow inverts those instead. The
     caller passes isFocusIndicatorShown for the dropdown, which as described for setFocusIndicatorVisible is only
@@ -594,7 +623,9 @@ func (shared *dropdownType) draw(layerEntry *types.LayerEntryType, dropdownAlias
 	attributeEntry := types.NewAttributeEntry()
 	attributeEntry.ForegroundColor = localStyleEntry.Dropdown.ForegroundColor
 	attributeEntry.BackgroundColor = localStyleEntry.Dropdown.BackgroundColor
-	if isFocusShown {
+	if !dropdownEntry.IsEnabled {
+		attributeEntry.ForegroundColor = shared.getDisabledForegroundColor(localStyleEntry)
+	} else if isFocusShown {
 		attributeEntry.ForegroundColor, attributeEntry.BackgroundColor = getFocusedColors(localStyleEntry.Dropdown.ForegroundColor,
 			localStyleEntry.Dropdown.BackgroundColor, localStyleEntry.Dropdown.FocusedForegroundColor, localStyleEntry.Dropdown.FocusedBackgroundColor)
 	}
@@ -618,6 +649,33 @@ func (shared *dropdownType) draw(layerEntry *types.LayerEntryType, dropdownAlias
 }
 
 /*
+getDisabledForegroundColor is a method which allows you to obtain the foreground colour a disabled dropdown is drawn
+with, so that it reads as muted against the dropdown's normal colours. The style's Button.LabelDisabledColor, the
+colour disabled buttons draw their label in, is used when it is set and differs from both the dropdown's foreground and
+background colours. Otherwise the first of grey and silver that differs from both is used, and grey when neither does,
+so the result is only ever invisible against the dropdown's background when the style leaves no other choice.
+
+Example:
+
+	foregroundColor := Dropdown.getDisabledForegroundColor(styleEntry)
+*/
+func (shared *dropdownType) getDisabledForegroundColor(styleEntry types.TuiStyleEntryType) constants.ColorType {
+	foregroundColor := styleEntry.Dropdown.ForegroundColor
+	backgroundColor := styleEntry.Dropdown.BackgroundColor
+	candidateColors := []constants.ColorType{
+		styleEntry.Button.LabelDisabledColor,
+		constants.AnsiColorByIndex[constants.ColorBrightBlack],
+		constants.AnsiColorByIndex[constants.ColorWhite],
+	}
+	for _, candidateColor := range candidateColors {
+		if candidateColor != 0 && candidateColor != foregroundColor && candidateColor != backgroundColor {
+			return candidateColor
+		}
+	}
+	return constants.AnsiColorByIndex[constants.ColorBrightBlack]
+}
+
+/*
 updatePressOrigin is a method which allows you to record which dropdown the current mouse press began on. A fresh press
 over a dropdown records that dropdown, a fresh press anywhere else records that no dropdown owns the press, and a
 release clears the record. Movement with the button still held leaves the record unchanged. In addition, the following
@@ -629,6 +687,9 @@ should be noted:
 
   - The dropdown is recorded by its entry rather than its alias, so a dropdown deleted during the press, and one added
     later under the same alias, never inherit the press.
+
+  - A disabled dropdown is recorded like any other, as a disabled button is, since the press still belongs to it.
+    It is updateStateMouse that refuses to open it.
 
 Example:
 
@@ -660,6 +721,9 @@ should be noted:
   - Only a fresh press that began on a dropdown, as recorded by updatePressOrigin, opens its tray. A held button
     dragged onto a dropdown, whether the press began elsewhere or was already held when the dropdown was added, never
     opens it.
+
+  - A press on a disabled dropdown never opens it, and is treated as a press outside every dropdown, so it closes
+    any tray that is open, as a press on a disabled button does.
 
   - A viewport position copied from a scroll bar is clamped into the range the tray can scroll to.
 
@@ -701,9 +765,11 @@ func (shared *dropdownType) updateStateMouse() bool {
 		}
 	}
 
-	// A fresh press that began on this dropdown opens its tray.
-	if dropdownEntry, isFound := dropdownRegistry.Lookup(layerAlias, cellControlAlias); isFreshPress && cellControlAlias != "" &&
-		characterEntry.AttributeEntry.CellType == constants.CellTypeDropdown && isFound && dropdownEntry == dropdownPressOrigin {
+	// A fresh press that began on this dropdown opens its tray, unless the dropdown is disabled.
+	dropdownEntry, isFound := dropdownRegistry.Lookup(layerAlias, cellControlAlias)
+	isOverDropdown := cellControlAlias != "" && characterEntry.AttributeEntry.CellType == constants.CellTypeDropdown && isFound
+	isOverDisabledDropdown := isOverDropdown && !dropdownEntry.IsEnabled
+	if isFreshPress && isOverDropdown && !isOverDisabledDropdown && dropdownEntry == dropdownPressOrigin {
 		shared.closeAllOpen()
 		dropdownEntry.IsTrayOpen = true
 		selectorEntry := selectorRegistry.Get(layerAlias, dropdownEntry.SelectorAlias)
@@ -730,8 +796,8 @@ func (shared *dropdownType) updateStateMouse() bool {
 			}
 		}
 
-		// Only close if not clicking on a dropdown or its scrollbar
-		if characterEntry.AttributeEntry.CellType != constants.CellTypeDropdown && !isScrollbarOfOpenDropdown {
+		// Only close if not clicking on an enabled dropdown or the scrollbar of an open one
+		if (characterEntry.AttributeEntry.CellType != constants.CellTypeDropdown || isOverDisabledDropdown) && !isScrollbarOfOpenDropdown {
 			isUpdateRequired = shared.closeAllOpen()
 		}
 	}

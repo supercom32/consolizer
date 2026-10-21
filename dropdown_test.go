@@ -1157,3 +1157,416 @@ func TestDropdownPressRejectedByModalLayerDoesNotOpenTray(test *testing.T) {
 	clickAt(simScreen, 4, 2)
 	assertTrayOpen(test, "fresh click", dropdownEntry, true)
 }
+
+/*
+getTestDropdownInstance is a method which allows you to obtain an instance handle for a dropdown that already exists,
+such as the one addTestDropdown adds, so a test can call its exported methods.
+
+Example:
+
+	dropdown := getTestDropdownInstance(layerAlias, "dropdown")
+*/
+func getTestDropdownInstance(layerAlias string, dropdownAlias string) DropdownInstanceType {
+	return DropdownInstanceType{BaseControlInstanceType{layerAlias: layerAlias, controlAlias: dropdownAlias, controlType: constants.TYPE_DROPDOWN}}
+}
+
+/*
+assertDropdownFocused is a method which allows you to fail the test unless the dropdown with the given alias has focus
+when isExpectedFocused is true, or does not have it when isExpectedFocused is false.
+
+Example:
+
+	assertDropdownFocused(test, "after Tab", layerAlias, "dropdown", false)
+*/
+func assertDropdownFocused(test *testing.T, context string, layerAlias string, dropdownAlias string, isExpectedFocused bool) {
+	test.Helper()
+	if isFocused := isControlCurrentlyFocused(layerAlias, dropdownAlias, constants.CellTypeDropdown); isFocused != isExpectedFocused {
+		focusedControl := getFocusedControl()
+		test.Fatalf("%s: expected dropdown %q focused to be %t, got control %q with type %d focused", context, dropdownAlias,
+			isExpectedFocused, focusedControl.controlAlias, focusedControl.controlType)
+	}
+}
+
+/*
+TestDropdownDisabledIsSkippedByTabAndRestoredWhenEnabled is a test which allows you to verify that Tab and Shift+Tab
+skip a disabled dropdown, that it cannot be given focus, and that enabling it again puts it back in the tab order at the
+place its tab index gave it.
+
+Example:
+
+	Expected Inputs:
+		Button "a" with tab index 0, the test dropdown with tab index 1, and button "b" with tab index 2. The dropdown
+		is disabled, "a" is focused, then Tab, Shift+Tab, SetFocus on the dropdown, and a click on the dropdown at
+		(4, 2). The dropdown is then enabled, "a" focused, and Tab pressed twice.
+
+	Expected Outputs:
+		While disabled: Tab focuses "b", Shift+Tab focuses "a", SetFocus returns an error and the click leaves "a"
+		focused. Once enabled: Tab focuses the dropdown, then "b".
+*/
+func TestDropdownDisabledIsSkippedByTabAndRestoredWhenEnabled(test *testing.T) {
+	layerAlias, styleEntry := setupInputTest(test)
+	buttonA := Button.Add(layerAlias, "a", "a", styleEntry, 20, 1, 8, 3, true)
+	buttonB := Button.Add(layerAlias, "b", "b", styleEntry, 30, 1, 8, 3, true)
+	addTestDropdown(layerAlias, styleEntry)
+	dropdown := getTestDropdownInstance(layerAlias, "dropdown")
+	for tabIndex, control := range []*BaseControlInstanceType{&buttonA.BaseControlInstanceType, &dropdown.BaseControlInstanceType, &buttonB.BaseControlInstanceType} {
+		if err := control.SetTabIndex(tabIndex); err != nil {
+			test.Fatalf("expected tab index %d to be accepted, got %v", tabIndex, err)
+		}
+	}
+	dropdown.SetEnabled(false)
+	buttonA.GetFocus()
+	simScreen := startInputSimulation(test)
+
+	pressTab(simScreen)
+	assertButtonFocused(test, layerAlias, "b", "Tab past the disabled dropdown")
+	pressKey(simScreen, tcell.KeyBacktab, 0, tcell.ModShift)
+	assertButtonFocused(test, layerAlias, "a", "Shift+Tab past the disabled dropdown")
+	if err := SetFocus(&dropdown); err == nil {
+		test.Fatalf("expected SetFocus on a disabled dropdown to return an error")
+	}
+	clickAt(simScreen, 4, 2)
+	assertButtonFocused(test, layerAlias, "a", "click on the disabled dropdown")
+
+	dropdown.SetEnabled(true)
+	buttonA.GetFocus()
+	pressTab(simScreen)
+	assertDropdownFocused(test, "Tab after enabling", layerAlias, "dropdown", true)
+	pressTab(simScreen)
+	assertButtonFocused(test, layerAlias, "b", "second Tab after enabling")
+}
+
+/*
+TestDropdownDisabledWhileFocusedMovesFocus is a test which allows you to verify that disabling the focused dropdown
+moves focus to the next stop in its layer's tab order, as it does for other controls.
+
+Example:
+
+	Expected Inputs:
+		The test dropdown, focused, followed by button "b" in the tab order. The dropdown is then disabled.
+
+	Expected Outputs:
+		Button "b" has focus and the dropdown does not.
+*/
+func TestDropdownDisabledWhileFocusedMovesFocus(test *testing.T) {
+	layerAlias, styleEntry := setupInputTest(test)
+	addTestDropdown(layerAlias, styleEntry)
+	buttonB := Button.Add(layerAlias, "b", "b", styleEntry, 30, 1, 8, 3, true)
+	dropdown := getTestDropdownInstance(layerAlias, "dropdown")
+	dropdown.AddToTabIndex()
+	buttonB.AddToTabIndex()
+	assertDropdownFocused(test, "before disabling", layerAlias, "dropdown", true)
+
+	dropdown.SetEnabled(false)
+
+	assertDropdownFocused(test, "after disabling", layerAlias, "dropdown", false)
+	assertButtonFocused(test, layerAlias, "b", "after disabling the focused dropdown")
+}
+
+/*
+TestDropdownDisabledIgnoresKeyboard is a test which allows you to verify that a disabled dropdown neither opens nor
+changes its selection from any key, that its keyboard handler leaves every key unconsumed even if the dropdown is still
+recorded as focused, and that the keys reach the keyboard buffer.
+
+Example:
+
+	Expected Inputs:
+		The test dropdown with item 0 selected, focused, and then disabled. Its keyboard handler is called directly with
+		focus forced back onto it for the keys "enter", " ", "down", "up" and "esc". Then Enter, Space, Down and Up are
+		pressed through the event queue.
+
+	Expected Outputs:
+		Every direct call returns (false, false). After the presses the tray is closed, ItemSelected is 0 on both the
+		dropdown and its tray, and the keyboard buffer is ["enter", " ", "down", "up"].
+*/
+func TestDropdownDisabledIgnoresKeyboard(test *testing.T) {
+	layerAlias, styleEntry := setupInputTest(test)
+	dropdownEntry := addTestDropdown(layerAlias, styleEntry)
+	dropdown := getTestDropdownInstance(layerAlias, "dropdown")
+	dropdown.SetEnabled(false)
+	simScreen := startInputSimulation(test)
+
+	for _, keystroke := range []string{"enter", " ", "down", "up", "esc"} {
+		isUpdateRequired, isConsumed := func() (bool, bool) {
+			defer lockUIState()()
+			setFocusedControl(layerAlias, "dropdown", constants.CellTypeDropdown)
+			return Dropdown.updateKeyboardEvent([]rune(keystroke))
+		}()
+		if isUpdateRequired || isConsumed {
+			test.Fatalf("expected %q to be ignored by a disabled dropdown, got update %t and consumed %t", keystroke, isUpdateRequired, isConsumed)
+		}
+		assertTrayOpen(test, "direct "+keystroke, dropdownEntry, false)
+	}
+	setFocusedControl("", "", constants.NullControlType)
+
+	pressKey(simScreen, tcell.KeyEnter, 0, tcell.ModNone)
+	pressKey(simScreen, tcell.KeyRune, ' ', tcell.ModNone)
+	pressKey(simScreen, tcell.KeyDown, 0, tcell.ModNone)
+	pressKey(simScreen, tcell.KeyUp, 0, tcell.ModNone)
+
+	assertTrayOpen(test, "after key presses", dropdownEntry, false)
+	selectorEntry := selectorRegistry.Get(layerAlias, dropdownEntry.SelectorAlias)
+	if dropdownEntry.ItemSelected != 0 || selectorEntry.ItemSelected != 0 {
+		test.Fatalf("expected the selection to stay 0, got dropdown %d and tray %d", dropdownEntry.ItemSelected, selectorEntry.ItemSelected)
+	}
+	assertKeyboardBuffer(test, "after key presses on a disabled dropdown", "enter", " ", "down", "up")
+}
+
+/*
+TestDropdownDisabledIgnoresMouse is a test which allows you to verify that clicks on a disabled dropdown's box or arrow
+and the mouse wheel over its box neither open it, focus it, nor change its selection, and that a click on it closes
+another dropdown's open tray, as a click on any other inert cell does.
+
+Example:
+
+	Expected Inputs:
+		The test dropdown at (2, 2), box columns 2 to 14 with its arrow at 14, item 1 selected, disabled. A second
+		enabled dropdown "other" at (20, 6). Clicks at (4, 2) and (14, 2), wheel down and up at (4, 2). Then a click
+		on "other" at (22, 6) to open it, followed by a click on the disabled dropdown at (4, 2).
+
+	Expected Outputs:
+		The disabled dropdown's tray stays closed, it is never focused, and ItemSelected stays 1. The tray of "other"
+		is open after its click and closed after the click on the disabled dropdown.
+*/
+func TestDropdownDisabledIgnoresMouse(test *testing.T) {
+	layerAlias, styleEntry := setupInputTest(test)
+	dropdownEntry := addTestDropdown(layerAlias, styleEntry)
+	dropdown := getTestDropdownInstance(layerAlias, "dropdown")
+	dropdown.SetSelectedItemIndex(1)
+	dropdown.SetEnabled(false)
+	selectionEntry := types.NewSelectionEntry()
+	selectionEntry.Add("first", "First")
+	selectionEntry.Add("second", "Second")
+	Dropdown.Add(layerAlias, "other", styleEntry, selectionEntry, 20, 6, 2, 8, 0)
+	otherEntry := dropdownRegistry.Get(layerAlias, "other")
+	simScreen := startInputSimulation(test)
+	assertUnchanged := func(context string) {
+		test.Helper()
+		assertTrayOpen(test, context, dropdownEntry, false)
+		assertDropdownFocused(test, context, layerAlias, "dropdown", false)
+		if dropdownEntry.ItemSelected != 1 {
+			test.Fatalf("%s: expected the selection to stay 1, got %d", context, dropdownEntry.ItemSelected)
+		}
+	}
+
+	clickAt(simScreen, 4, 2)
+	assertUnchanged("click on the box")
+	clickAt(simScreen, 14, 2)
+	assertUnchanged("click on the arrow")
+	injectWheel(simScreen, 4, 2, tcell.WheelDown)
+	assertUnchanged("wheel down over the box")
+	injectWheel(simScreen, 4, 2, tcell.WheelUp)
+	assertUnchanged("wheel up over the box")
+
+	clickAt(simScreen, 22, 6)
+	assertTrayOpen(test, "click on the other dropdown", otherEntry, true)
+	clickAt(simScreen, 4, 2)
+	assertTrayOpen(test, "click on the disabled dropdown with another tray open", otherEntry, false)
+	assertUnchanged("click with another tray open")
+}
+
+/*
+TestDropdownDisabledWhileTrayOpenClosesWithoutCommitting is a test which allows you to verify that disabling a dropdown
+whose tray is open closes the tray without committing what was highlighted in it, as Esc does, and that enabling it
+again brings back normal behaviour.
+
+Example:
+
+	Expected Inputs:
+		The test dropdown with items [Zero, One, Two, Three] and item 0 selected, focused. Enter opens the tray and Down
+		highlights item 1. The dropdown is then disabled. It is then enabled, focused, and Enter, Down, Enter pressed.
+
+	Expected Outputs:
+		After disabling: the tray, its selector and its scroll bar are hidden, ItemSelected is 0 on both the dropdown
+		and its tray, and the event state is constants.EventStateNone. After enabling: the first Enter opens the tray
+		with item 0 highlighted, and the second Enter commits item 1.
+*/
+func TestDropdownDisabledWhileTrayOpenClosesWithoutCommitting(test *testing.T) {
+	layerAlias, styleEntry := setupInputTest(test)
+	dropdownEntry := addTestDropdown(layerAlias, styleEntry)
+	dropdown := getTestDropdownInstance(layerAlias, "dropdown")
+	simScreen := startInputSimulation(test)
+	pressKey(simScreen, tcell.KeyEnter, 0, tcell.ModNone)
+	assertTrayOpen(test, "after Enter", dropdownEntry, true)
+	pressKey(simScreen, tcell.KeyDown, 0, tcell.ModNone)
+
+	dropdown.SetEnabled(false)
+
+	selectorEntry := selectorRegistry.Get(layerAlias, dropdownEntry.SelectorAlias)
+	scrollBarEntry := scrollbarRegistry.Get(layerAlias, dropdownEntry.ScrollbarAlias)
+	assertTrayOpen(test, "after disabling", dropdownEntry, false)
+	if selectorEntry.IsVisible || scrollBarEntry.IsVisible {
+		test.Fatalf("expected the tray and its scroll bar hidden, got tray %t and scroll bar %t", selectorEntry.IsVisible, scrollBarEntry.IsVisible)
+	}
+	if dropdownEntry.ItemSelected != 0 || selectorEntry.ItemSelected != 0 {
+		test.Fatalf("expected the selection to stay 0, got dropdown %d and tray %d", dropdownEntry.ItemSelected, selectorEntry.ItemSelected)
+	}
+	if eventStateId := getEventStateId(); eventStateId != constants.EventStateNone {
+		test.Fatalf("expected the event state to be reset, got %d", eventStateId)
+	}
+
+	dropdown.SetEnabled(true)
+	dropdown.GetFocus()
+	pressKey(simScreen, tcell.KeyEnter, 0, tcell.ModNone)
+	assertTrayOpen(test, "Enter after enabling", dropdownEntry, true)
+	if selectorEntry.ItemHighlighted != 0 {
+		test.Fatalf("expected the reopened tray to highlight item 0, got %d", selectorEntry.ItemHighlighted)
+	}
+	pressKey(simScreen, tcell.KeyDown, 0, tcell.ModNone)
+	pressKey(simScreen, tcell.KeyEnter, 0, tcell.ModNone)
+	assertTrayOpen(test, "second Enter after enabling", dropdownEntry, false)
+	if dropdownEntry.ItemSelected != 1 {
+		test.Fatalf("expected item 1 to be committed after enabling, got %d", dropdownEntry.ItemSelected)
+	}
+}
+
+/*
+TestDropdownDisabledAcceptsChangesFromCode is a test which allows you to verify that a disabled dropdown's selection
+and items can still be changed from code, that Open leaves it closed until it is enabled, and that disabling it leaves
+its tooltip as it was, as disabling a button does.
+
+Example:
+
+	Expected Inputs:
+		The test dropdown, disabled. SetSelectedItemIndex(2), then Open, then SetSelectionEntry with items
+		[Red, Green] followed by SetSelectedItemIndex(1). The dropdown is then enabled and Open called again.
+
+	Expected Outputs:
+		GetSelected returns ("two", 2), the tray stays closed after Open while disabled, then GetValue returns "Green"
+		and GetSelected returns ("green", 1). The tooltip's enabled flag is the same before and after disabling. After
+		enabling, Open opens the tray.
+*/
+func TestDropdownDisabledAcceptsChangesFromCode(test *testing.T) {
+	layerAlias, styleEntry := setupInputTest(test)
+	dropdownEntry := addTestDropdown(layerAlias, styleEntry)
+	dropdown := getTestDropdownInstance(layerAlias, "dropdown")
+	tooltipEntry := tooltipRegistry.Get(layerAlias, dropdownEntry.TooltipAlias)
+	isTooltipEnabledBefore := tooltipEntry.IsEnabled
+	dropdown.SetEnabled(false)
+	if tooltipEntry.IsEnabled != isTooltipEnabledBefore {
+		test.Fatalf("expected disabling to leave the tooltip enabled flag at %t, got %t", isTooltipEnabledBefore, tooltipEntry.IsEnabled)
+	}
+
+	dropdown.SetSelectedItemIndex(2)
+	if alias, index := dropdown.GetSelected(); alias != "two" || index != 2 {
+		test.Fatalf("expected (\"two\", 2) after SetSelectedItemIndex, got (%q, %d)", alias, index)
+	}
+	dropdown.Open()
+	assertTrayOpen(test, "Open while disabled", dropdownEntry, false)
+	if dropdown.IsOpen() {
+		test.Fatalf("expected IsOpen to report a closed tray while disabled")
+	}
+
+	selectionEntry := types.NewSelectionEntry()
+	selectionEntry.Add("red", "Red")
+	selectionEntry.Add("green", "Green")
+	dropdown.SetSelectionEntry(selectionEntry)
+	dropdown.SetSelectedItemIndex(1)
+	if value := dropdown.GetValue(); value != "Green" {
+		test.Fatalf("expected GetValue to return \"Green\", got %q", value)
+	}
+	if alias, index := dropdown.GetSelected(); alias != "green" || index != 1 {
+		test.Fatalf("expected (\"green\", 1) after SetSelectionEntry, got (%q, %d)", alias, index)
+	}
+
+	dropdown.SetEnabled(true)
+	dropdown.Open()
+	assertTrayOpen(test, "Open after enabling", dropdownEntry, true)
+}
+
+/*
+TestDropdownDisabledIsDrawnMuted is a test which allows you to verify that a disabled dropdown still shows its selected
+item, with its text drawn in the disabled colour and its arrow drawn in that colour inverted, and that enabling it
+restores the normal colours.
+
+Example:
+
+	Expected Inputs:
+		The test dropdown at (2, 2) with item 0 "Zero" selected, item width 10 and the default style, disabled, then
+		drawn. It is then enabled, unfocused, and drawn again.
+
+	Expected Outputs:
+		While disabled, row 2 reads "Zero" from column 2, the text cell (2, 2) has the disabled colour as foreground
+		and the dropdown background as background, and the arrow cell (14, 2) has the dropdown background as
+		foreground and the disabled colour as background. The disabled colour differs from the dropdown's normal
+		foreground. Once enabled, (2, 2) has the dropdown's normal foreground again.
+*/
+func TestDropdownDisabledIsDrawnMuted(test *testing.T) {
+	layerAlias, styleEntry := setupInputTest(test)
+	addTestDropdown(layerAlias, styleEntry)
+	dropdown := getTestDropdownInstance(layerAlias, "dropdown")
+	dropdown.SetEnabled(false)
+	UpdateDisplay(false)
+
+	disabledColor := Dropdown.getDisabledForegroundColor(styleEntry)
+	if disabledColor == styleEntry.Dropdown.ForegroundColor {
+		test.Fatalf("expected the disabled colour to differ from the normal foreground colour")
+	}
+	row := commonResource.screenLayer.CharacterMemory[2]
+	for index, character := range "Zero" {
+		if row[2+index].Character != character {
+			test.Fatalf("expected %q at column %d, got %q", character, 2+index, row[2+index].Character)
+		}
+	}
+	textAttribute := row[2].AttributeEntry
+	if textAttribute.ForegroundColor != disabledColor || textAttribute.BackgroundColor != styleEntry.Dropdown.BackgroundColor {
+		test.Fatalf("expected the text drawn in the disabled colours, got foreground %d and background %d",
+			textAttribute.ForegroundColor, textAttribute.BackgroundColor)
+	}
+	arrowCell := row[14]
+	if arrowCell.Character != constants.CharTriangleDown || arrowCell.AttributeEntry.ForegroundColor != styleEntry.Dropdown.BackgroundColor ||
+		arrowCell.AttributeEntry.BackgroundColor != disabledColor {
+		test.Fatalf("expected the arrow drawn in the inverted disabled colours, got %q with foreground %d and background %d",
+			arrowCell.Character, arrowCell.AttributeEntry.ForegroundColor, arrowCell.AttributeEntry.BackgroundColor)
+	}
+
+	dropdown.SetEnabled(true)
+	setFocusedControl("", "", constants.NullControlType)
+	UpdateDisplay(false)
+	if foregroundColor := commonResource.screenLayer.CharacterMemory[2][2].AttributeEntry.ForegroundColor; foregroundColor != styleEntry.Dropdown.ForegroundColor {
+		test.Fatalf("expected the normal foreground colour after enabling, got %d", foregroundColor)
+	}
+}
+
+/*
+TestDropdownGetDisabledForegroundColor is a test which allows you to verify the order in which a disabled dropdown's
+foreground colour is chosen.
+
+Example:
+
+	Expected Inputs:
+		Four styles: the default one, whose Button.LabelDisabledColor equals the dropdown foreground; one with
+		Button.LabelDisabledColor set to blue; one with a grey dropdown foreground and no LabelDisabledColor; and one
+		with a grey foreground, a silver background and no LabelDisabledColor.
+
+	Expected Outputs:
+		Grey, blue, silver and grey respectively.
+*/
+func TestDropdownGetDisabledForegroundColor(test *testing.T) {
+	grey := constants.AnsiColorByIndex[constants.ColorBrightBlack]
+	silver := constants.AnsiColorByIndex[constants.ColorWhite]
+	blue := constants.AnsiColorByIndex[constants.ColorBlue]
+	defaultStyle := types.NewTuiStyleEntry()
+	buttonColorStyle := types.NewTuiStyleEntry()
+	buttonColorStyle.Button.LabelDisabledColor = blue
+	greyForegroundStyle := types.NewTuiStyleEntry()
+	greyForegroundStyle.Button.LabelDisabledColor = 0
+	greyForegroundStyle.Dropdown.ForegroundColor = grey
+	noChoiceStyle := greyForegroundStyle
+	noChoiceStyle.Dropdown.BackgroundColor = silver
+	testCases := []struct {
+		name          string
+		styleEntry    types.TuiStyleEntryType
+		expectedColor constants.ColorType
+	}{
+		{"default style", defaultStyle, grey},
+		{"button disabled colour", buttonColorStyle, blue},
+		{"grey foreground", greyForegroundStyle, silver},
+		{"grey foreground on silver", noChoiceStyle, grey},
+	}
+	for _, testCase := range testCases {
+		if color := Dropdown.getDisabledForegroundColor(testCase.styleEntry); color != testCase.expectedColor {
+			test.Fatalf("%s: expected colour %d, got %d", testCase.name, testCase.expectedColor, color)
+		}
+	}
+}
