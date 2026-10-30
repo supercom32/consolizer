@@ -63,8 +63,9 @@ var resizeDebounceTimer *time.Timer
 
 /*
 UpdatePeriodicEvents is a method which triggers periodic events such as tooltip updates and keyboard state clearing.
-The tooltip update and any redraw it needs run under the UI lock, so they never overlap input handling or the
-application's own calls.
+It also hands any key events that ordered keyboard mode is still holding back to the controls once they should no
+longer be held, as described for SetOrderedKeyboard. The tooltip update, the key handling, and any redraw they need run
+under the UI lock, so they never overlap input handling or the application's own calls.
 
 Example:
 
@@ -77,6 +78,15 @@ func UpdatePeriodicEvents() {
 		func() {
 			defer lockUIState()()
 			if Tooltip.updateMouseEvent() {
+				updateDisplayLocked(false)
+			}
+		}()
+	}
+
+	if orderedKeyboard.isStaleWithPendingKeyEvents() {
+		func() {
+			defer lockUIState()()
+			if flushPendingKeyEvents() {
 				updateDisplayLocked(false)
 			}
 		}()
@@ -95,6 +105,10 @@ change. In addition, the following should be noted:
 
   - Every keystroke shows the keyboard focus indicator and every mouse button press hides it, as described for
     setFocusIndicatorVisible, and the screen is redrawn when that changes how the focused control looks.
+
+  - While ordered keyboard mode is holding key events for Inkey, as described for SetOrderedKeyboard, a key event is
+    only queued here and handled later by Inkey. Otherwise any key events still held back are handled first, in the
+    order typed, so they never fall behind the new one.
 
   - The UI lock is taken once the event has arrived, not while waiting for it, and is held until the event has
     been handled and the screen redrawn, so the application's own calls never see an event half handled. The
@@ -152,53 +166,17 @@ func UpdateEventQueues() {
 			updateDisplayLocked(false)
 		})
 	case *tcell.EventKey:
-		isScreenUpdateRequired := false
-		isKeystrokeConsumed := false
-		var keystroke []rune
-		reconcileFocus()
-
-		// Update modifier key state
-		setModifierKeys(event.Modifiers())
-		if setFocusIndicatorVisible(true) {
-			isScreenUpdateRequired = true
+		keyEvent := newKeyEvent(event)
+		if orderedKeyboard.holdIfActive(keyEvent) {
+			return
 		}
-
-		if strings.Contains(event.Name(), "Rune") {
-			keystroke = []rune{event.Rune()}
-		} else {
-			keystroke = []rune(strings.ToLower(event.Name()))
-		}
-		switch string(keystroke) {
-		case "tab":
-			// An open dropdown tray belongs to the control losing focus, so it is closed before focus moves on.
-			Dropdown.closeAllOpen()
-			focusNext()
-			keystroke = nil
-			isScreenUpdateRequired = true
-			isKeystrokeConsumed = true
-		case "backtab", "shift+backtab", "shift+tab":
-			Dropdown.closeAllOpen()
-			focusPrevious()
-			keystroke = nil
-			isScreenUpdateRequired = true
-			isKeystrokeConsumed = true
-		}
-		updateRequired, consumed := runKeyboardEventHandlers(keystroke, getKeyboardEventHandlers())
-		isScreenUpdateRequired = isScreenUpdateRequired || updateRequired
-		isKeystrokeConsumed = isKeystrokeConsumed || consumed
-		// Enter and Esc that no control used fall through to the active scope's default and cancel buttons.
-		if !isKeystrokeConsumed && keystroke != nil {
-			if scopeButton := getDefaultButtonForKey(string(keystroke)); scopeButton.controlAlias != "" {
-				buttonHistory.set(scopeButton.layerAlias, scopeButton.controlAlias)
-				isScreenUpdateRequired = true
-				isKeystrokeConsumed = true
-			}
-		}
-		if isScreenUpdateRequired == true {
+		// Key events held back earlier were typed before this one, so they are handled first.
+		isScreenUpdateRequired := flushPendingKeyEvents()
+		keystroke, updateRequired := handleKeyEvent(keyEvent)
+		if isScreenUpdateRequired || updateRequired {
 			updateDisplayLocked(false)
 		}
-		// Only add keystroke to buffer if it wasn't consumed by a control
-		if !isKeystrokeConsumed && keystroke != nil {
+		if keystroke != nil {
 			KeyboardMemory.AddToBuffer(keystroke)
 		}
 
@@ -323,6 +301,108 @@ func UpdateEventQueues() {
 			updateDisplayLocked(false)
 		}
 	}
+}
+
+/*
+newKeyEvent is a method which allows you to convert a terminal key event into the keystroke form Inkey returns, a
+single character for a printable key or the lower case key name otherwise, together with the modifier keys held.
+
+Example:
+
+	keyEvent := newKeyEvent(tcell.NewEventKey(tcell.KeyDown, 0, tcell.ModNone))
+*/
+func newKeyEvent(event *tcell.EventKey) keyEventType {
+	keyEvent := keyEventType{modifiers: event.Modifiers()}
+	if strings.Contains(event.Name(), "Rune") {
+		keyEvent.keystroke = []rune{event.Rune()}
+	} else {
+		keyEvent.keystroke = []rune(strings.ToLower(event.Name()))
+	}
+	return keyEvent
+}
+
+/*
+handleKeyEvent is a method which allows you to pass a single key event to the focus manager and the controls, exactly
+as if it had just been typed. Tab and Shift+Tab move focus, every control keyboard handler then runs, and an Enter or
+Esc no control used presses the active scope's default or cancel button. It returns the keystroke if nothing used it,
+or nil if something did, and whether the screen needs to be redrawn. In addition, the following should be noted:
+
+  - The caller must hold the UI lock, and is responsible for redrawing the screen and for passing an unused
+    keystroke on to the application, which lets several events be handled with a single redraw.
+
+  - The modifier keys recorded for the event become the current modifier keys, and the keyboard focus indicator is
+    shown, at the time the event is handled rather than the time it arrived.
+
+Example:
+
+	keystroke, isScreenUpdateRequired := handleKeyEvent(keyEvent)
+*/
+func handleKeyEvent(keyEvent keyEventType) ([]rune, bool) {
+	isScreenUpdateRequired := false
+	isKeystrokeConsumed := false
+	keystroke := keyEvent.keystroke
+	reconcileFocus()
+	setModifierKeys(keyEvent.modifiers)
+	if setFocusIndicatorVisible(true) {
+		isScreenUpdateRequired = true
+	}
+	switch string(keystroke) {
+	case "tab":
+		// An open dropdown tray belongs to the control losing focus, so it is closed before focus moves on.
+		Dropdown.closeAllOpen()
+		focusNext()
+		keystroke = nil
+		isScreenUpdateRequired = true
+		isKeystrokeConsumed = true
+	case "backtab", "shift+backtab", "shift+tab":
+		Dropdown.closeAllOpen()
+		focusPrevious()
+		keystroke = nil
+		isScreenUpdateRequired = true
+		isKeystrokeConsumed = true
+	}
+	updateRequired, consumed := runKeyboardEventHandlers(keystroke, getKeyboardEventHandlers())
+	isScreenUpdateRequired = isScreenUpdateRequired || updateRequired
+	isKeystrokeConsumed = isKeystrokeConsumed || consumed
+	// Enter and Esc that no control used fall through to the active scope's default and cancel buttons.
+	if !isKeystrokeConsumed && keystroke != nil {
+		if scopeButton := getDefaultButtonForKey(string(keystroke)); scopeButton.controlAlias != "" {
+			buttonHistory.set(scopeButton.layerAlias, scopeButton.controlAlias)
+			isScreenUpdateRequired = true
+			isKeystrokeConsumed = true
+		}
+	}
+	if isKeystrokeConsumed {
+		return nil, isScreenUpdateRequired
+	}
+	return keystroke, isScreenUpdateRequired
+}
+
+/*
+flushPendingKeyEvents is a method which allows you to hand every key event that ordered keyboard mode is holding back
+to the controls, oldest first, placing each keystroke no control used into the keyboard buffer in the same order. It
+returns whether the screen needs to be redrawn, which is left to the caller. The caller must hold the UI lock.
+
+Example:
+
+	if flushPendingKeyEvents() {
+		updateDisplayLocked(false)
+	}
+*/
+func flushPendingKeyEvents() bool {
+	isScreenUpdateRequired := false
+	for {
+		keyEvent, isFound := orderedKeyboard.popPendingKeyEvent()
+		if !isFound {
+			break
+		}
+		keystroke, updateRequired := handleKeyEvent(keyEvent)
+		isScreenUpdateRequired = isScreenUpdateRequired || updateRequired
+		if keystroke != nil {
+			KeyboardMemory.AddToBuffer(keystroke)
+		}
+	}
+	return isScreenUpdateRequired
 }
 
 /*

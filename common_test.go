@@ -168,6 +168,7 @@ func resetInputState() {
 	setFocusedControl("", "", constants.NullControlType)
 	setPreviouslyHighlightedControl("", "", constants.NullControlType)
 	setModifierKeys(tcell.ModNone)
+	orderedKeyboard.reset()
 	readKeyboardBuffer()
 	buttonHistory.clear()
 	selectorLastClick = selectorClickType{}

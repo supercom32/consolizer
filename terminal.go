@@ -325,17 +325,40 @@ func GetTerminalSize() (int, int) {
 
 /*
 Inkey is a method which allows you to read keyboard input from the user's terminal. This method returns the character
-pressed or a keyword representing the special key pressed (for example: 'a', 'A', 'escape', 'f10', etc.). In addition,
-the following should be noted:
+pressed or a keyword representing the special key pressed (for example: 'a', 'A', 'esc', 'f10', etc.), or nil if no
+key is waiting. In addition, the following should be noted:
 
-- If more than one keystroke is recorded, it is stored sequentially in the input buffer and this method needs to be
-  called repeatedly in order to read them.
+  - If more than one keystroke is recorded, it is stored sequentially in the input buffer and this method needs to be
+    called repeatedly in order to read them.
+
+  - While ordered keyboard mode is on, as described for SetOrderedKeyboard, each call also hands the oldest key event
+    held back for it to the controls. If a control uses that key, this returns nil even though more keys may be
+    waiting, so a loop that stops at the first nil reads the remaining keys on its next pass.
+
+  - Keys already in the input buffer were typed before any key still held back, so they are returned first.
 
 Example:
-    keystroke := Inkey()
+
+	keystroke := Inkey()
 */
 func Inkey() []rune {
-	return KeyboardMemory.GetFromBuffer()
+	orderedKeyboard.recordInkeyCall()
+	if keystroke := KeyboardMemory.GetFromBuffer(); keystroke != nil {
+		return keystroke
+	}
+	if !orderedKeyboard.hasPendingKeyEvents() {
+		return nil
+	}
+	defer lockUIState()()
+	keyEvent, isFound := orderedKeyboard.popPendingKeyEvent()
+	if !isFound {
+		return nil
+	}
+	keystroke, isScreenUpdateRequired := handleKeyEvent(keyEvent)
+	if isScreenUpdateRequired {
+		updateDisplayLocked(false)
+	}
+	return keystroke
 }
 
 /*
