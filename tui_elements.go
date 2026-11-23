@@ -6,6 +6,7 @@ import (
 	"github.com/supercom32/consolizer/constants"
 	"github.com/supercom32/consolizer/stringformat"
 	"github.com/supercom32/consolizer/types"
+	"unicode"
 )
 
 /*
@@ -583,6 +584,22 @@ func drawShadow(layerEntry *types.LayerEntryType, attributeEntry types.Attribute
 			}
 		}
 	}
+}
+
+/*
+getControlFillCharacter is a method which allows you to resolve the character a control's style asks to fill its empty
+cells with. A printable rune that occupies a single column is returned as is, while 0 and any other rune, such as a
+control character or a wide rune that could not fit in a single empty cell, resolves to a space.
+
+Example:
+
+	fillCharacter := getControlFillCharacter(styleEntry.TextField.FillCharacter)
+*/
+func getControlFillCharacter(fillCharacter rune) rune {
+	if fillCharacter != 0 && unicode.IsPrint(fillCharacter) && stringformat.GetWidthOfRuneWhenPrinted(fillCharacter) == 1 {
+		return fillCharacter
+	}
+	return ' '
 }
 
 /*

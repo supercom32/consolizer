@@ -5,7 +5,6 @@ import (
 	"github.com/supercom32/consolizer/memory"
 	"github.com/supercom32/consolizer/stringformat"
 	"sort"
-	"strings"
 
 	"github.com/google/uuid"
 	"github.com/supercom32/consolizer/constants"
@@ -83,25 +82,32 @@ func (shared *layerType) clear(layerEntry *types.LayerEntryType) {
 }
 
 /*
-processMarkupTag is a method which allows you to process a markup tag in the text and update the attribute entry
-accordingly. In addition, the following should be noted:
+processMarkupTag is a method which allows you to parse the markup tag that opens at a given rune index and return
+the attribute entry it selects along with the rune index at which parsing should resume. The text is scanned
+strictly by rune, so multi-byte characters before, inside or after the tag never shift where the tag is found.
+In addition, the following should be noted:
 
-- It returns the updated attribute entry and the new character index after the tag.
+  - The returned index is that of the final "}" of the closing "}}", so a caller advancing by one rune afterwards
+    lands on the first character after the tag.
 
-- If no valid closing tag is found, the opening tag is treated as regular text.
+  - When no closing "}}" follows the opening "{{", the default attribute entry and the unchanged index are
+    returned, which lets the caller print the "{{" as regular text.
 
-- Special tag "/" resets to the default attribute entry.
+  - The tag "/", an empty tag and any tag naming an unknown text style all select the default attribute entry.
+
+  - The caller must ensure "{{" begins at currentIndex.
 
 Example:
-    attr, nextIndex := layer.processMarkupTag(runes, 5, "Hello {{red}}World", defaultAttr)
+
+	attributeEntry, nextIndex := layer.processMarkupTag([]rune("Efraín {{red}}World"), 7, defaultAttributeEntry)
 */
-func (shared *layerType) processMarkupTag(textToPrint []rune, currentIndex int, textString string, defaultAttributeEntry types.AttributeEntryType) (types.AttributeEntryType, int) {
+func (shared *layerType) processMarkupTag(textToPrint []rune, currentIndex int, defaultAttributeEntry types.AttributeEntryType) (types.AttributeEntryType, int) {
 	tagStartIndex := currentIndex + 2
-	tagEndRelIndex := strings.Index(textString[tagStartIndex:], "}}")
-	if tagEndRelIndex != -1 {
-		tagEndIndex := tagStartIndex + tagEndRelIndex
-		tagContent := textString[tagStartIndex:tagEndIndex]
-		return getDialogAttributeEntry(tagContent, defaultAttributeEntry), tagEndIndex + 1
+	for tagEndIndex := tagStartIndex; tagEndIndex+1 < len(textToPrint); tagEndIndex++ {
+		if textToPrint[tagEndIndex] == '}' && textToPrint[tagEndIndex+1] == '}' {
+			tagContent := string(textToPrint[tagStartIndex:tagEndIndex])
+			return getDialogAttributeEntry(tagContent, defaultAttributeEntry), tagEndIndex + 1
+		}
 	}
 	return defaultAttributeEntry, currentIndex
 }
@@ -297,12 +303,6 @@ func (shared *layerType) print(layerEntry *types.LayerEntryType, attributeEntry 
 	// For markup
 	currentAttributeEntry := attributeEntry
 
-	// Convert runes to string if markup is needed
-	var textString string
-	if useMarkup {
-		textString = string(textToPrint)
-	}
-
 	for currentCharacterIndex := 0; currentCharacterIndex < len(textToPrint); currentCharacterIndex++ {
 		currentCharacter := textToPrint[currentCharacterIndex]
 
@@ -323,7 +323,7 @@ func (shared *layerType) print(layerEntry *types.LayerEntryType, attributeEntry 
 		// Handle markup
 		if useMarkup && currentCharacter == '{' && currentCharacterIndex+1 < len(textToPrint) && textToPrint[currentCharacterIndex+1] == '{' {
 			savedCharacterIndex := currentCharacterIndex
-			currentAttributeEntry, currentCharacterIndex = shared.processMarkupTag(textToPrint, currentCharacterIndex, textString, attributeEntry)
+			currentAttributeEntry, currentCharacterIndex = shared.processMarkupTag(textToPrint, currentCharacterIndex, attributeEntry)
 			if savedCharacterIndex != currentCharacterIndex {
 				continue
 			}

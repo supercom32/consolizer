@@ -197,9 +197,13 @@ func (shared *textFieldType) drawOnLayer(layerEntry types.LayerEntryType) {
 /*
 drawInputString is a method which allows you to draw the value of a text field, starting from a given rune position,
 in the field's style. Password protected values are masked, the cursor is drawn while the field has focus, and
-highlighted text is drawn in the highlight colours. In addition, the following should be noted:
+highlighted text is drawn in the highlight colours. Cells the value does not cover are drawn with the style's fill
+character, which is a space by default, in the field's normal colours. In addition, the following should be noted:
 
   - A starting position outside the value is clamped into it, so drawing cannot panic on the event goroutine.
+
+  - The value's trailing sentinel blank is drawn as the fill character too, except where the cursor or a highlight
+    is drawn on it, so the fill runs on directly from the last typed character.
 
 Example:
 
@@ -222,7 +226,8 @@ func (shared *textFieldType) drawInputString(layerEntry *types.LayerEntryType, s
 	focusedControlType := focusedControl.controlType
 	isFocused := focusedControlType == constants.CellTypeTextField && focusedLayerAlias == layerEntry.LayerAlias && focusedControlAlias == textFieldAlias
 	lastRuneIndex := len(textFieldEntry.CurrentValue) - 1
-	fillArea(layerEntry, attributeEntry, " ", xLocation, yLocation, width, 1, 0)
+	fillCharacter := getControlFillCharacter(styleEntry.TextField.FillCharacter)
+	fillArea(layerEntry, attributeEntry, string(fillCharacter), xLocation, yLocation, width, 1, 0)
 	// Here we loop over each character to draw since we need to accommodate for unique
 	// cell IDs (if required for mouse location detection). The column offset advances by the
 	// printed width of each rune so wide runes stay aligned with the underlying cells.
@@ -264,6 +269,8 @@ func (shared *textFieldType) drawInputString(layerEntry *types.LayerEntryType, s
 			// sentinel blank is never masked.
 			characterToDraw = '*'
 			isMaskedWideRune = stringformat.GetWidthOfRuneWhenPrinted(currentCharacter) == 2
+		} else if absolutePosition == lastRuneIndex && currentCharacter == ' ' && !isCursor && !isHighlighted {
+			characterToDraw = fillCharacter
 		}
 		putRune(layerEntry.CharacterMemory, xLocation+xLocationOffset, yLocation, characterToDraw, attributeEntry, layerEntry.Width, layerEntry.Height)
 		if isMaskedWideRune {

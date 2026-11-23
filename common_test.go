@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/gdamore/tcell/v2"
 	"github.com/supercom32/consolizer/constants"
+	"github.com/supercom32/consolizer/stringformat"
 	"github.com/supercom32/consolizer/types"
 	"os"
 	"testing"
@@ -421,4 +422,50 @@ Example:
 func lockedTooltipMouseEvent() bool {
 	defer lockUIState()()
 	return Tooltip.updateMouseEvent()
+}
+
+/*
+addTestTextStyle is a method which allows you to register a text style with the given foreground colour for the length
+of a test. The style is removed again when the test finishes, so it cannot leak into later tests that share the
+package-level style registry.
+
+Example:
+
+	addTestTextStyle(test, "runeTestWarn", GetRGBColor(255, 0, 0))
+*/
+func addTestTextStyle(test testing.TB, textStyleAlias string, foregroundColor constants.ColorType) {
+	test.Helper()
+	textStyleEntry := NewTextStyle()
+	textStyleEntry.ForegroundColor = foregroundColor
+	AddTextStyle(textStyleAlias, textStyleEntry)
+	test.Cleanup(func() { DeleteTextStyle(textStyleAlias) })
+}
+
+/*
+assertCellsShowText is a method which allows you to fail a test unless a row of cells shows the expected text, read
+from the given starting column. Each expected rune is compared with the cell it should occupy, and the column then
+advances by the rune's printed width, so a wide rune's placeholder cell is stepped over rather than compared. It
+returns the column just after the last rune checked, which lets the caller verify what follows the text.
+
+Example:
+
+	nextColumn := assertCellsShowText(test, "selector item", getCell, 2, "Efraín  Defector")
+*/
+func assertCellsShowText(test *testing.T, context string, getCell func(column int) types.CharacterEntryType, startColumn int, expectedText string) int {
+	test.Helper()
+	column := startColumn
+	var actualText []rune
+	isMatching := true
+	for _, expectedCharacter := range expectedText {
+		actualCharacter := getCell(column).Character
+		actualText = append(actualText, actualCharacter)
+		if actualCharacter != expectedCharacter {
+			isMatching = false
+		}
+		column += stringformat.GetWidthOfRuneWhenPrinted(expectedCharacter)
+	}
+	if !isMatching {
+		test.Errorf("%s: expected %q from column %d, got %q", context, expectedText, startColumn, string(actualText))
+	}
+	return column
 }

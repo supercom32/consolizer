@@ -3,8 +3,8 @@ package consolizer
 import (
 	"fmt"
 	"github.com/supercom32/consolizer/memory"
+	"github.com/supercom32/consolizer/stringformat"
 	"github.com/supercom32/consolizer/types"
-	"strings"
 )
 
 var textStyleRegistry *memory.MemoryManager[types.TextCellStyleEntryType]
@@ -68,41 +68,17 @@ func IsTextStyleExists(textStyleAlias string) bool {
 }
 
 /*
-CalculateStringLengthWithoutMarkup is a method which calculates the length of a string without counting markup tags. In
-addition, the following should be noted:
+CalculateStringLengthWithoutMarkup is a method which allows you to calculate how many screen columns a string occupies
+once its markup tags are removed. Markup tags are sequences surrounded by "{{" and "}}", and the text is measured by
+rune rather than by byte, so a multi-byte character such as "í" counts as one column and a wide character such as
+"世" counts as two. In addition, the following should be noted:
 
-- Markup tags are sequences surrounded by "{{" and "}}".
-
-- This is useful for calculating the visual length of a string that contains markup.
+  - An opening "{{" with no closing "}}" after it is not a tag, so both of its characters are counted.
 
 Example:
-    length := CalculateStringLengthWithoutMarkup("{{red}}Hello{{white}} World")
+
+	length := CalculateStringLengthWithoutMarkup("{{red}}Efraín{{/}} 世界")
 */
 func CalculateStringLengthWithoutMarkup(text string) int {
-	length := 0
-	i := 0
-
-	for i < len(text) {
-		// Look for a possible markup opening
-		if i+1 < len(text) && text[i] == '{' && text[i+1] == '{' {
-			// Look ahead for closing }}
-			end := strings.Index(text[i+2:], "}}")
-			if end != -1 {
-				// Found closing tag — skip entire markup
-				i += 2 + end + 2 // Skip {{tag}}
-				continue
-			} else {
-				// No closing }} — treat "{{" as normal text
-				length += 2
-				i += 2
-				continue
-			}
-		}
-
-		// Regular character
-		length++
-		i++
-	}
-
-	return length
+	return stringformat.GetWidthOfRunesWhenPrintedWithoutMarkup([]rune(text))
 }

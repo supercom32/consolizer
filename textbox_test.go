@@ -1354,3 +1354,69 @@ func TestTextboxCopyAndCutPutCleanTextOnClipboard(test *testing.T) {
 		test.Fatalf("expected the cut to leave the textbox empty, got %q", text)
 	}
 }
+
+/*
+TestTextboxFillCharacter is a test which verifies that a textbox draws its empty cells with the style's fill character
+in the textbox's normal colours, that the cursor still draws over the fill, and that a fill character of 0 keeps
+filling with spaces.
+
+Example:
+
+	Expected Inputs:
+	    A borderless textbox at (2, 2), six columns wide and three rows high, holding "ab" and "c" on two lines, drawn
+	    once with fill '.' unfocused, once with fill '.' focused and the cursor just after "ab", and once with fill 0.
+	Expected Outputs:
+	    Rows 2 to 4 from column 2 show "ab....", "c....." and "......" when unfocused; "ab ...", "c....." and
+	    "......" with the cursor cell at column 4 in the cursor colours; and "ab    ", "c     " and "      " with
+	    fill 0. Every other cell uses the textbox's foreground and background colours.
+*/
+func TestTextboxFillCharacter(test *testing.T) {
+	testCases := []struct {
+		name          string
+		fillCharacter rune
+		isFocused     bool
+		expectedRows  []string
+		cursorColumn  int
+	}{
+		{"unfocused", '.', false, []string{"ab....", "c.....", "......"}, -1},
+		{"cursor after the line", '.', true, []string{"ab ...", "c.....", "......"}, 4},
+		{"no fill character", 0, false, []string{"ab    ", "c     ", "      "}, -1},
+	}
+
+	for _, testCase := range testCases {
+		test.Run(testCase.name, func(test *testing.T) {
+			resetInputState()
+			test.Cleanup(resetInputState)
+			layer1, _, _, styleEntry := CommonTestSetup(test)
+			styleEntry.Textbox.ForegroundColor = GetRGBColor(10, 20, 30)
+			styleEntry.Textbox.BackgroundColor = GetRGBColor(40, 50, 60)
+			styleEntry.Textbox.CursorForegroundColor = GetRGBColor(70, 80, 90)
+			styleEntry.Textbox.CursorBackgroundColor = GetRGBColor(100, 110, 120)
+			styleEntry.Textbox.FillCharacter = testCase.fillCharacter
+			textboxInstance := layer1.AddTextbox(styleEntry, 2, 2, 6, 3, false)
+			textboxInstance.SetText("ab\nc")
+			if testCase.isFocused {
+				setFocusedControl(layer1.layerAlias, textboxInstance.controlAlias, constants.CellTypeTextbox)
+				textboxInstance.SetCursorPosition(2, 0)
+			}
+			UpdateDisplay(false)
+
+			for rowIndex, expectedRow := range testCase.expectedRows {
+				row := 2 + rowIndex
+				getCell := func(column int) types.CharacterEntryType { return getCellInformationUnderMouseCursor(column, row) }
+				assertCellsShowText(test, fmt.Sprintf("%s row %d", testCase.name, row), getCell, 2, expectedRow)
+				for column := 2; column < 8; column++ {
+					attributeEntry := getCell(column).AttributeEntry
+					expectedForegroundColor := styleEntry.Textbox.ForegroundColor
+					expectedBackgroundColor := styleEntry.Textbox.BackgroundColor
+					if rowIndex == 0 && column == testCase.cursorColumn {
+						expectedForegroundColor = styleEntry.Textbox.CursorForegroundColor
+						expectedBackgroundColor = styleEntry.Textbox.CursorBackgroundColor
+					}
+					assert.Equal(test, expectedForegroundColor, attributeEntry.ForegroundColor, fmt.Sprintf("wrong foreground colour at (%d, %d)", column, row))
+					assert.Equal(test, expectedBackgroundColor, attributeEntry.BackgroundColor, fmt.Sprintf("wrong background colour at (%d, %d)", column, row))
+				}
+			}
+		})
+	}
+}

@@ -1,6 +1,7 @@
 package consolizer
 
 import (
+	"fmt"
 	"math/rand"
 	"sync"
 	"testing"
@@ -1261,6 +1262,117 @@ func TestCalculateWordWidthWithRunes(test *testing.T) {
 	inputNoMarkup := []rune(" Hello World")
 	widthNoMarkup := calculateWordWidth(inputNoMarkup, 6, false)
 	assert.Equal(test, 5, widthNoMarkup, "calculateWordWidth failed for standard ASCII")
+}
+
+/*
+TestProcessMarkupTagWithMultiByteRunes is a test which verifies that processMarkupTag finds a tag by rune index, so
+multi-byte characters before, inside or after the tag no longer shift where the tag is read or where parsing
+resumes, and an unclosed "{{" is still left as regular text.
+
+Example:
+
+	Expected Inputs:
+	    Styles "runeTestWarn" (red) and "runeTestWärn" (green) registered. Each case gives a text and the rune index
+	    of its "{{":
+	    "Hello {{runeTestWarn}}World" at 6, "Efraín  {{runeTestWarn}}Defector{{/}}  ○○○" at 8,
+	    "x{{runeTestWärn}}ÿz" at 1, "{{runeTestWarn}}○○○" at 0, "·í○{{/}}a" at 3, "ñññññ{{runeTestWarn}}{{x" at 21,
+	    "í {{runeTestWarn" at 2 and "ñ{{}}ñ" at 1.
+	Expected Outputs:
+	    The resume index is that of the final "}" of the closing "}}": 21, 23, 16, 15, 7 respectively. The unclosed
+	    cases return their own index, 21 and 2, with the default attribute entry, and "{{}}" returns 4 with the default
+	    attribute entry. Tags naming a style return that style's foreground colour, and "{{/}}" returns the default.
+*/
+func TestProcessMarkupTagWithMultiByteRunes(test *testing.T) {
+	warnColor := GetRGBColor(255, 0, 0)
+	wideTagColor := GetRGBColor(0, 255, 0)
+	addTestTextStyle(test, "runeTestWarn", warnColor)
+	addTestTextStyle(test, "runeTestWärn", wideTagColor)
+	defaultAttributeEntry := types.NewAttributeEntry()
+	defaultAttributeEntry.ForegroundColor = GetRGBColor(1, 2, 3)
+
+	testCases := []struct {
+		name                    string
+		text                    string
+		currentIndex            int
+		expectedIndex           int
+		expectedForegroundColor constants.ColorType
+	}{
+		{"ASCII only", "Hello {{runeTestWarn}}World", 6, 21, warnColor},
+		{"multi-byte before tag", "Efraín  {{runeTestWarn}}Defector{{/}}  ○○○", 8, 23, warnColor},
+		{"multi-byte inside tag", "x{{runeTestWärn}}ÿz", 1, 16, wideTagColor},
+		{"multi-byte after tag", "{{runeTestWarn}}○○○", 0, 15, warnColor},
+		{"reset tag after multi-byte", "·í○{{/}}a", 3, 7, defaultAttributeEntry.ForegroundColor},
+		{"unclosed after earlier tag", "ñññññ{{runeTestWarn}}{{x", 21, 21, defaultAttributeEntry.ForegroundColor},
+		{"unclosed after multi-byte", "í {{runeTestWarn", 2, 2, defaultAttributeEntry.ForegroundColor},
+		{"empty tag between multi-byte", "ñ{{}}ñ", 1, 4, defaultAttributeEntry.ForegroundColor},
+	}
+
+	for _, testCase := range testCases {
+		textToPrint := []rune(testCase.text)
+		assert.Equal(test, []rune("{{"), textToPrint[testCase.currentIndex:testCase.currentIndex+2], testCase.name+": test case must point at a \"{{\"")
+		attributeEntry, nextIndex := layer.processMarkupTag(textToPrint, testCase.currentIndex, defaultAttributeEntry)
+		assert.Equal(test, testCase.expectedIndex, nextIndex, testCase.name+": wrong resume index")
+		assert.Equal(test, testCase.expectedForegroundColor, attributeEntry.ForegroundColor, testCase.name+": wrong attribute entry")
+	}
+}
+
+/*
+TestPrintMarkupWithMultiByteRunes is a test which verifies that printing markup text containing multi-byte characters
+draws every visible character in the right column with the right style, instead of dropping characters and shifting
+the rest of the line as happened when tags were located by byte offset.
+
+Example:
+
+	Expected Inputs:
+	    A 60x10 layer and styles "runeTestWarn" (red) and "runeTestWärn" (green). PrintMarkup on separate rows of:
+	    "Efraín  {{runeTestWarn}}Defector{{/}}  ○○○", "x{{runeTestWärn}}ÿ{{/}}z", "{{runeTestWarn}}○○○{{/}}·end",
+	    "ñññññ{{runeTestWarn}}A{{/}} {{oops ○" and "Plain {{runeTestWarn}}ASCII{{/}} text".
+	Expected Outputs:
+	    The rows show "Efraín  Defector  ○○○", "xÿz", "○○○·end", "ñññññA {{oops ○" and "Plain ASCII text". The tagged
+	    characters are red or green and the characters after "{{/}}" or an unclosed "{{" use the layer's default
+	    foreground colour.
+*/
+func TestPrintMarkupWithMultiByteRunes(test *testing.T) {
+	commonResource.isDebugEnabled = true
+	InitializeTerminal(80, 25)
+	test.Cleanup(RestoreTerminalSettings)
+	layer.ReInitializeScreenMemory()
+	test.Cleanup(DeleteAllLayers)
+	warnColor := GetRGBColor(255, 0, 0)
+	wideTagColor := GetRGBColor(0, 255, 0)
+	addTestTextStyle(test, "runeTestWarn", warnColor)
+	addTestTextStyle(test, "runeTestWärn", wideTagColor)
+	layerInstance := AddLayer(0, 0, 60, 10, 1, nil)
+	layerEntry := layerRegistry.Get(layerInstance.layerAlias)
+	defaultColor := layerEntry.DefaultAttribute.ForegroundColor
+
+	testCases := []struct {
+		name          string
+		markup        string
+		expectedText  string
+		styledColumns map[int]constants.ColorType
+	}{
+		{"multi-byte before tag", "Efraín  {{runeTestWarn}}Defector{{/}}  ○○○", "Efraín  Defector  ○○○",
+			map[int]constants.ColorType{5: defaultColor, 8: warnColor, 15: warnColor, 16: defaultColor, 18: defaultColor}},
+		{"multi-byte inside tag", "x{{runeTestWärn}}ÿ{{/}}z", "xÿz",
+			map[int]constants.ColorType{0: defaultColor, 1: wideTagColor, 2: defaultColor}},
+		{"multi-byte after tag", "{{runeTestWarn}}○○○{{/}}·end", "○○○·end",
+			map[int]constants.ColorType{0: warnColor, 2: warnColor, 3: defaultColor}},
+		{"unclosed tag after multi-byte", "ñññññ{{runeTestWarn}}A{{/}} {{oops ○", "ñññññA {{oops ○",
+			map[int]constants.ColorType{5: warnColor, 7: defaultColor, 14: defaultColor}},
+		{"ASCII only", "Plain {{runeTestWarn}}ASCII{{/}} text", "Plain ASCII text",
+			map[int]constants.ColorType{5: defaultColor, 6: warnColor, 10: warnColor, 11: defaultColor}},
+	}
+
+	for rowIndex, testCase := range testCases {
+		layerInstance.PrintMarkup(0, rowIndex, 0, testCase.markup)
+		getCell := func(column int) types.CharacterEntryType { return layerEntry.CharacterMemory[rowIndex][column] }
+		nextColumn := assertCellsShowText(test, testCase.name, getCell, 0, testCase.expectedText)
+		assert.Equal(test, rune(0), getCell(nextColumn).Character, testCase.name+": nothing should follow the text")
+		for column, expectedColor := range testCase.styledColumns {
+			assert.Equal(test, expectedColor, getCell(column).AttributeEntry.ForegroundColor, fmt.Sprintf("%s: wrong colour at column %d", testCase.name, column))
+		}
+	}
 }
 
 /*

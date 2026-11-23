@@ -1209,7 +1209,8 @@ func (shared *textboxType) draw(layerEntry *types.LayerEntryType, textboxAlias s
 		drawBorder(layerEntry, textboxEntry.StyleEntry, attributeEntry, textboxEntry.XLocation-1, textboxEntry.YLocation-1, textboxEntry.Width+2, textboxEntry.Height+2, false)
 	}
 	attributeEntry.CellType = constants.CellTypeTextbox
-	fillArea(layerEntry, attributeEntry, " ", textboxEntry.XLocation, textboxEntry.YLocation, textboxEntry.Width, textboxEntry.Height, textboxEntry.ViewportYLocation)
+	fillCharacter := getControlFillCharacter(textboxEntry.StyleEntry.Textbox.FillCharacter)
+	fillArea(layerEntry, attributeEntry, string(fillCharacter), textboxEntry.XLocation, textboxEntry.YLocation, textboxEntry.Width, textboxEntry.Height, textboxEntry.ViewportYLocation)
 	attributeEntry.CellControlAlias = textboxAlias
 
 	// The textbox draws in DISPLAY coordinates: ViewportYLocation is an index into the wrapped rows and
@@ -1409,6 +1410,9 @@ TextData line and rune index. In addition, the following should be noted:
   - The cursor and highlight are painted by comparing these logical cell coordinates against the textbox's
     logical cursor and highlight bounds.
 
+  - The line's trailing sentinel blank is drawn as the style's fill character, except where the cursor or a
+    highlight is drawn on it, so the fill runs on directly from the last character of the line.
+
 Example:
 
 	textbox.printControlText(layerEntry, "textbox1", style, attribute, 10, 10, runes, 0, 0, 0, 0)
@@ -1416,12 +1420,18 @@ Example:
 func (shared *textboxType) printControlText(layerEntry *types.LayerEntryType, textboxAlias string, styleEntry types.TuiStyleEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, arrayOfRunes []rune, logicalLineIndex int, logicalStartRuneIndex int, cursorXLocation int, cursorYLocation int) {
 	currentControlId := logicalStartRuneIndex
 	currentXOffset := 0
+	textboxEntry := textboxRegistry.Get(layerEntry.LayerAlias, textboxAlias)
+	sentinelRuneIndex := -1
+	if logicalLineIndex >= 0 && logicalLineIndex < len(textboxEntry.TextData) {
+		sentinelRuneIndex = len(textboxEntry.TextData[logicalLineIndex]) - 1
+	}
+	fillCharacter := getControlFillCharacter(styleEntry.Textbox.FillCharacter)
 	for _, currentCharacter := range arrayOfRunes {
 		attributeEntry.CellControlId = currentControlId
 		attributeEntry.CellControlLocation = logicalLineIndex
+		isPlainCell := true
 		// If the textbox being drawn is focused, render the cursor as well.
 		if isControlCurrentlyFocused(layerEntry.LayerAlias, textboxAlias, constants.CellTypeTextbox) {
-			textboxEntry := textboxRegistry.Get(layerEntry.LayerAlias, textboxAlias)
 			if textboxEntry.IsHighlightActive {
 				// Check if current position is within highlight range
 				isHighlighted := false
@@ -1466,9 +1476,11 @@ func (shared *textboxType) printControlText(layerEntry *types.LayerEntryType, te
 				if isHighlighted {
 					attributeEntry.ForegroundColor = styleEntry.Textbox.HighlightForegroundColor
 					attributeEntry.BackgroundColor = styleEntry.Textbox.HighlightBackgroundColor
+					isPlainCell = false
 				} else if cursorXLocation == currentControlId && cursorYLocation == logicalLineIndex {
 					attributeEntry.ForegroundColor = styleEntry.Textbox.CursorForegroundColor
 					attributeEntry.BackgroundColor = styleEntry.Textbox.CursorBackgroundColor
+					isPlainCell = false
 				} else {
 					attributeEntry.ForegroundColor = styleEntry.Textbox.ForegroundColor
 					attributeEntry.BackgroundColor = styleEntry.Textbox.BackgroundColor
@@ -1476,6 +1488,7 @@ func (shared *textboxType) printControlText(layerEntry *types.LayerEntryType, te
 			} else if cursorXLocation == currentControlId && cursorYLocation == logicalLineIndex {
 				attributeEntry.ForegroundColor = styleEntry.Textbox.CursorForegroundColor
 				attributeEntry.BackgroundColor = styleEntry.Textbox.CursorBackgroundColor
+				isPlainCell = false
 			} else {
 				attributeEntry.ForegroundColor = styleEntry.Textbox.ForegroundColor
 				attributeEntry.BackgroundColor = styleEntry.Textbox.BackgroundColor
@@ -1483,7 +1496,11 @@ func (shared *textboxType) printControlText(layerEntry *types.LayerEntryType, te
 		}
 		// putRune writes the wide-rune placeholder itself, with the same attributes (and therefore the same
 		// CellControlId) as the lead cell, so a click on either half of a wide rune resolves to this id.
-		putRune(layerEntry.CharacterMemory, xLocation+currentXOffset, yLocation, currentCharacter, attributeEntry, layerEntry.Width, layerEntry.Height)
+		characterToDraw := currentCharacter
+		if isPlainCell && currentControlId == sentinelRuneIndex && currentCharacter == ' ' {
+			characterToDraw = fillCharacter
+		}
+		putRune(layerEntry.CharacterMemory, xLocation+currentXOffset, yLocation, characterToDraw, attributeEntry, layerEntry.Width, layerEntry.Height)
 		if stringformat.IsRuneCharacterWide(currentCharacter) {
 			currentXOffset += 2
 		} else {

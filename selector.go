@@ -7,6 +7,7 @@ import (
 	"slices"
 	"sync/atomic"
 	"time"
+	"unicode/utf8"
 
 	"github.com/supercom32/consolizer/constants"
 	"github.com/supercom32/consolizer/types"
@@ -860,7 +861,7 @@ func (shared *selectorType) formatSelectorItemText(menuItemText string, itemWidt
 
 			// Combine with original text (preserving markup)
 			menuItemName = leftPadding + menuItemText
-			if len(menuItemName) < itemWidth {
+			if utf8.RuneCountInString(menuItemName) < itemWidth {
 				menuItemName += rightPadding
 			}
 		}

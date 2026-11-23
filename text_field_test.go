@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/supercom32/consolizer/constants"
 	"github.com/supercom32/consolizer/stringformat"
+	"github.com/supercom32/consolizer/types"
 	"strconv"
 	"strings"
 	"testing"
@@ -1069,5 +1070,86 @@ func TestTextFieldCopyAndCutPutCleanTextOnClipboard(test *testing.T) {
 	}
 	if value := textField.GetValue(); value != "" {
 		test.Fatalf("expected the cut to leave the field empty, got %q", value)
+	}
+}
+
+/*
+TestTextFieldFillCharacter is a test which verifies that a text field draws its empty cells with the style's fill
+character in the field's normal colours, that the cursor, a selection and password masking still draw over the fill,
+and that a fill character of 0 keeps filling with spaces.
+
+Example:
+
+	Expected Inputs:
+	    A text field at (2, 2), six columns wide, holding "ab", drawn once for each case:
+	    fill '_' unfocused, fill '_' focused with the cursor at position 2 (just after "ab"), fill '_' focused with the
+	    cursor at position 0, fill '_' focused with "ab" selected by SetSelection(0, 1), which leaves the cursor on
+	    "b", fill '_' in password mode, and fill 0 unfocused.
+	Expected Outputs:
+	    Row 2 from column 2 shows "ab____", "ab ___", "ab____", "ab____", "**____" and "ab    " respectively. Fill
+	    cells use the text field's foreground and background colours, the cursor cell (column 4, 2 and 3 in the
+	    cursor and selection cases) uses the cursor colours, the other selected cell uses the highlight colours, and
+	    column 8, just past the field, never shows the fill character.
+*/
+func TestTextFieldFillCharacter(test *testing.T) {
+	testCases := []struct {
+		name                string
+		fillCharacter       rune
+		isFocused           bool
+		cursorPosition      int
+		isSelected          bool
+		isPasswordProtected bool
+		expectedText        string
+		cursorColumn        int
+	}{
+		{"unfocused", '_', false, 0, false, false, "ab____", -1},
+		{"cursor after the value", '_', true, 2, false, false, "ab ___", 4},
+		{"cursor on the first character", '_', true, 0, false, false, "ab____", 2},
+		{"selection", '_', true, 2, true, false, "ab____", 3},
+		{"password", '_', false, 0, false, true, "**____", -1},
+		{"no fill character", 0, false, 0, false, false, "ab    ", -1},
+	}
+
+	for _, testCase := range testCases {
+		test.Run(testCase.name, func(test *testing.T) {
+			resetInputState()
+			test.Cleanup(resetInputState)
+			layer1, _, _, styleEntry := CommonTestSetup(test)
+			styleEntry.TextField.ForegroundColor = GetRGBColor(10, 20, 30)
+			styleEntry.TextField.BackgroundColor = GetRGBColor(40, 50, 60)
+			styleEntry.TextField.CursorForegroundColor = GetRGBColor(70, 80, 90)
+			styleEntry.TextField.CursorBackgroundColor = GetRGBColor(100, 110, 120)
+			styleEntry.TextField.HighlightForegroundColor = GetRGBColor(130, 140, 150)
+			styleEntry.TextField.HighlightBackgroundColor = GetRGBColor(160, 170, 180)
+			styleEntry.TextField.FillCharacter = testCase.fillCharacter
+			textFieldInstance := layer1.AddTextField(styleEntry, 2, 2, 6, 10, testCase.isPasswordProtected, "ab", true)
+			if testCase.isFocused {
+				setFocusedControl(layer1.layerAlias, textFieldInstance.controlAlias, constants.CellTypeTextField)
+			}
+			textFieldInstance.SetCursorPosition(testCase.cursorPosition)
+			if testCase.isSelected {
+				textFieldInstance.SetSelection(0, 1)
+			}
+			UpdateDisplay(false)
+
+			getCell := func(column int) types.CharacterEntryType { return getCellInformationUnderMouseCursor(column, 2) }
+			assertCellsShowText(test, testCase.name, getCell, 2, testCase.expectedText)
+			assert.NotEqual(test, '_', getCell(8).Character, "the fill must stay inside the field")
+			for column := 2; column < 8; column++ {
+				attributeEntry := getCell(column).AttributeEntry
+				expectedForegroundColor := styleEntry.TextField.ForegroundColor
+				expectedBackgroundColor := styleEntry.TextField.BackgroundColor
+				if column == testCase.cursorColumn {
+					expectedForegroundColor = styleEntry.TextField.CursorForegroundColor
+					expectedBackgroundColor = styleEntry.TextField.CursorBackgroundColor
+				} else if testCase.isSelected && column < 4 {
+					expectedForegroundColor = styleEntry.TextField.HighlightForegroundColor
+					expectedBackgroundColor = styleEntry.TextField.HighlightBackgroundColor
+				}
+				assert.Equal(test, expectedForegroundColor, attributeEntry.ForegroundColor, fmt.Sprintf("wrong foreground colour at column %d", column))
+				assert.Equal(test, expectedBackgroundColor, attributeEntry.BackgroundColor, fmt.Sprintf("wrong background colour at column %d", column))
+				assert.Equal(test, constants.CellTypeTextField, attributeEntry.CellType, fmt.Sprintf("wrong cell type at column %d", column))
+			}
+		})
 	}
 }

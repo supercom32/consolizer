@@ -132,6 +132,7 @@ type TextFieldStyle struct {
 	HighlightBackgroundColor constants.ColorType
 	CursorForegroundColor    constants.ColorType
 	CursorBackgroundColor    constants.ColorType
+	FillCharacter            rune
 }
 
 /*
@@ -148,6 +149,7 @@ type TextboxStyle struct {
 	HighlightBackgroundColor constants.ColorType
 	CursorForegroundColor    constants.ColorType
 	CursorBackgroundColor    constants.ColorType
+	FillCharacter            rune
 }
 
 /*

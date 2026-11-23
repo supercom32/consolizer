@@ -406,3 +406,34 @@ func TestDrawLines(test *testing.T) {
 		fmt.Println("Obtained:\n", obtainedValueBase64)
 	}
 }
+
+/*
+TestGetControlFillCharacter is a test which verifies that getControlFillCharacter keeps a printable single column fill
+character and resolves every other rune to a space.
+
+Example:
+
+	Expected Inputs:
+	    '_', '.', '·', 0, '\t', '\u0301' (a combining accent), '＿' (a wide underscore) and '中'.
+	Expected Outputs:
+	    '_', '.', '·', then ' ' for each of the rest.
+*/
+func TestGetControlFillCharacter(test *testing.T) {
+	testCases := []struct {
+		fillCharacter     rune
+		expectedCharacter rune
+	}{
+		{'_', '_'},
+		{'.', '.'},
+		{'·', '·'},
+		{0, ' '},
+		{'\t', ' '},
+		{'\u0301', ' '},
+		{'＿', ' '},
+		{'中', ' '},
+	}
+
+	for _, testCase := range testCases {
+		assert.Equal(test, testCase.expectedCharacter, getControlFillCharacter(testCase.fillCharacter), fmt.Sprintf("wrong fill character for %U", testCase.fillCharacter))
+	}
+}

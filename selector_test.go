@@ -1052,6 +1052,58 @@ func TestSelectorDrawWithOutOfRangeState(test *testing.T) {
 }
 
 /*
+TestSelectorDrawsMultiByteMarkupItem is a test which verifies that a selector item holding markup and multi-byte
+characters is drawn with every visible character in place, both left aligned and centred. Before the fix the tag was
+located by byte offset, so "Efraín  {{runeTestWarn}}Defector{{/}}  ○○○" drew as "Efraín  fector ...", and a centred
+item was padded by its byte length instead of its printed width.
+
+Example:
+
+	Expected Inputs:
+	    A style "runeTestWarn" (red) and a selector at (2, 2), 30 columns wide, one column, two rows high, holding
+	    "Efraín  {{runeTestWarn}}Defector{{/}}  ○○○" and "Second" with the second item highlighted. It is drawn once
+	    with left alignment and once with IsSelectionCentered set.
+	Expected Outputs:
+	    Row 2 shows "Efraín  Defector  ○○○" starting at column 2 when left aligned, and at column 6 when centred, as
+	    the 21 printed columns leave (30 - 21) / 2 = 4 columns of left padding. "D" and the final "r" of "Defector"
+	    are red, and the "○" after "{{/}}" is not.
+*/
+func TestSelectorDrawsMultiByteMarkupItem(test *testing.T) {
+	testCases := []struct {
+		name                string
+		isSelectionCentered bool
+		expectedStartColumn int
+	}{
+		{"left aligned", false, 2},
+		{"centred", true, 6},
+	}
+
+	for _, testCase := range testCases {
+		test.Run(testCase.name, func(test *testing.T) {
+			layerAlias, styleEntry := setupInputTest(test)
+			warnColor := GetRGBColor(255, 0, 0)
+			addTestTextStyle(test, "runeTestWarn", warnColor)
+			styleEntry.Selector.IsSelectionCentered = testCase.isSelectionCentered
+			selectionEntry := NewSelectionEntry()
+			selectionEntry.Add("defector", "Efraín  {{runeTestWarn}}Defector{{/}}  ○○○")
+			selectionEntry.Add("second", "Second")
+			Selector.Add(layerAlias, "runeList", styleEntry, selectionEntry, 2, 2, 2, 30, 1, 0, 1, false, false)
+			UpdateDisplay(false)
+
+			getCell := func(column int) types.CharacterEntryType { return getCellInformationUnderMouseCursor(column, 2) }
+			startColumn := testCase.expectedStartColumn
+			assertCellsShowText(test, testCase.name, getCell, startColumn, "Efraín  Defector  ○○○")
+			assert.Equal(test, warnColor, getCell(startColumn+8).AttributeEntry.ForegroundColor, "\"D\" should use the tag's style")
+			assert.Equal(test, warnColor, getCell(startColumn+15).AttributeEntry.ForegroundColor, "the final \"r\" should use the tag's style")
+			assert.NotEqual(test, warnColor, getCell(startColumn+18).AttributeEntry.ForegroundColor, "\"○\" after \"{{/}}\" should not use the tag's style")
+			if testCase.isSelectionCentered {
+				assert.Equal(test, ' ', getCell(startColumn-1).Character, "the centring padding should be blank")
+			}
+		})
+	}
+}
+
+/*
 TestSelectorAddCorrectsOutOfRangeArguments is a test which allows you to verify that adding a selector with a viewport
 position or highlighted item that does not fit its items stores corrected values, where the negative viewport used to
 make the first screen update panic.
