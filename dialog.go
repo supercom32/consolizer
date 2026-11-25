@@ -2,6 +2,8 @@ package consolizer
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/supercom32/consolizer/stringformat"
 
 	"github.com/supercom32/consolizer/types"
@@ -137,77 +139,67 @@ func printDialog(layerEntry *types.LayerEntryType, attributeEntry types.Attribut
 }
 
 /*
-getAttributeTag is a method which obtains an attribute tag from a given text string. Attributes are always
-surrounded by "{{" and "}}" characters. In addition, the following should be noted:
-
-- If no attribute tag could be detected at the given string location, then an empty string will be returned instead.
+getAttributeTagContent is a method which allows you to obtain the style name held inside a full markup tag, such as
+"red" from "{{red}}" or "/" from "{{/}}", so it can be passed to getDialogAttributeEntry. A tag that is not wrapped in
+"{{" and "}}", including an empty string, yields an empty string, which getDialogAttributeEntry treats as the
+default attribute entry.
 
 Example:
-    tag := getAttributeTag("Hello {{red}}World", 6)
+
+	tagContent := getAttributeTagContent("{{red}}")
 */
-func getAttributeTag(stringToParse string, startingCharacterIndex int) string {
-	runes := []rune(stringToParse)
-	for currentCharacterIndex := startingCharacterIndex; currentCharacterIndex < len(runes)-1; currentCharacterIndex++ {
-		if runes[currentCharacterIndex] == '}' && runes[currentCharacterIndex+1] == '}' {
-			return string(runes[startingCharacterIndex : currentCharacterIndex+2])
-		}
+func getAttributeTagContent(attributeTag string) string {
+	if len(attributeTag) < 4 || !strings.HasPrefix(attributeTag, "{{") || !strings.HasSuffix(attributeTag, "}}") {
+		return ""
 	}
-	// If we reach here, we didn't find the closing tag.
-	// Return an empty string, but we'll handle this case differently in the print function.
-	return ""
+	return attributeTag[2 : len(attributeTag)-2]
 }
 
 /*
-getDialogAttributeEntry is a method which obtains an attribute entry based on the text style detected in
-your attribute tag. In addition, the following should be noted:
+getDialogAttributeEntry is a method which allows you to obtain the attribute entry a markup tag selects, given the
+default attribute entry of the text being printed. A tag naming a registered text style yields the default entry with
+that style's visual fields applied, while the closing tag "/", an empty tag and any tag naming an unknown text style
+yield the default entry unchanged. In addition, the following should be noted:
 
-- If no text style could be found that matches the attribute tag provided, then the default attribute entry will be
-  returned instead.
+  - Only the visual fields are taken from the text style. The cell and control fields of the default entry, such as
+    CellType, CellControlAlias and CellControlId, are always kept, so styled cells still belong to the control that
+    printed them and remain reachable by mouse hit-testing.
 
 Example:
-    attr := getDialogAttributeEntry("red", defaultAttr)
+
+	attributeEntry := getDialogAttributeEntry("red", defaultAttributeEntry)
 */
 func getDialogAttributeEntry(attributeTag string, defaultAttributeEntry types.AttributeEntryType) types.AttributeEntryType {
-	var attributeEntry types.AttributeEntryType
-	if attributeTag != "" {
-		// Special case for the closing tag "/"
-		if attributeTag == "/" {
-			return defaultAttributeEntry
-		}
-		// Normal case for style tags
-		if IsTextStyleExists(attributeTag) {
-			attributeEntry = GetTextStyleAsAttributeEntry(attributeTag)
-			return attributeEntry
-		}
+	if attributeTag == "" || attributeTag == "/" || !IsTextStyleExists(attributeTag) {
+		return defaultAttributeEntry
 	}
-	return defaultAttributeEntry
+	return applyTextStyleVisuals(defaultAttributeEntry, GetTextStyleAsAttributeEntry(attributeTag))
 }
 
 /*
-getLengthOfNextWord is a method which gets the length of the next word at a given position of a text
-string. It ignores markup tags when calculating the length.
+applyTextStyleVisuals is a method which allows you to combine two attribute entries, returning a copy of the base
+entry whose colours, bold, underline, reverse, blink, italic, transparency and alpha fields are replaced by those of
+the style entry. Every other field, namely CellType, CellControlAlias, CellControlId, CellControlLocation, CellUserId
+and CellUserAlias, is kept from the base entry.
 
 Example:
-    length := getLengthOfNextWord("Hello {{red}}World", 0)
+
+	attributeEntry := applyTextStyleVisuals(defaultAttributeEntry, GetTextStyleAsAttributeEntry("red"))
 */
-func getLengthOfNextWord(stringToParse string, startingCharacterIndex int) int {
-	// First, get the substring from the starting index to the end
-	runes := []rune(stringToParse)
-	substring := string(runes[startingCharacterIndex:])
-
-	// Get the text without markup
-	textWithoutMarkup := GetNonMarkupText(substring)
-
-	// Now calculate the length of the next word in the text without markup
-	textWithoutMarkupRunes := []rune(textWithoutMarkup)
-	var lengthOfNextWord int
-	for currentCharacterIndex := 0; currentCharacterIndex < len(textWithoutMarkupRunes); currentCharacterIndex++ {
-		if textWithoutMarkupRunes[currentCharacterIndex] == ' ' {
-			return lengthOfNextWord
-		}
-		lengthOfNextWord++
-	}
-	return lengthOfNextWord
+func applyTextStyleVisuals(baseAttributeEntry types.AttributeEntryType, styleAttributeEntry types.AttributeEntryType) types.AttributeEntryType {
+	attributeEntry := baseAttributeEntry
+	attributeEntry.ForegroundColor = styleAttributeEntry.ForegroundColor
+	attributeEntry.BackgroundColor = styleAttributeEntry.BackgroundColor
+	attributeEntry.IsBold = styleAttributeEntry.IsBold
+	attributeEntry.IsUnderlined = styleAttributeEntry.IsUnderlined
+	attributeEntry.IsReversed = styleAttributeEntry.IsReversed
+	attributeEntry.IsBlinking = styleAttributeEntry.IsBlinking
+	attributeEntry.IsItalic = styleAttributeEntry.IsItalic
+	attributeEntry.IsBackgroundTransparent = styleAttributeEntry.IsBackgroundTransparent
+	attributeEntry.IsForegroundTransparent = styleAttributeEntry.IsForegroundTransparent
+	attributeEntry.ForegroundAlphaValue = styleAttributeEntry.ForegroundAlphaValue
+	attributeEntry.BackgroundAlphaValue = styleAttributeEntry.BackgroundAlphaValue
+	return attributeEntry
 }
 
 /*
@@ -260,42 +252,19 @@ func GetNonMarkupText(textString string) string {
 }
 
 /*
-printMarkup is a method which writes text to the terminal screen with word wrapping and attribute tags.
-This is similar to printDialog but without the typewriter effect and printing delay.
+printMarkup is a method which allows you to write text to the terminal screen with word wrapping and attribute tags,
+like printDialog without the typewriter effect and printing delay, and then redraw the screen. A
+widthOfLineInCharacters of zero or less turns word wrapping off. The text is printed by the same routine as the
+layer's own markup printing, so tags, wide characters and wrapping behave identically on both paths.
 
 Example:
-    printMarkup(layer, attr, 0, 0, 20, "Hello {{red}}World{{/}}")
+
+	printMarkup(layerEntry, attributeEntry, 0, 0, 20, "Hello {{red}}World{{/}}")
 */
 func printMarkup(layerEntry *types.LayerEntryType, attributeEntry types.AttributeEntryType, xLocation int, yLocation int, widthOfLineInCharacters int, stringToPrint string) {
 	if xLocation < 0 || xLocation > layerEntry.Width || yLocation < 0 || yLocation > layerEntry.Height {
 		safeSttyPanic(fmt.Sprintf("The specified location (%d, %d) is out of bounds for the layer with a size of (%d, %d).", xLocation, yLocation, layerEntry.Width, layerEntry.Height))
 	}
-	arrayOfRunes := stringformat.GetRunesFromString(stringToPrint)
-	layerWidth := layerEntry.Width
-	layerHeight := layerEntry.Height
-	cursorXLocation := xLocation
-	cursorYLocation := yLocation
-	currentAttributeEntry := attributeEntry
-	for currentCharacterIndex := 0; currentCharacterIndex < len(arrayOfRunes); currentCharacterIndex++ {
-		currentCharacterRune := arrayOfRunes[currentCharacterIndex]
-		printLayer(layerEntry, currentAttributeEntry, cursorXLocation, cursorYLocation, []rune{currentCharacterRune})
-		cursorXLocation++
-		lengthOfNextWord := 0
-		if currentCharacterRune == ' ' {
-			lengthOfNextWord = getLengthOfNextWord(stringToPrint, currentCharacterIndex+1)
-		}
-		if currentCharacterIndex+2 < len(arrayOfRunes) && arrayOfRunes[currentCharacterIndex+1] == '{' && arrayOfRunes[currentCharacterIndex+2] == '{' {
-			attributeTag := getAttributeTag(stringToPrint, currentCharacterIndex+1)
-			currentAttributeEntry = getDialogAttributeEntry(attributeTag, attributeEntry)
-			currentCharacterIndex += len([]rune(attributeTag))
-		}
-		if cursorXLocation+lengthOfNextWord-xLocation >= widthOfLineInCharacters || cursorXLocation+lengthOfNextWord >= layerWidth {
-			cursorXLocation = xLocation
-			cursorYLocation++
-			if cursorYLocation >= layerHeight {
-				cursorYLocation--
-			}
-		}
-	}
+	layer.printMarkup(layerEntry, attributeEntry, xLocation, yLocation, widthOfLineInCharacters, stringToPrint)
 	UpdateDisplay(false)
 }

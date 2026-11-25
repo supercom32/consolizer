@@ -95,6 +95,9 @@ In addition, the following should be noted:
 
   - The tag "/", an empty tag and any tag naming an unknown text style all select the default attribute entry.
 
+  - A tag naming a text style takes only that style's visual fields. The cell and control fields of the default
+    attribute entry are kept, so styled cells still belong to the control that printed them.
+
   - The caller must ensure "{{" begins at currentIndex.
 
 Example:

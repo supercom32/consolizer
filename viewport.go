@@ -1,10 +1,11 @@
 package consolizer
 
 import (
+	"strings"
+
 	"github.com/supercom32/consolizer/constants"
 	"github.com/supercom32/consolizer/memory"
 	"github.com/supercom32/consolizer/stringformat"
-	"math"
 
 	"github.com/supercom32/consolizer/types"
 )
@@ -48,10 +49,18 @@ func IsViewportExists(layerAlias string, viewportAlias string) bool {
 }
 
 /*
-Println is a method which allows you to add text to the viewport followed by a new line.
+Println is a method which allows you to add text to the viewport and then end the line, as Println does elsewhere in
+Go. The text continues the current line, so it follows anything Print left there, and whatever is printed next starts
+on a new line. Println("") ends the current line, or adds a blank line when the current line is already ended. Text
+is wrapped to the viewport's width when line wrapping is enabled, and the viewport is then scrolled so its last line
+is shown. In addition, the following should be noted:
+
+  - The line break is remembered rather than stored as an empty line, so no blank row is left at the bottom of the
+    viewport after the last Println.
 
 Example:
-    vp.Println("Hello World!")
+
+	vp.Println("Hello World!")
 */
 func (shared *ViewportInstanceType) Println(text string) *ViewportInstanceType {
 	defer lockUIState()()
@@ -60,22 +69,20 @@ func (shared *ViewportInstanceType) Println(text string) *ViewportInstanceType {
 		return shared
 	}
 
-	// Process the text and add it to the viewport
-	viewport.printText(viewportEntry, text)
-
-	// Update scrollbars
-	viewport.setViewportMaxScrollBarValues(shared.layerAlias, shared.controlAlias)
-	viewport.updateScrollbarBasedOnViewportViewport(shared.layerAlias, shared.controlAlias)
-
+	viewport.appendText(shared.layerAlias, shared.controlAlias, viewportEntry, text+"\n")
+	viewport.scrollToLastLine(shared.layerAlias, shared.controlAlias, viewportEntry)
 	return shared
 }
 
 /*
-Print is a method which allows you to add text to the viewport by appending to the last line. If the text contains
-control characters like \n, it will start a new line.
+Print is a method which allows you to add text to the viewport without ending the line, so it continues the current
+line and the next text printed follows it. A "\n" in the text starts a new line, and Print("a\n") is the same as
+Println("a"). Text is wrapped to the viewport's width when line wrapping is enabled, and the viewport is then scrolled
+so its last line is shown.
 
 Example:
-    vp.Print("Appending some text...")
+
+	vp.Print("Appending some text...")
 */
 func (shared *ViewportInstanceType) Print(text string) *ViewportInstanceType {
 	defer lockUIState()()
@@ -84,27 +91,23 @@ func (shared *ViewportInstanceType) Print(text string) *ViewportInstanceType {
 		return shared
 	}
 
-	// If there's no text data yet, just use printText
-	if len(viewportEntry.TextData) == 0 {
-		viewport.printText(viewportEntry, text)
-	} else {
-		// Process the text to handle control characters
-		viewport.appendToLastLine(viewportEntry, text)
-	}
-
-	// Update scrollbars
-	viewport.setViewportMaxScrollBarValues(shared.layerAlias, shared.controlAlias)
-	viewport.updateScrollbarBasedOnViewportViewport(shared.layerAlias, shared.controlAlias)
-
+	viewport.appendText(shared.layerAlias, shared.controlAlias, viewportEntry, text)
+	viewport.scrollToLastLine(shared.layerAlias, shared.controlAlias, viewportEntry)
 	return shared
 }
 
 /*
-SetContent is a method which allows you to clear the viewport and set its content to the given text. This method resets
-the viewport scroll position to the top-left.
+SetContent is a method which allows you to replace everything the viewport holds with the given text and show it from
+its first line and column, as a document would be opened. The text is split into lines exactly as Print would add it
+to an empty viewport, so a final "\n" means the next text printed starts on a new line. Call ScrollToBottom
+afterwards to show the end of the text instead. In addition, the following should be noted:
+
+  - When history is disabled the viewport keeps only the lines it can show, so for text longer than that the kept
+    lines are the last ones, and those are shown from the top.
 
 Example:
-    vp.SetContent("New content starts here.")
+
+	vp.SetContent("New content starts here.")
 */
 func (shared *ViewportInstanceType) SetContent(text string) *ViewportInstanceType {
 	defer lockUIState()()
@@ -113,23 +116,12 @@ func (shared *ViewportInstanceType) SetContent(text string) *ViewportInstanceTyp
 		return shared
 	}
 
-	// Clear existing data and reset viewport position.
 	viewportEntry.TextData = [][]rune{}
+	viewportEntry.IsLineBreakPending = false
+	viewport.appendText(shared.layerAlias, shared.controlAlias, viewportEntry, text)
 	viewportEntry.ViewportXLocation = 0
 	viewportEntry.ViewportYLocation = 0
-
-	// Process and add the new text.
-	viewport.printText(viewportEntry, text, false)
-
-	// Update scrollbar max values to get correct dimensions and max scroll value.
 	viewport.setViewportMaxScrollBarValues(shared.layerAlias, shared.controlAlias)
-
-	// Set the viewport's Y location to the maximum possible scroll value.
-	if vScrollbar, isFound := scrollbarRegistry.Lookup(shared.layerAlias, viewportEntry.VerticalScrollbarAlias); isFound {
-		viewportEntry.ViewportYLocation = vScrollbar.MaxScrollValue
-	}
-
-	// Update the scrollbar handle to reflect the new viewport position.
 	viewport.updateScrollbarBasedOnViewportViewport(shared.layerAlias, shared.controlAlias)
 	return shared
 }
@@ -202,10 +194,12 @@ func (shared *ViewportInstanceType) GetLines() []string {
 }
 
 /*
-ScrollToBottom is a method which allows you to scroll the viewport to the bottom of its content.
+ScrollToBottom is a method which allows you to scroll the viewport to the bottom of its content, so its last line is
+shown on its bottom row, or to its first line when all of its lines fit.
 
 Example:
-    vp.ScrollToBottom()
+
+	vp.ScrollToBottom()
 */
 func (shared *ViewportInstanceType) ScrollToBottom() *ViewportInstanceType {
 	defer lockUIState()()
@@ -213,11 +207,7 @@ func (shared *ViewportInstanceType) ScrollToBottom() *ViewportInstanceType {
 	if viewportEntry == nil {
 		return shared
 	}
-	viewport.setViewportMaxScrollBarValues(shared.layerAlias, shared.controlAlias)
-	if vScrollbar, isFound := scrollbarRegistry.Lookup(shared.layerAlias, viewportEntry.VerticalScrollbarAlias); isFound {
-		viewportEntry.ViewportYLocation = vScrollbar.MaxScrollValue
-	}
-	viewport.updateScrollbarBasedOnViewportViewport(shared.layerAlias, shared.controlAlias)
+	viewport.scrollToLastLine(shared.layerAlias, shared.controlAlias, viewportEntry)
 	return shared
 }
 
@@ -237,10 +227,9 @@ func (shared *ViewportInstanceType) SetMaxHistoryLines(maxLines int) *ViewportIn
 	}
 
 	viewportEntry.MaxHistoryLines = maxLines
-
-	// Trim history if needed
 	viewport.trimHistory(viewportEntry)
-
+	viewport.setViewportMaxScrollBarValues(shared.layerAlias, shared.controlAlias)
+	viewport.updateScrollbarBasedOnViewportViewport(shared.layerAlias, shared.controlAlias)
 	return shared
 }
 
@@ -258,12 +247,12 @@ func (shared *ViewportInstanceType) EnableHistory(enabled bool) *ViewportInstanc
 	}
 
 	viewportEntry.IsHistoryEnabled = enabled
-
-	// If history is disabled, trim to just what's visible
 	if !enabled {
-		viewport.trimToVisible(viewportEntry)
+		viewport.setViewportMaxScrollBarValues(shared.layerAlias, shared.controlAlias)
+		viewport.trimToVisible(shared.layerAlias, viewportEntry)
 	}
-
+	viewport.setViewportMaxScrollBarValues(shared.layerAlias, shared.controlAlias)
+	viewport.updateScrollbarBasedOnViewportViewport(shared.layerAlias, shared.controlAlias)
 	return shared
 }
 
@@ -281,6 +270,7 @@ func (shared *ViewportInstanceType) Clear() *ViewportInstanceType {
 	}
 
 	viewportEntry.TextData = [][]rune{}
+	viewportEntry.IsLineBreakPending = false
 	viewportEntry.ViewportXLocation = 0
 	viewportEntry.ViewportYLocation = 0
 
@@ -309,202 +299,357 @@ func (shared *ViewportInstanceType) SetTransparent(isTransparent bool) *Viewport
 }
 
 /*
-printText is a method which allows you to process and add text to the viewport.
+viewportLineBuilderType is a structure which accumulates text into the lines a viewport stores, tracking the printed
+column of the line being built and the style tag open on it so that wrapping is measured in visible columns and a
+wrapped line keeps its style.
+*/
+type viewportLineBuilderType struct {
+	widthInColumns    int
+	isLinesWrapped    bool
+	lines             [][]rune
+	currentLine       []rune
+	currentColumn     int
+	activeTag         []rune
+	isTagReopenNeeded bool
+	isWrapped         bool
+}
+
+/*
+newViewportLineBuilder is a constructor which allows you to create a line builder that continues from startingLine,
+so text added to it is appended to that line. The starting line is copied, so the builder never writes into the slice
+it was given, and its printed width and open style tag are measured so wrapping and style carrying continue from
+where it ends. Pass nil to start from an empty line.
 
 Example:
-    viewport.printText(entry, "New line of text", true)
+
+	lineBuilder := newViewportLineBuilder(40, true, viewportEntry.TextData[lastLineIndex])
 */
-func (shared *viewportType) printText(viewportEntry *types.ViewportEntryType, textToPrint string, autoScrollToBottom ...bool) {
-	// Get the effective width (accounting for border if present)
-	effectiveWidth := viewportEntry.Width
-	if viewportEntry.IsBorderDrawn {
-		effectiveWidth -= 2
+func newViewportLineBuilder(widthInColumns int, isLinesWrapped bool, startingLine []rune) *viewportLineBuilderType {
+	lineBuilder := &viewportLineBuilderType{
+		widthInColumns: widthInColumns,
+		isLinesWrapped: isLinesWrapped,
+		currentLine:    append([]rune{}, startingLine...),
 	}
-
-	// Process the text with markup and word wrapping
-	lines := shared.processTextWithMarkup(textToPrint, effectiveWidth, viewportEntry.IsLinesWrapped)
-
-	// Add the processed lines to the viewport's text data
-	for _, line := range lines {
-		viewportEntry.TextData = append(viewportEntry.TextData, line)
+	for currentIndex := 0; currentIndex < len(startingLine); currentIndex++ {
+		if tagEndIndex := findMarkupTagEnd(startingLine, currentIndex); tagEndIndex >= 0 {
+			lineBuilder.setActiveTag(startingLine[currentIndex : tagEndIndex+1])
+			currentIndex = tagEndIndex
+			continue
+		}
+		lineBuilder.currentColumn += stringformat.GetWidthOfRuneWhenPrinted(startingLine[currentIndex])
 	}
+	return lineBuilder
+}
 
-	// Trim history if needed
-	shared.trimHistory(viewportEntry)
+/*
+addText is a method which allows you to add text to the line builder, starting new lines at every "\n" and, when
+wrapping is enabled, wherever the next word or character would not fit in the remaining columns. Markup tags are
+copied whole onto the current line and take no columns. An unclosed "{{" is treated as regular text, as it is when
+the line is drawn.
 
-	// By default, scroll to the bottom. This is the behavior for Print/Println.
-	shouldAutoScroll := true
-	if len(autoScrollToBottom) > 0 {
-		shouldAutoScroll = autoScrollToBottom[0]
-	}
+Example:
 
-	if shouldAutoScroll {
-		// Update viewport position to show the latest content.
-		if len(viewportEntry.TextData) > viewportEntry.Height-2 { // -2 for border
-			viewportEntry.ViewportYLocation = len(viewportEntry.TextData) - (viewportEntry.Height - 2)
+	lineBuilder.addText([]rune("Hello {{red}}World{{/}}"))
+*/
+func (shared *viewportLineBuilderType) addText(textToAdd []rune) {
+	for currentIndex := 0; currentIndex < len(textToAdd); currentIndex++ {
+		currentCharacter := textToAdd[currentIndex]
+		if currentCharacter == '\n' {
+			shared.startNewLine(false)
+			continue
+		}
+		if tagEndIndex := findMarkupTagEnd(textToAdd, currentIndex); tagEndIndex >= 0 {
+			markupTag := textToAdd[currentIndex : tagEndIndex+1]
+			shared.currentLine = append(shared.currentLine, markupTag...)
+			shared.setActiveTag(markupTag)
+			shared.isTagReopenNeeded = false
+			currentIndex = tagEndIndex
+			continue
+		}
+		columnWidth := stringformat.GetWidthOfRuneWhenPrinted(currentCharacter)
+		if shared.isLinesWrapped && shared.currentColumn > 0 && shared.currentColumn+columnWidth > shared.widthInColumns {
+			shared.startNewLine(true)
+		}
+		if currentCharacter == ' ' && shared.isWrapped && shared.currentColumn == 0 {
+			continue
+		}
+		if shared.isTagReopenNeeded {
+			shared.currentLine = append(shared.currentLine, shared.activeTag...)
+			shared.isTagReopenNeeded = false
+		}
+		shared.currentLine = append(shared.currentLine, currentCharacter)
+		shared.currentColumn += columnWidth
+		shared.isWrapped = false
+		if shared.isLinesWrapped && currentCharacter == ' ' {
+			nextWordWidth := getMarkupWordWidth(textToAdd, currentIndex+1)
+			if nextWordWidth > 0 && shared.currentColumn+nextWordWidth > shared.widthInColumns {
+				shared.startNewLine(true)
+			}
 		}
 	}
 }
 
 /*
-processTextWithMarkup is a method which allows you to process text with markup and word wrapping.
+startNewLine is a method which allows you to finish the line being built and begin an empty one. When isWrap is set
+the break was made by wrapping, so the open style tag, if any, is reopened before the first character of the new line
+and leading spaces on it are dropped. A "\n" break closes the open style instead.
 
 Example:
-    lines := viewport.processTextWithMarkup("Wrapped text content", 40, true)
+
+	lineBuilder.startNewLine(true)
 */
-func (shared *viewportType) processTextWithMarkup(textToPrint string, widthOfLineInCharacters int, isLinesWrapped bool) [][]rune {
-	var result [][]rune
-	var currentLine []rune
+func (shared *viewportLineBuilderType) startNewLine(isWrap bool) {
+	shared.lines = append(shared.lines, shared.currentLine)
+	shared.currentLine = []rune{}
+	shared.currentColumn = 0
+	shared.isWrapped = isWrap
+	if !isWrap {
+		shared.activeTag = nil
+	}
+	shared.isTagReopenNeeded = isWrap && len(shared.activeTag) > 0
+}
 
-	arrayOfRunes := stringformat.GetRunesFromString(textToPrint)
-	cursorXLocation := 0
+/*
+setActiveTag is a method which allows you to record the style tag now open on the line being built. A closing tag
+"{{/}}" or an empty tag "{{}}" leaves no style open, since both return the text to its default style.
 
-	for currentCharacterIndex := 0; currentCharacterIndex < len(arrayOfRunes); currentCharacterIndex++ {
-		currentCharacter := arrayOfRunes[currentCharacterIndex]
+Example:
 
-		// Add the character to the current line
-		currentLine = append(currentLine, currentCharacter)
-		cursorXLocation++
+	lineBuilder.setActiveTag([]rune("{{red}}"))
+*/
+func (shared *viewportLineBuilderType) setActiveTag(markupTag []rune) {
+	tagContent := getAttributeTagContent(string(markupTag))
+	if tagContent == "" || tagContent == "/" {
+		shared.activeTag = nil
+		return
+	}
+	shared.activeTag = markupTag
+}
 
-		// Check for word wrapping if lines should be wrapped
-		lengthOfNextWord := 0
-		if isLinesWrapped && currentCharacter == ' ' {
-			lengthOfNextWord = getLengthOfNextWord(textToPrint, currentCharacterIndex+1)
+/*
+getLines is a method which allows you to obtain every line the builder has produced, followed by the line still
+being built, even when that line holds nothing.
+
+Example:
+
+	lines := lineBuilder.getLines()
+*/
+func (shared *viewportLineBuilderType) getLines() [][]rune {
+	return append(shared.lines, shared.currentLine)
+}
+
+/*
+findMarkupTagEnd is a method which allows you to find the markup tag that opens at a given rune index. If "{{" starts
+at currentIndex and a closing "}}" follows it, the index of that final "}" is returned. Otherwise minus one is
+returned, which means the text at currentIndex is regular text.
+
+Example:
+
+	tagEndIndex := findMarkupTagEnd([]rune("a{{red}}b"), 1)
+*/
+func findMarkupTagEnd(textToSearch []rune, currentIndex int) int {
+	if currentIndex < 0 || currentIndex+1 >= len(textToSearch) || textToSearch[currentIndex] != '{' || textToSearch[currentIndex+1] != '{' {
+		return -1
+	}
+	for tagEndIndex := currentIndex + 2; tagEndIndex+1 < len(textToSearch); tagEndIndex++ {
+		if textToSearch[tagEndIndex] == '}' && textToSearch[tagEndIndex+1] == '}' {
+			return tagEndIndex + 1
 		}
+	}
+	return -1
+}
 
-		// Handle newlines
-		if currentCharacter == '\n' {
-			// Remove the newline character
-			currentLine = currentLine[:len(currentLine)-1]
-			// Add the current line to the result
-			result = append(result, currentLine)
-			// Start a new line
-			currentLine = []rune{}
-			cursorXLocation = 0
+/*
+getMarkupWordWidth is a method which allows you to obtain the printed width in columns of the word that starts at a
+given rune index, ending at the next space, newline or the end of the text. Markup tags inside the word take no
+columns, and wide characters take two.
+
+Example:
+
+	wordWidth := getMarkupWordWidth([]rune("Go {{red}}Red{{/}} end"), 3)
+*/
+func getMarkupWordWidth(textToMeasure []rune, startingIndex int) int {
+	wordWidth := 0
+	for currentIndex := startingIndex; currentIndex < len(textToMeasure); currentIndex++ {
+		currentCharacter := textToMeasure[currentIndex]
+		if currentCharacter == ' ' || currentCharacter == '\n' {
+			break
+		}
+		if tagEndIndex := findMarkupTagEnd(textToMeasure, currentIndex); tagEndIndex >= 0 {
+			currentIndex = tagEndIndex
 			continue
 		}
+		wordWidth += stringformat.GetWidthOfRuneWhenPrinted(currentCharacter)
+	}
+	return wordWidth
+}
 
-		// Check if we need to wrap to the next line (only if lines should be wrapped)
-		if isLinesWrapped && cursorXLocation+lengthOfNextWord > widthOfLineInCharacters {
-			// Add the current line to the result
-			result = append(result, currentLine)
-			// Start a new line
-			currentLine = []rune{}
-			cursorXLocation = 0
+/*
+getMarkupLineWidth is a method which allows you to obtain the printed width in columns of a stored viewport line.
+Markup tags take no columns, and wide characters take two.
+
+Example:
+
+	lineWidth := getMarkupLineWidth([]rune("Go {{red}}Red{{/}} end"))
+*/
+func getMarkupLineWidth(line []rune) int {
+	lineWidth := 0
+	for currentIndex := 0; currentIndex < len(line); currentIndex++ {
+		if tagEndIndex := findMarkupTagEnd(line, currentIndex); tagEndIndex >= 0 {
+			currentIndex = tagEndIndex
+			continue
 		}
+		lineWidth += stringformat.GetWidthOfRuneWhenPrinted(line[currentIndex])
 	}
+	return lineWidth
+}
 
-	// Add the last line if it's not empty
-	if len(currentLine) > 0 {
-		result = append(result, currentLine)
+/*
+getTextWidth is a method which allows you to obtain the number of columns a viewport wraps its text to, which is its
+width less the border when one is drawn.
+
+Example:
+
+	textWidth := viewport.getTextWidth(entry)
+*/
+func (shared *viewportType) getTextWidth(viewportEntry *types.ViewportEntryType) int {
+	if viewportEntry.IsBorderDrawn {
+		return viewportEntry.Width - 2
 	}
+	return viewportEntry.Width
+}
 
-	return result
+/*
+getVisibleContentSize is a method which allows you to obtain how many columns and lines of text a viewport shows at
+once, which is its size less the border when one is drawn and less a row or column for each of its scroll bars that
+is visible. Neither value is ever negative. In addition, the following should be noted:
+
+  - Scroll bar visibility is read as it stands, so call setViewportMaxScrollBarValues first when the content has
+    just changed.
+
+Example:
+
+	visibleColumns, visibleLines := viewport.getVisibleContentSize("main", entry)
+*/
+func (shared *viewportType) getVisibleContentSize(layerAlias string, viewportEntry *types.ViewportEntryType) (int, int) {
+	visibleColumns := shared.getTextWidth(viewportEntry)
+	visibleLines := viewportEntry.Height
+	if viewportEntry.IsBorderDrawn {
+		visibleLines -= 2
+	}
+	if scrollbarEntry, isFound := scrollbarRegistry.Lookup(layerAlias, viewportEntry.VerticalScrollbarAlias); isFound && scrollbarEntry.IsVisible {
+		visibleColumns--
+	}
+	if scrollbarEntry, isFound := scrollbarRegistry.Lookup(layerAlias, viewportEntry.HorizontalScrollbarAlias); isFound && scrollbarEntry.IsVisible {
+		visibleLines--
+	}
+	return getClampedIndex(visibleColumns, 0, visibleColumns), getClampedIndex(visibleLines, 0, visibleLines)
+}
+
+/*
+getMaxScrollPosition is a method which allows you to obtain the furthest column and line a viewport can be scrolled
+to while still filling its visible area, measured in printed columns so markup tags and wide characters are counted
+as they are drawn. Neither value is ever negative.
+
+Example:
+
+	maxColumn, maxLine := viewport.getMaxScrollPosition("main", entry)
+*/
+func (shared *viewportType) getMaxScrollPosition(layerAlias string, viewportEntry *types.ViewportEntryType) (int, int) {
+	visibleColumns, visibleLines := shared.getVisibleContentSize(layerAlias, viewportEntry)
+	maxColumn := shared.getMaxLineWidth(viewportEntry) - visibleColumns
+	maxLine := len(viewportEntry.TextData) - visibleLines
+	return getClampedIndex(maxColumn, 0, maxColumn), getClampedIndex(maxLine, 0, maxLine)
+}
+
+/*
+scrollToLastLine is a method which allows you to scroll a viewport so its last line is shown on its bottom row, or to
+its first line when all of its lines fit, and to update its scroll bars to match. The column it is scrolled to is
+left unchanged.
+
+Example:
+
+	viewport.scrollToLastLine("main", "myVP", entry)
+*/
+func (shared *viewportType) scrollToLastLine(layerAlias string, viewportAlias string, viewportEntry *types.ViewportEntryType) {
+	shared.setViewportMaxScrollBarValues(layerAlias, viewportAlias)
+	_, maxLine := shared.getMaxScrollPosition(layerAlias, viewportEntry)
+	viewportEntry.ViewportYLocation = maxLine
+	shared.updateScrollbarBasedOnViewportViewport(layerAlias, viewportAlias)
 }
 
 /*
 trimHistory is a method which allows you to trim the viewport's history to the maximum number of lines allowed. A
 negative maximum, which can only be given when the viewport is added, is treated as no limit rather than used to slice
-the history.
+the history. When lines are removed, the scroll position moves up by the same number of lines, stopping at the first
+line, so the lines that were shown stay in view.
 
 Example:
 
 	viewport.trimHistory(entry)
 */
 func (shared *viewportType) trimHistory(viewportEntry *types.ViewportEntryType) {
-	if viewportEntry.IsHistoryEnabled && viewportEntry.MaxHistoryLines >= 0 && len(viewportEntry.TextData) > viewportEntry.MaxHistoryLines {
-		// Keep only the most recent MaxHistoryLines
-		viewportEntry.TextData = viewportEntry.TextData[len(viewportEntry.TextData)-viewportEntry.MaxHistoryLines:]
-		// Adjust viewport position
-		if viewportEntry.ViewportYLocation > 0 {
-			viewportEntry.ViewportYLocation = int(math.Max(0, float64(viewportEntry.ViewportYLocation-(len(viewportEntry.TextData)-viewportEntry.MaxHistoryLines))))
-		}
+	if !viewportEntry.IsHistoryEnabled || viewportEntry.MaxHistoryLines < 0 || len(viewportEntry.TextData) <= viewportEntry.MaxHistoryLines {
+		return
 	}
+	removedLineCount := len(viewportEntry.TextData) - viewportEntry.MaxHistoryLines
+	viewportEntry.TextData = viewportEntry.TextData[removedLineCount:]
+	viewportEntry.ViewportYLocation = getClampedIndex(viewportEntry.ViewportYLocation-removedLineCount, 0, viewportEntry.ViewportYLocation)
 }
 
 /*
-trimToVisible is a method which allows you to trim the viewport's text data to only what is currently visible. A
-viewport too small to show any line, such as a bordered one less than three rows high, keeps no lines.
+trimToVisible is a method which allows you to keep only the newest lines a viewport can show at once, measured
+inside its border and any visible scroll bar, and to scroll it to its first line when lines are removed. A viewport
+too small to show any line, such as a bordered one less than three rows high, keeps no lines.
 
 Example:
 
-	viewport.trimToVisible(entry)
+	viewport.trimToVisible("main", entry)
 */
-func (shared *viewportType) trimToVisible(viewportEntry *types.ViewportEntryType) {
-	effectiveHeight := viewportEntry.Height
-	if viewportEntry.IsBorderDrawn {
-		effectiveHeight -= 2
-	}
-	effectiveHeight = getClampedIndex(effectiveHeight, 0, effectiveHeight)
-
-	if len(viewportEntry.TextData) > effectiveHeight {
-		// Keep only the most recent lines that fit in the viewport
-		viewportEntry.TextData = viewportEntry.TextData[len(viewportEntry.TextData)-effectiveHeight:]
+func (shared *viewportType) trimToVisible(layerAlias string, viewportEntry *types.ViewportEntryType) {
+	_, visibleLines := shared.getVisibleContentSize(layerAlias, viewportEntry)
+	if len(viewportEntry.TextData) > visibleLines {
+		viewportEntry.TextData = viewportEntry.TextData[len(viewportEntry.TextData)-visibleLines:]
 		viewportEntry.ViewportYLocation = 0
 	}
 }
 
 /*
-appendToLastLine is a method which allows you to append text to the last line of the viewport. If the text contains
-control characters like \n, it will start a new line.
+appendText is a method which allows you to add text to a viewport, continuing its last line unless that line has
+been ended, in which case the text starts a new one. Every "\n" in the text ends a line, and when line wrapping is
+enabled the text is wrapped exactly as the line builder wraps it, measured in printed columns from where the last
+line already ends and keeping any style tag still open on it. The lines are then trimmed to the history limit, and
+when history is disabled only the lines the viewport can show are kept. Empty text changes nothing. In addition, the
+following should be noted:
+
+  - A final "\n" is not stored as an empty line. It sets IsLineBreakPending instead, so the next text starts a new
+    line without a blank row being shown first.
 
 Example:
-    viewport.appendToLastLine(entry, " More text")
+
+	viewport.appendText("main", "myVP", entry, "More text\n")
 */
-func (shared *viewportType) appendToLastLine(viewportEntry *types.ViewportEntryType, textToPrint string) {
-	// Get the effective width (accounting for border if present)
-	effectiveWidth := viewportEntry.Width
-	if viewportEntry.IsBorderDrawn {
-		effectiveWidth -= 2
+func (shared *viewportType) appendText(layerAlias string, viewportAlias string, viewportEntry *types.ViewportEntryType, textToPrint string) {
+	if textToPrint == "" {
+		return
 	}
-
-	// Get the runes from the string
-	arrayOfRunes := stringformat.GetRunesFromString(textToPrint)
-
-	// Process each character
-	currentLine := viewportEntry.TextData[len(viewportEntry.TextData)-1]
-
-	for i := 0; i < len(arrayOfRunes); i++ {
-		currentChar := string(arrayOfRunes[i])
-
-		// Handle newline character
-		if currentChar == "\n" {
-			// Add the current line to the viewport
-			viewportEntry.TextData[len(viewportEntry.TextData)-1] = currentLine
-			// Start a new line
-			currentLine = []rune{}
-			viewportEntry.TextData = append(viewportEntry.TextData, currentLine)
-		} else {
-			// Append the character to the current line
-			currentLine = append(currentLine, arrayOfRunes[i])
-
-			// Check if we need to wrap to the next line (only if lines should be wrapped)
-			if viewportEntry.IsLinesWrapped && len(currentLine) >= effectiveWidth {
-				// Update the last line
-				viewportEntry.TextData[len(viewportEntry.TextData)-1] = currentLine
-				// Start a new line
-				currentLine = []rune{}
-				viewportEntry.TextData = append(viewportEntry.TextData, currentLine)
-			}
-		}
+	if len(viewportEntry.TextData) == 0 || viewportEntry.IsLineBreakPending {
+		viewportEntry.TextData = append(viewportEntry.TextData, []rune{})
+		viewportEntry.IsLineBreakPending = false
 	}
-
-	// Update the last line with any remaining characters
-	if len(currentLine) > 0 {
-		viewportEntry.TextData[len(viewportEntry.TextData)-1] = currentLine
+	lastLineIndex := len(viewportEntry.TextData) - 1
+	lineBuilder := newViewportLineBuilder(shared.getTextWidth(viewportEntry), viewportEntry.IsLinesWrapped, viewportEntry.TextData[lastLineIndex])
+	lineBuilder.addText(stringformat.GetRunesFromString(textToPrint))
+	lines := lineBuilder.getLines()
+	if strings.HasSuffix(textToPrint, "\n") {
+		lines = lines[:len(lines)-1]
+		viewportEntry.IsLineBreakPending = true
 	}
-
-	// Trim history if needed
+	viewportEntry.TextData = append(viewportEntry.TextData[:lastLineIndex], lines...)
 	shared.trimHistory(viewportEntry)
-
-	// Update viewport position to show the latest content
-	if len(viewportEntry.TextData) > viewportEntry.Height {
-		if viewportEntry.IsHistoryEnabled {
-			viewportEntry.ViewportYLocation = len(viewportEntry.TextData) - viewportEntry.Height
-		} else {
-			// If history is disabled, keep only what's visible
-			shared.trimToVisible(viewportEntry)
-		}
+	if !viewportEntry.IsHistoryEnabled {
+		shared.setViewportMaxScrollBarValues(layerAlias, viewportAlias)
+		shared.trimToVisible(layerAlias, viewportEntry)
 	}
 }
 
@@ -539,24 +684,36 @@ func (shared *viewportType) updateScrollbarBasedOnViewportViewport(layerAlias st
 }
 
 /*
-getMaxHorizontalTextValue is a method which allows you to obtain the maximum width of text in the viewport.
+getMaxHorizontalTextValue is a method which allows you to obtain the printed width in columns of the widest line in
+the viewport, or zero when the viewport does not exist.
 
 Example:
-    width := viewport.getMaxHorizontalTextValue("main", "myVP")
+
+	width := viewport.getMaxHorizontalTextValue("main", "myVP")
 */
 func (shared *viewportType) getMaxHorizontalTextValue(layerAlias string, viewportAlias string) int {
 	viewportEntry := getViewport(layerAlias, viewportAlias)
 	if viewportEntry == nil {
 		return 0
 	}
+	return shared.getMaxLineWidth(viewportEntry)
+}
 
+/*
+getMaxLineWidth is a method which allows you to obtain the printed width in columns of the widest line a viewport
+holds. Markup tags take no columns, and wide characters take two.
+
+Example:
+
+	width := viewport.getMaxLineWidth(entry)
+*/
+func (shared *viewportType) getMaxLineWidth(viewportEntry *types.ViewportEntryType) int {
 	maxWidth := 0
 	for _, line := range viewportEntry.TextData {
-		if len(line) > maxWidth {
-			maxWidth = len(line)
+		if lineWidth := getMarkupLineWidth(line); lineWidth > maxWidth {
+			maxWidth = lineWidth
 		}
 	}
-
 	return maxWidth
 }
 
@@ -928,48 +1085,45 @@ func (shared *viewportType) drawContent(layerEntry *types.LayerEntryType, viewpo
 	}
 
 	// Draw each line of text in the viewport
+	firstVisibleColumn := getClampedIndex(viewportEntry.ViewportXLocation, 0, viewportEntry.ViewportXLocation)
 	for y := 0; y < contentHeight; y++ {
 		textDataY := y + viewportEntry.ViewportYLocation
 		if textDataY >= 0 && textDataY < len(viewportEntry.TextData) {
-			line := viewportEntry.TextData[textDataY]
-
-			// Apply horizontal scrolling
-			startX := getClampedIndex(viewportEntry.ViewportXLocation, 0, viewportEntry.ViewportXLocation)
-			endX := startX + contentWidth
-			if endX > len(line) {
-				endX = len(line)
-			}
-
-			if startX < len(line) {
-				// Convert the line to a string for markup processing
-				lineString := string(line)
-
-				// Process the line with markup
-				cursorXLocation := contentXLocation
-				currentAttributeEntry := types.NewAttributeEntry(&styleAttributeEntry)
-
-				for currentCharacterIndex := startX; currentCharacterIndex < endX; currentCharacterIndex++ {
-					// Check for markup tags
-					if currentCharacterIndex+1 < len(lineString) {
-						nextCharacter := stringformat.GetSubString(lineString, currentCharacterIndex, 2)
-						if nextCharacter == "{{" {
-							attributeTag := getAttributeTag(lineString, currentCharacterIndex)
-							if attributeTag != "" {
-								// Apply the style from the markup tag
-								currentAttributeEntry = getDialogAttributeEntry(attributeTag, styleAttributeEntry)
-								// Skip the markup tag
-								currentCharacterIndex += len(attributeTag) - 1
-								continue
-							}
-						}
-					}
-
-					// Print the character with the current attribute entry
-					layer.printLayer(layerEntry, currentAttributeEntry, cursorXLocation, contentYLocation+y, []rune{line[currentCharacterIndex]})
-					cursorXLocation++
-				}
-			}
+			shared.drawLine(layerEntry, viewportEntry.TextData[textDataY], styleAttributeEntry, contentXLocation, contentYLocation+y, firstVisibleColumn, contentWidth)
 		}
+	}
+}
+
+/*
+drawLine is a method which allows you to draw one stored viewport line, scrolled so that printed column
+firstVisibleColumn of the line lands at xLocation, showing at most visibleColumns columns. Markup tags in the line
+switch the style the following characters are drawn with and take no columns, so scrolling and clipping are measured
+in what is actually printed. In addition, the following should be noted:
+
+  - A wide character that would straddle the left or right edge of the visible area is not drawn, leaving that
+    column to the viewport's background rather than drawing half a character or drawing past the edge.
+
+  - Tags before the first visible column still apply, so text scrolled into view keeps the style it was given.
+
+Example:
+
+	viewport.drawLine(layerEntry, []rune("Go {{red}}Red{{/}} end"), styleAttributeEntry, 1, 1, 0, 38)
+*/
+func (shared *viewportType) drawLine(layerEntry *types.LayerEntryType, line []rune, defaultAttributeEntry types.AttributeEntryType, xLocation int, yLocation int, firstVisibleColumn int, visibleColumns int) {
+	lastVisibleColumn := firstVisibleColumn + visibleColumns
+	currentAttributeEntry := defaultAttributeEntry
+	lineColumn := 0
+	for currentIndex := 0; currentIndex < len(line) && lineColumn < lastVisibleColumn; currentIndex++ {
+		if tagEndIndex := findMarkupTagEnd(line, currentIndex); tagEndIndex >= 0 {
+			currentAttributeEntry = getDialogAttributeEntry(getAttributeTagContent(string(line[currentIndex:tagEndIndex+1])), defaultAttributeEntry)
+			currentIndex = tagEndIndex
+			continue
+		}
+		columnWidth := stringformat.GetWidthOfRuneWhenPrinted(line[currentIndex])
+		if lineColumn >= firstVisibleColumn && lineColumn+columnWidth <= lastVisibleColumn {
+			layer.printLayer(layerEntry, currentAttributeEntry, xLocation+lineColumn-firstVisibleColumn, yLocation, []rune{line[currentIndex]})
+		}
+		lineColumn += columnWidth
 	}
 }
 
@@ -1113,15 +1267,8 @@ func (shared *viewportType) updateMouseEvent() bool {
 					}
 				} else if wheelState == "Down" && viewportEntry.VerticalScrollbarAlias != "" {
 					// Scroll down
-					maxScroll := 0
-					if len(viewportEntry.TextData) > viewportEntry.Height {
-						maxScroll = len(viewportEntry.TextData) - viewportEntry.Height
-						if viewportEntry.IsBorderDrawn {
-							maxScroll += 2
-						}
-					}
-
-					if viewportEntry.ViewportYLocation < maxScroll {
+					_, maxLine := shared.getMaxScrollPosition(layerAlias, viewportEntry)
+					if viewportEntry.ViewportYLocation < maxLine {
 						viewportEntry.ViewportYLocation++
 						shared.updateScrollbarBasedOnViewportViewport(layerAlias, viewportAlias)
 						isScreenUpdateRequired = true
@@ -1135,8 +1282,8 @@ func (shared *viewportType) updateMouseEvent() bool {
 					}
 				} else if wheelState == "Right" && viewportEntry.HorizontalScrollbarAlias != "" {
 					// Scroll right
-					maxWidth := shared.getMaxHorizontalTextValue(layerAlias, viewportAlias)
-					if viewportEntry.ViewportXLocation < maxWidth-viewportEntry.Width {
+					maxColumn, _ := shared.getMaxScrollPosition(layerAlias, viewportEntry)
+					if viewportEntry.ViewportXLocation < maxColumn {
 						viewportEntry.ViewportXLocation++
 						shared.updateScrollbarBasedOnViewportViewport(layerAlias, viewportAlias)
 						isScreenUpdateRequired = true

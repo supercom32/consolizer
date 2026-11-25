@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"github.com/gdamore/tcell/v2"
+	"github.com/stretchr/testify/assert"
 	"github.com/supercom32/consolizer/constants"
 	"github.com/supercom32/consolizer/stringformat"
 	"github.com/supercom32/consolizer/types"
@@ -439,6 +440,32 @@ func addTestTextStyle(test testing.TB, textStyleAlias string, foregroundColor co
 	textStyleEntry.ForegroundColor = foregroundColor
 	AddTextStyle(textStyleAlias, textStyleEntry)
 	test.Cleanup(func() { DeleteTextStyle(textStyleAlias) })
+}
+
+/*
+assertMarkupRowCells is a method which allows you to fail a test unless a row printed from the markup text
+"Go {{style}}Red{{/}} end" shows "Go Red end" from the given starting column, with every one of its ten cells
+carrying the expected cell type and control alias, and only the three cells of "Red" drawn in the styled foreground
+colour.
+
+Example:
+
+	assertMarkupRowCells(test, "viewport", getCell, 2, constants.CellTypeTextbox, "view", warnColor)
+*/
+func assertMarkupRowCells(test *testing.T, context string, getCell func(column int) types.CharacterEntryType, startColumn int, expectedCellType int, expectedControlAlias string, styledColor constants.ColorType) {
+	test.Helper()
+	endColumn := assertCellsShowText(test, context, getCell, startColumn, "Go Red end")
+	for column := startColumn; column < endColumn; column++ {
+		attributeEntry := getCell(column).AttributeEntry
+		assert.Equalf(test, expectedCellType, attributeEntry.CellType, "%s: column %d has the wrong cell type", context, column)
+		assert.Equalf(test, expectedControlAlias, attributeEntry.CellControlAlias, "%s: column %d has the wrong control alias", context, column)
+		isStyled := column >= startColumn+3 && column <= startColumn+5
+		if isStyled {
+			assert.Equalf(test, styledColor, attributeEntry.ForegroundColor, "%s: column %d should use the tag's style", context, column)
+		} else {
+			assert.NotEqualf(test, styledColor, attributeEntry.ForegroundColor, "%s: column %d should not use the tag's style", context, column)
+		}
+	}
 }
 
 /*

@@ -1104,6 +1104,44 @@ func TestSelectorDrawsMultiByteMarkupItem(test *testing.T) {
 }
 
 /*
+TestSelectorMarkupItemCellsKeepControlFields is a test which verifies that every cell of a selector item printed with
+markup, styled or not, stays tagged as an item of that selector, so a click on a styled cell selects the item. Before
+the fix a style tag replaced the whole attribute entry, which dropped the selector's cell fields from styled cells and
+left them unclickable.
+
+Example:
+
+	Expected Inputs:
+	    A style "markupCellWarn" (red) and an unbordered selector "styledList" at (2, 2), 20 columns wide, one column,
+	    two rows high, holding "Go {{markupCellWarn}}Red{{/}} end" and "Second" with the second item highlighted. The
+	    styled cell at column 6 of row 2 is then clicked.
+	Expected Outputs:
+	    Row 2 shows "Go Red end" from column 2. Each of its ten cells has CellType CellTypeSelectorItem,
+	    CellControlAlias "styledList" and CellControlId 0. Columns 5 to 7 are red and the other cells are not. The
+	    click selects item 0 as a single click.
+*/
+func TestSelectorMarkupItemCellsKeepControlFields(test *testing.T) {
+	layerAlias, styleEntry := setupInputTest(test)
+	warnColor := GetRGBColor(255, 0, 0)
+	addTestTextStyle(test, "markupCellWarn", warnColor)
+	selectionEntry := NewSelectionEntry()
+	selectionEntry.Add("styled", "Go {{markupCellWarn}}Red{{/}} end")
+	selectionEntry.Add("second", "Second")
+	selector := Selector.Add(layerAlias, "styledList", styleEntry, selectionEntry, 2, 2, 2, 20, 1, 0, 1, false, false)
+	simScreen := startInputSimulation(test)
+
+	getCell := func(column int) types.CharacterEntryType { return getCellInformationUnderMouseCursor(column, 2) }
+	startColumn := 2
+	assertMarkupRowCells(test, "styled item", getCell, startColumn, constants.CellTypeSelectorItem, "styledList", warnColor)
+	for column := startColumn; column < startColumn+len("Go Red end"); column++ {
+		assert.Equalf(test, 0, getCell(column).AttributeEntry.CellControlId, "column %d should belong to item 0", column)
+	}
+
+	clickAt(simScreen, startColumn+4, 2)
+	assertSelection(test, selector, "click on a styled cell", 0, constants.SelectionSourceSingleClick)
+}
+
+/*
 TestSelectorAddCorrectsOutOfRangeArguments is a test which allows you to verify that adding a selector with a viewport
 position or highlighted item that does not fit its items stores corrected values, where the negative viewport used to
 make the first screen update panic.

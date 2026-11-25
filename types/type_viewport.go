@@ -24,6 +24,7 @@ type ViewportEntryType struct {
 	IsHistoryEnabled         bool // Whether to keep history beyond what's visible
 	IsTransparent            bool // Whether the viewport background is transparent
 	IsLinesWrapped           bool // Whether text is wrapped to fit the viewport width
+	IsLineBreakPending       bool // Whether the next text printed starts a new line, as after Println
 }
 
 /*
@@ -56,6 +57,7 @@ func (shared ViewportEntryType) MarshalJSON() ([]byte, error) {
 		IsHistoryEnabled         bool
 		IsTransparent            bool
 		IsLinesWrapped           bool
+		IsLineBreakPending       bool
 	}{
 		BaseControlType:          shared.BaseControlType,
 		HorizontalScrollbarAlias: shared.HorizontalScrollbarAlias,
@@ -67,6 +69,7 @@ func (shared ViewportEntryType) MarshalJSON() ([]byte, error) {
 		IsHistoryEnabled:         shared.IsHistoryEnabled,
 		IsTransparent:            shared.IsTransparent,
 		IsLinesWrapped:           shared.IsLinesWrapped,
+		IsLineBreakPending:       shared.IsLineBreakPending,
 	})
 	if err != nil {
 		return nil, err
@@ -115,6 +118,7 @@ func NewViewportEntry(existingViewportEntry ...*ViewportEntryType) ViewportEntry
 		viewportEntry.IsHistoryEnabled = existingViewportEntry[0].IsHistoryEnabled
 		viewportEntry.IsTransparent = existingViewportEntry[0].IsTransparent
 		viewportEntry.IsLinesWrapped = existingViewportEntry[0].IsLinesWrapped
+		viewportEntry.IsLineBreakPending = existingViewportEntry[0].IsLineBreakPending
 	}
 	return viewportEntry
 }
@@ -136,7 +140,8 @@ func IsViewportEntryEqual(sourceViewportEntry *ViewportEntryType, targetViewport
 		sourceViewportEntry.MaxHistoryLines == targetViewportEntry.MaxHistoryLines &&
 		sourceViewportEntry.IsHistoryEnabled == targetViewportEntry.IsHistoryEnabled &&
 		sourceViewportEntry.IsTransparent == targetViewportEntry.IsTransparent &&
-		sourceViewportEntry.IsLinesWrapped == targetViewportEntry.IsLinesWrapped
+		sourceViewportEntry.IsLinesWrapped == targetViewportEntry.IsLinesWrapped &&
+		sourceViewportEntry.IsLineBreakPending == targetViewportEntry.IsLineBreakPending
 }
 
 /*
